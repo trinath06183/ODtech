@@ -1,0 +1,87 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'edms:document_detail' doc_id=document.id %}" class="text-violet-600 hover:underline text-sm">← Back to Document</a>
+    <h1 class="text-xl font-bold text-slate-800">📋 Version History — {{ document.title }}</h1>
+</div>
+
+<!-- Upload New Version -->
+{% if request.user|edms_can:'edit_metadata' %}
+<div class="glass rounded-2xl p-6 mb-6">
+    <h2 class="font-semibold text-slate-700 mb-4">⬆ Upload New Version</h2>
+    <form method="POST" action="{% url 'edms:new_version_upload' doc_id=document.id %}" enctype="multipart/form-data"
+          class="flex flex-col sm:flex-row gap-3 items-start">
+        {% csrf_token %}
+        <div class="flex-1">
+            <input type="file" name="file" id="new-version-file" class="hidden" required>
+            <button type="button" onclick="document.getElementById('new-version-file').click()"
+                    class="px-4 py-2 border-2 border-dashed border-violet-300 rounded-xl text-sm text-violet-600 hover:border-violet-500 hover:bg-violet-50 transition-all">
+                📎 Select File
+            </button>
+            <span id="new-version-name" class="ml-2 text-xs text-slate-400">No file selected</span>
+        </div>
+        <input type="text" name="change_note" placeholder="Change note (optional)"
+               class="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-violet-400">
+        <button type="submit"
+                class="px-5 py-2 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors text-sm">
+            Upload Version
+        </button>
+    </form>
+    <script>
+    document.getElementById('new-version-file').addEventListener('change', function(){
+        document.getElementById('new-version-name').textContent = this.files[0]?.name || 'No file selected';
+    });
+    </script>
+</div>
+{% endif %}
+
+<!-- Version List -->
+<div class="glass rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-slate-50/70 text-xs text-slate-400 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">Version</th>
+                <th class="px-6 py-3 text-left">File Name</th>
+                <th class="px-6 py-3 text-left">Size</th>
+                <th class="px-6 py-3 text-left">Hash (SHA-256)</th>
+                <th class="px-6 py-3 text-left">Change Note</th>
+                <th class="px-6 py-3 text-left">Uploaded By</th>
+                <th class="px-6 py-3 text-left">Date</th>
+                <th class="px-6 py-3 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for v in versions %}
+            <tr class="hover:bg-violet-50/20 transition-colors {% if v.is_current %}bg-violet-50/30{% endif %}">
+                <td class="px-6 py-3 font-bold text-slate-700">
+                    v{{ v.version_number }}
+                    {% if v.is_current %}
+                    <span class="ml-1 px-1.5 py-0.5 bg-green-100 text-green-600 text-xs rounded-full">Current</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-3 text-slate-600">{{ v.file_name }}</td>
+                <td class="px-6 py-3 text-xs text-slate-400">{{ v.file_size|file_size }}</td>
+                <td class="px-6 py-3 text-xs text-slate-300 font-mono" title="{{ v.file_hash }}">{{ v.file_hash|slice:":16" }}…</td>
+                <td class="px-6 py-3 text-xs text-slate-500">{{ v.change_note|default:"—" }}</td>
+                <td class="px-6 py-3 text-slate-600">{{ v.uploaded_by.username}}</td>
+                <td class="px-6 py-3 text-xs text-slate-400">{{ v.created_at|date:"d M Y H:i" }}</td>
+                <td class="px-6 py-3">
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'edms:document_download_version' doc_id=document.id version_number=v.version_number %}"
+                           class="text-blue-600 hover:underline text-xs" title="Download v{{ v.version_number }}">⬇</a>
+                        {% if v.file_extension|can_preview %}
+                        <a href="{% url 'edms:document_preview_version' doc_id=document.id version_number=v.version_number %}"
+                           target="_blank" class="text-violet-600 hover:underline text-xs" title="Preview">👁</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="px-6 py-8 text-center text-slate-400">No versions found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

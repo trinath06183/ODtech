@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - ODtech ERP{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row gap-6">
+  <div class="w-full lg:w-3/4 order-2 lg:order-1">
+
+    <!-- Header -->
+    <div class="mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900">Orders Dashboard</h1>
+        <p class="text-sm text-gray-500">Manage all your commercial orders</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'tracker:individual_products' %}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-sm font-medium rounded-md shadow-sm text-gray-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 transition-colors">
+          <svg class="h-4 w-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          All Products
+        </a>
+        <a href="{% url 'tracker:order_create' %}"
+           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Create New Order
+        </a>
+      </div>
+    </div>
+
+    {% csrf_token %}
+
+    <!-- Main Alpine Component -->
+    <div x-data="orderDashboard()" x-init="init()">
+
+      <!-- View Tabs -->
+      <div class="flex items-center gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit">
+        <button @click="activeView='all'"
+                :class="activeView==='all' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                class="px-4 py-1.5 rounded-lg text-sm transition-all">All Orders</button>
+        <button @click="activeView='customer'"
+                :class="activeView==='customer' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                class="px-4 py-1.5 rounded-lg text-sm transition-all">By Customer</button>
+        <button @click="activeView='supplier'"
+                :class="activeView==='supplier' ? 'bg-white shadow text-amber-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                class="px-4 py-1.5 rounded-lg text-sm transition-all">By Supplier</button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="bg-white border border-gray-200 rounded-xl shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+
+        <!-- Customer search (All + Customer views) -->
+        <div x-show="activeView !== 'supplier'" class="relative flex-1 min-w-[180px] max-w-xs">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" x-model="customerSearch" @input="applyFilters()" placeholder="Search customer..."
+                 class="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-gray-50">
+        </div>
+
+        <!-- Supplier dropdown (Supplier view only) -->
+        <div x-show="activeView === 'supplier'" class="relative flex-1 min-w-[200px] max-w-sm">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          <select x-model="supplierFilter"
+                  class="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 bg-gray-50 cursor-pointer">
+            <option value="">— All Suppliers —</option>
+            <template x-for="sup in allSuppliers" :key="sup">
+              <option :value="sup" x-text="sup"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- Status pills -->
+        <div class="flex flex-wrap gap-1.5">
+          <button @click="statusFilter=''; applyFilters()"
+                  :class="statusFilter==='' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                  class="px-3 py-1 rounded-full text-xs font-semibold transition-colors">All</button>
+          {% for val, label in status_choices %}
+          <button @click="statusFilter='{{ val }}'; applyFilters()"
+                  :class="statusFilter==='{{ val }}' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                  class="px-3 py-1 rounded-full text-xs font-semibold transition-colors">{{ label }}</button>
+          {% endfor %}
+        </div>
+
+        <!-- Count badge -->
+        <span class="ml-auto text-xs text-gray-400 whitespace-nowrap" x-show="activeView !== 'supplier'">
+          <span x-text="visibleCount"></span> shown
+        </span>
+      </div>
+
+      <!-- ALL view: flat list with live hide/show -->
+      <div x-show="activeView === 'all'">
+        <div class="bg-white shadow overflow-hidden sm:rounded-xl border border-gray-200">
+          <ul class="divide-y divide-gray-200" id="order-list-ul">
+            {% for order in orders %}
+            <li class="order-row"
+                data-order-id="{{ order.id }}"
+                data-customer="{{ order.customer_name|lower }}"
+                data-status="{{ order.order_status }}">
+              <div class="relative block hover:bg-gray-50 transition duration-150 ease-in-out">
+                <a href="{% url 'tracker:order_detail' order.id %}" class="absolute inset-0 z-0"></a>
+                <div class="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 pointer-events-none">
+                  <div class="flex-1 min-w-0 pr-4">
+                    <p class="text-sm font-bold text-indigo-600 truncate order-num">{{ order.order_number }}</p>
+                    <p class="text-sm text-gray-500 truncate order-customer mt-0.5">{{ order.customer_name }} ({{ order.customer_phone }})</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-3 pointer-events-auto">
+                      <select @change="updateOrderStatus('{{ order.id }}', $event.target.value)"
+                              class="text-xs font-semibold rounded-full border border-gray-200 py-1 pl-3 pr-8 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-700 shadow-sm hover:bg-gray-50 cursor-pointer">
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if order.order_status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                      {% with order.tasks.all|length as task_count %}{% if task_count > 0 %}
+                      <div class="flex items-center gap-1 text-xs text-orange-600 font-medium bg-orange-50 px-2 py-1 rounded">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+                        {{ task_count }} Tasks
+                      </div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-6 flex-shrink-0 pointer-events-auto">
+                    <div class="hidden md:flex flex-col items-end">
+                      <p class="text-sm text-gray-900"><time datetime="{{ order.order_date }}">{{ order.order_date }}</time></p>
+                      <p class="mt-1 text-sm text-gray-500">Items: {{ order.products.all|length }}</p>
+                      <p class="mt-1">
+                        {% if order.payment_status == 'PAID' %}<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800 uppercase">Paid</span>
+                        {% elif order.payment_status == 'PARTIALLY_PAID' %}<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800 uppercase">Partial</span>
+                        {% else %}<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 uppercase">Unpaid</span>{% endif %}
+                      </p>
+                    </div>
+                    <div class="flex items-center space-x-3 border-l border-gray-200 pl-6">
+                      <a href="{% url 'tracker:order_update' order.id %}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
+                      <a href="{% url 'tracker:order_delete' order.id %}" class="text-red-600 hover:text-red-900 text-sm font-medium">Delete</a>
+                      <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+            {% empty %}
+            <li class="px-4 py-8 text-center text-gray-500">No orders found.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div x-show="visibleCount === 0 && totalCount > 0"
+             class="mt-3 text-center py-6 text-sm text-gray-400 bg-white rounded-xl border border-gray-200">
+          No orders match the current filters.
+          <button @click="customerSearch=''; statusFilter=''; applyFilters()" class="ml-2 text-indigo-600 hover:underline text-xs">Clear filters</button>
+        </div>
+      </div>
+
+      <!-- CUSTOMER view: grouped -->
+      <div x-show="activeView === 'customer'" class="space-y-4">
+        <template x-if="customerGroups.length > 0">
+          <div class="space-y-4">
+            <template x-for="group in customerGroups" :key="group.name">
+              <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+                  <span class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm" x-text="group.name.charAt(0).toUpperCase()"></span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-indigo-900 truncate" x-text="group.name"></p>
+                    <p class="text-xs text-indigo-400" x-text="group.items.length + ' order' + (group.items.length !== 1 ? 's' : '')"></p>
+                  </div>
+                </div>
+                <ul class="divide-y divide-gray-100">
+                  <template x-for="row in group.items" :key="row.id">
+                    <li class="hover:bg-gray-50 transition-colors">
+                      <a :href="row.href" class="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p class="text-sm font-bold text-indigo-600" x-text="row.num"></p>
+                          <p class="text-xs text-gray-400" x-text="row.date"></p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                          <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                :class="{'bg-blue-100 text-blue-700': row.status==='OPEN', 'bg-yellow-100 text-yellow-700': row.status==='SOURCING', 'bg-green-100 text-green-700': row.status==='PROCURED', 'bg-purple-100 text-purple-700': row.status==='SHIPPED', 'bg-gray-100 text-gray-600': row.status==='CLOSED'}"
+                                x-text="row.status"></span>
+                          <span class="text-xs text-gray-400" x-text="row.items + ' items'"></span>
+                          <svg class="h-4 w-4 text-gray-300" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                        </div>
+                      </a>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </template>
+          </div>
+        </template>
+        <div x-show="customerGroups.length === 0" class="text-center py-12 text-gray-400 text-sm bg-white rounded-xl border border-gray-200">No orders match your filters.</div>
+      </div>
+
+      <!-- SUPPLIER view: grouped by supplier -->
+      <div x-show="activeView === 'supplier'" class="space-y-3">
+        <template x-if="supplierGroups.length > 0">
+          <div class="space-y-3">
+            <template x-for="group in supplierGroups" :key="group.name">
+              <div class="bg-white border border-amber-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-50 to-white border-b border-amber-100">
+                  <span class="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                    <svg class="h-4 w-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-amber-900 truncate" x-text="group.name"></p>
+                    <p class="text-xs text-amber-500" x-text="group.orderIds.length + ' linked order' + (group.orderIds.length !== 1 ? 's' : '')"></p>
+                  </div>
+                </div>
+                <div class="px-4 py-3 flex flex-wrap gap-2">
+                  <template x-for="oid in group.orderIds" :key="oid">
+                    <a :href="'/order/' + oid + '/'"
+                       class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200 transition-colors">
+                      <svg class="h-3 w-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                      <span x-text="orderNumberMap[oid] || oid.slice(0,8) + '…'"></span>
+                    </a>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+        <div x-show="supplierGroups.length === 0" class="text-center py-12 text-gray-400 text-sm bg-white rounded-xl border border-gray-200">
+          <svg class="mx-auto h-12 w-12 text-gray-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/></svg>
+          No suppliers linked yet. Select a supplier option inside a product to see it here.
+        </div>
+      </div>
+
+    </div><!-- /x-data -->
+
+    <!-- Completed Orders (always visible, no filter applied) -->
+    {% if completed_orders %}
+    <div class="mt-6" x-data="{ open: false }">
+      <button @click="open = !open"
+              class="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm hover:bg-emerald-100 transition-colors group">
+        <div class="flex items-center gap-3">
+          <span class="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+            <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </span>
+          <div class="text-left">
+            <p class="text-sm font-bold text-emerald-900">Completed Orders</p>
+            <p class="text-xs text-emerald-600">Orders with status CLOSED &amp; payment PAID</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white">{{ completed_orders|length }}</span>
+          <svg class="h-5 w-5 text-emerald-500 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </button>
+      <div x-show="open"
+           x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2"
+           class="mt-2 bg-white border border-emerald-200 rounded-xl shadow-sm overflow-hidden">
+        <ul class="divide-y divide-emerald-100">
+          {% for order in completed_orders %}
+          <li>
+            <div class="relative block hover:bg-emerald-50/40 transition duration-150">
+              <a href="{% url 'tracker:order_detail' order.id %}" class="absolute inset-0 z-0"></a>
+              <div class="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 pointer-events-none">
+                <div class="flex-1 min-w-0 pr-4">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-bold text-emerald-700 truncate">{{ order.order_number }}</p>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                      COMPLETED
+                    </span>
+                  </div>
+                  <p class="mt-1 text-sm text-gray-500 truncate">{{ order.customer_name }} ({{ order.customer_phone }})</p>
+                </div>
+                <div class="flex items-center space-x-6 flex-shrink-0 pointer-events-auto">
+                  <div class="hidden md:flex flex-col items-end">
+                    <p class="text-sm text-gray-900"><time datetime="{{ order.order_date }}">{{ order.order_date }}</time></p>
+                    <p class="mt-1 text-sm text-gray-500">Items: {{ order.products.all|length }}</p>
+                    <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800 uppercase">Paid</span>
+                  </div>
+                  <div class="flex items-center space-x-3 border-l border-emerald-200 pl-6">
+                    <a href="{% url 'tracker:order_update' order.id %}" class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
+                    <a href="{% url 'tracker:order_delete' order.id %}" class="text-red-600 hover:text-red-900 text-sm font-medium">Delete</a>
+                    <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /main col -->
+
+  <!-- Right Panel -->
+  <div class="w-full lg:w-1/4 order-1 lg:order-2 space-y-6 sticky top-6">
+    <div class="bg-white shadow rounded-lg p-5 border border-gray-200" x-data="masterSearch()">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        Master Search
+      </h2>
+      <div class="relative">
+        <input type="text" x-model="query" @input.debounce.300ms="performSearch()"
+               placeholder="Search products, buyers, locations..."
+               class="w-full bg-gray-50 border border-gray-300 rounded-md py-2.5 pl-3 pr-10 text-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+        <div x-show="loading" class="absolute right-3 top-2.5">
+          <svg class="animate-spin h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+          </svg>
+        </div>
+      </div>
+      <div x-show="resultsOpen" class="mt-5 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
+        <template x-if="results.products && results.products.length > 0">
+          <div>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 border-b pb-1">Products</h3>
+            <ul class="space-y-1">
+              <template x-for="item in results.products">
+                <li><a :href="'{% url 'tracker:product_intelligence' %}?name=' + encodeURIComponent(item)" target="_blank" class="block text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1.5 rounded transition-colors truncate" x-text="item"></a></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+        <template x-if="results.buyers && results.buyers.length > 0">
+          <div>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 border-b pb-1">Buyers</h3>
+            <ul class="space-y-1">
+              <template x-for="item in results.buyers">
+                <li><a :href="'{% url 'tracker:buyer_profile' %}?name=' + encodeURIComponent(item)" target="_blank" class="block text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1.5 rounded transition-colors truncate" x-text="item"></a></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+        <template x-if="results.sellers && results.sellers.length > 0">
+          <div>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 border-b pb-1">Sellers</h3>
+            <ul class="space-y-1">
+              <template x-for="item in results.sellers">
+                <li><a :href="'{% url 'tracker:seller_profile' %}?name=' + encodeURIComponent(item)" target="_blank" class="block text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1.5 rounded transition-colors truncate" x-text="item"></a></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+        <template x-if="results.locations && results.locations.length > 0">
+          <div>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 border-b pb-1">Locations</h3>
+            <ul class="space-y-1">
+              <template x-for="item in results.locations">
+                <li><span class="block text-sm text-gray-600 px-2 py-1.5 truncate" x-text="item"></span></li>
+              </template>
+            </ul>
+          </div>
+        </template>
+        <div x-show="!loading && query.length > 0 && isEmpty()" class="text-sm text-gray-500 py-4 text-center">
+          No results found for "<span x-text="query"></span>".
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const _SUPPLIER_ORDER_MAP = {{ supplier_order_map|safe }};
+
+// Build order data from rendered DOM rows for client-side filtering
+const _ORDER_ROWS = [];
+document.querySelectorAll('.order-row').forEach(li => {
+  const numEl  = li.querySelector('.order-num');
+  const datEl  = li.querySelector('time');
+  const cstEl  = li.querySelector('.order-customer');
+  _ORDER_ROWS.push({
+    id:       li.dataset.orderId,
+    customer: li.dataset.customer,
+    status:   li.dataset.status,
+    num:      numEl  ? numEl.textContent.trim()  : '',
+    date:     datEl  ? datEl.textContent.trim()  : '',
+    cname:    cstEl  ? cstEl.textContent.split('(')[0].trim() : li.dataset.customer,
+    items:    li.querySelector('p.text-sm.text-gray-500')?.textContent?.match(/Items: (\d+)/)?.[1] || '0',
+    href:     li.querySelector('a')?.getAttribute('href') || '#',
+    el:       li,
+  });
+});
+
+// Build order-id → order_number map
+const _ORDER_NUM_MAP = {};
+_ORDER_ROWS.forEach(r => { _ORDER_NUM_MAP[r.id] = r.num; });
+
+function orderDashboard() {
+  return {
+    activeView:     'all',
+    customerSearch: '',
+    statusFilter:   '',
+    supplierFilter: '',
+    visibleCount:   _ORDER_ROWS.length,
+    totalCount:     _ORDER_ROWS.length,
+    allSuppliers:   Object.keys(_SUPPLIER_ORDER_MAP).sort(),
+    supplierMap:    _SUPPLIER_ORDER_MAP,
+    orderNumberMap: _ORDER_NUM_MAP,
+
+    init() {
+      this.$watch('activeView', () => this.applyFilters());
+    },
+
+    _matches(r) {
+      if (this.statusFilter && r.status !== this.statusFilter) return false;
+      if (this.customerSearch.trim() && !r.customer.includes(this.customerSearch.trim().toLowerCase())) return false;
+      return true;
+    },
+
+    applyFilters() {
+      if (this.activeView !== 'all') return;
+      let count = 0;
+      _ORDER_ROWS.forEach(r => {
+        const show = this._matches(r);
+        if (r.el) r.el.style.display = show ? '' : 'none';
+        if (show) count++;
+      });
+      this.visibleCount = count;
+    },
+
+    get customerGroups() {
+      const map = {};
+      _ORDER_ROWS.filter(r => this._matches(r)).forEach(r => {
+        if (!map[r.cname]) map[r.cname] = { name: r.cname, items: [] };
+        map[r.cname].items.push(r);
+      });
+      return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    get supplierGroups() {
+      const entries = this.supplierFilter
+        ? (this.supplierMap[this.supplierFilter] ? [[this.supplierFilter, this.supplierMap[this.supplierFilter]]] : [])
+        : Object.entries(this.supplierMap);
+      return entries
+        .map(([name, orderIds]) => ({ name, orderIds }))
+        .filter(g => g.orderIds.length > 0)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    updateOrderStatus(orderId, newStatus) {
+      fetch(`/api/order/${orderId}/status/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: JSON.stringify({ status: newStatus })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) { alert(data.error || 'Failed to update status'); window.location.reload(); }
+        else {
+          const row = _ORDER_ROWS.find(x => x.id === orderId);
+          if (row) { row.status = newStatus; row.el && (row.el.dataset.status = newStatus); this.applyFilters(); }
+        }
+      })
+      .catch(() => { alert('Network error'); window.location.reload(); });
+    },
+  };
+}
+
+function masterSearch() {
+  return {
+    query: '', loading: false, resultsOpen: false,
+    results: { products: [], buyers: [], sellers: [], locations: [] },
+    isEmpty() { return !['products','buyers','sellers','locations'].some(k => this.results[k]?.length > 0); },
+    async performSearch() {
+      if (this.query.trim().length < 2) { this.resultsOpen = false; this.results = { products:[], buyers:[], sellers:[], locations:[] }; return; }
+      this.loading = true;
+      try {
+        const r = await fetch(`{% url 'tracker:master_search_api' %}?q=${encodeURIComponent(this.query)}`);
+        this.results = await r.json(); this.resultsOpen = true;
+      } catch(e) { console.error(e); } finally { this.loading = false; }
+    }
+  };
+}
+</script>
+{% endblock %}

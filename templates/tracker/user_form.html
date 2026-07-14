@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} - ODtech ERP{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex items-center gap-4">
+        <a href="{% url 'tracker:user_management_list' %}" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 font-heading">{{ title }}</h1>
+    </div>
+</div>
+
+<div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2 max-w-5xl">
+    <form method="post" class="px-4 py-6 sm:p-8">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+            
+            <!-- Left Column: Standard Inputs -->
+            <div class="space-y-6">
+                {% for field in form %}
+                    {% if field.field.widget.input_type != 'checkbox' %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium leading-6 text-gray-900">{{ field.label }}</label>
+                        <div class="mt-2">
+                            {{ field }}
+                        </div>
+                        {% if field.help_text %}
+                        <p class="mt-2 text-sm leading-6 text-gray-600">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Right Column: Checkboxes & Permissions -->
+            <div class="space-y-5 bg-gray-50/50 p-6 rounded-lg border border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">Permissions & Visibility</h3>
+                {% for field in form %}
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="relative flex items-start">
+                        <div class="flex h-6 items-center">
+                            {{ field }}
+                        </div>
+                        <div class="ml-3 text-sm leading-6">
+                            <label for="{{ field.id_for_label }}" class="font-medium text-gray-900">{{ field.label }}</label>
+                            {% if field.help_text %}
+                            <p class="text-gray-500 text-xs mt-0.5">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% if field.errors %}
+                            <p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+        </div>
+        
+        <div class="mt-8 flex items-center justify-end gap-x-6 border-t border-gray-900/10 pt-6">
+            <a href="{% url 'tracker:user_management_list' %}" class="text-sm font-semibold leading-6 text-gray-900">Cancel</a>
+            <button type="submit" class="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors">Save</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

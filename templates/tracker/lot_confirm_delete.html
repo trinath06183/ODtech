@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Confirm Delete Lot - ERP System{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-8">
+    <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Delete Lot
+            </h3>
+            <div class="mt-2 max-w-xl text-sm text-gray-500">
+                <p>Are you sure you want to delete lot <strong>{{ object.lot_name }}</strong>? This action cannot be undone.</p>
+                {% if products_count > 0 %}
+                <p class="mt-2 text-red-600">This lot contains <strong>{{ products_count }}</strong> associated product(s).</p>
+                {% endif %}
+            </div>
+            <form method="post" class="mt-5">
+                {% csrf_token %}
+                
+                {% if products_count > 0 %}
+                <div class="mb-5">
+                    <fieldset>
+                        <legend class="sr-only">Delete Options</legend>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="flex items-center h-5">
+                                    <input id="delete_mode_all" name="delete_mode" type="radio" value="all" class="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <label for="delete_mode_all" class="font-medium text-gray-700">Delete Lot and All Associated Products</label>
+                                    <p class="text-gray-500">Delete both the lot and all {{ products_count }} product(s) contained within it.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="flex items-center h-5">
+                                    <input id="delete_mode_lot_only" name="delete_mode" type="radio" value="lot_only" checked class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <label for="delete_mode_lot_only" class="font-medium text-gray-700">Delete Lot Only</label>
+                                    <p class="text-gray-500">Delete the lot name and reassign all associated products to an "Unassigned" lot.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                {% endif %}
+
+                <div class="flex space-x-3">
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
+                        Yes, delete it
+                    </button>
+                    <a href="{{ cancel_url }}" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

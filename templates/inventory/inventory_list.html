@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block header %}Inventory — Stock{% endblock %}
+{% block content %}
+
+<!-- Header Bar -->
+<div class="glass p-4 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-600/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-white font-bold text-lg">Products</h2>
+            <p class="text-gray-400 text-xs">{{ products|length }} product{{ products|length|pluralize }} in catalogue</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{% url 'create_document' %}"
+           class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
+            📄 New Document
+        </a>
+        {% if request.user.role == 'Admin' %}
+        <a href="{% url 'product_create' %}"
+           class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-cyan-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Product
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Search Controls -->
+<div class="glass p-4 rounded-2xl mb-6">
+    <form method="get" class="flex flex-wrap items-center justify-between gap-4">
+        <!-- Left: Search Box with Autocomplete Datalist -->
+        <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">
+            <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search Product Name, SKU, Brand, Category..." list="product-suggestions"
+                   class="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+            {% if query %}
+            <a href="?" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center space-x-2">
+            <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm transition-colors shadow-lg shadow-cyan-500/20">
+                Search
+            </button>
+            {% if query %}
+            <a href="?" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+                Reset
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Autocomplete Datalist Suggestions -->
+<datalist id="product-suggestions">
+    {% for suggestion in suggestions %}
+    <option value="{{ suggestion }}"></option>
+    {% endfor %}
+</datalist>
+
+<!-- Flash Messages -->
+{% if messages %}
+{% for msg in messages %}
+<div class="mb-4 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
+    {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+    {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+    {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if low_stock_count > 0 %}
+<div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 flex items-center gap-3">
+    ⚠️ <strong>{{ low_stock_count }} product{{ low_stock_count|pluralize }}</strong> below reorder level — check stock!
+</div>
+{% endif %}
+
+<!-- Products Table -->
+<div class="glass rounded-2xl overflow-hidden overflow-x-auto">
+    <table class="w-full text-left whitespace-nowrap">
+        <thead class="bg-slate-800/80 border-b border-white/10">
+            <tr class="text-gray-400 text-xs uppercase tracking-wider">
+                <th class="px-6 py-4 font-medium">Product</th>
+                <th class="px-6 py-4 font-medium">SKU / HSN</th>
+                <th class="px-6 py-4 font-medium text-center">Unit</th>
+                <th class="px-6 py-4 font-medium text-right">Price</th>
+                <th class="px-6 py-4 font-medium text-center">GST %</th>
+                <th class="px-6 py-4 font-medium text-center">Stock</th>
+                <th class="px-6 py-4 font-medium text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+            {% for product in products %}
+            <tr class="hover:bg-white/5 transition-colors {% if product.is_low_stock %}bg-amber-500/5{% endif %}">
+                <!-- Product Name / Category -->
+                <td class="px-6 py-4">
+                    <div class="font-semibold text-white text-sm">{{ product.name }}</div>
+                    {% if product.brand or product.category %}
+                    <div class="text-gray-500 text-xs mt-0.5">
+                        {% if product.brand %}{{ product.brand }}{% endif %}{% if product.brand and product.category %} · {% endif %}{% if product.category %}{{ product.category }}{% endif %}
+                    </div>
+                    {% endif %}
+                </td>
+
+                <!-- SKU / HSN -->
+                <td class="px-6 py-4">
+                    <span class="font-mono font-bold text-blue-400 text-sm">{{ product.sku }}</span>
+                    {% if product.hsn_code %}
+                    <div class="text-gray-500 text-xs mt-0.5">HSN: {{ product.hsn_code }}</div>
+                    {% endif %}
+                </td>
+
+                <!-- Unit -->
+                <td class="px-6 py-4 text-center text-gray-300 text-sm">{{ product.unit }}</td>
+
+                <!-- Price -->
+                <td class="px-6 py-4 text-right font-bold text-green-400">&#8377;{{ product.selling_price|floatformat:2 }}</td>
+
+                <!-- Tax -->
+                <td class="px-6 py-4 text-center">
+                    <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs font-bold rounded">{{ product.tax_rate|floatformat:0 }}%</span>
+                </td>
+
+                <!-- Stock -->
+                <td class="px-6 py-4 text-center">
+                    {% with stock=product.current_stock %}
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold
+                        {% if product.is_low_stock %}bg-amber-500/20 text-amber-300
+                        {% elif stock > 0 %}bg-emerald-500/20 text-emerald-300
+                        {% elif stock == 0 %}bg-yellow-500/20 text-yellow-300
+                        {% else %}bg-red-500/20 text-red-300{% endif %}">
+                        {{ stock|floatformat:0 }} {{ product.unit }}
+                    </span>
+                    {% if product.is_low_stock %}
+                    <span class="ml-1 text-amber-400 text-xs" title="Below reorder level ({{ product.reorder_level|floatformat:0 }})">⚠️</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+
+                <!-- Actions -->
+                <td class="px-6 py-4">
+                    <div class="flex items-center justify-center space-x-2">
+                        {% if request.user.role == 'Admin' %}
+                        <!-- Adjust Stock -->
+                        <a href="{% url 'adjust_stock' product.id %}"
+                           class="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 rounded-lg transition-colors" title="Adjust Stock">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                        </a>
+                        <!-- Edit -->
+                        <a href="{% url 'product_edit' product.id %}"
+                           class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Edit Product">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </a>
+                        <!-- Delete -->
+                        <form method="post" action="{% url 'product_delete' product.id %}"
+                              onsubmit="return confirm('Delete product \'{{ product.name }}\'? This cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Delete Product">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="text-gray-600 text-xs italic">View only</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-6 py-16 text-center">
+                    <div class="text-gray-500 text-lg mb-2">No products in inventory</div>
+                    {% if request.user.role == 'Admin' %}
+                    <a href="{% url 'product_create' %}" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm inline-block mt-2">Add First Product</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block header %}Documents{% endblock %}
+{% block content %}
+
+<!-- Flash Messages -->
+{% if messages %}
+{% for msg in messages %}
+<div class="mb-4 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
+    {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+    {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+    {% if msg.tags == 'error' %}<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{% else %}<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{% endif %}
+    {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Stats Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    {% for stat in stats %}
+    <a href="?type={{ stat.type }}{% if query %}&q={{ query }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="glass p-5 rounded-2xl flex items-center space-x-4 hover:scale-105 transition-transform cursor-pointer border {% if current_type == stat.type %}border-blue-500{% else %}border-white/5{% endif %}">
+        <div class="text-3xl">{{ stat.icon }}</div>
+        <div>
+            <div class="text-2xl font-bold text-white">{{ stat.count }}</div>
+            <div class="text-xs text-gray-400">{{ stat.label }}</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Grid Container for Split Screen Dashboard -->
+<div class="mb-8">
+    
+    <!-- Left Column (Controls & Table list) - Spans 3 columns on large screens -->
+    <div class="space-y-6">
+        
+        <!-- Filter & Actions Bar -->
+        <div class="glass p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 flex-wrap gap-2">
+                <span class="text-gray-400 text-sm">Showing:</span>
+                {% for f in filters %}
+                <a href="?type={{ f.type }}{% if query %}&q={{ query }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {% if current_type == f.type %}bg-blue-600 text-white{% else %}bg-slate-800 text-gray-300 hover:bg-slate-700{% endif %}">
+                    {{ f.label }}
+                </a>
+                {% endfor %}
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'create_document' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    New Document
+                </a>
+            </div>
+        </div>
+
+        <!-- Search, Filter & Sort Controls (Red Box Element) -->
+        <div class="glass p-4 rounded-2xl">
+            <form method="get" class="flex flex-wrap items-center justify-between gap-4">
+                <!-- Preserve Type Filter -->
+                {% if current_type %}
+                <input type="hidden" name="type" value="{{ current_type }}">
+                {% endif %}
+
+                <!-- Left: Search Box with Autocomplete Datalist -->
+                <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">
+                    <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search Doc No, Customer, Product..." list="search-suggestions"
+                           class="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    {% if query %}
+                    <a href="?{% if current_type %}type={{ current_type }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Middle & Right: Date & Sort Filters -->
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- Select Particular Date -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400 font-medium">Date:</span>
+                        <input type="date" name="date_filter" value="{{ date_filter|default:'' }}"
+                               class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
+                    </div>
+
+                    <!-- Sort Option -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400 font-medium">Sort By:</span>
+                        <select name="sort_by" onchange="this.form.submit()"
+                                class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition cursor-pointer appearance-none pr-8 bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_0.5rem_center] bg-no-repeat">
+                            <option value="-id" {% if sort_by == '-id' or not sort_by %}selected{% endif %}>Default (Newest)</option>
+                            <option value="-date" {% if sort_by == '-date' %}selected{% endif %}>Date: Newest First</option>
+                            <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Date: Oldest First</option>
+                            <option value="-grand_total" {% if sort_by == '-grand_total' %}selected{% endif %}>Amount: High to Low</option>
+                            <option value="grand_total" {% if sort_by == 'grand_total' %}selected{% endif %}>Amount: Low to High</option>
+                        </select>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex items-center space-x-2">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20">
+                            Apply
+                        </button>
+                        {% if query or date_filter or sort_by != '-id' %}
+                        <a href="?{% if current_type %}type={{ current_type }}{% endif %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+                            Reset
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Autocomplete Datalist Suggestions -->
+        <datalist id="search-suggestions">
+            {% for suggestion in suggestions %}
+            <option value="{{ suggestion }}"></option>
+            {% endfor %}
+        </datalist>
+
+        <!-- Documents Table (Scrollable Container / Blue Box Area) -->
+        <div class="glass rounded-2xl overflow-hidden border border-white/5">
+            <div class="overflow-y-auto overflow-x-auto max-h-[580px]">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-slate-800 border-b border-white/10 sticky top-0 z-10">
+                        <tr class="text-gray-400 text-xs uppercase tracking-wider">
+                            <th class="px-6 py-4 font-medium">Doc Number</th>
+                            <th class="px-6 py-4 font-medium">Type</th>
+                            <th class="px-6 py-4 font-medium">Customer</th>
+                            <th class="px-6 py-4 font-medium">Date</th>
+                            <th class="px-6 py-4 font-medium text-right">Amount</th>
+                            <th class="px-6 py-4 font-medium text-center">Status</th>
+                            <th class="px-6 py-4 font-medium text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        {% for doc in documents %}
+                        <tr id="doc-row-{{ doc.id }}" data-doc-id="{{ doc.id }}" data-doc-number="{{ doc.number }}" class="hover:bg-white/5 transition-colors document-row">
+                            <td class="px-6 py-4">
+                                <a href="{% url 'document_preview' doc.id %}" class="font-mono font-bold text-blue-400 hover:text-blue-300 text-sm transition-colors">{{ doc.number }}</a>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 rounded text-xs font-bold
+                                    {% if doc.type == 'QTN' %}bg-purple-500/20 text-purple-300
+                                    {% elif doc.type == 'INV' %}bg-green-500/20 text-green-300
+                                    {% elif doc.type == 'PO' %}bg-orange-500/20 text-orange-300
+                                    {% elif doc.type == 'CHL' %}bg-cyan-500/20 text-cyan-300
+                                    {% else %}bg-gray-500/20 text-gray-300{% endif %}">
+                                    {{ doc.get_type_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <a href="{% url 'document_preview' doc.id %}" class="text-white hover:text-blue-400 text-sm font-medium transition-colors">{{ doc.contact.name }}</a>
+                            </td>
+                            <td class="px-6 py-4 text-gray-400 text-sm">{{ doc.date|date:"d M Y" }}</td>
+                            <td class="px-6 py-4 text-right font-bold text-green-400">&#8377; {{ doc.grand_total|floatformat:2 }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium
+                                    {% if doc.status == 'Approved' %}bg-green-500/20 text-green-300
+                                    {% elif doc.status == 'Cancelled' %}bg-red-500/20 text-red-300
+                                    {% else %}bg-yellow-500/20 text-yellow-300{% endif %}">
+                                    {{ doc.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <!-- Preview -->
+                                    <a href="{% url 'document_preview' doc.id %}"
+                                       class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Preview">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    </a>
+                                    <!-- Edit (all roles) -->
+                                    <a href="{% url 'edit_document' doc.id %}"
+                                       class="p-2 bg-slate-600/30 hover:bg-slate-600/60 text-gray-300 rounded-lg transition-colors" title="Edit Document">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </a>
+                                    <!-- PDF -->
+                                    <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
+                                       class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Download PDF">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    </a>
+                                    <!-- Delete (Admin / Accountant only, and if enabled in settings) -->
+                                    {% if company.allow_document_deletion %}
+                                    {% if request.user.role == 'Admin' or request.user.role == 'Accountant' %}
+                                    <form method="post" action="{% url 'delete_document' doc.id %}" class="m-0 p-0 flex items-center"
+                                          onsubmit="return confirm('Delete document {{ doc.number }}? This cannot be undone.');">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="p-2 bg-red-900/30 hover:bg-red-600/40 text-red-500 hover:text-red-300 rounded-lg transition-colors" title="Delete Document">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-16 text-center">
+                                <div class="text-gray-500 text-lg mb-2">No documents found</div>
+                                <div class="text-gray-600 text-sm mb-4">Create your first quotation to get started</div>
+                                <a href="{% url 'create_quotation' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm inline-block">New Quotation</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    
+{% endblock %}
+

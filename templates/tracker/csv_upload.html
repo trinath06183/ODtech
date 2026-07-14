@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Upload Products - ERP System{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">{{ title }}</h1>
+        <p class="mt-1 text-sm text-gray-500">
+            Upload a CSV file to import multiple products at once.
+            <a href="{% url 'tracker:download_sample_csv' %}"
+                class="text-indigo-600 hover:text-indigo-900 font-medium ml-1">
+                ↓ Download Sample CSV
+            </a>
+        </p>
+    </div>
+
+    <!-- Column Reference Card -->
+    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+        <h3 class="text-sm font-semibold text-indigo-900 mb-2">Required CSV Columns</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-xs text-left">
+                <thead>
+                    <tr class="text-indigo-700 font-semibold">
+                        <th class="pr-4 py-1">Column</th>
+                        <th class="pr-4 py-1">Required</th>
+                        <th class="py-1">Notes</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700">
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">sl_no</td>
+                        <td class="pr-4">No</td>
+                        <td>Serial number (e.g. 1, 2, 3)</td>
+                    </tr>
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">item_name</td>
+                        <td class="pr-4 text-red-600 font-semibold">Yes</td>
+                        <td>Name of the product</td>
+                    </tr>
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">make_or_model</td>
+                        <td class="pr-4">No</td>
+                        <td>Optional Make or Model (e.g., 'Brand X')</td>
+                    </tr>
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">description</td>
+                        <td class="pr-4">No</td>
+                        <td>Product description</td>
+                    </tr>
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">quantity</td>
+                        <td class="pr-4">No</td>
+                        <td>Numeric value, defaults to 1</td>
+                    </tr>
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">uom</td>
+                        <td class="pr-4">No</td>
+                        <td>Unit of measure (PCS, MTR, KG, etc.)</td>
+                    </tr>
+                    <tr>
+                        <td class="pr-4 py-0.5 font-mono">status</td>
+                        <td class="pr-4">No</td>
+                        <td>OPEN or CLOSED (defaults to OPEN)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <div class="px-4 py-5 sm:px-6 bg-gray-50">
+            <h3 class="text-base font-medium text-gray-900">Upload CSV File</h3>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+            <form method="post" enctype="multipart/form-data" class="space-y-5">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="flex justify-between block text-sm font-medium text-gray-700 mb-1">
+                        <span>
+                            {{ field.label }}
+                        </span>
+                        {% if field.name == 'lot' and order %}
+                        <button type="button" onclick="promptCreateLot('{{ order.id }}', '{{ field.auto_id }}')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">+ New Lot</button>
+                        {% endif %}
+                    </label>
+                    <div
+                        class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-400 transition-colors">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none"
+                                viewBox="0 0 48 48">
+                                <path
+                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="text-sm text-gray-600">
+                                {{ field }}
+                            </div>
+                            <p class="text-xs text-gray-500">.csv files only</p>
+                        </div>
+                    </div>
+                    {% if field.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <a href="{{ cancel_url }}"
+                        class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Import Products
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function promptCreateLot(orderId, selectFieldId) {
+        var lotName = prompt("Enter new lot name:");
+        if (!lotName || !lotName.trim()) return;
+        
+        var formData = { lot_name: lotName.trim() };
+        
+        fetch(`/api/order/${orderId}/create-lot/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                var select = document.getElementById(selectFieldId);
+                if (select) {
+                    var option = new Option(data.lot_name, data.lot_id, true, true);
+                    select.add(option);
+                    select.value = data.lot_id;
+                }
+                alert("Lot created and selected successfully!");
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("An error occurred while creating the lot.");
+        });
+    }
+</script>
+{% endblock %}

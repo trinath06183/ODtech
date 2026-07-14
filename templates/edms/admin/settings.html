@@ -1,0 +1,99 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">⚙️ Admin Settings</h1>
+    <p class="text-sm text-slate-500">EDMS Configuration Overview</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    
+    <!-- System Configuration -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">System Configuration</h2>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-slate-500 uppercase">Max Upload Size</span>
+                <span class="text-sm font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded">{{ edms_settings.MAX_UPLOAD_MB }} MB</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-slate-500 uppercase">Storage Path</span>
+                <span class="text-xs font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded truncate max-w-[200px]">{{ edms_settings.STORAGE_ROOT }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="text-sm font-semibold text-slate-500 uppercase">Allowed Extensions</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                    {% for ext in edms_settings.ALLOWED_EXTENSIONS %}
+                    <span class="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{{ ext }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Configuration -->
+    <div class="glass rounded-2xl p-6">
+        <h2 class="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Email Routing</h2>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-slate-500 uppercase">MD Email</span>
+                <span class="text-sm font-medium text-violet-700">{{ edms_settings.MD_EMAIL|default:"Not configured" }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="text-sm font-semibold text-slate-500 uppercase">Admin Notification Emails</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                    {% for email in edms_settings.NOTIFY_EMAILS %}
+                    <span class="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{{ email }}</span>
+                    {% empty %}
+                    <span class="text-xs text-slate-400">Not configured</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-4">Edit `settings/base.py` to change these environment values.</p>
+    </div>
+</div>
+
+<!-- User Management Overview -->
+<div class="glass rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div>
+            <h2 class="text-lg font-bold text-slate-800">User Roles Overview</h2>
+            <p class="text-xs text-slate-500">{{ user_count }} active users</p>
+        </div>
+        <a href="/admin/users/user/" target="_blank" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-medium hover:bg-slate-900">
+            Open Django Admin
+        </a>
+    </div>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                <th class="px-6 py-3 text-left">User</th>
+                <th class="px-6 py-3 text-left">Email</th>
+                <th class="px-6 py-3 text-left">Global Role</th>
+                <th class="px-6 py-3 text-left">Status</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for u in users %}
+            <tr class="hover:bg-slate-50/50">
+                <td class="px-6 py-3">
+                    <p class="font-medium text-slate-700">{{ u.username}}</p>
+                    <p class="text-xs text-slate-400">@{{ u.username }}</p>
+                </td>
+                <td class="px-6 py-3 text-slate-600">{{ u.email|default:"—" }}</td>
+                <td class="px-6 py-3">{{ u.role|role_badge }}</td>
+                <td class="px-6 py-3">
+                    {% if u.is_active %}
+                    <span class="text-xs text-green-600 font-medium">Active</span>
+                    {% else %}
+                    <span class="text-xs text-red-600 font-medium">Disabled</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

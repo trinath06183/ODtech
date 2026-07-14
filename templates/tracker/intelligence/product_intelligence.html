@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Product Intelligence - {{ product_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        Product Intelligence: {{ product_name }}
+    </h1>
+    <p class="text-sm text-gray-500">Cross-order analysis and supplier pricing data.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Active Orders -->
+    <div class="bg-white shadow rounded-lg p-5 border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Active Demand (Orders)</h2>
+        {% if active_orders %}
+        <ul class="divide-y divide-gray-100">
+            {% for order in active_orders %}
+            <li class="py-3 flex justify-between items-center">
+                <div>
+                    <a href="{% url 'tracker:order_detail' order.id %}?expand_product_name={{ product_name|urlencode }}" class="text-indigo-600 hover:text-indigo-800 font-medium">{{ order.order_number }}</a>
+                    <p class="text-xs text-gray-500">{{ order.customer_name }} • {{ order.order_date }}</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                    {{ order.get_order_status_display }}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-gray-500">No active orders found for this product.</p>
+        {% endif %}
+    </div>
+
+    <!-- Pricing History Stats -->
+    <div class="bg-white shadow rounded-lg p-5 border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Pricing History Overview</h2>
+        {% if products %}
+        <div class="space-y-4">
+            {% for p in products %}
+            <div class="flex justify-between items-center bg-gray-50 p-3 rounded">
+                <div>
+                    <a href="{% url 'tracker:order_detail' p.order.id %}?expand_product_name={{ product_name|urlencode }}" class="text-sm font-medium text-indigo-600 hover:underline">{{ p.order.order_number }}</a>
+                    <p class="text-xs text-gray-500">{{ p.created_at|date:"M d, Y" }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-semibold text-red-600" title="Buying Price (Inc GST)">Buy: ₹{{ p.buying_price_inc_gst }}</p>
+                    <p class="text-sm font-semibold text-green-600" title="Selling Price (Inc GST)">Sell: ₹{{ p.selling_price_inc_gst }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No pricing history available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Available Sellers -->
+<div class="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+        <h2 class="text-lg font-semibold text-gray-900">Available Sellers Catalog</h2>
+    </div>
+    {% if sellers %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total (Inc GST)</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for seller in sellers %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
+                        <a href="{% url 'tracker:seller_profile' %}?name={{ seller.supplier_name|urlencode }}" target="_blank" class="hover:underline">{{ seller.supplier_name }}</a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ seller.location|default:"-" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ seller.contact_number|default:"-" }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{{ seller.base_price }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-semibold">₹{{ seller.total_inc_gst }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if seller.is_selected %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Selected</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Alternative</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-5 text-sm text-gray-500 text-center">No suppliers recorded for this product.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">📊 EDMS Reports</h1>
+        <p class="text-sm text-slate-500">Analytics and data extraction</p>
+    </div>
+</div>
+
+<div class="flex flex-col md:flex-row gap-6">
+    <!-- Sidebar / Report Selector -->
+    <div class="w-full md:w-64 flex-shrink-0 space-y-2">
+        <a href="?type=upload{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}"
+           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'upload' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            ⬆️ Upload Activity
+        </a>
+        <a href="?type=download{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}"
+           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'download' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            ⬇️ Download Activity
+        </a>
+        <a href="?type=expiry"
+           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'expiry' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            ⚠️ Expiring Documents
+        </a>
+        <a href="?type=vendor"
+           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'vendor' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            🏭 Documents by Vendor
+        </a>
+        <a href="?type=storage"
+           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'storage' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            💾 Storage Usage
+        </a>
+    </div>
+
+    <!-- Main Report Area -->
+    <div class="flex-1 glass rounded-2xl p-6">
+        
+        <!-- Date Filters (for upload/download reports) -->
+        {% if report_type == 'upload' or report_type == 'download' %}
+        <form method="GET" class="flex flex-wrap items-end gap-3 mb-6 bg-slate-50/50 p-4 rounded-xl">
+            <input type="hidden" name="type" value="{{ report_type }}">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">From Date</label>
+                <input type="date" name="date_from" value="{{ filters.date_from }}" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">To Date</label>
+                <input type="date" name="date_to" value="{{ filters.date_to }}" class="px-3 py-2 rounded-lg border border-slate-200 text-sm">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors">Apply</button>
+                <a href="?type={{ report_type }}" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">Clear</a>
+            </div>
+        </form>
+        {% endif %}
+
+        <!-- Report Data Tables -->
+        <div class="overflow-x-auto">
+            {% if report_type == 'upload' %}
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Upload Activity</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left">Date</th>
+                            <th class="px-4 py-2 text-left">Document</th>
+                            <th class="px-4 py-2 text-left">Uploader</th>
+                            <th class="px-4 py-2 text-left">Category</th>
+                            <th class="px-4 py-2 text-left">Size</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in report_data %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-4 py-2 text-slate-500">{{ row.created_at|date:"d M Y H:i" }}</td>
+                            <td class="px-4 py-2 font-medium text-slate-700">{{ row.title }}</td>
+                            <td class="px-4 py-2 text-slate-600">{{ row.uploaded_by.username}}</td>
+                            <td class="px-4 py-2 text-slate-600">{{ row.category.name }}</td>
+                            <td class="px-4 py-2 text-xs text-slate-400">{{ row.file_size|file_size }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">No data for selected period.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            {% elif report_type == 'download' %}
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Download Activity</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left">Date</th>
+                            <th class="px-4 py-2 text-left">Document</th>
+                            <th class="px-4 py-2 text-left">Downloaded By</th>
+                            <th class="px-4 py-2 text-left">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in report_data %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-4 py-2 text-slate-500">{{ row.created_at|date:"d M Y H:i" }}</td>
+                            <td class="px-4 py-2 font-medium text-slate-700">{{ row.document.title }} (v{{ row.version.version_number }})</td>
+                            <td class="px-4 py-2 text-slate-600">{{ row.downloaded_by.username}}</td>
+                            <td class="px-4 py-2 text-xs text-slate-400 font-mono">{{ row.ip_address }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No data for selected period.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            {% elif report_type == 'expiry' %}
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Expiring Documents (Next 90 Days)</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left">Expiry Date</th>
+                            <th class="px-4 py-2 text-left">Document</th>
+                            <th class="px-4 py-2 text-left">Category</th>
+                            <th class="px-4 py-2 text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in report_data %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-4 py-2 font-bold {{ row.expiry_date|expiry_color }}">{{ row.expiry_date|date:"d M Y" }}</td>
+                            <td class="px-4 py-2 font-medium text-slate-700">
+                                <a href="{% url 'edms:document_detail' doc_id=row.id %}" class="hover:text-violet-600">{{ row.title }}</a>
+                            </td>
+                            <td class="px-4 py-2 text-slate-600">{{ row.category.name }}</td>
+                            <td class="px-4 py-2">{{ row.approval_status|approval_badge }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No documents expiring soon.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            {% elif report_type == 'vendor' %}
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Documents by Vendor</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left">Vendor Name</th>
+                            <th class="px-4 py-2 text-left">GST Number</th>
+                            <th class="px-4 py-2 text-right">Document Count</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in report_data %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-4 py-2 font-medium text-slate-700">{{ row.vendor__name }}</td>
+                            <td class="px-4 py-2 text-slate-500">{{ row.vendor__gst_number|default:"—" }}</td>
+                            <td class="px-4 py-2 text-right font-bold text-violet-600">{{ row.doc_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">No vendor documents found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            {% elif report_type == 'storage' %}
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Storage Usage by Category</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left">Category</th>
+                            <th class="px-4 py-2 text-right">Document Count</th>
+                            <th class="px-4 py-2 text-right">Total Size</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in report_data %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="px-4 py-2 font-medium text-slate-700">{{ row.category__name|default:"Uncategorized" }}</td>
+                            <td class="px-4 py-2 text-right text-slate-600">{{ row.doc_count }}</td>
+                            <td class="px-4 py-2 text-right font-bold text-violet-600">{{ row.total_size|file_size }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">No storage data.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

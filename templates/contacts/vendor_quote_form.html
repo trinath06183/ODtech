@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block header %}{{ form_title }}{% endblock %}
+{% block content %}
+
+{% if messages %}
+{% for msg in messages %}
+<div class="mb-4 px-5 py-3 rounded-xl text-sm font-medium
+    {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+    {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+    {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+<form method="post" class="max-w-4xl mx-auto">
+{% csrf_token %}
+
+<!-- Form Card -->
+<div class="glass rounded-2xl overflow-hidden border border-white/5 mb-6">
+    <!-- Card Header -->
+    <div class="px-8 py-5 border-b border-white/10 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-600/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6m-6 2h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+        </div>
+        <h2 class="text-white font-bold text-lg">{{ form_title }}</h2>
+    </div>
+
+    <div class="px-8 py-6 space-y-6">
+
+        <!-- Row 1: Vendor & Product -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Vendor <span class="text-red-400">*</span></label>
+                <select name="vendor" required class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-colors">
+                    <option value="">— Select Vendor —</option>
+                    {% for vendor in vendors %}
+                    <option value="{{ vendor.id }}" {% if quote.vendor_id == vendor.id %}selected{% endif %}>{{ vendor.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Product <span class="text-red-400">*</span></label>
+                <select name="product" required class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-colors">
+                    <option value="">— Select Product —</option>
+                    {% for prod in products %}
+                    <option value="{{ prod.id }}" {% if quote.product_id == prod.id %}selected{% endif %}>{{ prod.name }} ({{ prod.sku }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Row 2: Price & Date -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Quoted Price (INR) <span class="text-red-400">*</span></label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold">₹</span>
+                    <input type="number" name="quoted_price" step="0.01" min="0" required
+                           value="{{ quote.quoted_price|default:'' }}"
+                           placeholder="0.00"
+                           class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-colors">
+                </div>
+            </div>
+            <div>
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Quote Date <span class="text-red-400">*</span></label>
+                <input type="date" name="quote_date" required
+                       value="{{ quote.quote_date|date:'Y-m-d'|default:'' }}"
+                       class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-colors">
+            </div>
+        </div>
+
+        <!-- Row 3: Validity & Lead Time -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Valid Until</label>
+                <input type="date" name="valid_until"
+                       value="{{ quote.valid_until|date:'Y-m-d'|default:'' }}"
+                       class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-colors">
+            </div>
+            <div>
+                <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Lead Time (Days)</label>
+                <input type="number" name="lead_time_days" min="0"
+                       value="{{ quote.lead_time_days|default:'' }}"
+                       placeholder="e.g. 5"
+                       class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-colors">
+            </div>
+        </div>
+
+        <!-- Row 4: Notes -->
+        <div>
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Notes</label>
+            <textarea name="notes" rows="3" placeholder="Any additional quotation conditions, freight inclusions, minimum order quantity details…"
+                      class="w-full bg-slate-900/60 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 placeholder-gray-600 resize-none transition-colors">{{ quote.notes|default:'' }}</textarea>
+        </div>
+
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="flex items-center justify-between">
+    <a href="{% url 'vendor_quotes' %}"
+       class="px-6 py-3 bg-slate-700/60 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+        Cancel
+    </a>
+    <button type="submit" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        {% if quote %}Update Quote{% else %}Log Quote{% endif %}
+    </button>
+</div>
+
+</form>
+{% endblock %}

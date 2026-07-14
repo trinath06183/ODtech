@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block header %}GST Report{% endblock %}
+{% block content %}
+
+<div class="glass p-4 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-orange-600/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-white font-bold text-lg">GST Summary Report</h2>
+            <p class="text-gray-400 text-xs">Approved Invoices &amp; Proformas</p>
+        </div>
+    </div>
+    <a href="{% url 'stock_summary' %}" class="px-4 py-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 text-sm rounded-xl transition-colors">Stock Summary →</a>
+</div>
+
+<!-- Filters -->
+<div class="glass p-4 rounded-2xl mb-6">
+    <form method="get" class="flex flex-wrap items-center gap-3">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Financial Year</label>
+            <select name="fy" class="px-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 appearance-none transition">
+                <option value="">All Years</option>
+                {% for fy in fy_options %}
+                <option value="{{ fy }}" {% if selected_fy == fy %}selected{% endif %}>FY {{ fy }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Month</label>
+            <select name="month" class="px-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-orange-500 appearance-none transition">
+                <option value="">All Months</option>
+                {% for i in "123456789101112" %}{% endfor %}
+                <option value="1"  {% if selected_month == '1'  %}selected{% endif %}>January</option>
+                <option value="2"  {% if selected_month == '2'  %}selected{% endif %}>February</option>
+                <option value="3"  {% if selected_month == '3'  %}selected{% endif %}>March</option>
+                <option value="4"  {% if selected_month == '4'  %}selected{% endif %}>April</option>
+                <option value="5"  {% if selected_month == '5'  %}selected{% endif %}>May</option>
+                <option value="6"  {% if selected_month == '6'  %}selected{% endif %}>June</option>
+                <option value="7"  {% if selected_month == '7'  %}selected{% endif %}>July</option>
+                <option value="8"  {% if selected_month == '8'  %}selected{% endif %}>August</option>
+                <option value="9"  {% if selected_month == '9'  %}selected{% endif %}>September</option>
+                <option value="10" {% if selected_month == '10' %}selected{% endif %}>October</option>
+                <option value="11" {% if selected_month == '11' %}selected{% endif %}>November</option>
+                <option value="12" {% if selected_month == '12' %}selected{% endif %}>December</option>
+            </select>
+        </div>
+        <div class="flex items-end gap-2 mt-auto">
+            <button type="submit" class="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl text-sm transition-colors">Filter</button>
+            {% if selected_fy or selected_month %}
+            <a href="{% url 'gst_report' %}" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">Reset</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- KPI summary row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="glass p-4 rounded-2xl">
+        <div class="text-gray-400 text-xs mb-1">Taxable Value</div>
+        <div class="text-white font-bold text-lg">&#8377;{{ total_taxable|floatformat:0 }}</div>
+    </div>
+    <div class="glass p-4 rounded-2xl">
+        <div class="text-blue-300 text-xs mb-1">CGST</div>
+        <div class="text-white font-bold text-lg">&#8377;{{ total_cgst|floatformat:0 }}</div>
+    </div>
+    <div class="glass p-4 rounded-2xl">
+        <div class="text-cyan-300 text-xs mb-1">SGST</div>
+        <div class="text-white font-bold text-lg">&#8377;{{ total_sgst|floatformat:0 }}</div>
+    </div>
+    <div class="glass p-4 rounded-2xl">
+        <div class="text-purple-300 text-xs mb-1">IGST</div>
+        <div class="text-white font-bold text-lg">&#8377;{{ total_igst|floatformat:0 }}</div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="glass rounded-2xl overflow-hidden overflow-x-auto">
+    <table class="w-full text-left whitespace-nowrap">
+        <thead class="bg-slate-800/80 border-b border-white/10">
+            <tr class="text-gray-400 text-xs uppercase tracking-wider">
+                <th class="px-6 py-4 font-medium">Date</th>
+                <th class="px-6 py-4 font-medium">Document</th>
+                <th class="px-6 py-4 font-medium">Party</th>
+                <th class="px-6 py-4 font-medium text-right">Taxable</th>
+                <th class="px-6 py-4 font-medium text-right">CGST</th>
+                <th class="px-6 py-4 font-medium text-right">SGST</th>
+                <th class="px-6 py-4 font-medium text-right">IGST</th>
+                <th class="px-6 py-4 font-medium text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+            {% for row in rows %}
+            <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-3 text-gray-400 text-sm">{{ row.doc.date|date:"d M Y" }}</td>
+                <td class="px-6 py-3">
+                    <a href="{% url 'document_preview' row.doc.id %}" class="font-mono text-blue-400 hover:text-blue-300 text-xs transition-colors">{{ row.doc.number }}</a>
+                </td>
+                <td class="px-6 py-3 text-white text-sm">{{ row.doc.contact.name }}</td>
+                <td class="px-6 py-3 text-right text-gray-300 text-sm">&#8377;{{ row.taxable|floatformat:2 }}</td>
+                <td class="px-6 py-3 text-right text-blue-300 text-sm">{% if row.cgst %}&#8377;{{ row.cgst|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td class="px-6 py-3 text-right text-cyan-300 text-sm">{% if row.sgst %}&#8377;{{ row.sgst|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td class="px-6 py-3 text-right text-purple-300 text-sm">{% if row.igst %}&#8377;{{ row.igst|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td class="px-6 py-3 text-right font-bold text-white">&#8377;{{ row.grand|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="px-6 py-16 text-center text-gray-600 text-sm">No approved invoices found for selected filters.</td></tr>
+            {% endfor %}
+        </tbody>
+        {% if rows %}
+        <tfoot class="border-t border-white/20 bg-slate-800/50">
+            <tr class="text-white font-bold text-sm">
+                <td colspan="3" class="px-6 py-3 text-gray-400">Totals</td>
+                <td class="px-6 py-3 text-right">&#8377;{{ total_taxable|floatformat:2 }}</td>
+                <td class="px-6 py-3 text-right text-blue-300">&#8377;{{ total_cgst|floatformat:2 }}</td>
+                <td class="px-6 py-3 text-right text-cyan-300">&#8377;{{ total_sgst|floatformat:2 }}</td>
+                <td class="px-6 py-3 text-right text-purple-300">&#8377;{{ total_igst|floatformat:2 }}</td>
+                <td class="px-6 py-3 text-right">&#8377;{{ total_grand|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+{% endblock %}

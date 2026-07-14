@@ -1,0 +1,1999 @@
+{% extends 'base.html' %}
+{% block header %}{% if doc and not is_conversion %}Edit {{ doc.get_type_display }} — {{ doc.number }}{% else %}New Document{% endif %}{% endblock %}
+{% block content %}
+
+<style>
+    /* ── Form table ─────────────────────────────────────────────── */
+    .items-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid rgba(71,85,105,0.5);
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 13px;
+    }
+    .items-table th {
+        background: #f8fafc;
+        color: #475569 !important;
+        padding: 12px 10px;
+        text-align: left;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .items-table td {
+        padding: 6px 4px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+    .items-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .items-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    /* ── Cell inputs inside table ─────────────────────────────── */
+    .cell-inp {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 5px 8px;
+        color: #334155;
+        font-size: 12px;
+        width: 100%;
+        box-sizing: border-box;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        font-family: inherit;
+    }
+    .cell-inp:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        background: #ffffff;
+    }
+    .cell-inp::placeholder { color: #94a3b8; }
+    .warranty-date-input::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+    }
+
+    /* ── Totals box ─────────────────────────────────────────────── */
+    .totals-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .totals-box .tot-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 13px;
+        color: #475569;
+    }
+    .totals-box .tot-row:last-child { border-bottom: none; }
+    .totals-box .tot-grand {
+        background: linear-gradient(135deg, #e31837, #b91c3a);
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+    }
+    .totals-box .tot-label { color: #1e293b !important; font-weight: 600; }
+    .totals-box .tot-val { font-family: monospace; font-weight: 600; color: #1e293b !important; }
+
+    /* ── Split-panel scrollable layout ─────────────────────────── */
+    .doc-grid {
+        display: grid;
+        grid-template-columns: 25fr 75fr;
+        gap: 1.25rem;
+        height: calc(100vh - 120px);
+        overflow: hidden;
+        align-items: start;
+    }
+    @media (max-width: 1279px) {
+        .doc-grid { grid-template-columns: 1fr; height: auto; overflow: visible; }
+        .doc-panel { height: auto !important; overflow: visible !important; }
+    }
+    .doc-panel {
+        height: calc(100vh - 120px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #000000 transparent;
+        border-radius: 16px;
+        padding-right: 2px;
+    }
+    .doc-panel::-webkit-scrollbar { width: 3px; }
+    .doc-panel::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .doc-panel::-webkit-scrollbar-thumb {
+        background: #000000;
+        border-radius: 3px;
+    }
+    .doc-panel::-webkit-scrollbar-thumb:hover {
+        background: #000000;
+    }
+
+    /* ── Items table scroll wrapper ──────────────────────────── */
+    .items-table-scroll {
+        overflow: auto;
+        max-height: calc(100vh - 360px);
+        min-height: 220px;
+        border-radius: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #000000 transparent;
+    }
+    .items-table-scroll::-webkit-scrollbar { width: 3px; height: 3px; }
+    .items-table-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .items-table-scroll::-webkit-scrollbar-thumb {
+        background: #000000;
+        border-radius: 3px;
+    }
+    .items-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #000000;
+    }
+    .items-table-scroll::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    /* ── Sticky table header inside scroll ─────────────────── */
+    .items-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #f8fafc;
+        backdrop-filter: none;
+    }
+
+    /* ── Tab nav ───────────────────────────────────────────────── */
+    .tab-nav {
+        display: flex;
+        gap: 2px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 4px;
+        flex-wrap: wrap;
+    }
+    .tab-btn {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 8px 4px 6px;
+        border-radius: 10px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .tab-btn .tab-icon {
+        font-size: 16px;
+        line-height: 1;
+        display: block;
+        margin-bottom: 1px;
+    }
+    .tab-btn:hover {
+        background: rgba(0,0,0,0.04);
+        color: #334155;
+    }
+    .tab-btn.active {
+        background: linear-gradient(135deg, #e31837, #b91c3a);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(227,24,55,0.35);
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeTab 0.2s ease; }
+    @keyframes fadeTab {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Autocomplete Portal ────────────────────────────────────── */
+    .global-portal {
+        position: fixed;
+        z-index: 9999;
+        background: #1e293b;
+        border: 1px solid #475569;
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .global-portal-item {
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(71,85,105,0.4);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+        transition: background 0.12s;
+    }
+    .global-portal-item:hover {
+        background: rgba(227,24,55,0.15);
+    }
+
+    /* ── Modal Isolation: override base.html theme overrides inside modals ─ */
+    /* Ensure the modal backdrop and containers keep their dark look */
+    [x-show="showProductModal"] .bg-slate-900,
+    [x-show="showCustomerModal"] .bg-slate-900,
+    .modal-dark {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+    /* Fix inputs inside dark modals */
+    [x-show="showProductModal"] input,
+    [x-show="showProductModal"] textarea,
+    [x-show="showCustomerModal"] input,
+    [x-show="showCustomerModal"] textarea {
+        background-color: #1e293b !important;
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+    }
+    [x-show="showProductModal"] input:focus,
+    [x-show="showProductModal"] textarea:focus,
+    [x-show="showCustomerModal"] input:focus,
+    [x-show="showCustomerModal"] textarea:focus {
+        border-color: #e31837 !important;
+        box-shadow: 0 0 0 2px rgba(227,24,55,0.18) !important;
+        background-color: #1e293b !important;
+    }
+    [x-show="showProductModal"] input::placeholder,
+    [x-show="showProductModal"] textarea::placeholder,
+    [x-show="showCustomerModal"] input::placeholder,
+    [x-show="showCustomerModal"] textarea::placeholder {
+        color: #64748b !important;
+    }
+    /* Fix labels inside dark modals — they must be light-colored */
+    [x-show="showProductModal"] label,
+    [x-show="showCustomerModal"] label {
+        color: #94a3b8 !important;
+        font-size: 0.7rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        display: block !important;
+        margin-bottom: 0.3rem !important;
+    }
+    /* Fix headings inside dark modals */
+    [x-show="showProductModal"] h3,
+    [x-show="showCustomerModal"] h3 {
+        color: #f1f5f9 !important;
+    }
+    /* Fix close button */
+    [x-show="showProductModal"] button.absolute,
+    [x-show="showCustomerModal"] button.absolute {
+        color: #64748b !important;
+        background: transparent !important;
+    }
+    [x-show="showProductModal"] button.absolute:hover,
+    [x-show="showCustomerModal"] button.absolute:hover {
+        color: #f1f5f9 !important;
+    }
+    /* Scrollable modal content */
+    .modal-scrollable-body {
+        overflow-y: auto;
+        max-height: calc(85vh - 100px);
+        padding-right: 4px;
+    }
+    .modal-scrollable-body::-webkit-scrollbar { width: 4px; }
+    .modal-scrollable-body::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.3); border-radius: 4px; }
+</style>
+
+{# ═════════════════════════════════════════════════════════════════════════ #}
+<div x-data="documentForm()" class="w-full space-y-5">
+
+    {# ── Flash Messages ──────────────────────────────────────────────────── #}
+    {% if messages %}
+    <div class="space-y-2">
+        {% for msg in messages %}
+        <div class="px-5 py-3 rounded-xl text-sm font-medium
+            {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+            {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Two-column layout ────────────────────────────────────────────────── #}
+    <div class="doc-grid">
+
+
+        {# ══════════════════ LEFT: TABBED PANEL ════════════════════ #}
+        <div class="doc-panel flex flex-col gap-3">
+            <form method="POST" action="" id="document-main-form"
+                @submit.prevent="submitForm(formAction)">
+                {% csrf_token %}
+
+                {# Hidden fields #}
+                <input type="hidden" name="items_json" :value="JSON.stringify(items)">
+                <input type="hidden" name="action" :value="formAction">
+                <input type="hidden" name="terms_and_conditions" :value="terms">
+                <input type="hidden" name="show_gst" :value="sections.tax_details ? 'true' : 'false'">
+                <input type="hidden" name="split_gst" :value="splitGST ? 'true' : 'false'">
+                <input type="hidden" name="force_igst" :value="forceIGST ? 'true' : 'false'">
+                <input type="hidden" name="discount_type" :value="discountType">
+                <input type="hidden" name="discount_value" :value="discountValue">
+                <input type="hidden" name="payment_milestones" :value="JSON.stringify(milestones)">
+                <input type="hidden" name="numbering_mode" :value="numberingMode">
+                <input type="hidden" name="table_columns" :value="JSON.stringify(columns)">
+                <input type="hidden" name="enable_warranty" :value="enableWarranty ? 'true' : 'false'">
+                <input type="hidden" name="shipping_address" :value="enableShippingAddress ? shippingAddress : ''">
+                <input type="hidden" name="repeat_header" :value="repeatHeader ? 'true' : 'false'">
+            </form>
+
+            {# ── Tab Navigation ─────────────────────────────────── #}
+            <div x-data="{ activeTab: 'settings' }" class="space-y-3">
+                <nav class="tab-nav">
+                    <button type="button" class="tab-btn" :class="activeTab==='settings'?'active':''"
+                        @click="activeTab='settings'">
+                        <span class="tab-icon">⚙️</span>Settings
+                    </button>
+                    <button type="button" class="tab-btn" :class="activeTab==='sections'?'active':''"
+                        @click="activeTab='sections'">
+                        <span class="tab-icon">🛠️</span>Sections
+                    </button>
+                    <button type="button" class="tab-btn" :class="activeTab==='columns'?'active':''"
+                        @click="activeTab='columns'">
+                        <span class="tab-icon">📊</span>Columns
+                    </button>
+                    <button type="button" class="tab-btn" :class="activeTab==='discount'?'active':''"
+                        @click="activeTab='discount'">
+                        <span class="tab-icon">🏷️</span>Discount
+                    </button>
+                    <button type="button" class="tab-btn" :class="activeTab==='milestones'?'active':''"
+                        @click="activeTab='milestones'" x-show="docType==='PRO'">
+                        <span class="tab-icon">💰</span>Stages
+                    </button>
+                    <button type="button" class="tab-btn" :class="activeTab==='terms'?'active':''"
+                        @click="activeTab='terms'">
+                        <span class="tab-icon">📜</span>Terms
+                    </button>
+                </nav>
+
+                {# ──────── TAB: SETTINGS ──────── #}
+                <div class="tab-pane" :class="activeTab==='settings'?'active':''">
+                    <div class="glass p-5 rounded-2xl space-y-4 relative z-20">
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-sm font-medium text-gray-300">Customer *</label>
+                                <button type="button" @click="showCustomerModal = true"
+                                    class="text-xs text-blue-400 hover:text-blue-300 font-semibold">+ Add New</button>
+                            </div>
+                            <div class="relative" @click.away="showCustomerDropdown = false">
+                                <input type="hidden" name="contact" form="document-main-form" x-model="selectedCustomer">
+                                <input type="text" x-model="customerSearch" @input="filterCustomers()" @focus="showCustomerDropdown = true; filterCustomers()"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                    placeholder="Type to search customer..." required>
+                                
+                                <div x-show="showCustomerDropdown && filteredCustomers.length > 0" 
+                                    class="absolute w-full mt-1 rounded-xl shadow-2xl max-h-56 overflow-y-auto"
+                                    style="display:none; background-color: #ffffff; border: 1px solid #cbd5e1; z-index: 9999;">
+                                    <template x-for="c in filteredCustomers" :key="c.id">
+                                        <div @click="selectCustomer(c)"
+                                            class="px-4 py-2.5 cursor-pointer transition-colors"
+                                            style="border-bottom: 1px solid #e2e8f0; color: #1e293b;"
+                                            onmouseover="this.style.backgroundColor='#f1f5f9'"
+                                            onmouseout="this.style.backgroundColor='transparent'">
+                                            <div class="font-semibold text-sm" x-text="c.name"></div>
+                                        </div>
+                                    </template>
+                                    <div x-show="filteredCustomers.length === 0" class="px-4 py-2.5 text-sm italic" style="color: #64748b; background-color: #ffffff;">
+                                        No matching customers found.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Document Type</label>
+                            <select name="type" form="document-main-form" x-model="docType"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                                {% for type_val, type_label in document_types %}
+                                <option value="{{ type_val }}">{{ type_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Numbering Mode</label>
+                            <select x-model="numberingMode"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                                <option value="auto">Automatic Increment</option>
+                                <option value="manual">Manual Entry</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Document Number</label>
+                            <input type="text" name="number" form="document-main-form" x-model="docNumber"
+                                :disabled="numberingMode === 'auto'"
+                                :class="numberingMode === 'auto' ? 'bg-slate-800/50 text-gray-500 cursor-not-allowed' : 'bg-slate-800 text-white'"
+                                class="w-full border border-slate-700 rounded-xl p-2.5 text-sm focus:ring-red-500 focus:border-red-500"
+                                placeholder="Auto-incremented on save">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Invoice / Document Date</label>
+                            <input type="date" name="invoice_date" form="document-main-form" x-model="invoiceDate"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                        </div>
+
+                        <div x-show="docType === 'INV' || docType === 'PRO'">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">PO Reference Number</label>
+                            <input type="text" name="po_reference_number" form="document-main-form" x-model="poRefNumber"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                placeholder="Customer's PO Number">
+                        </div>
+
+                        <div x-show="docType === 'INV' || docType === 'PRO'">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">PO Reference Date</label>
+                            <input type="date" name="po_date" form="document-main-form" x-model="poRefDate"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Place of Supply</label>
+                            <input type="text" name="place_of_supply" form="document-main-form" x-model="placeOfSupply"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                placeholder="e.g. 21-Odisha">
+                        </div>
+                        <div class="pt-3 border-t border-slate-700/50">
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <input type="checkbox" x-model="enableShippingAddress"
+                                    class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition font-medium">Add Shipping Address (Ship To)</span>
+                            </label>
+                        </div>
+                        <div x-show="enableShippingAddress" x-transition class="pt-2">
+                            <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Ship To Address</label>
+                            <textarea x-model="shippingAddress" rows="3"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                placeholder="Type or paste shipping address here..."></textarea>
+                        </div>
+                        <div class="pt-3 border-t border-slate-700/50">
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <input type="checkbox" x-model="enableWarranty"
+                                    class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition font-medium">Enable Warranty Info for this document</span>
+                            </label>
+                        </div>
+                        <div class="pt-3 border-t border-slate-700/50">
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <input type="checkbox" x-model="repeatHeader"
+                                    class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition font-medium">Repeat Header on All Pages</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                {# ──────── TAB: SECTIONS ──────── #}
+                <div class="tab-pane" :class="activeTab==='sections'?'active':''">
+                    <div class="glass p-5 rounded-2xl space-y-3">
+                        <p class="text-xs text-gray-500 mb-2">Choose which blocks appear in the generated document.</p>
+                        <template x-for="sec in availableSections[docType]" :key="sec.id">
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <input type="checkbox" x-model="sections[sec.id]"
+                                    class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition" x-text="sec.label"></span>
+                            </label>
+                        </template>
+                        <div x-show="sections.tax_details" class="pt-3 border-t border-white/10 space-y-1">
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <input type="checkbox" x-model="forceIGST"
+                                    class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition">Force IGST (Override Auto-detect)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                {# ──────── TAB: COLUMNS ──────── #}
+                <div class="tab-pane" :class="activeTab==='columns'?'active':''">
+                    <div class="glass p-5 rounded-2xl space-y-3">
+                        <p class="text-xs text-gray-500 mb-2">Choose which columns appear in the items table.</p>
+                        <template x-for="(val, colKey) in columns" :key="colKey">
+                            <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                <input type="checkbox" x-model="columns[colKey]"
+                                    class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition capitalize"
+                                    x-text="colKey.replace(/_/g, ' ')"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                {# ──────── TAB: DISCOUNT ──────── #}
+                <div class="tab-pane" :class="activeTab==='discount'?'active':''">
+                    <div class="glass p-5 rounded-2xl space-y-4">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" x-model="enableDiscount" @change="toggleDiscount()"
+                                class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                            <span class="text-sm text-gray-600 group-hover:text-gray-900 transition">Enable Discount</span>
+                        </label>
+
+                        <template x-if="enableDiscount">
+                            <div class="space-y-3 pt-1">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Discount Type</label>
+                                    <select x-model="discountType" @change="calculateTotals()"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                                        <option value="fixed">Global Fixed (₹)</option>
+                                        <option value="percentage">Global Percentage (%)</option>
+                                        <option value="individual">Individual Item Discount (₹)</option>
+                                        <option value="individual_pct">Individual Item Discount (%)</option>
+                                    </select>
+                                </div>
+                                <div x-show="discountType === 'fixed' || discountType === 'percentage'">
+                                    <label class="block text-sm font-medium text-gray-300 mb-1"
+                                        x-text="discountType === 'fixed' ? 'Discount Amount (₹)' : 'Discount Rate (%)'"></label>
+                                    <input type="number" step="0.01" min="0" x-model="discountValue" @input="calculateTotals()"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                        placeholder="0.00">
+                                </div>
+                            </div>
+                        </template>
+
+                        <div x-show="!enableDiscount" class="text-xs text-gray-600 italic text-center pt-2">
+                            Discount is disabled. Toggle above to configure.
+                        </div>
+                    </div>
+                </div>
+
+                {# ──────── TAB: MILESTONES ──────── #}
+                <div class="tab-pane" :class="activeTab==='milestones'?'active':''">
+                    <div class="glass p-5 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs text-gray-400">Payment stages for Proforma Invoice.</p>
+                            <button type="button" @click="addMilestone()"
+                                class="text-xs text-blue-400 hover:text-blue-300 font-semibold px-3 py-1 bg-blue-500/10 rounded-lg transition">+ Add Stage</button>
+                        </div>
+                        <template x-for="(m, idx) in milestones" :key="idx">
+                            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 relative">
+                                <button type="button" @click="removeMilestone(idx)"
+                                    class="absolute top-2 right-2 text-gray-500 hover:text-red-400 text-xs">✕</button>
+                                <label class="block text-[10px] text-gray-400 mb-0.5">Stage Label</label>
+                                <input type="text" x-model="m.label" placeholder="e.g. Advance with PO"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs mb-2">
+                                <div class="flex gap-2">
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] text-gray-400 mb-0.5">Percentage (%)</label>
+                                        <input type="number" x-model.number="m.percentage" min="0" max="100"
+                                            @input="updateMilestoneAmounts()"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] text-gray-400 mb-0.5">Amount (₹)</label>
+                                        <div class="text-white text-xs font-semibold pt-2">₹ <span x-text="fmtNum(m.amount)"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="milestones.length === 0" class="text-xs text-gray-500 text-center py-4">No stages added.</div>
+                        <div x-show="milestones.length > 0" class="flex justify-between text-xs pt-1 border-t border-white/5">
+                            <span class="text-gray-400">Total:</span>
+                            <span :class="milestones.reduce((a,m)=>a+(parseFloat(m.percentage)||0),0)===100?'text-green-400 font-bold':'text-yellow-400 font-semibold'"
+                                x-text="milestones.reduce((a,m)=>a+(parseFloat(m.percentage)||0),0)+'%'"></span>
+                        </div>
+                    </div>
+                </div>
+
+                {# ──────── TAB: TERMS ──────── #}
+                <div class="tab-pane" :class="activeTab==='terms'?'active':''">
+                    <div class="glass p-5 rounded-2xl space-y-3">
+                        <p class="text-xs text-gray-500 mb-1">Select and fill in the relevant terms for this document.</p>
+                        <template x-for="(term, idx) in termsList" :key="idx">
+                            <div class="space-y-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="term.selected" @change="updateTermsString()"
+                                        class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                    <span class="text-sm font-medium text-gray-300" x-text="term.label"></span>
+                                </label>
+                                <div x-show="term.selected" class="pl-6">
+                                    <template x-if="term.label !== 'Other:'">
+                                        <input type="text" x-model="term.value" @input="updateTermsString()"
+                                            class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="Enter value…">
+                                    </template>
+                                    <template x-if="term.label === 'Other:'">
+                                        <textarea x-model="term.value" @input="updateTermsString()" rows="3"
+                                            class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="Additional notes…"></textarea>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div>{# end x-data tabs #}
+
+            
+
+            {# ── Submit Buttons Moved to Top Right ── #}
+
+        </div>
+        {# ═════════════════ END LEFT ════════════════════════════ #}
+
+        {# ══════════════════ RIGHT: ITEMS ═══════════════════════ #}
+        <div class="doc-panel space-y-4 pb-4 relative">
+            
+            {# ── Top Right Action Buttons ── #}
+            <div class="flex justify-end items-center gap-3 sticky top-0 z-50 w-full mb-1 py-2" style="background: rgba(238, 242, 246, 0.85); backdrop-filter: blur(8px); padding-right: 4px;">
+                <button type="button" onclick="window.history.back()"
+                    class="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-bold rounded-xl transition-all text-sm border border-slate-700 shadow-sm">
+                    Cancel
+                </button>
+                {% if doc %}
+                <button type="button" @click="submitForm('update')"
+                    class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-sm">
+                    💾 Save Changes
+                </button>
+                {% endif %}
+                <button type="button" @click="submitForm('save_as_new')"
+                    class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-900/30 hover:shadow-red-800/40 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
+                    🚀 {% if doc %}Duplicate &amp; New{% else %}Generate Document{% endif %}
+                </button>
+            </div>
+
+            {# Search / Add toolbar #}
+            <div class="glass p-4 rounded-2xl flex flex-wrap gap-3 items-center relative z-10">
+                <div class="flex-1 min-w-[220px] relative">
+                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">🔍</span>
+                    <input type="text" x-model="globalSearch" @input.debounce.300ms="searchGlobalProduct()"
+                        class="w-full bg-slate-900/60 border border-slate-700 rounded-xl py-2.5 pl-9 pr-4 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                        placeholder="Search product by name or SKU…">
+                    <div x-show="showGlobalResults && globalResults.length > 0" @click.away="showGlobalResults = false"
+                        class="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl max-h-56 overflow-y-auto"
+                        style="display:none;">
+                        <template x-for="r in globalResults" :key="r.id">
+                            <div @click="addGlobalProduct(r)"
+                                class="px-4 py-2.5 hover:bg-red-600/20 cursor-pointer border-b border-slate-700 last:border-0 flex justify-between items-center transition-colors">
+                                <div>
+                                    <div class="font-semibold text-white text-sm" x-text="r.name"></div>
+                                    <div class="text-xs text-gray-400">SKU: <span x-text="r.sku"></span></div>
+                                </div>
+                                <span class="text-xs text-green-400 font-mono" x-text="'₹' + parseFloat(r.price).toLocaleString('en-IN')"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="addCustomRow()"
+                        class="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                        style="color: #ffffff !important;">
+                        ➕ Custom Item
+                    </button>
+                    <button type="button" @click="openBrowseModal()"
+                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-800 text-gray-300 hover:text-white border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        📂 Browse
+                    </button>
+                    <button type="button" @click="showProductModal = true"
+                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-800 text-gray-300 hover:text-white border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        📦 New Product
+                    </button>
+                </div>
+            </div>
+
+            {# Items Table #}
+            <div class="glass p-5 rounded-2xl space-y-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <span>📋</span> Line Items
+                    <span class="ml-auto text-xs text-gray-400 font-normal" x-text="items.length + ' item(s)'"></span>
+                </h3>
+
+                <div class="items-table-scroll">
+                    <table class="items-table" style="min-width: 800px;">
+                        <thead>
+                            <tr>
+                                <th style="width:34px;">#</th>
+                                <th x-show="columns.item_name" style="min-width:160px;">Item Name</th>
+                                <th x-show="columns.part_number" style="min-width:100px;">Part No.</th>
+                                <th x-show="columns.hsn_code" style="min-width:80px;">HSN/SAC</th>
+                                <th x-show="columns.qty" style="width:70px;">Qty</th>
+                                <th x-show="columns.unit" style="width:60px;">Unit</th>
+                                <th x-show="columns.rate" style="min-width:90px;">Rate (₹)</th>
+                                <th x-show="enableDiscount && (discountType==='individual'||discountType==='individual_pct')" style="width:80px;">
+                                    Disc <span x-text="discountType==='individual_pct'?'(%)':'(₹)'"></span>
+                                </th>
+                                <th x-show="sections.tax_details && columns.gst_percent" style="width:60px;">GST%</th>
+                                <th x-show="sections.tax_details && columns.gst_amt" style="width:80px;">GST Amt</th>
+                                <th x-show="columns.total" style="width:90px;">Total (₹)</th>
+                                <th x-show="enableWarranty" style="width:50px;">Wty.</th>
+                                <th style="width:34px;"></th>
+                            </tr>
+                        </thead>
+                        <!-- Loop items using tbody as the single root element for Alpine's template x-for -->
+                        <template x-for="(item, index) in items" :key="item._uid || index">
+                            <tbody style="border-bottom: 1px solid rgba(71,85,105,0.3);">
+                                <tr>
+                                    <td class="text-center font-bold text-gray-500 text-xs" style="vertical-align: middle; padding: 12px 6px;">
+                                        <span x-text="index + 1"></span>
+                                    </td>
+                                    <td x-show="columns.item_name">
+                                        <input type="text" x-model="item.name"
+                                            @input="onItemNameInput($el, item, item._uid, index)"
+                                            @focus="onItemNameInput($el, item, item._uid, index)"
+                                            @blur="onItemNameBlur(item, item._uid, index)"
+                                            @keydown.escape="closeDropdown()"
+                                            @keydown.enter.prevent="closeDropdown()"
+                                            class="cell-inp" placeholder="Item name…" style="font-weight:600;" autocomplete="off">
+                                        <textarea x-model="item.description" x-show="columns.description"
+                                            @input="calculateTotals()" rows="2" class="cell-inp mt-1"
+                                            style="font-size:11px;resize:vertical;min-height:36px;" placeholder="Description…"></textarea>
+
+                                    </td>
+                                    <td x-show="columns.part_number">
+                                        <input type="text" x-model="item.part_number" class="cell-inp" placeholder="PN…">
+                                    </td>
+                                    <td x-show="columns.hsn_code">
+                                        <input type="text" x-model="item.hsn_code" class="cell-inp" style="text-align:center;" placeholder="HSN">
+                                    </td>
+                                    <td x-show="columns.qty">
+                                        <input type="number" step="0.01" x-model.number="item.qty"
+                                            @input="calculateTotals()" class="cell-inp" style="text-align:center;">
+                                    </td>
+                                    <td x-show="columns.unit">
+                                        <input type="text" x-model="item.unit" class="cell-inp" style="text-align:center;" placeholder="EA">
+                                    </td>
+                                    <td x-show="columns.rate">
+                                        <input type="number" step="0.01" x-model.number="item.rate"
+                                            @input="calculateTotals()" class="cell-inp" style="text-align:right;font-family:monospace;">
+                                    </td>
+                                    <td x-show="enableDiscount && (discountType==='individual'||discountType==='individual_pct')">
+                                        <input type="number" step="0.01" x-model.number="item.discount"
+                                            x-show="discountType==='individual'" @input="calculateTotals()"
+                                            class="cell-inp" style="text-align:right;" placeholder="0.00">
+                                        <input type="number" step="0.01" x-model.number="item.discount_pct"
+                                            x-show="discountType==='individual_pct'" @input="calculateTotals()"
+                                            class="cell-inp" style="text-align:right;" placeholder="0.00">
+                                    </td>
+                                    <td x-show="sections.tax_details && columns.gst_percent">
+                                        <input type="number" step="0.5" x-model.number="item.tax"
+                                            @input="calculateTotals()" class="cell-inp" style="text-align:right;">
+                                    </td>
+                                    <td x-show="sections.tax_details && columns.gst_amt"
+                                        class="text-right font-mono text-sm text-gray-300" x-text="fmtNum(item.taxAmt)"></td>
+                                    <td x-show="columns.total"
+                                        class="text-right font-mono font-bold text-sm text-white" x-text="fmtNum(item.total)"></td>
+                                    <td x-show="enableWarranty" class="text-center">
+                                        <input type="checkbox" x-model="item.has_warranty" 
+                                            @change="if (item.has_warranty && !item.warranty_start_date) item.warranty_start_date = invoiceDate;"
+                                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                                    </td>
+                                    <td class="text-center" style="white-space:nowrap;">
+                                        <button type="button" @click="duplicateItem(index)"
+                                            class="text-gray-500 hover:text-blue-400 transition-colors text-base leading-none px-1"
+                                            title="Duplicate item (without S.No.)">📋</button>
+                                        <button type="button" @click="removeItem(index)"
+                                            class="text-gray-600 hover:text-red-400 transition-colors text-lg leading-none px-1"
+                                            title="Remove">×</button>
+                                    </td>
+                                  </tr>
+                                  <tr x-show="enableWarranty && item.has_warranty" style="background: rgba(15, 23, 42, 0.2); border-bottom: 1px solid rgba(71,85,105,0.3);">
+                                    <td colspan="13" style="padding: 8px 12px 12px 50px;">
+                                        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 12px 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: left;">
+                                            <div style="font-size: 10px; font-weight: 700; color: #e31837; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                                                <span>🛡️</span> Warranty Details
+                                            </div>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+                                                <div style="flex: 1; min-width: 120px;">
+                                                    <label style="display: block; font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Model</label>
+                                                    <input type="text" x-model="item.model" placeholder="Model"
+                                                        class="cell-inp" style="background: #0f172a !important; border-color: #475569 !important; color: #ffffff !important;">
+                                                </div>
+                                                <div style="flex: 1; min-width: 150px;">
+                                                    <label style="display: block; font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Serial Number(s)</label>
+                                                    <textarea x-model="item.serial_number" placeholder="Serial Number" rows="1"
+                                                        class="cell-inp" style="background: #0f172a !important; border-color: #475569 !important; color: #ffffff !important; resize: vertical; min-height: 28px; padding-top: 4px; padding-bottom: 4px;"></textarea>
+                                                </div>
+                                                <div style="flex: 1; min-width: 120px;">
+                                                    <label style="display: block; font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Warranty Period</label>
+                                                    <input type="text" x-model="item.warranty_period" placeholder="e.g. 12 Months"
+                                                        class="cell-inp" style="background: #0f172a !important; border-color: #475569 !important; color: #ffffff !important;">
+                                                </div>
+                                                <div style="flex: 1; min-width: 140px;">
+                                                    <label style="display: block; font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Start Date</label>
+                                                    <input type="date" x-model="item.warranty_start_date"
+                                                        class="cell-inp warranty-date-input" style="background: #0f172a !important; border-color: #475569 !important; color: #ffffff !important;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </template>
+                        <tbody x-show="items.length === 0">
+                            <tr>
+                                <td colspan="12" class="text-center py-10 text-gray-600 italic text-sm">
+                                    No items yet — search above or click <strong class="text-gray-500">➕ Custom Item</strong>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {# Totals #}
+                <div class="flex justify-end mt-2">
+                    <div class="w-full max-w-xs space-y-1">
+                        <div class="totals-box">
+                            <div class="tot-row" x-show="enableDiscount">
+                                <span class="tot-label">Gross Sub Total</span>
+                                <span class="tot-val">₹ <span x-text="fmtNum(grossSubtotal)"></span></span>
+                            </div>
+                            <div class="tot-row" x-show="enableDiscount">
+                                <span class="tot-label">
+                                    Less: Discount
+                                    <span x-show="discountType==='percentage'" x-text="'('+discountValue+'%)'"></span>
+                                </span>
+                                <span class="tot-val text-red-400">- ₹ <span x-text="fmtNum(totalDiscount)"></span></span>
+                            </div>
+                            <div class="tot-row">
+                                <span class="tot-label" x-text="enableDiscount ? 'Taxable Sub Total' : 'Sub Total'"></span>
+                                <span class="tot-val">₹ <span x-text="fmtNum(subtotal)"></span></span>
+                            </div>
+                            <template x-if="sections.tax_details && splitGST">
+                                <div class="tot-row"><span class="tot-label">Add: CGST</span><span class="tot-val">₹ <span x-text="fmtNum(taxTotal/2)"></span></span></div>
+                            </template>
+                            <template x-if="sections.tax_details && splitGST">
+                                <div class="tot-row"><span class="tot-label">Add: SGST</span><span class="tot-val">₹ <span x-text="fmtNum(taxTotal/2)"></span></span></div>
+                            </template>
+                            <template x-if="sections.tax_details && !splitGST">
+                                <div class="tot-row"><span class="tot-label">Add: GST</span><span class="tot-val">₹ <span x-text="fmtNum(taxTotal)"></span></span></div>
+                            </template>
+                            <div class="tot-row tot-grand">
+                                <span>TOTAL</span>
+                                <span class="font-mono">₹ <span x-text="fmtNum(sections.tax_details ? grandTotal : subtotal)"></span></span>
+                            </div>
+                        </div>
+                        {# Milestones in totals #}
+                        <template x-if="docType === 'PRO' && milestones.length > 0">
+                            <div class="totals-box mt-2">
+                                <template x-for="(m, idx) in milestones" :key="idx">
+                                    <div class="tot-row">
+                                        <span class="tot-label text-xs" x-text="m.label + ' @ ' + m.percentage + '%'"></span>
+                                        <span class="tot-val text-xs">₹ <span x-text="fmtNum(m.amount)"></span></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {# Optional Initial Payment / Advance #}
+                <div class="mt-4 p-4 rounded-xl border border-slate-700 bg-slate-800/40 relative overflow-hidden" x-show="docType !== 'QTN'">
+                    <!-- Subtle glow effect for visual hierarchy -->
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                            <span>💸</span> Record Payment / Advance
+                        </h4>
+                        <span class="text-[10px] uppercase tracking-wider font-bold text-gray-500 bg-slate-800 px-2 py-1 rounded">Optional</span>
+                    </div>
+
+                    {% if doc and not is_conversion and doc.payments_list %}
+                    <div class="mb-5 bg-slate-900/50 rounded-lg border border-slate-700/50 p-3 relative z-10">
+                        <div class="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Previously Recorded Payments</div>
+                        <div class="space-y-2">
+                            {% for payment in doc.payments_list %}
+                            <div class="flex items-center justify-between text-sm">
+                                <div class="flex items-center gap-2 text-gray-300">
+                                    <span class="text-emerald-400 font-bold">&#8377; {{ payment.amount|floatformat:2 }}</span>
+                                    <span class="text-xs text-gray-500">•</span>
+                                    <span>{{ payment.payment_mode }}</span>
+                                    {% if payment.reference_number %}
+                                    <span class="text-xs text-gray-500">({{ payment.reference_number }})</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-xs text-gray-500">{{ payment.date|date:"d M Y" }}</div>
+                            </div>
+                            {% endfor %}
+                            <div class="pt-2 mt-1 border-t border-slate-700/50 flex justify-between items-center text-sm font-bold">
+                                <span class="text-gray-400">Total Paid:</span>
+                                <span class="text-emerald-400">&#8377; {{ doc.amount_paid|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Amount Paid (₹)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none font-mono">₹</span>
+                                <input type="number" step="0.01" name="payment_amount" form="document-main-form" placeholder="0.00" 
+                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-8 pr-3 py-2 text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Payment Mode</label>
+                            <select name="payment_mode" form="document-main-form" 
+                                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 transition-colors cursor-pointer appearance-none">
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="UPI">UPI</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Reference No. (Txn ID / Cheque No.)</label>
+                            <input type="text" name="payment_reference" form="document-main-form" placeholder="e.g. UTR123456789" 
+                                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Internal Notes</label>
+                            <input type="text" name="payment_notes" form="document-main-form" placeholder="Optional notes for this payment" 
+                                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {# ═════════════════ END RIGHT ═══════════════════════════ #}
+
+    </div>{# end grid #}
+
+    {# ══════════════════════ MODALS ══════════════════════════════ #}
+
+    {# Customer Modal #}
+    <div x-show="showCustomerModal" style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+        <div @click.away="showCustomerModal = false"
+            style="background:#0f172a; border:1px solid #334155; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; width:100%; max-width:440px; padding:1.5rem; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column;">
+
+            <button type="button" @click="showCustomerModal = false" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#64748b; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px;"
+                onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'">&times;</button>
+
+            <div style="font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:1.25rem; padding-right:2rem;">Add New Customer</div>
+
+            <div style="display:flex; flex-direction:column; gap:0.875rem; flex:1; overflow-y:auto;">
+                <div>
+                    <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Name *</label>
+                    <input type="text" x-model="newCustomer.name" placeholder="Company or person name"
+                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                        onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
+                        onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Email</label>
+                        <input type="email" x-model="newCustomer.email" placeholder="email@company.com"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
+                            onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Phone</label>
+                        <input type="text" x-model="newCustomer.phone" placeholder="+91 98765 43210"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
+                            onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">GSTIN</label>
+                    <input type="text" x-model="newCustomer.gstin" placeholder="22AAAAA0000A1Z5"
+                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                        onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
+                        onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Address</label>
+                    <textarea x-model="newCustomer.address" rows="2" placeholder="Full address..."
+                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none; resize:none; height:4rem;"
+                        onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
+                        onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'"></textarea>
+                </div>
+                <hr style="border:none; border-top:1px solid #1e293b; margin:0.25rem 0;">
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem; padding-top:0.25rem; flex-shrink:0;">
+                    <button type="button" @click="showCustomerModal = false"
+                        style="padding:0.55rem 1.25rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; border-radius:0.625rem; font-size:0.875rem; cursor:pointer; font-family:inherit;"
+                        onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">
+                        Cancel
+                    </button>
+                    <button type="button" @click="createCustomer()"
+                        style="padding:0.55rem 1.4rem; background:#e31837; border:none; color:#fff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit;"
+                        onmouseover="this.style.background='#c01230'" onmouseout="this.style.background='#e31837'">
+                        Save Customer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Product Modal #}
+    <div x-show="showProductModal"
+        style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+        <div @click.away="showProductModal = false"
+            style="background:#0f172a; border:1px solid #334155; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; width:100%; max-width:460px; padding:1.5rem; max-height:92vh; overflow-y:auto; display:flex; flex-direction:column;">
+
+            <button type="button" @click="showProductModal = false"
+                style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#64748b; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px;"
+                onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'">&times;</button>
+
+            <div style="font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:1.1rem; padding-right:2rem; flex-shrink:0;">
+                Add New Product
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:0.8rem; overflow-y:auto;">
+
+                <!-- Product Name -->
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Product Name *</label>
+                    <input type="text" x-model="newProduct.name" placeholder="e.g. Welding Machine 400A"
+                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                </div>
+
+                <!-- SKU + Unit -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">SKU *</label>
+                        <input type="text" x-model="newProduct.sku" placeholder="e.g. WM-400A"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Unit</label>
+                        <input type="text" x-model="newProduct.unit" placeholder="Nos / Kg / Set"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+
+                <!-- Price + GST -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Base Price (₹)</label>
+                        <input type="number" step="0.01" x-model="newProduct.price" placeholder="0.00"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">GST Rate (%)</label>
+                        <input type="number" step="0.5" x-model="newProduct.tax_rate" placeholder="18"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+
+                <!-- HSN + Warranty -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">HSN Code</label>
+                        <input type="text" x-model="newProduct.hsn_code" placeholder="e.g. 8515"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Warranty (Months)</label>
+                        <input type="number" min="0" step="1" x-model="newProduct.warranty_months" placeholder="12"
+                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Description</label>
+                    <textarea x-model="newProduct.description" rows="2" placeholder="Optional product description"
+                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none; resize:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'"></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div style="border-top:1px solid #1e293b; padding-top:0.875rem; display:flex; justify-content:flex-end; gap:0.75rem; flex-shrink:0;">
+                    <button type="button" @click="showProductModal = false"
+                        style="padding:0.55rem 1.25rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; border-radius:0.625rem; font-size:0.875rem; cursor:pointer; font-family:inherit;"
+                        onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">
+                        Cancel
+                    </button>
+                    <button type="button" @click="createProduct()"
+                        style="padding:0.55rem 1.4rem; background:#059669; border:none; color:#fff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit;"
+                        onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
+                        Save &amp; Add
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Browse Products Modal #}
+    <div x-show="showBrowseModal"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        style="display:none;">
+        <div @click.away="showBrowseModal = false"
+            class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-3xl shadow-2xl relative flex flex-col"
+            style="max-height:85vh;">
+            <button type="button" @click="showBrowseModal = false"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">📂 Browse Products</h3>
+            <div class="relative mb-4">
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">🔍</span>
+                <input type="text" x-model="browseSearch" @input="filterBrowseProducts()"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 pl-9 pr-4 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                    placeholder="Search by name, SKU, or category…">
+            </div>
+            <div class="text-xs text-gray-400 mb-2">
+                Showing <span class="text-white font-semibold" x-text="filteredBrowseProducts.length"></span>
+                of <span class="text-white font-semibold" x-text="allBrowseProducts.length"></span> products
+            </div>
+            <div class="overflow-y-auto flex-1">
+                <table class="w-full text-sm">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-slate-800 text-gray-300">
+                            <th class="text-left py-2 px-3 font-semibold rounded-tl-lg">Product</th>
+                            <th class="text-left py-2 px-2 font-semibold">SKU</th>
+                            <th class="text-left py-2 px-2 font-semibold">Category</th>
+                            <th class="text-right py-2 px-2 font-semibold">Price (₹)</th>
+                            <th class="text-center py-2 px-2 font-semibold">GST%</th>
+                            <th class="text-center py-2 px-2 font-semibold">Stock</th>
+                            <th class="text-center py-2 px-2 font-semibold rounded-tr-lg">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="p in filteredBrowseProducts" :key="p.id">
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+                                <td class="py-2.5 px-3 font-semibold text-white" x-text="p.name"></td>
+                                <td class="py-2.5 px-2 text-gray-400 font-mono text-xs" x-text="p.sku"></td>
+                                <td class="py-2.5 px-2">
+                                    <span x-show="p.category" class="text-xs bg-slate-700 text-gray-300 px-2 py-0.5 rounded-full" x-text="p.category"></span>
+                                    <span x-show="!p.category" class="text-xs text-gray-500">—</span>
+                                </td>
+                                <td class="py-2.5 px-2 text-right font-mono text-green-400"
+                                    x-text="parseFloat(p.price).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
+                                <td class="py-2.5 px-2 text-center text-gray-300" x-text="p.tax_rate+'%'"></td>
+                                <td class="py-2.5 px-2 text-center">
+                                    <span :class="parseFloat(p.stock)>0?'text-emerald-400':'text-red-400'" x-text="p.stock"></span>
+                                </td>
+                                <td class="py-2.5 px-2 text-center">
+                                    <button type="button" @click="addProductFromBrowse(p)"
+                                        class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors">
+                                        + Add
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="filteredBrowseProducts.length === 0">
+                            <td colspan="7" class="py-8 text-center text-gray-500 italic">No products found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Global autocomplete portal (position:fixed, escapes overflow:hidden) ── -->
+    <div x-show="activeItemUid && activeDropdownSuggestions.length > 0"
+        @mousedown.window="closeDropdown()"
+        :style="`top:${dropdownPos.bottom}px; left:${dropdownPos.left}px; width:${dropdownPos.width}px;`"
+        class="global-portal"
+        style="display:none;">
+        <template x-for="p in activeDropdownSuggestions" :key="p.id">
+            <div @mousedown.prevent="selectSuggestionGlobal(p)" class="global-portal-item">
+                <div style="min-width:0;">
+                    <div style="color:#ffffff; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" x-text="p.name"></div>
+                    <div style="color:#94a3b8; font-size:11px; font-family:monospace; margin-top:2px;" x-text="p.sku + (p.hsn_code ? ' • HSN: '+p.hsn_code : '')"></div>
+                </div>
+                <span style="color:#4ade80; font-size:12px; font-weight:bold; font-family:monospace; white-space:nowrap; flex-shrink:0;" x-text="'₹'+parseFloat(p.price||0).toLocaleString('en-IN',{minimumFractionDigits:2})"></span>
+            </div>
+        </template>
+    </div>
+
+</div>{# end x-data wrapper #}
+
+<script>
+function documentForm() {
+    const lastSettings = {{ last_doc_settings_json|safe }};
+    return {
+        recentBills: [],
+        enablePayment: false,
+        customer_id: '',
+        fetchRecentBills() {
+            if (!this.customer_id) {
+                this.recentBills = [];
+                return;
+            }
+            fetch('/documents/api/customer/' + this.customer_id + '/recent-bills/')
+                .then(r => r.json())
+                .then(data => {
+                    this.recentBills = data.bills || [];
+                });
+        },
+
+        formAction: '{% if doc and not is_conversion %}update{% else %}save_as_new{% endif %}',
+        docType: '{% if is_conversion %}{{ default_type }}{% else %}{{ doc.type|default:default_type }}{% endif %}',
+        items: {{ existing_items_json|default:"[]"|safe }},
+        docNumber: '{{ next_number|escapejs }}',
+        numberingMode: {% if doc %}'{{ doc.numbering_mode|default:"auto" }}'{% else %}(lastSettings ? lastSettings.numbering_mode : 'auto'){% endif %},
+        poRefNumber: '{{ doc.po_reference_number|default_if_none:""|escapejs }}',
+        poRefDate: '{% if doc and doc.po_date %}{{ doc.po_date|date:"Y-m-d" }}{% endif %}',
+        invoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
+        placeOfSupply: {% if doc %}'{{ doc.place_of_supply|default:"21-Odisha"|escapejs }}'{% else %}(lastSettings ? (lastSettings.place_of_supply || '21-Odisha') : '21-Odisha'){% endif %},
+
+        subtotal: 0, taxTotal: 0, grandTotal: 0,
+        grossSubtotal: 0, totalDiscount: 0,
+
+        discountType: {% if doc %}'{{ doc.discount_type }}'{% else %}(lastSettings ? lastSettings.discount_type : 'none'){% endif %},
+        discountValue: {% if doc %}'{{ doc.discount_value|default:"0.00" }}'{% else %}(lastSettings ? lastSettings.discount_value : '0.00'){% endif %},
+        enableDiscount: {% if doc and doc.discount_type != 'none' %}true{% else %}(lastSettings && lastSettings.discount_type !== 'none' ? true : false){% endif %},
+
+        splitGST: {% if doc and doc.split_gst %}true{% else %}(lastSettings ? lastSettings.split_gst : false){% endif %},
+        forceIGST: {% if doc and doc.force_igst %}true{% else %}(lastSettings ? lastSettings.force_igst : false){% endif %},
+        enableWarranty: {% if doc and doc.enable_warranty %}true{% else %}(lastSettings ? lastSettings.enable_warranty : false){% endif %},
+        enableShippingAddress: {% if doc and doc.shipping_address %}true{% else %}false{% endif %},
+        repeatHeader: {% if doc %}{{ doc.repeat_header|yesno:"true,false" }}{% else %}(lastSettings && lastSettings.repeat_header !== undefined ? lastSettings.repeat_header : true){% endif %},
+        shippingAddress: '{{ doc.shipping_address|default_if_none:""|escapejs }}',
+
+        selectedTermsTemplate: '0',
+        terms: '',
+        termsList: [
+            { label: 'Payment Terms:', selected: true, value: '' },
+            { label: 'Delivery Time:', selected: true, value: '' },
+            { label: 'Packaging and Forwarding:', selected: true, value: '' },
+            { label: 'Fright and Transporting:', selected: true, value: '' },
+            { label: 'Warranty:', selected: true, value: '' },
+            { label: 'Installation,Commissioning and Training:', selected: true, value: '' },
+            { label: 'User Manual of Machine:', selected: true, value: '' },
+            { label: 'GST:', selected: true, value: '' },
+            { label: 'Quotation Validity:', selected: true, value: '' },
+            { label: 'Other:', selected: true, value: '' }
+        ],
+
+        columns: {{ table_columns_json|safe }} || {
+            item_name: true, description: false, part_number: false,
+            hsn_code: true, qty: true, unit: true, rate: true,
+            gst_percent: true, gst_amt: true, total: true
+        },
+
+        sections: {
+            logo: true, company_info: true,
+            client_info: true, vendor_info: true, consignee_info: true,
+            tax_details: true, terms: true, signature: true, validity: true,
+            shipping_info: true, po_info: true, bank_details: true,
+            delivery_info: true, dispatch_info: true, pricing: true, received_by: true
+        },
+
+        availableSections: {
+            QTN: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Company Legal Info' },
+                { id: 'client_info', label: 'Customer Details' },
+                { id: 'tax_details', label: 'GST Tax Breakdown' },
+                { id: 'validity', label: 'Validity Period' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'signature', label: 'Signature Block' },
+            ],
+            INV: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Company Info' },
+                { id: 'client_info', label: 'Bill To (Client)' },
+                { id: 'shipping_info', label: 'Ship To Address' },
+                { id: 'po_info', label: 'Purchase Order Ref' },
+                { id: 'bank_details', label: 'Bank Details' },
+                { id: 'tax_details', label: 'GST Breakdown' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'signature', label: 'Signature Block' },
+            ],
+            PRO: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Company Info' },
+                { id: 'client_info', label: 'Client Details' },
+                { id: 'tax_details', label: 'Tax Details' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'signature', label: 'Signature Block' },
+            ],
+            PO: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Buyer (Our Info)' },
+                { id: 'vendor_info', label: 'Vendor Info' },
+                { id: 'delivery_info', label: 'Delivery Specs' },
+                { id: 'tax_details', label: 'GST Details' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'signature', label: 'Authorized Signatory' },
+            ],
+            CHL: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Consignor Details' },
+                { id: 'consignee_info', label: 'Consignee Details' },
+                { id: 'dispatch_info', label: 'Dispatch Info' },
+                { id: 'pricing', label: 'Show Pricing' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'received_by', label: 'Received By Block' },
+                { id: 'signature', label: 'Authorized Signatory' },
+            ]
+        },
+
+        termsTemplates: {
+            QTN: [
+                { label: 'Standard (40% advance, 3yr warranty)', value: "Payment Terms: 40% advance with PO against PI, 30% After machine delivery and work start at site, 20% after machine Installation and commissioning & 10% after project handover.\nDelivery Time: Within 06 to 08 Weeks from date of PO & Payment confirmation\nGST: 18% As applicable on above price\nFright and Transporting: Free Door Delivery\nQuotation Validity: 15 Days\nWarranty: 03 Year warranty on Products" },
+                { label: 'Cash on Delivery', value: "Payment Terms: 100% Cash on Delivery / Dispatch\nDelivery Time: Immediate / Within 1 Week from order confirmation\nGST: 18% inclusive\nWarranty: 1 Year replacement warranty" },
+                { label: '50-50 Split Payment', value: "Payment Terms: 50% advance along with PO, 50% immediately before dispatch from works\nDelivery Time: 3-4 Weeks from payment realization\nGST: 18% extra as charged on invoice" },
+            ],
+            INV: [
+                { label: 'Standard INV', value: "Payment Terms: 40% advance with PO against PI, 30% After machine delivery, 20% after Installation and 10% after project handover.\nWarranty: 03 Year warranty on Products" },
+                { label: 'Net 30 Days', value: "Payment Terms: Net 30 days from invoice date.\nOther: Overdue Interest: 2% per month will be charged for delays beyond 30 days." },
+            ],
+            PRO: [
+                { label: 'Standard Proforma Terms', value: "Other: This proforma invoice is valid for 15 days. Payment terms to be confirmed on placing the formal purchase order. GST as applicable on final invoice." },
+            ],
+            PO: [
+                { label: 'Standard Purchase', value: "Other: Delivery must be made in full as per specifications. Inspection: Buyer reserves right to inspect goods; damaged items will be returned at seller cost. Payment: Net 45 days after successful installation." },
+            ],
+            CHL: [
+                { label: 'Delivery Challan Terms', value: "Other: Received all goods enumerated in this challan in pristine and working condition. Discrepancies if any must be marked on receipt immediately." },
+            ]
+        },
+
+        customers: [
+            {% for contact in contacts %}
+            { id: '{{ contact.id }}', name: '{{ contact.name|escapejs }}', email: '{{ contact.email|default:""|escapejs }}', phone: '{{ contact.phone|default:""|escapejs }}', gstin: '{{ contact.gstin|default:""|escapejs }}', address: '{{ contact.address|default:""|escapejs }}' },
+            {% endfor %}
+        ],
+        selectedCustomer: '{{ doc.contact.id|default:"" }}',
+        customerSearch: '',
+        filteredCustomers: [],
+        showCustomerDropdown: false,
+        showCustomerModal: false,
+        newCustomer: { name: '', email: '', phone: '', gstin: '', address: '' },
+
+        showProductModal: false,
+        newProduct: { name: '', sku: '', price: '', tax_rate: '18', unit: 'Nos', hsn_code: '', warranty_months: '12', description: '' },
+
+        globalSearch: '', globalResults: [], showGlobalResults: false,
+        showBrowseModal: false, allBrowseProducts: [], filteredBrowseProducts: [],
+        browseSearch: '', browseLoaded: false,
+
+        // ── per-row autocomplete state ───────────────────────────────
+        itemSuggestions: {},     // uid → [product, ...]
+        itemShowDropdown: {},    // uid → bool  (kept for legacy compat)
+        itemSearchTimeout: {},   // uid → timer id
+        allKnownProducts: [],    // full product list for client-side filtering
+        // ── global portal dropdown ────────────────────────────────
+        activeItemUid: null,
+        activeItemRef: null,     // the actual item object in focus
+        activeDropdownSuggestions: [],
+        dropdownPos: { bottom: 0, left: 0, width: 280 },
+
+        milestones: {{ milestones_json|safe }},
+
+        // ── init ────────────────────────────────────────────────────
+        init() {
+            // Check if there is a selected customer ID in the hidden input
+            const contactInput = document.querySelector('input[name="contact"]');
+            if (contactInput && contactInput.value) {
+                this.customer_id = contactInput.value;
+                this.fetchRecentBills();
+            } else if (this.selectedCustomer) {
+                this.customer_id = this.selectedCustomer;
+                this.fetchRecentBills();
+            }
+
+            if (this.selectedCustomer) {
+                let c = this.customers.find(x => String(x.id) === String(this.selectedCustomer));
+                if (c) this.customerSearch = c.name;
+            }
+            this.filteredCustomers = this.customers;
+
+            this.items = this.items.map((it, idx) => ({
+                _uid: it._uid || ('loaded_' + idx),
+                unit: 'EA', discount: 0, discount_pct: 0, taxAmt: 0,
+                hsn_code: '', part_number: '', description: '',
+                has_warranty: false, model: '', warranty_period: '', warranty_start_date: '',
+                ...it
+            }));
+            if (this.items.length > 0) this.calculateTotals();
+
+            const isEditMode = {% if doc and not is_conversion %}true{% else %}false{% endif %};
+            const isConversion = {% if doc and is_conversion %}true{% else %}false{% endif %};
+            const existingTerms = `{% if doc %}{{ doc.terms_and_conditions|default_if_none:"__NONE__"|escapejs }}{% endif %}`;
+            const companyDefaultTerms = `{{ company.terms_conditions|default:''|escapejs }}`;
+            
+            if (isEditMode || isConversion) {
+                if (existingTerms !== "__NONE__") {
+                    this.terms = existingTerms;
+                    this.parseExistingTerms(existingTerms);
+                } else if (companyDefaultTerms) {
+                    this.terms = companyDefaultTerms;
+                    this.parseExistingTerms(companyDefaultTerms);
+                } else {
+                    this.loadDefaultTerms();
+                }
+            } else if (lastSettings && lastSettings.terms_and_conditions !== undefined) {
+                this.terms = lastSettings.terms_and_conditions;
+                this.parseExistingTerms(lastSettings.terms_and_conditions);
+            } else if (companyDefaultTerms) {
+                this.terms = companyDefaultTerms;
+                this.parseExistingTerms(companyDefaultTerms);
+            } else {
+                this.loadDefaultTerms();
+            }
+
+            if (!isEditMode && this.docType === 'INV') {
+                this.termsList.forEach(t => t.selected = false);
+                this.updateTermsString();
+            }
+
+            {% if doc %}
+            this.sections.tax_details = {% if doc.show_gst %}true{% else %}false{% endif %};
+            {% else %}
+            if (lastSettings) {
+                this.sections.tax_details = lastSettings.show_gst;
+            }
+            {% endif %}
+
+            this.$watch('docType', (newVal, oldVal) => {
+                this.loadDefaultTerms();
+                this.calculateTotals();
+                if (newVal === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
+                
+                const prefixMap = { 'QTN': 'QTN', 'INV': 'INV', 'PRO': 'PI', 'PO': 'PO', 'CHL': 'CHL' };
+                if (oldVal && prefixMap[oldVal] && prefixMap[newVal] && this.docNumber) {
+                    const oldPrefix = prefixMap[oldVal] + '-';
+                    const newPrefix = prefixMap[newVal] + '-';
+                    if (this.docNumber.startsWith(oldPrefix)) {
+                        this.docNumber = newPrefix + this.docNumber.substring(oldPrefix.length);
+                    }
+                }
+            });
+            this.$watch('sections.tax_details', () => this.calculateTotals());
+            this.$watch('discountType', () => this.calculateTotals());
+            this.$watch('discountValue', () => this.calculateTotals());
+            this.$watch('enableDiscount', () => this.calculateTotals());
+            this.$watch('enableWarranty', () => this.autoUpdateTerms());
+            this.$watch('numberingMode', (newVal) => {
+                if (newVal === 'auto') {
+                    this.docNumber = '{{ next_number|escapejs }}';
+                } else {
+                    if (this.docNumber === '{{ next_number|escapejs }}' || this.docNumber === '') this.docNumber = '';
+                }
+            });
+
+            if (this.docType === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
+            else if (this.milestones.length > 0) this.updateMilestoneAmounts();
+
+            // Load all products once for client-side autocomplete
+            this.initProducts();
+        },
+
+        async initProducts() {
+            try {
+                const res = await fetch('/documents/api/all-products/');
+                this.allKnownProducts = await res.json();
+            } catch (e) { console.warn('Could not preload products:', e); }
+        },
+
+        // ── helpers ─────────────────────────────────────────────────
+        fmtNum(n) {
+            if (!n || Number(n) === 0) return '-';
+            return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        filterCustomers() {
+            let q = this.customerSearch.toLowerCase();
+            this.filteredCustomers = this.customers.filter(c => c.name.toLowerCase().includes(q));
+            this.showCustomerDropdown = true;
+            
+            let exact = this.customers.find(c => c.name === this.customerSearch);
+            if (exact) {
+                this.selectedCustomer = exact.id;
+                this.customer_id = exact.id;
+                this.fetchRecentBills();
+            } else {
+                this.selectedCustomer = '';
+                this.customer_id = '';
+                this.recentBills = [];
+            }
+        },
+
+        selectCustomer(c) {
+            this.selectedCustomer = c.id;
+            this.customer_id = c.id;
+            this.customerSearch = c.name;
+            this.showCustomerDropdown = false;
+            this.fetchRecentBills();
+        },
+
+        toggleDiscount() {
+            if (this.enableDiscount) {
+                if (this.discountType === 'none') this.discountType = 'fixed';
+            } else {
+                this.discountType = 'none';
+                this.discountValue = '0.00';
+            }
+            this.calculateTotals();
+        },
+
+        loadDefaultTerms() {
+            const list = this.termsTemplates[this.docType];
+            if (list && list.length > 0) {
+                this.terms = list[0].value;
+                this.parseExistingTerms(this.terms);
+                this.selectedTermsTemplate = '0';
+            } else {
+                this.terms = '';
+                this.termsList.forEach(t => t.value = '');
+                this.updateTermsString();
+                this.selectedTermsTemplate = 'custom';
+            }
+            if (this.docType === 'INV') {
+                this.termsList.forEach(t => t.selected = false);
+                this.updateTermsString();
+            }
+        },
+
+        parseExistingTerms(termsStr) {
+            let unparsed = [];
+            // Remove '1. ', '2. ', etc if they exist due to old flat string format
+            termsStr = termsStr.replace(/\d+\.\s*/g, '\n');
+            let lines = termsStr.split('\n');
+            this.termsList.forEach(t => { t.selected = false; t.value = ''; });
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                let cleanedLine = line.trim();
+                
+                if (cleanedLine.toLowerCase().startsWith('other:')) {
+                    let cleaned = cleanedLine;
+                    while (cleaned.toLowerCase().startsWith('other:')) cleaned = cleaned.substring(6).trim();
+                    unparsed.push(cleaned);
+                    return;
+                }
+                let matched = false;
+                for (let t of this.termsList) {
+                    if (t.label !== 'Other:') {
+                        let lowerLabel = t.label.toLowerCase();
+                        let lowerLine = cleanedLine.toLowerCase();
+                        if (lowerLine.startsWith(lowerLabel)) {
+                            t.selected = true;
+                            t.value = cleanedLine.substring(t.label.length).trim();
+                            matched = true;
+                            break;
+                        } else if (lowerLine.startsWith(lowerLabel.replace(' terms:', ':'))) {
+                            // fallback for old 'Payment:'
+                            t.selected = true;
+                            t.value = cleanedLine.substring(t.label.replace(' Terms:', ':').length).trim();
+                            matched = true;
+                            break;
+                        } else if (lowerLine.startsWith(lowerLabel.replace(' time:', ':'))) {
+                            // fallback for old 'Delivery:'
+                            t.selected = true;
+                            t.value = cleanedLine.substring(t.label.replace(' Time:', ':').length).trim();
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (!matched) unparsed.push(cleanedLine);
+            });
+            if (unparsed.length > 0) {
+                let other = this.termsList.find(t => t.label === 'Other:');
+                if (other) { other.selected = true; other.value = unparsed.join('\n'); }
+            }
+            this.updateTermsString();
+        },
+
+        updateTermsString() {
+            this.terms = this.termsList
+                .filter(t => t.selected && (t.value.trim() !== '' || t.label !== 'Other:'))
+                .map(t => {
+                    if (t.label === 'Other:') {
+                        let val = t.value.trim();
+                        return val.startsWith('Other:') ? val : `Other: ${val}`;
+                    }
+                    return `${t.label} ${t.value}`.trim();
+                })
+                .join('\n');
+        },
+
+        autoUpdateTerms() {
+            let termsChanged = false;
+
+            // 1. Sync Warranty Term
+            let warrantyTerm = this.termsList.find(t => t.label === 'Warranty:');
+            if (warrantyTerm) {
+                if (this.enableWarranty) {
+                    let wtyItems = this.items.filter(it => it.has_warranty && (it.name || '').trim() !== '');
+                    if (wtyItems.length === 0) {
+                        if (warrantyTerm.selected) {
+                            warrantyTerm.selected = false;
+                            warrantyTerm.value = '';
+                            termsChanged = true;
+                        }
+                    } else {
+                        // Removed auto-check to prevent overriding user preference
+                        let periods = [...new Set(wtyItems.map(it => (it.warranty_period || '').trim()).filter(p => p !== ''))];
+                        let newValue = '';
+                        if (periods.length === 1 && periods[0]) {
+                            newValue = `${periods[0]} warranty on Products`;
+                        } else {
+                            newValue = 'As per individual product warranty details';
+                        }
+                        if (warrantyTerm.value !== newValue) {
+                            warrantyTerm.value = newValue;
+                            termsChanged = true;
+                        }
+                    }
+                } else {
+                    if (warrantyTerm.selected) {
+                        warrantyTerm.selected = false;
+                        warrantyTerm.value = '';
+                        termsChanged = true;
+                    }
+                }
+            }
+
+            // 2. Sync Payment Terms with Stages/Milestones if PRO
+            let paymentTerm = this.termsList.find(t => t.label === 'Payment Terms:');
+            if (paymentTerm) {
+                if (this.docType === 'PRO' && this.milestones && this.milestones.length > 0) {
+                    let summary = this.milestones
+                        .map(m => `${m.percentage}% ${m.label}`)
+                        .join(', ');
+                    if (paymentTerm.value !== summary) {
+                        paymentTerm.value = summary;
+                        termsChanged = true;
+                    }
+                }
+            }
+
+            if (termsChanged) {
+                this.updateTermsString();
+            }
+        },
+
+        // ── calculations ────────────────────────────────────────────
+        calculateTotals() {
+            let gross = 0;
+            this.items.forEach(item => {
+                const qty = parseFloat(item.qty) || 0;
+                const rate = parseFloat(item.rate) || 0;
+                item.gross = qty * rate;
+                gross += item.gross;
+            });
+            this.grossSubtotal = gross;
+
+            let discVal = parseFloat(this.discountValue) || 0;
+            let totalDisc = 0;
+
+            if (this.enableDiscount) {
+                if (this.discountType === 'fixed') {
+                    if (gross > 0) {
+                        let allocated = 0;
+                        this.items.forEach(item => {
+                            let d = Math.round((discVal * item.gross / gross) * 100) / 100;
+                            item.discount = d; allocated += d;
+                        });
+                        let diff = discVal - allocated;
+                        if (diff !== 0 && this.items.length > 0) {
+                            let maxIdx = this.items.reduce((mi, it, i, arr) => it.gross > arr[mi].gross ? i : mi, 0);
+                            this.items[maxIdx].discount = Math.round((this.items[maxIdx].discount + diff) * 100) / 100;
+                        }
+                    } else { this.items.forEach(item => item.discount = 0); }
+                    totalDisc = discVal;
+                } else if (this.discountType === 'percentage') {
+                    this.items.forEach(item => {
+                        item.discount = Math.round((item.gross * discVal / 100) * 100) / 100;
+                        totalDisc += item.discount;
+                    });
+                } else if (this.discountType === 'individual') {
+                    this.items.forEach(item => { item.discount = parseFloat(item.discount) || 0; totalDisc += item.discount; });
+                } else if (this.discountType === 'individual_pct') {
+                    this.items.forEach(item => {
+                        let pct = parseFloat(item.discount_pct) || 0;
+                        item.discount = Math.round((item.gross * pct / 100) * 100) / 100;
+                        totalDisc += item.discount;
+                    });
+                }
+            } else { this.items.forEach(item => item.discount = 0); }
+            this.totalDiscount = totalDisc;
+
+            let sub = 0, tax = 0;
+            this.items.forEach(item => {
+                const txPc = parseFloat(item.tax) || 0;
+                const base = item.gross - item.discount;
+                const txAm = Math.round((base * (txPc / 100)) * 100) / 100;
+                item.taxAmt = txAm;
+                item.total = Math.round((base + txAm) * 100) / 100;
+                sub += base; tax += txAm;
+            });
+            this.subtotal = Math.round(sub * 100) / 100;
+            this.taxTotal = Math.round(tax * 100) / 100;
+            this.grandTotal = Math.round((sub + (this.sections.tax_details ? tax : 0)) * 100) / 100;
+            this.updateMilestoneAmounts();
+            this.autoUpdateTerms();
+        },
+
+        // ── product search ───────────────────────────────────────────
+        async searchGlobalProduct() {
+            if (this.globalSearch.length < 2) { this.showGlobalResults = false; return; }
+            try {
+                const res = await fetch(`/documents/api/search-products/?q=${encodeURIComponent(this.globalSearch)}`);
+                this.globalResults = await res.json();
+                this.showGlobalResults = true;
+            } catch (e) { console.error('Search error:', e); }
+        },
+
+        addGlobalProduct(p) {
+            const uid = '_' + Math.random().toString(36).substr(2, 9);
+            this.items.push({
+                _uid: uid, product_id: p.id, name: p.name, description: p.description || '',
+                qty: 1, unit: p.unit || 'EA', rate: parseFloat(p.price) || 0,
+                discount: 0, discount_pct: 0, tax: parseFloat(p.tax_rate) || 18,
+                taxAmt: 0, total: 0, hsn_code: p.hsn_code || '', part_number: p.sku || '', serial_number: '', has_warranty: false,
+                model: p.sku || '', warranty_period: p.warranty_months ? p.warranty_months + ' Months' : '12 Months',
+                warranty_start_date: ''
+            });
+            this.globalSearch = ''; this.showGlobalResults = false;
+            this.calculateTotals();
+        },
+
+        addCustomRow() {
+            const uid = '_' + Math.random().toString(36).substr(2, 9);
+            this.items.push({ _uid: uid, product_id: '', name: '', description: '', qty: 1, unit: 'EA', rate: 0, discount: 0, discount_pct: 0, tax: 18, taxAmt: 0, total: 0, hsn_code: '', part_number: '', serial_number: '', has_warranty: false, model: '', warranty_period: '', warranty_start_date: '' });
+            this.calculateTotals();
+        },
+
+        // ── per-row autocomplete ─────────────────────────────────────
+        onItemNameInput(el, item, uid, index) {
+            const q = (item.name || '').trim();
+            // Update portal position from the real input element
+            const rect = el.getBoundingClientRect();
+            this.dropdownPos = {
+                bottom: rect.bottom + 4,
+                left:   rect.left,
+                width:  Math.max(rect.width, 280)
+            };
+            this.activeItemUid = uid;
+            this.activeItemRef = item;
+
+            if (!q) {
+                this.activeDropdownSuggestions = [];
+                return;
+            }
+
+            // Auto-append a new empty row when typing in the last row
+            if (index === this.items.length - 1 && q.length === 1) {
+                this.addCustomRow();
+            }
+
+            // Client-side filter from preloaded list
+            const ql = q.toLowerCase();
+            const local = this.allKnownProducts.filter(p =>
+                p.name.toLowerCase().includes(ql) || (p.sku || '').toLowerCase().includes(ql)
+            ).slice(0, 12);
+
+            if (local.length > 0) {
+                this.activeDropdownSuggestions = local;
+                return;
+            }
+
+            // Fallback: live search API (debounced)
+            clearTimeout(this.itemSearchTimeout[uid]);
+            this.itemSearchTimeout[uid] = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/documents/api/search-products/?q=${encodeURIComponent(q)}`);
+                    const data = await res.json();
+                    if (this.activeItemUid === uid) {
+                        this.activeDropdownSuggestions = data;
+                    }
+                } catch (e) { /* silent */ }
+            }, 250);
+        },
+
+        closeDropdown() {
+            this.activeItemUid = null;
+            this.activeDropdownSuggestions = [];
+        },
+
+        // Called from the global portal dropdown
+        selectSuggestionGlobal(product) {
+            const item = this.activeItemRef;
+            if (!item) return;
+            item.name        = product.name;
+            item.product_id  = product.id;
+            item.description = product.description || '';
+            item.hsn_code    = product.hsn_code || '';
+            item.tax         = parseFloat(product.tax_rate) || 18;
+            item.rate        = parseFloat(product.price) || 0;
+            item.unit        = product.unit || 'EA';
+            item.part_number = product.sku || '';
+            item.model       = product.sku || '';
+            item.warranty_period = product.warranty_months ? product.warranty_months + ' Months' : '12 Months';
+            item.warranty_start_date = '';
+            this.closeDropdown();
+            this.calculateTotals();
+        },
+
+        // Legacy: called if old inline path is used (kept for compat)
+        selectSuggestion(item, uid, product, index) {
+            this.activeItemRef = item;
+            this.selectSuggestionGlobal(product);
+        },
+
+        onItemNameBlur(item, uid, index) {
+            // Delay to allow mousedown on dropdown to fire first
+            setTimeout(() => {
+                if (this.activeItemUid === uid) this.closeDropdown();
+                const name = (item.name || '').trim();
+                // If name is filled but not linked to a known product, auto-save
+                if (name && !item.product_id) {
+                    this.autoSaveProduct(item);
+                }
+            }, 200);
+        },
+
+        async autoSaveProduct(item) {
+            const name = (item.name || '').trim();
+            if (!name) return;
+            // Check if already known (was it just typed to match an existing product?)
+            const exists = this.allKnownProducts.find(
+                p => p.name.toLowerCase() === name.toLowerCase()
+            );
+            if (exists) {
+                // Link to existing product silently
+                item.product_id  = exists.id;
+                item.description = item.description || exists.description || '';
+                item.hsn_code    = item.hsn_code    || exists.hsn_code    || '';
+                item.tax         = item.tax         || parseFloat(exists.tax_rate) || 18;
+                item.rate        = item.rate         || parseFloat(exists.price)    || 0;
+                item.unit        = item.unit         || exists.unit                 || 'EA';
+                return;
+            }
+            try {
+                const res = await fetch('/documents/api/create-product/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({
+                        name:        name,
+                        hsn_code:    item.hsn_code    || '',
+                        tax_rate:    item.tax          || 18,
+                        price:       item.rate         || 0,
+                        description: item.description  || '',
+                        unit:        item.unit          || 'EA',
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    item.product_id = data.product.id;
+                    // Add to local known products so future rows can find it
+                    this.allKnownProducts.push(data.product);
+                    // Also update the browse modal list if loaded
+                    if (this.browseLoaded) this.allBrowseProducts.push(data.product);
+                }
+            } catch (e) { /* silent — item data is still captured in the form */ }
+        },
+
+        removeItem(index) { this.items.splice(index, 1); this.calculateTotals(); },
+
+        duplicateItem(index) {
+            const src = this.items[index];
+            const uid = '_' + Math.random().toString(36).substr(2, 9);
+            const clone = Object.assign({}, src, {
+                _uid:          uid,
+                // Reset serial number — caller requested no S.No. on copy
+                serial_number: '',
+            });
+            // Insert immediately after the source row
+            this.items.splice(index + 1, 0, clone);
+            this.calculateTotals();
+        },
+
+        async openBrowseModal() {
+            this.showBrowseModal = true;
+            if (!this.browseLoaded) {
+                try {
+                    const res = await fetch('/documents/api/all-products/');
+                    this.allBrowseProducts = await res.json();
+                    this.filteredBrowseProducts = this.allBrowseProducts;
+                    this.browseLoaded = true;
+                } catch (e) { console.error('Failed to load products:', e); }
+            }
+        },
+
+        filterBrowseProducts() {
+            const q = this.browseSearch.toLowerCase().trim();
+            if (!q) { this.filteredBrowseProducts = this.allBrowseProducts; return; }
+            this.filteredBrowseProducts = this.allBrowseProducts.filter(p =>
+                p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) ||
+                (p.category && p.category.toLowerCase().includes(q))
+            );
+        },
+
+        addProductFromBrowse(p) {
+            const uid = '_' + Math.random().toString(36).substr(2, 9);
+            this.items.push({
+                _uid: uid, product_id: p.id, name: p.name, description: p.description || '',
+                qty: 1, unit: p.unit || 'EA', rate: parseFloat(p.price) || 0,
+                discount: 0, discount_pct: 0, tax: parseFloat(p.tax_rate) || 18,
+                taxAmt: 0, total: 0, hsn_code: p.hsn_code || '', part_number: p.sku || '', serial_number: p.serial_number || '', has_warranty: p.has_warranty || false,
+                model: p.sku || '', warranty_period: p.warranty_months ? p.warranty_months + ' Months' : '12 Months',
+                warranty_start_date: ''
+            });
+            this.calculateTotals();
+        },
+
+        // ── create customer via API ──────────────────────────────────
+        async createCustomer() {
+            if (!this.newCustomer.name.trim()) { alert('Customer name is required.'); return; }
+            try {
+                const res = await fetch('/contacts/api/create-customer/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify(this.newCustomer)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const nc = { id: String(data.id), name: data.name, email: this.newCustomer.email, phone: this.newCustomer.phone, gstin: this.newCustomer.gstin, address: this.newCustomer.address };
+                    this.customers.push(nc);
+                    this.selectedCustomer = String(data.id);
+                    this.customerSearch = nc.name;
+                    this.showCustomerModal = false;
+                    this.newCustomer = { name: '', email: '', phone: '', gstin: '', address: '' };
+                } else { alert(data.error || 'Could not create customer.'); }
+            } catch (e) { alert('Network error — could not reach server.'); }
+        },
+
+        // ── create product via API ───────────────────────────────────
+        async createProduct() {
+            if (!this.newProduct.name.trim() || !this.newProduct.sku.trim()) { alert('Product name and SKU are required.'); return; }
+            try {
+                const res = await fetch('/documents/api/create-product/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify(this.newProduct)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.addGlobalProduct(data.product);
+                    this.showProductModal = false;
+                    this.newProduct = { name: '', sku: '', price: '', tax_rate: '18', unit: 'Nos', hsn_code: '', warranty_months: '12', description: '' };
+                } else { alert(data.error || 'Could not create product.'); }
+            } catch (e) { alert('Network error — could not reach server.'); }
+        },
+
+        // ── milestones ──────────────────────────────────────────────
+        loadDefaultMilestones() {
+            this.milestones = [
+                { label: 'Advance with Po amount', percentage: 40, amount: 0 },
+                { label: 'After Receipt of Good', percentage: 30, amount: 0 },
+                { label: 'After Machine installation, Commissioning', percentage: 20, amount: 0 },
+                { label: 'After Training & Project Handover', percentage: 10, amount: 0 }
+            ];
+            this.updateMilestoneAmounts();
+        },
+        addMilestone() { this.milestones.push({ label: 'New Stage', percentage: 0, amount: 0 }); },
+        removeMilestone(idx) { this.milestones.splice(idx, 1); },
+        updateMilestoneAmounts() {
+            this.milestones.forEach(m => {
+                m.amount = Math.round(((parseFloat(m.percentage) || 0) / 100 * this.grandTotal) * 100) / 100;
+            });
+            this.autoUpdateTerms();
+        },
+
+        // ── form submit ──────────────────────────────────────────────
+        submitForm(action) {
+            if (!this.selectedCustomer) { alert('Please select a customer first.'); return; }
+            // Strip blank rows (trailing empty row from auto-append) before saving
+            this.items = this.items.filter(it => (it.name || '').trim() !== '');
+            if (this.items.length === 0) { alert('Please add at least one line item.'); return; }
+            this.formAction = action;
+            this.$nextTick(() => document.getElementById('document-main-form').submit());
+        }
+    };
+}
+</script>
+{% endblock %}

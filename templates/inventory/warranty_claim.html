@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warranty Claim — ODtech Solutions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%); min-height: 100vh; font-family: 'Outfit', sans-serif; }
+        .input-field { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 0.75rem; padding: 0.75rem 1rem; width: 100%; font-family: 'Outfit', sans-serif; transition: border-color 0.2s, box-shadow 0.2s; }
+        .input-field:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        .input-field::placeholder { color: rgba(255,255,255,0.3); }
+        label { display: block; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 0.4rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .upload-zone { border: 2px dashed rgba(255,255,255,0.15); border-radius: 0.75rem; padding: 1.25rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+        .upload-zone:hover { border-color: #3B82F6; background: rgba(59,130,246,0.06); }
+        .upload-zone input[type="file"] { display: none; }
+        .preview-img { max-height: 100px; border-radius: 0.5rem; margin-top: 0.5rem; object-fit: cover; }
+        .btn-primary { background: linear-gradient(135deg, #3B82F6, #6366F1); color: #fff; font-weight: 700; padding: 0.85rem 2rem; border-radius: 0.875rem; border: none; cursor: pointer; font-size: 0.95rem; font-family: 'Outfit', sans-serif; transition: opacity 0.2s, transform 0.1s; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary { background: rgba(255,255,255,0.07); color: #fff; font-weight: 600; padding: 0.85rem 2rem; border-radius: 0.875rem; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; font-size: 0.95rem; font-family: 'Outfit', sans-serif; transition: background 0.2s; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .step-indicator { display: flex; align-items: center; gap: 0.75rem; }
+        .step-dot { width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .step-line { flex: 1; height: 2px; border-radius: 1px; }
+        .step-active-dot { background: linear-gradient(135deg,#3B82F6,#8B5CF6); color: white; }
+        .step-done-dot { background: #10B981; color: white; }
+        .step-idle-dot { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); }
+        .step-done-line { background: #10B981; }
+        .step-idle-line { background: rgba(255,255,255,0.1); }
+        .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 1.25rem; padding: 1.75rem; }
+        .card-validated { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.04); }
+        .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 0.75rem; padding: 0.875rem 1.25rem; }
+        .success-pill { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); border-radius: 9999px; padding: 0.3rem 0.9rem; font-size: 0.78rem; color: #34D399; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; }
+        @keyframes slideDown { from { opacity:0; transform: translateY(-12px); } to { opacity:1; transform: translateY(0); } }
+        .slide-down { animation: slideDown 0.4s ease forwards; }
+    </style>
+</head>
+<body class="flex items-start justify-center py-12 px-4">
+
+<div class="w-full max-w-xl">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style="background: linear-gradient(135deg,#F59E0B,#EF4444);">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-white">Warranty Claim</h1>
+        <p class="text-slate-400 mt-2 text-sm">Verify your purchase details first, then submit your claim.</p>
+        <div class="mt-3 text-xs text-slate-500">
+            <a href="{% url 'warranty_register' %}" class="hover:text-blue-400 transition">Not registered yet? Register your warranty →</a>
+        </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator mb-8 px-2">
+        <div class="step-dot {% if step2_open %}step-done-dot{% else %}step-active-dot{% endif %}">
+            {% if step2_open %}✓{% else %}1{% endif %}
+        </div>
+        <div class="step-line {% if step2_open %}step-done-line{% else %}step-idle-line{% endif %}"></div>
+        <div class="step-dot {% if step2_open %}step-active-dot{% else %}step-idle-dot{% endif %}">2</div>
+        <div class="flex-shrink-0 text-right">
+            <span class="text-xs text-slate-500 font-medium">{% if step2_open %}Describe Your Issue{% else %}Verify Purchase{% endif %}</span>
+        </div>
+    </div>
+
+    <!-- Step 1 Card -->
+    <div class="card {% if step2_open %}card-validated{% endif %} mb-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-white font-bold text-base flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full {% if step2_open %}step-done-dot{% else %}step-active-dot{% endif %} step-dot text-xs">{% if step2_open %}✓{% else %}1{% endif %}</span>
+                Verify Purchase Details
+            </h2>
+            {% if step2_open %}
+            <span class="success-pill"><span>●</span> Verified</span>
+            {% endif %}
+        </div>
+
+        {% if step1_error %}
+        <div class="error-box mb-4">
+            <p class="text-red-400 text-sm font-semibold flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                {{ step1_error }}
+            </p>
+        </div>
+        {% endif %}
+
+        {% if step2_open %}
+        <!-- Validated info display -->
+        <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><span class="text-slate-500 text-xs">Invoice #</span><p class="text-white font-semibold mt-0.5">{{ validated_reg.invoice_number }}</p></div>
+            <div><span class="text-slate-500 text-xs">Serial #</span><p class="text-white font-semibold mt-0.5">{{ validated_reg.serial_number }}</p></div>
+            <div><span class="text-slate-500 text-xs">Invoice Date</span><p class="text-white font-semibold mt-0.5">{{ validated_reg.invoice_date|date:"d M Y" }}</p></div>
+            <div><span class="text-slate-500 text-xs">Amount</span><p class="text-white font-semibold mt-0.5">₹{{ validated_reg.invoice_amount }}</p></div>
+        </div>
+        <p class="text-emerald-400 text-xs mt-3">✓ Your details matched our records. Please complete Step 2 below.</p>
+        {% else %}
+        <form method="post" id="step1-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="validate">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="serial_number">Product Serial Number *</label>
+                    <input id="serial_number" name="serial_number" type="text" class="input-field" placeholder="e.g. SN-XXXX-YYYY" required>
+                </div>
+                <div>
+                    <label for="invoice_number">Invoice Number *</label>
+                    <input id="invoice_number" name="invoice_number" type="text" class="input-field" placeholder="e.g. OD-I-2627-06-8245" required>
+                </div>
+                <div>
+                    <label for="invoice_amount">Total Invoice Amount (incl. GST) ₹ *</label>
+                    <input id="invoice_amount" name="invoice_amount" type="number" step="0.01" class="input-field" placeholder="e.g. 50032.00" required>
+                </div>
+                <div>
+                    <label for="invoice_date">Invoice Date *</label>
+                    <input id="invoice_date" name="invoice_date" type="date" class="input-field" required>
+                </div>
+            </div>
+            <div class="mt-5">
+                <button type="submit" class="btn-primary w-full">
+                    Verify Details →
+                </button>
+                <p class="text-slate-600 text-xs text-center mt-3">All 4 fields must match exactly as on your invoice.</p>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Step 2 Card -->
+    {% if step2_open %}
+    <div class="card slide-down">
+        <h2 class="text-white font-bold text-base flex items-center gap-2 mb-5">
+            <span class="w-6 h-6 rounded-full step-active-dot step-dot text-xs">2</span>
+            Describe the Issue & Submit Claim
+        </h2>
+
+        {% if step2_errors %}
+        <div class="error-box mb-4">
+            <ul class="text-red-400 text-sm space-y-0.5 list-disc list-inside">
+                {% for e in step2_errors %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="submit">
+
+            <div class="mb-4">
+                <label for="problem_description">Problem Description *</label>
+                <textarea id="problem_description" name="problem_description" rows="4" class="input-field" placeholder="Describe the defect or issue in detail. Include when it started, what symptoms you noticed, etc." required></textarea>
+            </div>
+
+            <!-- Product Defect Photos -->
+            <div class="mb-4">
+                <label>Product Photos Showing the Issue <span class="text-slate-500 normal-case font-normal">(up to 2, use camera)</span></label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="upload-zone" onclick="document.getElementById('product_photo_1').click()">
+                        <svg class="w-6 h-6 text-slate-500 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <p class="text-slate-500 text-xs">Photo 1</p>
+                        <input id="product_photo_1" name="product_photo_1" type="file" accept="image/*" capture="environment" onchange="previewFile(this,'pp1')">
+                        <img id="pp1" class="preview-img hidden mx-auto" alt="">
+                    </div>
+                    <div class="upload-zone" onclick="document.getElementById('product_photo_2').click()">
+                        <svg class="w-6 h-6 text-slate-500 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <p class="text-slate-500 text-xs">Photo 2</p>
+                        <input id="product_photo_2" name="product_photo_2" type="file" accept="image/*" capture="environment" onchange="previewFile(this,'pp2')">
+                        <img id="pp2" class="preview-img hidden mx-auto" alt="">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Attachments -->
+            <div class="mb-5">
+                <label>Additional Attachments <span class="text-slate-500 normal-case font-normal">(PDF or images, up to 3)</span></label>
+                <div class="space-y-2">
+                    {% for i in "123" %}
+                    <div class="upload-zone flex items-center gap-3 text-left" onclick="document.getElementById('attachment_{{ i }}').click()">
+                        <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                        <p class="text-slate-500 text-sm" id="att-label-{{ i }}">Attachment {{ i }} (optional)</p>
+                        <input id="attachment_{{ i }}" name="attachment_{{ i }}" type="file" accept=".pdf,image/*" onchange="showAttachName(this, 'att-label-{{ i }}')">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary w-full text-base">
+                Submit Warranty Claim
+            </button>
+            <p class="text-slate-600 text-xs text-center mt-3">You will receive a unique Warranty Claim Number upon submission.</p>
+        </form>
+    </div>
+    {% else %}
+    <!-- Step 2 locked placeholder -->
+    <div class="card opacity-40 pointer-events-none select-none">
+        <h2 class="text-white font-bold text-base flex items-center gap-2 mb-3">
+            <span class="w-6 h-6 rounded-full step-idle-dot step-dot text-xs">2</span>
+            Describe the Issue & Submit Claim
+        </h2>
+        <p class="text-slate-600 text-sm">Complete Step 1 to unlock this section.</p>
+        <div class="mt-4 h-10 rounded-xl bg-white/5"></div>
+        <div class="mt-3 h-24 rounded-xl bg-white/5"></div>
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-8 pb-8">
+        <a href="{% url 'warranty_claim_status' %}" class="text-slate-500 hover:text-slate-300 text-sm transition">Track an existing claim →</a>
+    </div>
+</div>
+
+<script>
+function previewFile(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const file = input.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => { preview.src = e.target.result; preview.classList.remove('hidden'); };
+        reader.readAsDataURL(file);
+    }
+}
+function showAttachName(input, labelId) {
+    const label = document.getElementById(labelId);
+    if (input.files[0]) label.textContent = '📎 ' + input.files[0].name;
+}
+</script>
+</body>
+</html>

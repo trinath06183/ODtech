@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Audit Logs - ODtech ERP{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 font-heading">Audit Logs</h1>
+        <p class="mt-1 text-sm text-gray-500">Monitor all user activities across the system. Only administrators can delete entries.</p>
+    </div>
+</div>
+
+<div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl mb-6">
+    <div class="px-4 py-5 sm:p-6">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label for="model" class="block text-sm font-medium leading-6 text-gray-900">Model</label>
+                <select id="model" name="model" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+                    <option value="">All Models</option>
+                    {% for m in models %}
+                    <option value="{{ m }}" {% if m == current_model %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="action" class="block text-sm font-medium leading-6 text-gray-900">Action</label>
+                <select id="action" name="action" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+                    <option value="">All Actions</option>
+                    <option value="CREATE" {% if current_action == 'CREATE' %}selected{% endif %}>Create</option>
+                    <option value="UPDATE" {% if current_action == 'UPDATE' %}selected{% endif %}>Update</option>
+                    <option value="DELETE" {% if current_action == 'DELETE' %}selected{% endif %}>Delete</option>
+                    <option value="COMMENT" {% if current_action == 'COMMENT' %}selected{% endif %}>Comment</option>
+                </select>
+            </div>
+            <div>
+                <label for="user" class="block text-sm font-medium leading-6 text-gray-900">User</label>
+                <select id="user" name="user" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+                    <option value="">All Users</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}" {% if u.id == current_user %}selected{% endif %}>{{ u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="task" class="block text-sm font-medium leading-6 text-gray-900">Task</label>
+                <select id="task" name="task" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+                    <option value="">All Tasks</option>
+                    {% for t in tasks %}
+                    <option value="{{ t.id }}" {% if t.id == current_task %}selected{% endif %}>{{ t.title|truncatechars:40 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="start_date" class="block text-sm font-medium leading-6 text-gray-900">Start Date</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium leading-6 text-gray-900">End Date</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="mt-2 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+            </div>
+            <div>
+                <button type="submit" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Filter</button>
+                <a href="{% url 'tracker:audit_log_list' %}" class="ml-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mt-4 flex flex-col">
+    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+            <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-48">Timestamp</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">User</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Action</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Model</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Object</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Task</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Changes</th>
+                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-20">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white text-sm">
+                        {% for log in logs %}
+                        <tr>
+                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-gray-500 sm:pl-6">{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                            <td class="whitespace-nowrap px-3 py-4 font-medium text-gray-900">{{ log.user.username|default:"System" }}</td>
+                            <td class="whitespace-nowrap px-3 py-4">
+                                {% if log.action == 'CREATE' %}
+                                <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Create</span>
+                                {% elif log.action == 'UPDATE' %}
+                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Update</span>
+                                {% elif log.action == 'DELETE' %}
+                                <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">Delete</span>
+                                {% elif log.action == 'COMMENT' %}
+                                <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-600/10">Comment</span>
+                                {% endif %}
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-4 text-gray-500">{{ log.model_name }}</td>
+                            <td class="px-3 py-4 text-gray-900 max-w-xs truncate" title="{{ log.object_repr }}">{{ log.object_repr }}</td>
+                            <td class="px-3 py-4 text-gray-500 max-w-xs truncate">
+                                {% if log.task %}
+                                <a href="#" class="text-indigo-600 hover:text-indigo-800" title="{{ log.task.title }}">{{ log.task.title|truncatechars:35 }}</a>
+                                {% else %}
+                                <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 text-gray-500 max-w-md">
+                                {% if log.action == 'UPDATE' %}
+                                <div x-data="{ expanded: false }">
+                                    <button @click="expanded = !expanded" class="text-indigo-600 hover:text-indigo-900 text-xs font-medium">View Changes</button>
+                                    <div x-show="expanded" class="mt-2 p-2 bg-gray-50 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap">{{ log.changes }}</div>
+                                </div>
+                                {% else %}
+                                {{ log.changes }}
+                                {% endif %}
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-4 text-center">
+                                <form method="post" action="{% url 'tracker:delete_audit_log' log.id %}" onsubmit="return confirm('Are you sure you want to delete this audit log entry? This action cannot be undone.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-600 hover:text-red-800 text-xs font-semibold" title="Delete (Admin Only)">
+                                        <svg class="h-4 w-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-3 py-8 text-center text-gray-500">No audit logs found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

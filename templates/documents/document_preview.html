@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% block header %}Document Preview{% endblock %}
+{% block content %}
+
+<!-- Main Container -->
+<div class="max-w-[1400px] mx-auto mb-6 flex flex-col xl:flex-row gap-6">
+    
+    <!-- LEFT COLUMN: Action Bar & HTML Preview -->
+    <div class="flex-1 min-w-0 flex flex-col gap-4">
+        
+        <!-- Header / Action Bar -->
+        <div class="glass p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-lg">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'document_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    Back to Documents
+                </a>
+                <div class="text-gray-600">|</div>
+                <div class="text-white font-bold">{{ doc.number }}</div>
+                <span class="px-2 py-1 rounded text-xs font-bold
+                    {% if doc.type == 'QTN' %}bg-purple-500/20 text-purple-300
+                    {% elif doc.type == 'INV' %}bg-green-500/20 text-green-300
+                    {% elif doc.type == 'PO' %}bg-orange-500/20 text-orange-300
+                    {% elif doc.type == 'CHL' %}bg-cyan-500/20 text-cyan-300
+                    {% else %}bg-gray-500/20 text-gray-300{% endif %}">
+                    {{ doc.get_type_display }}
+                </span>
+
+                {# ── Prev / Next Navigation ── #}
+                <div class="flex items-center gap-1 ml-2">
+                    {% if prev_doc %}
+                    <a href="{% url 'document_preview' prev_doc.id %}"
+                       title="Previous: {{ prev_doc.number }}"
+                       class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white text-xs font-medium transition-all border border-white/10 hover:border-white/25">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        <span class="hidden sm:inline font-mono">{{ prev_doc.number }}</span>
+                    </a>
+                    {% else %}
+                    <span class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 text-gray-600 text-xs font-medium cursor-not-allowed border border-white/5" title="No previous {{ doc.get_type_display }}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        <span class="hidden sm:inline">Prev</span>
+                    </span>
+                    {% endif %}
+
+                    {% if next_doc %}
+                    <a href="{% url 'document_preview' next_doc.id %}"
+                       title="Next: {{ next_doc.number }}"
+                       class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white text-xs font-medium transition-all border border-white/10 hover:border-white/25">
+                        <span class="hidden sm:inline font-mono">{{ next_doc.number }}</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    {% else %}
+                    <span class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 text-gray-600 text-xs font-medium cursor-not-allowed border border-white/5" title="No next {{ doc.get_type_display }}">
+                        <span class="hidden sm:inline">Next</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
+                   class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-red-500/20 text-sm" title="Open PDF in a new tab"
+                   style="color: #ffffff !important;">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    View PDF
+                </a>
+                <a href="{% url 'generate_pdf' doc.id %}?download=1"
+                   class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-emerald-500/20 text-sm" title="Download directly to your device"
+                   style="color: #ffffff !important;">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
+                </a>
+                <a href="{% url 'document_html_preview' doc.id %}?print=1" target="_blank"
+                   class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl flex items-center transition-all text-sm"
+                   style="color: #ffffff !important;">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    Print
+                </a>
+            </div>
+        </div>
+
+        <!-- HTML Preview Iframe -->
+        <div class="bg-gray-200 rounded-2xl p-4 shadow-2xl flex-1 flex flex-col min-h-[85vh]">
+            <div class="text-center text-gray-500 text-xs mb-3 uppercase tracking-wider font-medium">— Live HTML Preview — click "Download PDF" above for the print-ready version —</div>
+            <div class="flex-1 relative" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <iframe
+                    id="doc-preview-frame"
+                    src="{% url 'document_html_preview' doc.id %}"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: white;"
+                    title="Document Preview"
+                ></iframe>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Info & Actions -->
+    <div class="w-full xl:w-[320px] flex flex-col gap-4 flex-shrink-0">
+        
+        <!-- Primary Actions: Edit & Convert -->
+        <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg" style="position: relative; z-index: 50;">
+            <a href="{% url 'edit_document' doc.id %}"
+               class="w-full text-center px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+               style="color: #ffffff !important;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Document
+            </a>
+            
+            <div class="relative" x-data="{ openConvert: false }">
+                <button @click="openConvert = !openConvert" class="w-full px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm">
+                    Convert To...
+                    <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': openConvert}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                
+                <div x-show="openConvert" @click.away="openConvert = false" 
+                     class="absolute w-full mt-2 border border-gray-200 rounded-xl shadow-xl overflow-hidden bg-white" 
+                     style="display: none; z-index: 100;">
+                    {% for t_val, t_label in document_types %}
+                        {% if t_val != doc.type %}
+                        <a href="{% url 'create_document' %}?convert_from={{ doc.id }}&target_type={{ t_val }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors border-b border-gray-100 last:border-0 font-medium">
+                            <span class="text-emerald-400 mr-2">&rarr;</span> Convert to {{ t_label }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Info -->
+        <div class="glass p-5 rounded-2xl flex flex-col gap-4 shadow-lg" style="position: relative; z-index: 10;">
+            <div>
+                <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Customer</div>
+                <div class="text-slate-800 font-bold leading-tight">{{ doc.contact.name }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Date</div>
+                <div class="text-slate-800 font-bold">{{ doc.date|date:"d M Y" }}</div>
+            </div>
+            <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
+                <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Grand Total</div>
+                <div class="text-emerald-600 font-bold text-xl">&#8377; {{ doc.grand_total|floatformat:2 }}</div>
+            </div>
+            <div class="bg-white/60 border border-slate-200 p-3 rounded-xl relative">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Balance Due</div>
+                    <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 transition font-bold uppercase tracking-wide">Record Pay</a>
+                </div>
+                <div class="{% if balance_due > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-bold text-xl">&#8377; {{ balance_due|floatformat:2 }}</div>
+            </div>
+            
+            <hr class="border-slate-200 my-1">
+            
+            <div>
+                <div class="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Status</div>
+                <div class="font-bold text-sm inline-block px-3 py-1 rounded-lg bg-white border border-slate-200 shadow-sm {% if doc.status == 'Approved' %}text-emerald-600{% elif doc.status == 'Cancelled' %}text-red-600{% else %}text-amber-600{% endif %}">
+                    {{ doc.status }}
+                </div>
+                
+                {% if request.user.role == 'Admin' or request.user.role == 'Accountant' %}
+                <form method="post" action="{% url 'change_document_status' doc.id %}" class="mt-3 flex flex-wrap gap-2">
+                    {% csrf_token %}
+                    {% if doc.status == 'Draft' %}
+                        <button type="submit" name="status" value="Approved" class="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-emerald-600/20 text-center" style="color: #ffffff !important;">Approve</button>
+                        <button type="submit" name="status" value="Cancelled" class="px-3 py-2 bg-red-600/30 hover:bg-red-500/50 text-red-300 text-xs font-bold rounded-lg transition-all text-center">Cancel</button>
+                    {% elif doc.status == 'Approved' %}
+                        <button type="submit" name="status" value="Draft" class="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold rounded-lg transition-all text-center" style="color: #ffffff !important;">Revert to Draft</button>
+                        <button type="submit" name="status" value="Cancelled" class="px-3 py-2 bg-red-600/30 hover:bg-red-500/50 text-red-300 text-xs font-bold rounded-lg transition-all text-center">Cancel</button>
+                    {% elif doc.status == 'Cancelled' %}
+                        <button type="submit" name="status" value="Draft" class="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold rounded-lg transition-all text-center" style="color: #ffffff !important;">Revert to Draft</button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Linked Payments -->
+        {% if doc.payments_list %}
+        <div class="glass p-5 rounded-2xl shadow-lg" style="position: relative; z-index: 10;">
+            <h3 class="text-slate-800 font-bold text-sm mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-200 pb-3">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Linked Payments
+            </h3>
+            <div class="flex flex-col gap-3">
+                {% for pmt in doc.payments_list %}
+                <div class="bg-white/60 p-3 rounded-xl border border-slate-200 relative group transition-colors hover:bg-slate-50/80">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-slate-500 text-xs font-medium">{{ pmt.date|date:"d M y" }}</span>
+                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] border border-slate-200 rounded font-semibold">{{ pmt.payment_mode }}</span>
+                    </div>
+                    <div class="text-emerald-600 font-bold text-base">&#8377;{{ pmt.amount|floatformat:2 }}</div>
+                    {% if pmt.reference_number %}<div class="text-slate-400 font-mono text-[10px] mt-1 break-all">{{ pmt.reference_number }}</div>{% endif %}
+                    
+                    {% if request.user.role == 'Admin' %}
+                    <form method="post" action="{% url 'payment_delete' pmt.id %}?next={{ request.path }}" onsubmit="return confirm('Delete this payment record?');" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% csrf_token %}
+                        <button type="submit" class="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg" title="Delete">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Conversion History -->
+        {% if doc.source_document or doc.converted_documents.exists %}
+        <div class="glass p-5 rounded-2xl shadow-lg mt-4" style="position: relative; z-index: 10;">
+            <h3 class="text-slate-800 font-bold text-sm mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-200 pb-3">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                Document History
+            </h3>
+            <div class="flex flex-col gap-3">
+                {% if doc.source_document %}
+                <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Converted From</div>
+                    <a href="{% url 'document_preview' doc.source_document.id %}" class="font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 text-sm">
+                        {{ doc.source_document.get_type_display }} - {{ doc.source_document.number }}
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% for conv in doc.converted_documents.all %}
+                <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Converted To</div>
+                    <a href="{% url 'document_preview' conv.id %}" class="font-bold text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1 text-sm">
+                        {{ conv.get_type_display }} - {{ conv.number }}
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    /* Styled scrollbars for webkit browsers on the iframe wrapper */
+    #doc-preview-frame::-webkit-scrollbar { width: 8px; height: 8px; }
+    #doc-preview-frame::-webkit-scrollbar-track {
+        background: rgba(15,23,42,0.4);
+        border-radius: 6px;
+    }
+    #doc-preview-frame::-webkit-scrollbar-thumb {
+        background: rgba(227,24,55,0.5);
+        border-radius: 6px;
+    }
+    #doc-preview-frame::-webkit-scrollbar-thumb:hover {
+        background: rgba(227,24,55,0.8);
+    }
+</style>
+
+{% endblock %}

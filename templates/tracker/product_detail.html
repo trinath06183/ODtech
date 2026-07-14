@@ -1,0 +1,740 @@
+{% extends 'base.html' %}
+{% block title %}Product: {{ product.item_name }}{% endblock %}
+
+{% block content %}
+<nav class="mb-4 text-sm font-medium">
+    <ol class="list-none p-0 inline-flex text-gray-500">
+        <li class="flex items-center">
+            <a href="{% url 'tracker:dashboard' %}" class="hover:text-indigo-600">Dashboard</a>
+            <svg class="h-4 w-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd" />
+            </svg>
+        </li>
+        <li class="flex items-center">
+            <a href="{% url 'tracker:order_detail' product.order.id %}" class="hover:text-indigo-600">{{ product.order.order_number }}</a>
+            <svg class="h-4 w-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd" />
+            </svg>
+        </li>
+        {% if product.lot %}
+        <li class="flex items-center">
+            <a href="{% url 'tracker:lot_detail' product.lot.id %}" class="hover:text-indigo-600">{{ product.lot.lot_name }}</a>
+            <svg class="h-4 w-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd" />
+            </svg>
+        </li>
+        {% endif %}
+        <li>
+            <span class="text-gray-900">{{ product.item_name }}</span>
+        </li>
+    </ol>
+</nav>
+
+<div class="flex flex-col md:flex-row gap-6">
+    <!-- Left Column: Product Info -->
+    <div class="w-full md:w-1/3 space-y-6">
+        <div class="bg-white shadow rounded-lg p-6 border border-gray-200">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">{{ product.item_name }}</h2>
+                <div class="flex space-x-2">
+                    <a href="{% url 'tracker:product_update' product.id %}"
+                        class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Edit</a>
+                    <a href="{% url 'tracker:product_delete' product.id %}"
+                        class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</a>
+                </div>
+            </div>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Sl No.</dt>
+                    <dd class="font-medium text-gray-900">{{ product.sl_no }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Quantity</dt>
+                    <dd class="font-medium text-gray-900">{{ product.quantity }} {{ product.uom }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Status</dt>
+                    <dd>
+                        {% if product.status == 'OPEN' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">OPEN</span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">CLOSED</span>
+                        {% endif %}
+                    </dd>
+                </div>
+
+                <!-- Stage tracking (Customer + Supplier independent) -->
+                <div class="border-t border-gray-100 pt-3 space-y-2">
+                    <!-- Customer Stage -->
+                    <div class="flex justify-between items-center">
+                        <dt class="text-gray-500 flex items-center gap-1">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                            Customer Stage
+                        </dt>
+                        <dd>
+                            {% if product.customer_stage %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
+                                {{ product.get_customer_stage_display }}
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-gray-300 italic">Not set</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <!-- Supplier Stage -->
+                    <div class="flex justify-between items-center">
+                        <dt class="text-gray-500 flex items-center gap-1">
+                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            Supplier Stage
+                        </dt>
+                        <dd>
+                            {% if product.supplier_stage %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                                {{ product.get_supplier_stage_display }}
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-gray-300 italic">Not set</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </div>
+                {% if product.make_or_model %}
+                <div class="flex justify-between border-t border-gray-100 pt-3">
+                    <dt class="text-gray-500">Make/Model</dt>
+                    <dd class="font-medium text-gray-900">{{ product.make_or_model }}</dd>
+                </div>
+                {% endif %}
+                {% if product.description %}
+                <div class="pt-3 border-t border-gray-200">
+                    <dt class="text-gray-500 mb-1">Description</dt>
+                    <dd class="text-gray-900">{{ product.description }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+
+        {% if product.photo_or_document %}
+        <div class="bg-white shadow rounded-lg p-6 border border-gray-200">
+            <h3 class="text-sm font-medium text-gray-900 mb-3">Product Photo/Document</h3>
+            {% if '.jpg' in product.photo_or_document.url|lower or '.png' in product.photo_or_document.url|lower or '.jpeg' in product.photo_or_document.url|lower or '.gif' in product.photo_or_document.url|lower %}
+            <img src="{{ product.photo_or_document.url }}" alt="{{ product.item_name }}"
+                class="rounded-lg object-cover w-full">
+            {% else %}
+            <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-md border border-gray-200">
+                <svg class="h-8 w-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <a href="{{ product.photo_or_document.url }}" target="_blank"
+                    class="text-sm font-medium text-indigo-600 hover:text-indigo-900">{{ product.photo_or_document.name }} ↗</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Pending Price Approval Banner -->
+        {% if pending_request %}
+        <div class="mb-4 bg-orange-50 border border-orange-200 rounded-md p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-orange-800">Pending Price Approval</h3>
+                    <div class="mt-2 text-sm text-orange-700">
+                        <p>A price change is pending approval.</p>
+                        <ul class="list-disc pl-5 mt-1 text-xs">
+                            <li>Requested By: {{ pending_request.requested_by.username}}</li>
+                            <li>Proposed Buy (ex GST): ₹{{ pending_request.buying_price_ex_gst }}</li>
+                            <li>Proposed Sell (ex GST): ₹{{ pending_request.selling_price_ex_gst }}</li>
+                        </ul>
+                    </div>
+                    {% if request.user.is_superuser %}
+                    <div class="mt-4">
+                        <div class="-mx-2 -my-1.5 flex">
+                            <form method="post" action="{% url 'tracker:approve_price_request' pending_request.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-emerald-50 px-2 py-1.5 rounded-md text-xs font-medium text-emerald-800 hover:bg-emerald-100 focus:outline-none mr-3">Approve Pricing</button>
+                            </form>
+                            <form method="post" action="{% url 'tracker:reject_price_request' pending_request.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-red-50 px-2 py-1.5 rounded-md text-xs font-medium text-red-800 hover:bg-red-100 focus:outline-none">Reject Pricing</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Product Pricing Calculator -->
+        <div class="bg-white shadow rounded-lg p-6 border border-emerald-200"
+            x-data="productPricingCalculator({{ product.buying_price_ex_gst|default:0 }}, {{ product.gst_percentage|default:18 }}, {{ product.buying_price_inc_gst|default:0 }}, {{ product.selling_price_ex_gst|default:0 }}, {{ product.selling_price_inc_gst|default:0 }}, {{ product.quantity|default:0 }})">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Product Pricing & Profit</h2>
+
+            <!-- Approved Badge -->
+            {% if product.price_approved_by %}
+            <div class="mb-4 bg-emerald-100 border border-emerald-300 rounded-md p-3 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-semibold text-emerald-800">
+                        Pricing Approved by {{ product.price_approved_by.username}} 
+                        {% if product.price_approved_at %}on {{ product.price_approved_at|date:"M d, Y" }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+            <form method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_product_pricing">
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Buy Price (ex GST)</label>
+                            {{ pricing_form.buying_price_ex_gst }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Buy (inc GST)</label>
+                            {{ pricing_form.buying_price_inc_gst }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">GST %</label>
+                        {{ pricing_form.gst_percentage }}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                        <div>
+                            <label class="block text-xs font-medium text-indigo-500 mb-1">Sell Price (ex GST)</label>
+                            {{ pricing_form.selling_price_ex_gst }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-indigo-500 mb-1">Sell (inc GST)</label>
+                            {{ pricing_form.selling_price_inc_gst }}
+                        </div>
+                    </div>
+
+                    <!-- Additional Expenses Section -->
+                    <div class="border-t border-gray-100 pt-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-medium text-gray-500">Additional Expenses</label>
+                            <button type="button" @click="addExpense()"
+                                class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Add Expense
+                            </button>
+                        </div>
+                        <div class="space-y-2">
+                            <template x-for="(expense, index) in expenses" :key="index">
+                                <div class="flex gap-2 items-center">
+                                    <input type="hidden" name="expense_id[]" :value="expense.id">
+                                    <div class="flex-1">
+                                        <input type="text" name="expense_desc[]" x-model="expense.desc"
+                                            placeholder="Expense description..."
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2">
+                                    </div>
+                                    <div class="w-32">
+                                        <select name="expense_type[]" x-model="expense.type" @change="recalcExpenses()" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 bg-white">
+                                            <option value="PER_UNIT">Per Unit</option>
+                                            <option value="TOTAL">Total Qty</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-32">
+                                        <input type="number" name="expense_amount[]" step="0.01"
+                                            x-model="expense.amount" @input="recalcExpenses()" placeholder="0.00"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2">
+                                    </div>
+                                    <button type="button" @click="removeExpense(index)"
+                                        class="text-red-500 hover:text-red-700 p-1">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                            <div x-show="expenses.length === 0" class="text-xs text-gray-400 italic">No additional
+                                expenses.</div>
+                            <div x-show="expenses.length > 0" class="flex justify-end mt-2">
+                                <div class="text-sm font-semibold text-gray-700 bg-gray-50 px-3 py-1 rounded border">
+                                    Total Expenses (Per Unit): ₹<span x-text="totalExpenses.toFixed(2)"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-100 pt-4">
+                        <div>
+                            <label class="block text-xs font-medium text-emerald-600 mb-1">Profit Amount (Unit)</label>
+                            {{ pricing_form.profit_amount }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-emerald-600 mb-1">Total Profit</label>
+                            <input type="number" step="0.01" value="0.00"
+                                x-model="totalProfitAmount" readonly disabled
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 bg-gray-50 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-emerald-600 mb-1">Profit % (Margin)</label>
+                            {{ pricing_form.profit_percentage }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Summary Section -->
+                <div class="border-t border-gray-100 mt-6 pt-5">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Pricing Summary (Total for <span x-text="quantity"></span> {{ product.uom|default:'Units' }})</h3>
+                    <div class="grid grid-cols-2 gap-4 bg-emerald-50/50 p-4 rounded-md border border-emerald-100">
+                        <!-- Total Buying Price -->
+                        <div>
+                            <h4 class="text-xs font-bold text-emerald-800 mb-2 uppercase tracking-wider">Total Buy Price</h4>
+                            <div class="space-y-1.5 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-emerald-700">Excluding GST:</span>
+                                    <span class="font-semibold text-emerald-900">₹<span x-text="(buyingPriceExGst * quantity).toFixed(2)"></span></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-emerald-700">Including GST:</span>
+                                    <span class="font-semibold text-emerald-900">₹<span x-text="(buyingPriceIncGst * quantity).toFixed(2)"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Total Selling Price -->
+                        <div>
+                            <h4 class="text-xs font-bold text-emerald-800 mb-2 uppercase tracking-wider">Total Sell Price</h4>
+                            <div class="space-y-1.5 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-emerald-700">Excluding GST:</span>
+                                    <span class="font-semibold text-emerald-900">₹<span x-text="(sellingPriceExGst * quantity).toFixed(2)"></span></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-emerald-700">Including GST:</span>
+                                    <span class="font-semibold text-emerald-900">₹<span x-text="(sellingPriceIncGst * quantity).toFixed(2)"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button type="submit"
+                        class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">
+                        Save Pricing
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Supplier Quotes Calculator -->
+    <div class="w-full md:w-2/3" x-data="{ showCreate: {{ show_create|yesno:'true,false' }} }">
+        <div class="bg-white shadow rounded-lg p-6 border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">Supplier Cost Options</h2>
+                <button @click="showCreate = !showCreate"
+                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700">Add
+                    Option</button>
+            </div>
+
+            <!-- Create Form -->
+            <div x-show="showCreate" style="display: none;"
+                class="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-5" x-data="gstCalculator(0, 18, 0)">
+                <h3 class="text-lg font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Add New Supplier Option
+                </h3>
+                <form method="post" action="" enctype="multipart/form-data" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_supplier">
+                    {% for field in create_form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-md p-3 text-sm text-indigo-800">
+                        * GST Amount: ₹<span x-text="gstAmount">0.00</span>
+                    </div>
+                    <div class="flex justify-end pt-4 space-x-3">
+                        <button type="button" @click="showCreate = false"
+                            class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit"
+                            class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Save
+                            Option</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="space-y-4">
+                {% for item in options_with_forms %}
+                {% with option=item.option form=item.form %}
+                <!-- Alpine Component per Supplier Option -->
+                <div x-data="{ editMode: {% if update_option_id == option.id %}true{% else %}false{% endif %} }"
+                    class="border border-gray-200 rounded-lg p-4 {% if option.is_selected %}bg-green-50 border-green-300{% else %}bg-gray-50{% endif %}">
+
+                    <!-- Display Mode -->
+                    <div x-show="!editMode"
+                        x-data="gstCalculator({{ option.base_price }}, {{ option.gst_percentage }}, {{ option.total_inc_gst }})">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">{{ option.supplier_name }} {% if option.is_selected %}<span
+                                        class="text-xs bg-green-200 text-green-800 rounded px-2 py-1 ml-2">Selected</span>{% endif %}</h3>
+                                <p class="text-sm text-gray-500">
+                                    {% if option.location %}{{ option.location }}{% endif %}
+                                    {% if option.location and option.contact_number %} | {% endif %}
+                                    {% if option.contact_number %}{{ option.contact_number }}{% endif %}
+                                </p>
+                                {% if option.description %}
+                                <div
+                                    class="mt-3 text-sm text-gray-700 bg-white p-3 rounded border border-gray-200 italic max-w-xl">
+                                    {{ option.description|linebreaksbr }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm flex-shrink-0">
+                                {% if not option.is_selected %}
+                                <form method="post" action="">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="select_supplier">
+                                    <input type="hidden" name="option_id" value="{{ option.id }}">
+                                    <button type="submit"
+                                        class="text-green-600 hover:text-green-800 font-medium bg-green-50 hover:bg-green-100 px-2 py-1 rounded border border-green-200">Select</button>
+                                </form>
+                                {% endif %}
+                                <button @click="editMode = true"
+                                    class="text-indigo-600 hover:text-indigo-900 bg-gray-50 hover:bg-gray-100 px-2 py-1 rounded border border-gray-200">Edit</button>
+                                <a href="{% url 'tracker:supplier_delete' option.id %}"
+                                    class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded border border-red-200">Delete</a>
+                            </div>
+                        </div>
+
+                        <!-- Pricing + Photo side by side -->
+                        <div class="flex gap-4">
+                            <!-- Left: Pricing -->
+                            <div class="flex-1">
+                                <div class="flex gap-3">
+                                    <!-- Left side: Buy row only -->
+                                    <div class="flex-1 space-y-3">
+                                        <!-- Buy Row -->
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="bg-white p-3 rounded-md border border-gray-200">
+                                                <span class="block text-xs font-medium text-gray-500 mb-1">Buy
+                                                    Price</span>
+                                                <div class="text-sm font-semibold text-gray-900">₹{{ option.base_price }}</div>
+                                            </div>
+                                            <div class="bg-white p-3 rounded-md border border-gray-200">
+                                                <span class="block text-xs font-medium text-gray-500 mb-1">Buy (inc.
+                                                    GST)</span>
+                                                <div class="text-sm font-semibold text-gray-900">₹{{ option.total_inc_gst }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Right side: GST -->
+                                    <div
+                                        class="w-32 bg-white p-3 rounded-md border border-gray-200 flex flex-col justify-center items-center">
+                                        <span class="block text-xs font-medium text-gray-500 mb-1">GST %</span>
+                                        <div class="text-xl font-bold text-gray-900">{{ option.gst_percentage }}%</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-500 flex gap-4">
+                                    <span>* Buy GST: ₹<span x-text="gstAmount"></span></span>
+                                </div>
+                                {% if option.product_link %}
+                                <div class="mt-2">
+                                    <a href="{{ option.product_link }}" target="_blank"
+                                        class="inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-900">
+                                        <svg class="h-3.5 w-3.5 mr-1" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                            </path>
+                                        </svg>
+                                        {{ option.product_link|truncatechars:50 }}
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Right: Photo Preview -->
+                            {% if option.photo_or_document %}
+                            <div class="flex-shrink-0" x-data="{ expanded: false }">
+                                <div class="cursor-pointer" @click="expanded = !expanded">
+                                    <img src="{{ option.photo_or_document.url }}"
+                                        alt="Quote from {{ option.supplier_name }}"
+                                        class="rounded-md border border-gray-200 object-cover shadow-sm transition-all duration-200"
+                                        :class="expanded ? 'w-60 max-h-[300px] object-contain' : 'h-24 w-24'">
+                                </div>
+                                <div class="flex space-x-2 mt-1 text-xs justify-center">
+                                    <button @click="expanded = !expanded"
+                                        class="text-indigo-600 hover:text-indigo-900 font-medium"
+                                        x-text="expanded ? '−' : '+'"></button>
+                                    <a href="{{ option.photo_or_document.url }}" target="_blank"
+                                        class="text-gray-500 hover:text-gray-700 font-medium">{{ option.photo_or_document.name }} ↗</a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Edit Mode -->
+                    <div x-show="editMode" style="display: none;"
+                        x-data="gstCalculator({{ option.base_price }}, {{ option.gst_percentage }}, {{ option.total_inc_gst }})">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Edit Supplier
+                            Option</h3>
+                        <form method="post" action="" enctype="multipart/form-data" class="space-y-4">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_supplier">
+                            <input type="hidden" name="option_id" value="{{ option.id }}">
+                            {% for field in form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}"
+                                    class="block text-sm font-medium text-gray-700 mb-1">
+                                    {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                </label>
+                                {{ field }}
+                                {% if field.errors %}
+                                <p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            <div
+                                class="bg-indigo-50 border border-indigo-100 rounded-md p-3 text-sm text-indigo-800 flex gap-6">
+                                <span>* Buy GST: ₹<span x-text="gstAmount">0.00</span></span>
+                            </div>
+                            <div class="flex justify-end pt-4 space-x-3">
+                                <button type="button" @click="editMode = false"
+                                    class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                                <button type="submit"
+                                    class="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Save
+                                    Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+                {% endwith %}
+                {% empty %}
+                <p class="text-gray-500 text-sm">No supplier options added yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('gstCalculator', (initialBase, initialGst, initialTotal) => ({
+            basePrice: initialBase || 0.00,
+            gstPercent: initialGst || 18.00,
+            totalPrice: initialTotal || 0.00,
+            gstAmount: 0.00,
+
+            init() {
+                this.updateGstAmount();
+            },
+
+            calcForward() {
+                let base = parseFloat(this.basePrice) || 0;
+                let gst = parseFloat(this.gstPercent) || 0;
+                let total = base * (1 + (gst / 100));
+                this.totalPrice = total.toFixed(2);
+                this.updateGstAmount();
+            },
+
+            calcReverse() {
+                let total = parseFloat(this.totalPrice) || 0;
+                let gst = parseFloat(this.gstPercent) || 0;
+                let base = total / (1 + (gst / 100));
+                this.basePrice = base.toFixed(2);
+                this.updateGstAmount();
+            },
+
+            updateGstAmount() {
+                let total = parseFloat(this.totalPrice) || 0;
+                let base = parseFloat(this.basePrice) || 0;
+                this.gstAmount = (total - base).toFixed(2);
+            }
+        }));
+
+        Alpine.data('productPricingCalculator', (buyEx, gstPct, buyInc, sellEx, sellInc, quantity) => ({
+            buyingPriceExGst: buyEx || 0.00,
+            gstPercent: gstPct || 18.00,
+            buyingPriceIncGst: buyInc || 0.00,
+            sellingPriceExGst: sellEx || 0.00,
+            sellingPriceIncGst: sellInc || 0.00,
+            profitAmount: 0.00,
+            totalProfitAmount: 0.00,
+            profitPercent: 0.00,
+            quantity: quantity || 0,
+
+            expenses: {{ product_expenses_json|safe|default:'[]' }},
+        totalExpenses: 0.00,
+
+        init() {
+            // Recalculate inc GST values from base values on load
+            let buy = parseFloat(this.buyingPriceExGst) || 0;
+            let gst = parseFloat(this.gstPercent) || 0;
+            if(buy > 0) {
+        this.buyingPriceIncGst = (buy * (1 + (gst / 100))).toFixed(2);
+    }
+    let sell = parseFloat(this.sellingPriceExGst) || 0;
+    if (sell > 0) {
+        this.sellingPriceIncGst = (sell * (1 + (gst / 100))).toFixed(2);
+    }
+    this.recalcExpenses();
+    this.updateProfits();
+            },
+
+    addExpense() {
+        this.expenses.push({ id: '', desc: '', amount: '0.00', type: 'PER_UNIT' });
+        this.recalcExpenses();
+    },
+
+    removeExpense(index) {
+        this.expenses.splice(index, 1);
+        this.recalcExpenses();
+    },
+
+    recalcExpenses() {
+        let total = 0;
+        let qty = parseInt(this.quantity) || 1;
+        if (qty === 0) qty = 1;
+        this.expenses.forEach(exp => {
+            let amt = parseFloat(exp.amount) || 0;
+            if (exp.type === 'TOTAL') {
+                total += (amt / qty);
+            } else {
+                total += amt;
+            }
+        });
+        this.totalExpenses = total;
+        this.updateProfits();
+    },
+
+    calcAllForward() {
+        this.calcBuyingForward();
+        this.calcSellingForward();
+    },
+
+    calcBuyingForward() {
+        let base = parseFloat(this.buyingPriceExGst) || 0;
+        let gst = parseFloat(this.gstPercent) || 0;
+        this.buyingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
+        this.updateProfits();
+    },
+
+    calcBuyingReverse() {
+        let total = parseFloat(this.buyingPriceIncGst) || 0;
+        let gst = parseFloat(this.gstPercent) || 0;
+        this.buyingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
+        this.updateProfits();
+    },
+
+    calcSellingForward() {
+        let base = parseFloat(this.sellingPriceExGst) || 0;
+        let gst = parseFloat(this.gstPercent) || 0;
+        this.sellingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
+        this.updateProfits();
+    },
+
+    calcSellingReverse() {
+        let total = parseFloat(this.sellingPriceIncGst) || 0;
+        let gst = parseFloat(this.gstPercent) || 0;
+        this.sellingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
+        this.updateProfits();
+    },
+
+    calcFromProfitAmount() {
+        let buy = parseFloat(this.buyingPriceExGst) || 0;
+        let expenses = parseFloat(this.totalExpenses) || 0;
+        let totalCost = buy + expenses;
+        let profit = parseFloat(this.profitAmount) || 0;
+        this.sellingPriceExGst = (totalCost + profit).toFixed(2);
+        this.calcSellingForward(); // updates sellingPriceIncGst and profits
+    },
+
+    calcFromProfitPercent() {
+        let buy = parseFloat(this.buyingPriceExGst) || 0;
+        let expenses = parseFloat(this.totalExpenses) || 0;
+        let totalCost = buy + expenses;
+        let profitPct = parseFloat(this.profitPercent) || 0;
+        let profit = totalCost * (profitPct / 100);
+        this.sellingPriceExGst = (totalCost + profit).toFixed(2);
+        this.calcSellingForward(); // updates sellingPriceIncGst and profits
+    },
+
+    updateProfits() {
+        let buy = parseFloat(this.buyingPriceExGst) || 0;
+        let expenses = parseFloat(this.totalExpenses) || 0;
+        let totalCost = buy + expenses;
+        let sell = parseFloat(this.sellingPriceExGst) || 0;
+        let qty = parseInt(this.quantity) || 1;
+
+        // Do not skip computing profitAmount, compute it always unless typing in it
+        if (document.activeElement && document.activeElement.name !== 'profit_amount') {
+            this.profitAmount = (sell - totalCost).toFixed(2);
+        }
+        this.totalProfitAmount = (parseFloat(this.profitAmount) * qty).toFixed(2);
+
+        if (document.activeElement && document.activeElement.name !== 'profit_percentage') {
+            if (totalCost > 0) {
+                this.profitPercent = (((sell - totalCost) / totalCost) * 100).toFixed(2);
+            } else {
+                this.profitPercent = "0.00";
+            }
+        }
+    }
+        }));
+    });
+
+    const supplierData = {{ unique_suppliers_json| safe }};
+
+    function autofillSupplierDetails(inputElement) {
+        const val = inputElement.value.trim();
+        if (!val) return;
+
+        const supplier = supplierData.find(s => s.name === val);
+        if (supplier) {
+            const form = inputElement.closest('form');
+            if (!form) return;
+
+            const emailInput = form.querySelector('input[name="contact_email"]');
+            const phoneInput = form.querySelector('input[name="contact_number"]');
+            const locationInput = form.querySelector('input[name="location"]');
+
+            if (emailInput && !emailInput.value) emailInput.value = supplier.email;
+            if (phoneInput && !phoneInput.value) phoneInput.value = supplier.phone;
+            if (locationInput && !locationInput.value) locationInput.value = supplier.location;
+        }
+    }
+</script>
+
+<datalist id="supplier-suggestions">
+    {% for s in unique_suppliers %}
+    <option value="{{ s.name }}">{{ s.name }}</option>
+    {% endfor %}
+</datalist>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'edms/base_edms.html' %}
+
+{% block edms_content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">🏢 Departments</h1>
+        <p class="text-sm text-slate-500">Manage EDMS organization structure</p>
+    </div>
+    <a href="{% url 'edms:department_create' %}" class="px-5 py-2.5 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors text-sm">
+        + Add Department
+    </a>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">Department Name</th>
+                <th class="px-6 py-3 text-left">Code</th>
+                <th class="px-6 py-3 text-left">Head of Department</th>
+                <th class="px-6 py-3 text-left">Status</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for dept in departments %}
+            <tr class="hover:bg-slate-50/50">
+                <td class="px-6 py-4">
+                    <p class="font-bold text-slate-800">{{ dept.name }}</p>
+                    {% if dept.description %}<p class="text-xs text-slate-500 max-w-xs truncate">{{ dept.description }}</p>{% endif %}
+                </td>
+                <td class="px-6 py-4 font-mono text-slate-500">{{ dept.code|default:"—" }}</td>
+                <td class="px-6 py-4 text-slate-600">{{ dept.head.username}}</td>
+                <td class="px-6 py-4">
+                    {% if dept.is_active %}
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full">Inactive</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">No departments found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

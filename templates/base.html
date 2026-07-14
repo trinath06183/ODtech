@@ -1,0 +1,1487 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ODtech ERP{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+
+                    colors: {
+                        dark: { bg: '#F0F9FF', card: 'rgba(255,255,255,0.75)', border: 'rgba(56,189,248,0.15)', text: '#0F172A' },
+                        brand: { primary: '#3B82F6', secondary: '#8B5CF6', accent: '#10B981' },
+                        surface: '#f7f9fb',
+                        'surface-dim': '#d8dadc',
+                        primary: '#2a14b4',
+                        secondary: '#006c49',
+                        tertiary: '#00414d',
+                        outline: '#777586',
+                    }
+
+                        dark: { bg: '#F0F9FF', card: 'rgba(255,255,255,0.75)', border: 'rgba(56,189,248,0.15)', text: '#0F172A' },
+                    brand: { primary: '#3B82F6', secondary: '#8B5CF6', accent: '#10B981' }
+                }
+            }
+        }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        .glass {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border-radius: 0.75rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.3);
+        }
+
+        body {
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+            background-attachment: fixed;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid transparent;
+            transition: all 0.25s;
+            font-weight: 500;
+            color: #334155;
+            font-size: 0.875rem;
+        }
+
+        .nav-link:hover {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.15);
+            color: #2563eb;
+        }
+
+        .nav-link .icon {
+            margin-right: 0.7rem;
+            font-size: 1rem;
+        }
+
+        /* Premium Light Theme overrides */
+        /* Text color overrides */
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .text-white:not(.bg-gradient-to-br *):not(.bg-blue-500 *):not(.bg-red-500 *):not(.bg-slate-500 *):not(.bg-cyan-600 *):not(.bg-emerald-600 *):not(.bg-red-600 *):not(.bg-blue-600 *):not(button *):not(a.bg-blue-600 *):not(a.bg-cyan-600 *) {
+            color: #0F172A !important;
+        }
+
+        .text-gray-300 {
+            color: #334155 !important;
+        }
+
+        .text-gray-400 {
+            color: #475569 !important;
+        }
+
+        .text-gray-500 {
+            color: #475569 !important;
+        }
+
+        .text-gray-600 {
+            color: #64748B !important;
+        }
+
+        /* Protect text visibility on dark buttons against global light overrides */
+        .bg-slate-700.text-white,
+        .bg-slate-700.text-gray-300,
+        .bg-slate-700 .text-white,
+        .bg-slate-700 .text-gray-300 {
+            color: #f8fafc !important;
+        }
+
+        /* Overrides for text highlights so they remain readable in light mode */
+        .text-green-300 {
+            color: #15803d !important;
+        }
+
+        .text-green-400 {
+            color: #166534 !important;
+        }
+
+        .text-emerald-300 {
+            color: #0f766e !important;
+        }
+
+        .text-emerald-400 {
+            color: #115e59 !important;
+        }
+
+        .text-orange-300 {
+            color: #c2410c !important;
+        }
+
+        .text-orange-400 {
+            color: #9a3412 !important;
+        }
+
+        .text-amber-300 {
+            color: #b45309 !important;
+        }
+
+        .text-amber-400 {
+            color: #854d0e !important;
+        }
+
+        .text-blue-300 {
+            color: #1d4ed8 !important;
+        }
+
+        .text-blue-400 {
+            color: #1e40af !important;
+        }
+
+        .text-purple-300 {
+            color: #6d28d9 !important;
+        }
+
+        .text-purple-400 {
+            color: #5b21b6 !important;
+        }
+
+        .text-cyan-300 {
+            color: #0e7490 !important;
+        }
+
+        .text-cyan-400 {
+            color: #155e75 !important;
+        }
+
+        .text-rose-300 {
+            color: #be123c !important;
+        }
+
+        .text-rose-400 {
+            color: #9f1239 !important;
+        }
+
+        .text-red-300 {
+            color: #b91c1c !important;
+        }
+
+        .text-red-400 {
+            color: #991b1b !important;
+        }
+
+        /* ── Comprehensive Dark-to-Light Theme Overrides ── */
+        .bg-slate-900,
+        .bg-slate-800,
+        .bg-slate-700 {
+            background-color: #ffffff !important;
+        }
+
+        .bg-slate-900\/80,
+        .bg-slate-900\/60,
+        .bg-slate-900\/50,
+        .bg-slate-900\/40 {
+            background-color: #f8fafc !important;
+        }
+
+        .bg-slate-800\/80,
+        .bg-slate-800\/60,
+        .bg-slate-800\/50,
+        .bg-slate-800\/40 {
+            background-color: #f1f5f9 !important;
+        }
+
+        .bg-slate-700\/50,
+        .bg-slate-500\/20 {
+            background-color: #f1f5f9 !important;
+        }
+
+        .bg-white\/5,
+        .bg-white\/10 {
+            background-color: #f8fafc !important;
+        }
+
+        .border-slate-800,
+        .border-slate-700,
+        .border-slate-600,
+        .border-slate-500 {
+            border-color: #cbd5e1 !important;
+        }
+
+        .border-slate-700\/50,
+        .border-white\/10,
+        .border-white\/20,
+        .border-white\/5 {
+            border-color: #e2e8f0 !important;
+        }
+
+        .divide-white\/5>*+*,
+        .divide-white\/10>*+* {
+            border-color: #e2e8f0 !important;
+        }
+
+        /* Removed Input elements styling that conflicted with Tailwind */
+
+        /* Select option wrapper */
+        select option {
+            background-color: #ffffff !important;
+            color: #0F172A !important;
+        }
+
+        /* Table header and row overrides */
+        thead {
+            background-color: rgba(224, 242, 254, 0.4) !important;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.15) !important;
+        }
+
+        thead tr th {
+            color: #334155 !important;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(56, 189, 248, 0.1) !important;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(224, 242, 254, 0.15) !important;
+        }
+
+        /* Secondary actions/buttons overrides removed to prevent conflicts */
+    </style>
+</head>
+
+<body class="text-dark-text min-h-screen flex antialiased" x-data="sidebarApp()"
+    :class="sidebarOpen ? '' : 'sidebar-collapsed'">
+
+    <!-- Mobile Backdrop -->
+    <div x-show="sidebarOpen" class="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+        @click="sidebarOpen = false"></div>
+
+    <!-- Sidebar -->
+
+    <!-- Navigation Rail / Sidebar -->
+    <aside id="main-sidebar"
+        class="bg-white border-r border-gray-200 h-screen flex flex-col z-50 flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden absolute md:relative top-0 left-0 shadow-sm"
+        :class="sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-20'">
+
+        <!-- Top Bar inside Sidebar (Hamburger + Logo) -->
+        <div class="h-20 flex items-center px-4 flex-shrink-0 border-b border-gray-100"
+            :class="sidebarOpen ? 'justify-start' : 'md:justify-center'">
+            <button @click="toggleSidebar()" id="sidebar-toggle-btn"
+                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors focus:outline-none"
+                :title="sidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'">
+                <!-- Hamburger Icon -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+
+            <a href="{% url 'dashboard' %}" class="ml-3 flex items-center" x-show="sidebarOpen"
+                x-transition.opacity.duration.300ms style="display: none;">
+                <!-- Try to use text if logo is white -->
+                <span class="text-xl font-bold text-indigo-700 tracking-tight font-heading">ODtech ERP</span>
+            </a>
+        </div>
+
+        <div class="w-full pt-4 pb-6 flex-1 flex flex-col">
+            <nav class="flex-1 space-y-1 px-3">
+
+                <!-- Dashboard -->
+                <a href="{% url 'dashboard' %}"
+                    class="nav-link group relative rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Dashboard">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Dashboard</span>
+                </a>
+
+                <!-- Sales Dashboard -->
+                <a href="{% url 'sales_dashboard' %}"
+                    class="nav-link group relative rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-teal-50 hover:text-teal-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Sales Dashboard">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Sales Dashboard</span>
+                </a>
+
+                <!-- Material Tracker -->
+
+                <div x-data="{ open: false }" class="mb-1">
+                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
+                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors focus:outline-none"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Material Tracker">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <div x-show="sidebarOpen" style="display: none;"
+                            class="flex-1 flex items-center justify-between ml-3">
+                            <span class="whitespace-nowrap font-medium">Material Tracker</span>
+                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </button>
+                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
+                        <a href="{% url 'tracker:dashboard' %}"
+                            class="block text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">Tracker
+                            Dashboard</a>
+                        <a href="{% url 'tracker:individual_products' %}"
+                            class="block text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">All
+                            Products</a>
+
+                    </div>
+                </div>
+
+                <!-- EDMS — Enterprise Document Management -->
+                <div x-data="{ open: false }" class="mb-1">
+                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
+                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-violet-50 hover:text-violet-700 transition-colors focus:outline-none"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Document Management">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        <div x-show="sidebarOpen" style="display: none;"
+                            class="flex-1 flex items-center justify-between ml-3">
+                            <span class="whitespace-nowrap font-medium">Doc Management</span>
+                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </button>
+                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
+                        <a href="{% url 'edms:dashboard' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🏠
+                            Dashboard</a>
+                        <a href="{% url 'edms:document_list' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📂
+                            All Documents</a>
+                        <a href="{% url 'edms:document_upload' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">⬆
+                            Upload</a>
+                        <a href="{% url 'edms:search' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🔍
+                            Search</a>
+                        <a href="{% url 'edms:vendor_list' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🏭
+                            Vendors</a>
+                        <a href="{% url 'edms:reports' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📊
+                            Reports</a>
+                        {% if request.user.role in 'Admin,Managing Director,Director' %}
+                        <a href="{% url 'edms:audit_log' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🔒
+                            Audit Log</a>
+                        {% endif %}
+                        <a href="{% url 'payment_list' %}"
+                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">💳
+                            Payments</a>
+                    </div>
+                </div>
+
+                <!-- Expense Management -->
+                <div x-data="{ open: false }" class="mb-1">
+                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
+                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors focus:outline-none"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Expense Management">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div x-show="sidebarOpen" style="display: none;"
+                            class="flex-1 flex items-center justify-between ml-3">
+                            <span class="whitespace-nowrap font-medium">Expense Mgt.</span>
+                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </button>
+                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
+                        <a href="{% url 'expense_list' %}"
+                            class="block text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">Expenses</a>
+
+                    </div>
+                </div>
+
+                <!-- Generated Documents (Invoices/POs/QTNs) -->
+                <div x-data="{ open: false }" class="mb-1">
+                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
+                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors focus:outline-none"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Generated Documents">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div x-show="sidebarOpen" style="display: none;"
+                            class="flex-1 flex items-center justify-between ml-3">
+                            <span class="whitespace-nowrap font-medium">Commercial Docs</span>
+                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </button>
+                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
+                        <a href="{% url 'document_list' %}"
+                            class="block text-sm text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">All
+                            Documents</a>
+                        <a href="{% url 'create_invoice' %}"
+                            class="block text-sm text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">+
+                            New Invoice</a>
+                        <a href="{% url 'create_quotation' %}"
+                            class="block text-sm text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">+
+                            New Quotation</a>
+                    </div>
+                </div>
+
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory &
+                    Warranty</div>
+                <div x-show="!sidebarOpen" style="display: none;" class="pt-6 pb-2 flex justify-center">
+                    <div class="h-px w-8 bg-gray-200"></div>
+                </div>
+
+                <!-- Inventory -->
+                <a href="{% url 'inventory_list' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Inventory">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Inventory</span>
+                </a>
+
+                <a href="{% url 'warranty_tracker' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Warranty Tracker">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Warranty Tracker</span>
+                </a>
+
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">CRM</div>
+                <div x-show="!sidebarOpen" style="display: none;" class="pt-6 pb-2 flex justify-center">
+                    <div class="h-px w-8 bg-gray-200"></div>
+                </div>
+
+                <a href="{% url 'contact_list' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Customers & Vendors">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Contacts</span>
+                </a>
+
+                {% if request.user.role == 'Admin' %}
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administration
+                </div>
+                <div x-show="!sidebarOpen" style="display: none;" class="pt-6 pb-2 flex justify-center">
+                    <div class="h-px w-8 bg-gray-200"></div>
+                </div>
+
+
+
+                <a href="{% url 'user_list' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="User Management">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Users</span>
+                </a>
+                <a href="{% url 'settings' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Settings">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Settings</span>
+                </a>
+                <a href="{% url 'system_logs' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="System Logs">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">System Logs</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <!-- User Footer + Logout -->
+            <div class="mt-auto px-4 pb-4">
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="mb-4 flex items-center px-3 py-3 bg-white border border-gray-100 shadow-sm rounded-xl transition-all">
+                    <div
+                        class="h-9 w-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                    <div class="ml-3 overflow-hidden flex-1">
+                        <p class="text-sm font-bold text-slate-800 truncate" title="{{ user.username }}">{{ user.username }}</p>
+                        <p class="text-[11px] uppercase tracking-wider text-indigo-500 font-bold mt-0.5">{{ user.role }}</p>
+                    </div>
+                </div>
+                <div x-show="!sidebarOpen" style="display: none;" class="mb-4 flex justify-center">
+                    <div class="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-inner"
+                        title="{{ user.username }} ({{ user.role }})">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                </div>
+                <form method="post" action="{% url 'logout' %}"
+                    onsubmit="return confirm('Are you sure you want to log out?');">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Sign Out">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span x-show="sidebarOpen" style="display: none;" class="ml-3 font-medium">Sign Out</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[100px] pointer-events-none">
+        </div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/10 blur-[100px] pointer-events-none">
+        </div>
+
+        <header
+            class="h-20 glass border-b border-dark-border flex items-center justify-between px-4 md:px-8 z-30 relative shadow-md flex-shrink-0">
+            <div class="flex items-center gap-4">
+
+
+                <!-- Back Button -->
+                <button onclick="window.history.back()" title="Go Back"
+                    class="p-2 rounded-xl glass border border-white/10 hover:border-white/20 text-gray-400 hover:text-blue-500 transition-all group hidden sm:block">
+                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </button>
+
+                <h2
+                    class="text-xl md:text-2xl font-semibold text-white tracking-wide truncate max-w-[150px] md:max-w-none">
+                    {% block header %}Dashboard{% endblock %}
+                </h2>
+            </div>
+            <div class="flex items-center space-x-2 md:space-x-4">
+
+                <!-- Notes & To-Do Button -->
+                <button id="notes-todo-btn" onclick="openNotesPanel()"
+                    class="p-2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none"
+                    title="Notes & To-Do">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6m-6 4h6" />
+                    </svg>
+                </button>
+                <!-- Notification Bell -->
+                <div class="relative" x-data="notificationsDropdown()">
+                    <button @click="open = !open" @click.away="open = false"
+                        class="relative p-2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        {% if unread_notifications_count > 0 %}<span
+                            class="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white">{{
+                            unread_notifications_count }}</span>{% endif %}
+                    </button>
+                    <!-- Dropdown -->
+                    <div x-show="open" x-cloak style="display: none;"
+                        class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 border border-gray-200 z-50 overflow-hidden flex flex-col">
+                        <div class="px-4 py-2 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                            <div class="flex gap-2">
+                                <button @click="tab = 'unread'"
+                                    :class="tab === 'unread' ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                                    class="text-xs transition-colors focus:outline-none">Unread</button>
+                                <span class="text-gray-300">|</span>
+                                <button @click="tab = 'read'"
+                                    :class="tab === 'read' ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                                    class="text-xs transition-colors focus:outline-none">Read</button>
+                            </div>
+                        </div>
+                        <div x-show="tab === 'unread'" class="max-h-64 overflow-y-auto flex-1">
+                            {% if unread_notifications %}
+                            <div class="px-4 py-2 border-b border-gray-50 flex justify-end"><a
+                                    href="{% url 'tracker:api_mark_all_notifications_read' %}"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors">Mark
+                                    all as read</a></div>
+                            {% endif %}
+                            {% for notif in unread_notifications %}
+                            <a href="{% url 'tracker:api_mark_notification_read' notif.id %}"
+                                class="block px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative group cursor-pointer"
+                                :id="'notif-'+'{{ notif.id }}'">
+                                <p class="text-sm font-medium text-gray-900">{{ notif.title }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ notif.message }}</p>
+                            </a>
+                            {% empty %}
+                            <div class="px-4 py-6 text-center text-sm text-gray-500">You're all caught up!</div>
+                            {% endfor %}
+                        </div>
+                        <div x-show="tab === 'read'" style="display: none;" class="max-h-64 overflow-y-auto flex-1">
+                            {% for notif in read_notifications %}
+                            <div class="block px-4 py-3 border-b border-gray-50 opacity-75">
+                                <p class="text-sm font-medium text-gray-700">{{ notif.title }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ notif.message }}</p>
+                            </div>
+                            {% empty %}
+                            <div class="px-4 py-6 text-center text-sm text-gray-500">No read messages yet.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <script>function notificationsDropdown() { return { open: false, tab: 'unread' } }</script>
+
+                <!-- ODtech Logo in Header -->
+                <a href="{% url 'tracker:dashboard' %}" class="flex items-center ml-4">
+                    <img src="{% static 'img/logo.png' %}" alt="ODtech Logo"
+                        class="h-8 md:h-10 object-contain transition-opacity hover:opacity-80">
+                </a>
+            </div>
+        </header>
+
+        <div class="p-8 flex-1 overflow-auto scroll-smooth">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script>
+        function sidebarApp() {
+            return {
+                sidebarOpen: window.innerWidth >= 768 ? (localStorage.getItem('sidebarOpen') !== 'false') : false,
+                toggleSidebar() {
+                    this.sidebarOpen = !this.sidebarOpen;
+                    if (window.innerWidth >= 768) {
+                        localStorage.setItem('sidebarOpen', this.sidebarOpen);
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- ═══════════════════════════════════════════════════════════
+         NOTES & TO-DO POPUP
+    ═══════════════════════════════════════════════════════════ -->
+    {% if user.is_authenticated %}
+    <!-- Backdrop -->
+    <div id="ntp-backdrop" onclick="closeNotesPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:10000;
+               opacity:0;transition:opacity .25s ease;backdrop-filter:blur(2px);">
+    </div>
+
+    <!-- Centered Modal Popup -->
+    <div id="ntp-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-44%) scale(0.96);
+               width:min(1080px,95vw);max-height:88vh;z-index:10001;
+               background:#f7f9fb;
+               border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,0.15),0 0 0 1px #d8dadc;
+               flex-direction:column;
+               opacity:0;transition:opacity .28s ease, transform .28s cubic-bezier(.34,1.3,.64,1);">
+
+        <!-- Header Bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:18px 24px 0;flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.35rem;">📒</span>
+                <span style="font-family:Outfit,sans-serif;font-size:1.1rem;font-weight:700;
+                             color:#1f2937;letter-spacing:-.02em;">Notes &amp; To-Do</span>
+            </div>
+            <!-- Tabs -->
+            <div style="display:flex;gap:4px;background:#e5e7eb;
+                        border-radius:10px;padding:4px;">
+                <button id="ntp-tab-notes" onclick="ntpSwitchTab('notes')" style="padding:6px 20px;font-size:.83rem;font-weight:600;border:none;cursor:pointer;
+                           border-radius:7px;background:#2a14b4;color:#fff;transition:all .2s;
+                           font-family:Outfit,sans-serif;letter-spacing:.01em;">
+                    📝 Notes
+                </button>
+                <button id="ntp-tab-todos" onclick="ntpSwitchTab('todos')" style="padding:6px 20px;font-size:.83rem;font-weight:600;border:none;cursor:pointer;
+                           border-radius:7px;background:transparent;color:#777586;transition:all .2s;
+                           font-family:Outfit,sans-serif;letter-spacing:.01em;">
+                    ✅ To-Do
+                </button>
+            </div>
+            <button onclick="closeNotesPanel()" style="background:transparent;border:none;cursor:pointer;
+                       width:32px;height:32px;border-radius:50%;color:#9ca3af;
+                       display:flex;align-items:center;justify-content:center;transition:background .15s, color .15s;"
+                onmouseover="this.style.background='#f3f4f6';this.style.color='#ef4444';"
+                onmouseout="this.style.background='transparent';this.style.color='#9ca3af';" title="Close">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Add input bar -->
+        <div style="padding:14px 24px 12px;flex-shrink:0;">
+            <!-- Notes input -->
+            <div id="ntp-add-notes" style="display:flex;gap:8px;">
+                <input id="ntp-note-title-input" type="text" placeholder="New note title…" style="flex:1;background:#fff;border:1px solid #d1d5db;
+                           border-radius:10px;padding:9px 14px;font-size:.85rem;color:#1f2937;outline:none;
+                           font-family:Inter,sans-serif;transition:border-color .15s, box-shadow .15s;"
+                    onfocus="this.style.borderColor='#2a14b4';this.style.boxShadow='0 0 0 2px rgba(42,20,180,0.1)';"
+                    onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';"
+                    onkeydown="if(event.key==='Enter')openNoteCreate()" placeholder="New note title…">
+                <button onclick="openNoteCreate()" style="background:#2a14b4;color:#fff;border:none;border-radius:10px;padding:9px 20px;
+                           font-size:.83rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:Outfit,sans-serif;
+                           transition:background .15s;display:flex;align-items:center;gap:6px;"
+                    onmouseover="this.style.background='#221096'" onmouseout="this.style.background='#2a14b4'">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create Note
+                </button>
+            </div>
+            <!-- Todos input -->
+            <div id="ntp-add-todos" style="display:none;gap:8px;">
+                <input id="ntp-todo-title-input" type="text" placeholder="New task…" style="flex:1;background:#fff;border:1px solid #d1d5db;
+                           border-radius:10px;padding:9px 14px;font-size:.85rem;color:#1f2937;outline:none;
+                           font-family:Inter,sans-serif;transition:border-color .15s, box-shadow .15s;"
+                    onfocus="this.style.borderColor='#006c49';this.style.boxShadow='0 0 0 2px rgba(0,108,73,0.1)';"
+                    onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';"
+                    onkeydown="if(event.key==='Enter')ntpCreateTodo()">
+                <button onclick="ntpCreateTodo()" style="background:#006c49;color:#fff;border:none;border-radius:10px;padding:9px 20px;
+                           font-size:.83rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:Outfit,sans-serif;
+                           transition:background .15s;display:flex;align-items:center;gap:6px;"
+                    onmouseover="this.style.background='#005439'" onmouseout="this.style.background='#006c49'">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Task
+                </button>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div style="height:1px;background:#e5e7eb;margin:0 24px;flex-shrink:0;"></div>
+
+        <!-- Card Grid Container -->
+        <div style="flex:1;overflow-y:auto;padding:20px 24px 24px;">
+            <!-- Notes Grid -->
+            <div id="ntp-notes-list"
+                style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
+            </div>
+            <!-- Todos Grid -->
+            <div id="ntp-todos-list"
+                style="display:none;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Note Detail / Edit Modal -->
+    <div id="ntp-note-modal"
+        style="display:none;position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+        <div
+            style="background:#fff;border-radius:14px;width:520px;max-width:95vw;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.2);position:relative;">
+            <button onclick="closeNoteModal()"
+                style="position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;color:#9ca3af;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h3 id="ntp-modal-heading"
+                style="font-size:1rem;font-weight:700;color:#1e1b4b;margin-bottom:14px;font-family:Outfit,sans-serif;">
+                Note</h3>
+            <input id="ntp-modal-title" type="text" placeholder="Title"
+                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:.87rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
+            <textarea id="ntp-modal-content" rows="8" placeholder="Write your note here…"
+                style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:9px 12px;font-size:.85rem;resize:vertical;box-sizing:border-box;outline:none;font-family:inherit;"></textarea>
+
+            <div style="margin-top:10px;background:#f9fafb;padding:10px;border-radius:8px;border:1px dashed #d1d5db;">
+                <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Attach
+                    Reference Documents</label>
+                <div id="ntp-modal-existing-docs" style="margin-bottom:8px;display:none;"></div>
+                <input id="ntp-modal-docs" type="file" multiple style="font-size:0.8rem;width:100%;margin-bottom:8px;">
+                <input id="ntp-modal-doc-ref" type="text"
+                    placeholder="Document Reference (applies to all attached files)"
+                    style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:6px 9px;font-size:0.8rem;box-sizing:border-box;outline:none;">
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button onclick="closeNoteModal()"
+                    style="padding:8px 18px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:.84rem;cursor:pointer;">Cancel</button>
+                <button id="ntp-modal-save-btn" onclick="ntpSaveNote()"
+                    style="padding:8px 22px;border:none;border-radius:8px;background:#4f46e5;color:#fff;font-size:.84rem;font-weight:600;cursor:pointer;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─────────────────────────────────────────────────────────────────
+        //  Notes & To-Do Panel — All logic in plain JS, no dependencies
+        // ─────────────────────────────────────────────────────────────────
+        const NTP = {
+            currentTab: 'notes',
+            notes: [],
+            todos: [],
+            editingNoteId: null,
+            loaded: false,
+            showCompletedTodos: false,
+        };
+
+        // Baked in at render time — true only for staff / superusers
+        const NTP_IS_ADMIN = {{ user.is_staff|yesno:"true,false" }} || {{ user.is_superuser|yesno:"true,false" }};
+
+        function openNotesPanel() {
+            const panel = document.getElementById('ntp-panel');
+            const backdrop = document.getElementById('ntp-backdrop');
+            panel.style.display = 'flex';
+            backdrop.style.display = 'block';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    panel.style.opacity = '1';
+                    panel.style.transform = 'translate(-50%,-50%) scale(1)';
+                    backdrop.style.opacity = '1';
+                });
+            });
+            if (!NTP.loaded) {
+                NTP.loaded = true;
+                ntpLoadNotes();
+                ntpLoadTodos();
+            }
+        }
+
+        function closeNotesPanel() {
+            const panel = document.getElementById('ntp-panel');
+            const backdrop = document.getElementById('ntp-backdrop');
+            panel.style.opacity = '0';
+            panel.style.transform = 'translate(-50%,-44%) scale(0.96)';
+            backdrop.style.opacity = '0';
+            setTimeout(() => {
+                panel.style.display = 'none';
+                backdrop.style.display = 'none';
+            }, 300);
+        }
+
+        function ntpSwitchTab(tab) {
+            NTP.currentTab = tab;
+            const noteBtn = document.getElementById('ntp-tab-notes');
+            const todoBtn = document.getElementById('ntp-tab-todos');
+            const noteList = document.getElementById('ntp-notes-list');
+            const todoList = document.getElementById('ntp-todos-list');
+            const noteAdd = document.getElementById('ntp-add-notes');
+            const todoAdd = document.getElementById('ntp-add-todos');
+
+            if (tab === 'notes') {
+                noteBtn.style.background = '#00414d';
+                noteBtn.style.color = '#fff';
+                todoBtn.style.background = 'transparent';
+                todoBtn.style.color = 'rgba(255,255,255,0.5)';
+                noteList.style.display = 'grid';
+                todoList.style.display = 'none';
+                noteAdd.style.display = 'flex';
+                todoAdd.style.display = 'none';
+            } else {
+                todoBtn.style.background = '#00414d';
+                todoBtn.style.color = '#fff';
+                noteBtn.style.background = 'transparent';
+                noteBtn.style.color = 'rgba(255,255,255,0.5)';
+                todoList.style.display = 'grid';
+                noteList.style.display = 'none';
+                todoAdd.style.display = 'flex';
+                noteAdd.style.display = 'none';
+            }
+        }
+
+        // ─── CSRF helper ───
+        function getCsrfToken() {
+            // Try getting it from the DOM first
+            const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (tokenInput) return tokenInput.value;
+
+            // Fallback to reading the cookie
+            const cookieNames = ['odtech_bom_csrftoken', 'csrftoken'];
+            const cookies = document.cookie.split(';');
+            for (const name of cookieNames) {
+                for (let c of cookies) {
+                    c = c.trim();
+                    if (c.startsWith(name + '=')) return decodeURIComponent(c.slice(name.length + 1));
+                }
+            }
+            return '';
+        }
+
+        async function ntpFetch(url, method = 'GET', body = null) {
+            const isFormData = body instanceof FormData;
+            const opts = {
+                method,
+                headers: { 'X-CSRFToken': getCsrfToken() },
+            };
+            if (!isFormData) {
+                opts.headers['Content-Type'] = 'application/json';
+            }
+            if (body) {
+                opts.body = isFormData ? body : JSON.stringify(body);
+            }
+            const r = await fetch(url, opts);
+            return r.json();
+        }
+
+
+        // ─────────────────── NOTES ───────────────────
+        async function ntpLoadNotes() {
+            const data = await ntpFetch('/tracker/api/my/notes/');
+            NTP.notes = data.notes || [];
+            ntpRenderNotes();
+        }
+
+        function renderDocumentItem(d) {
+            const ext = d.url.split('.').pop().toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+            const isPdf = ['pdf'].includes(ext);
+            const target = (isImage || isPdf) ? 'target="_blank"' : '';
+            return `
+            <div data-doc-id="${d.id}" style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f3f4f6;border-radius:6px;margin-top:4px;font-size:0.75rem;">
+                <div style="display:flex;align-items:center;gap:6px;overflow:hidden;">
+                    <span style="font-size:1.1rem;">📎</span>
+                    <div style="display:flex;flex-direction:column;min-width:0;">
+                        <a href="${d.url}" ${target} style="color:#4f46e5;text-decoration:none;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${d.name}">
+                            ${d.name}
+                        </a>
+                        ${d.reference_text ? `<span style="color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(d.reference_text)}</span>` : ''}
+                    </div>
+                </div>
+                <button type="button" onclick="ntpDeleteDocument('${d.id}')" style="background:none;border:none;cursor:pointer;color:#ef4444;padding:2px;flex-shrink:0;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </div>
+        `;
+        }
+
+        async function ntpDeleteDocument(id) {
+            if (!confirm('Delete this reference document?')) return;
+            const data = await ntpFetch(`/tracker/api/reference-document/${id}/delete/`, 'DELETE');
+            if (data.success) {
+                const els = document.querySelectorAll(`[data-doc-id="${id}"]`);
+                els.forEach(el => el.remove());
+                NTP.notes.forEach(n => { if (n.documents) n.documents = n.documents.filter(d => d.id !== id); });
+                NTP.todos.forEach(t => { if (t.documents) t.documents = t.documents.filter(d => d.id !== id); });
+            }
+        }
+
+        function ntpRenderNotes() {
+            const list = document.getElementById('ntp-notes-list');
+            if (!NTP.notes.length) {
+                list.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 16px;
+                color:#6b7280;font-size:.9rem;font-family:Inter,sans-serif;">
+                No notes yet. Add one above!</div>`;
+                return;
+            }
+            list.innerHTML = NTP.notes.map(n => `
+            <div class="ntp-card" data-note-id="${n.id}"
+                style="background:#fff;border-radius:14px;padding:0;overflow:hidden;
+                       box-shadow:0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb;
+                       display:flex;flex-direction:column;cursor:pointer;
+                       transition:transform .18s ease,box-shadow .18s ease;
+                       min-height:140px;"
+                onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08),0 0 0 1px #d1d5db'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb'">
+                <!-- Card Header - clickable to expand -->
+                <button
+                    id="note-hdr-${n.id}"
+                    aria-expanded="false"
+                    aria-controls="note-body-${n.id}"
+                    onclick="ntpToggleNote('${n.id}')"
+                    style="width:100%;background:none;border:none;cursor:pointer;
+                           padding:14px 14px 10px;text-align:left;">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+                        <span style="font-size:.88rem;font-weight:700;color:#1f2937;
+                                     font-family:Outfit,sans-serif;line-height:1.3;
+                                     word-break:break-word;flex:1;">${escHtml(n.title)}</span>
+                        <svg class="ntp-chevron" aria-hidden="true" width="14" height="14" fill="none" stroke="#9ca3af"
+                             stroke-width="2.5" viewBox="0 0 24 24"
+                             style="flex-shrink:0;margin-top:2px;transition:transform .22s ease;transform:rotate(-90deg);">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div style="font-size:.7rem;color:#9ca3af;margin-top:5px;font-family:Inter,sans-serif;">
+                        ✏️ ${n.updated_at}
+                    </div>
+                </button>
+
+                <!-- Accordion Body -->
+                <div id="note-body-${n.id}" role="region" aria-labelledby="note-hdr-${n.id}"
+                    style="overflow:hidden;max-height:0;transition:max-height .3s ease,opacity .25s ease;opacity:0;">
+                    <div style="padding:0 14px 12px;font-size:.78rem;color:#4b5563;
+                                white-space:pre-wrap;word-break:break-word;line-height:1.5;
+                                border-top:1px solid #f3f4f6;padding-top:8px;margin-top:0;">
+                        ${escHtml(n.content || '(no content)')}
+                        ${n.documents && n.documents.length ? `<div style="margin-top:8px;border-top:1px dashed #e5e7eb;padding-top:8px;">${n.documents.map(renderDocumentItem).join('')}</div>` : ''}
+                    </div>
+                </div>
+
+                <!-- Card Footer Actions -->
+                <div style="margin-top:auto;display:flex;justify-content:flex-end;gap:6px;
+                            padding:10px;border-top:1px solid #f3f4f6;background:#f9fafb;" onclick="event.stopPropagation()">
+                    <button onclick="openNoteEdit('${n.id}')" title="Edit & Upload"
+                        style="background:#fff;border:1px solid #e5e7eb;cursor:pointer;
+                               color:#4b5563;padding:5px 12px;border-radius:8px;font-size:.75rem;font-weight:600;
+                               transition:all .15s;display:flex;align-items:center;gap:6px;"
+                        onmouseover="this.style.background='#f3f4f6';this.style.borderColor='#d1d5db'"
+                        onmouseout="this.style.background='#fff';this.style.borderColor='#e5e7eb'">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit &amp; Upload
+                    </button>
+                    <button onclick="ntpDeleteNote('${n.id}')" title="Delete"
+                        style="background:transparent;border:1px solid transparent;cursor:pointer;
+                               color:#ef4444;padding:5px 8px;border-radius:8px;
+                               transition:all .15s;display:flex;align-items:center;"
+                        onmouseover="this.style.background='#fee2e2'"
+                        onmouseout="this.style.background='transparent'">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        }
+
+        function ntpToggleNote(id) {
+            const btn = document.getElementById('note-hdr-' + id);
+            const body = document.getElementById('note-body-' + id);
+            const chevron = btn.querySelector('.ntp-chevron');
+            const isOpen = btn.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                body.style.maxHeight = '0';
+                body.style.opacity = '0';
+                btn.setAttribute('aria-expanded', 'false');
+                chevron.style.transform = 'rotate(-90deg)';
+            } else {
+                body.style.maxHeight = body.scrollHeight + 300 + 'px';
+                body.style.opacity = '1';
+                btn.setAttribute('aria-expanded', 'true');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function openNoteView(id) { ntpToggleNote(id); }
+
+        function openNoteCreate() {
+            const titleInput = document.getElementById('ntp-note-title-input');
+            const title = titleInput.value.trim();
+            if (!title) { titleInput.focus(); return; }
+            // Open modal pre-filled
+            NTP.editingNoteId = null;
+            document.getElementById('ntp-modal-heading').textContent = 'New Note';
+            document.getElementById('ntp-modal-title').value = title;
+            document.getElementById('ntp-modal-content').value = '';
+            document.getElementById('ntp-modal-docs').value = '';
+            document.getElementById('ntp-modal-doc-ref').value = '';
+            const existingDocsContainer = document.getElementById('ntp-modal-existing-docs');
+            if (existingDocsContainer) { existingDocsContainer.innerHTML = ''; existingDocsContainer.style.display = 'none'; }
+            openNoteModal();
+            titleInput.value = '';
+        }
+
+        function openNoteEdit(id) {
+            const note = NTP.notes.find(n => n.id === id);
+            if (!note) return;
+            NTP.editingNoteId = id;
+            document.getElementById('ntp-modal-heading').textContent = 'Edit Note';
+            document.getElementById('ntp-modal-title').value = note.title;
+            document.getElementById('ntp-modal-content').value = note.content || '';
+            document.getElementById('ntp-modal-docs').value = '';
+            document.getElementById('ntp-modal-doc-ref').value = '';
+            const existingDocsContainer = document.getElementById('ntp-modal-existing-docs');
+            if (existingDocsContainer) {
+                existingDocsContainer.innerHTML = note.documents && note.documents.length ? note.documents.map(renderDocumentItem).join('') : '';
+                existingDocsContainer.style.display = note.documents && note.documents.length ? 'block' : 'none';
+            }
+            openNoteModal();
+        }
+
+        function openNoteModal() {
+            const modal = document.getElementById('ntp-note-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => document.getElementById('ntp-modal-content').focus(), 50);
+        }
+
+        function closeNoteModal() {
+            document.getElementById('ntp-note-modal').style.display = 'none';
+            NTP.editingNoteId = null;
+        }
+
+        async function ntpSaveNote() {
+            const title = document.getElementById('ntp-modal-title').value.trim();
+            const content = document.getElementById('ntp-modal-content').value;
+            const files = document.getElementById('ntp-modal-docs').files;
+            const docRef = document.getElementById('ntp-modal-doc-ref').value;
+
+            if (!title) { alert('Title is required.'); return; }
+
+            const btn = document.getElementById('ntp-modal-save-btn');
+            btn.textContent = 'Saving…'; btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('content', content);
+            for (let i = 0; i < files.length; i++) {
+                formData.append('documents', files[i]);
+                formData.append('document_references', docRef);
+            }
+
+            let data;
+            if (NTP.editingNoteId) {
+                // PATCH doesn't accept multipart in Django by default, so we send POST which the backend accepts
+                data = await ntpFetch(`/tracker/api/my/notes/${NTP.editingNoteId}/`, 'POST', formData);
+                if (data.success) {
+                    const idx = NTP.notes.findIndex(n => n.id === NTP.editingNoteId);
+                    if (idx >= 0) NTP.notes[idx] = data.note;
+                }
+            } else {
+                data = await ntpFetch('/tracker/api/my/notes/', 'POST', formData);
+                if (data.success) NTP.notes.unshift(data.note);
+            }
+
+            btn.textContent = 'Save'; btn.disabled = false;
+            if (data.success) {
+                closeNoteModal();
+                ntpRenderNotes();
+            } else {
+                alert(data.error || 'Failed to save note.');
+            }
+        }
+
+        async function ntpDeleteNote(id) {
+            if (!confirm('Delete this note?')) return;
+            const data = await ntpFetch(`/tracker/api/my/notes/${id}/`, 'DELETE');
+            if (data.success) {
+                NTP.notes = NTP.notes.filter(n => n.id !== id);
+                ntpRenderNotes();
+            }
+        }
+
+        // ─────────────────── TODOS ───────────────────
+        async function ntpLoadTodos() {
+            const data = await ntpFetch('/tracker/api/my/todos/');
+            NTP.todos = data.todos || [];
+            ntpRenderTodos();
+        }
+
+        function ntpRenderTodos() {
+            const list = document.getElementById('ntp-todos-list');
+            if (!NTP.todos.length) {
+                list.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 16px;
+                color:#6b7280;font-size:.9rem;font-family:Inter,sans-serif;">
+                No tasks yet. Add one above!</div>`;
+                return;
+            }
+            const pending = NTP.todos.filter(t => !t.is_completed);
+            const completed = NTP.todos.filter(t => t.is_completed);
+
+            function renderTodo(t) {
+                const hasBody = t.description || (t.documents && t.documents.length) || t.updated_at;
+                const cardBg = t.is_completed ? '#f3f4f6' : '#ffffff';
+                return `
+            <div class="ntp-card" data-todo-id="${t.id}"
+                style="background:${cardBg};
+                       border-radius:14px;overflow:hidden;
+                       box-shadow:0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb;
+                       display:flex;flex-direction:column;min-height:120px;
+                       opacity:${t.is_completed ? '.75' : '1'};
+                       transition:transform .18s ease,box-shadow .18s ease;"
+                onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px #d1d5db'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb'">
+
+                <!-- Card Header -->
+                <div style="display:flex;align-items:flex-start;gap:8px;padding:13px 13px 8px;">
+                    <input type="checkbox" ${t.is_completed ? 'checked' : ''}
+                        onchange="ntpToggleTodo('${t.id}', this.checked)"
+                        style="margin-top:3px;width:15px;height:15px;cursor:pointer;
+                               accent-color:#006c49;flex-shrink:0;"
+                        aria-label="Mark '${escAttr(t.title)}' as done">
+                    <button
+                        id="todo-hdr-${t.id}"
+                        aria-expanded="false"
+                        aria-controls="todo-body-${t.id}"
+                        onclick="ntpToggleTodo_acc('${t.id}')"
+                        style="flex:1;text-align:left;background:none;border:none;
+                               cursor:${hasBody ? 'pointer' : 'default'};
+                               padding:0;display:flex;align-items:flex-start;gap:6px;"
+                    >
+                        <span style="font-size:.87rem;font-weight:700;color:#1f2937;
+                                     font-family:Outfit,sans-serif;flex:1;line-height:1.3;
+                                     word-break:break-word;
+                                     ${t.is_completed ? 'text-decoration:line-through;color:#6b7280;' : ''}">${escHtml(t.title)}</span>
+                        ${hasBody ? `<svg class="ntp-chevron" aria-hidden="true" width="13" height="13" fill="none"
+                             stroke="#9ca3af" stroke-width="2.5" viewBox="0 0 24 24"
+                             style="flex-shrink:0;margin-top:3px;transition:transform .22s ease;transform:rotate(-90deg);">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>` : ''}
+                    </button>
+                </div>
+
+                <!-- Accordion Body -->
+                ${hasBody ? `<div id="todo-body-${t.id}" role="region" aria-labelledby="todo-hdr-${t.id}"
+                    style="overflow:hidden;max-height:0;transition:max-height .3s ease,opacity .25s ease;opacity:0;">
+                    <div style="padding:0 13px 10px 36px;border-top:1px solid #f3f4f6;padding-top:8px;margin-top:0;">
+                        ${t.description ? `<div style="font-size:.78rem;color:#4b5563;white-space:pre-wrap;word-break:break-word;line-height:1.5;">${escHtml(t.description)}</div>` : ''}
+                        ${t.documents && t.documents.length ? `<div style="margin-top:6px;border-top:1px dashed #e5e7eb;padding-top:6px;">${t.documents.map(renderDocumentItem).join('')}</div>` : ''}
+                        ${t.updated_at ? `<div style="font-size:.7rem;color:#9ca3af;margin-top:5px;">✏️ ${t.updated_at}</div>` : ''}
+                    </div>
+                </div>` : ''}
+
+                <!-- Inline Edit Form -->
+                <div id="todo-edit-${t.id}" style="display:none;padding:10px 13px;background:#f9fafb;border-top:1px solid #e5e7eb;">
+                    <input id="todo-edit-title-${t.id}" type="text" value="${escAttr(t.title)}"
+                        style="width:100%;background:#fff;border:1px solid #d1d5db;
+                               border-radius:7px;padding:6px 9px;font-size:.82rem;margin-bottom:6px;
+                               box-sizing:border-box;outline:none;color:#1f2937;">
+                    <textarea id="todo-edit-desc-${t.id}" rows="2" placeholder="Description (optional)"
+                        style="width:100%;background:#fff;border:1px solid #d1d5db;
+                               border-radius:7px;padding:6px 9px;font-size:.8rem;resize:vertical;
+                               box-sizing:border-box;outline:none;font-family:inherit;color:#1f2937;">${escHtml(t.description)}</textarea>
+                    
+                    <div style="margin-top:4px;margin-bottom:8px;">
+                        <label style="font-size:0.75rem;font-weight:600;color:#4b5563;display:block;margin-bottom:4px;">Upload Document</label>
+                        <input id="todo-edit-docs-${t.id}" type="file" multiple style="font-size:0.75rem;width:100%;margin-bottom:4px;color:#4b5563;">
+                        <input id="todo-edit-doc-ref-${t.id}" type="text" placeholder="Document Reference" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:4px 6px;font-size:0.75rem;box-sizing:border-box;outline:none;color:#1f2937;">
+                    </div>
+
+                    <div style="display:flex;gap:6px;justify-content:flex-end;">
+                        <button onclick="cancelTodoEdit('${t.id}')" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#4b5563;font-size:.78rem;cursor:pointer;font-weight:600;">Cancel</button>
+                        <button onclick="ntpSaveTodoEdit('${t.id}')" style="padding:6px 16px;border:none;border-radius:6px;background:#006c49;color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;">Save</button>
+                    </div>
+                </div>
+
+                <!-- Card Footer Actions -->
+                <div style="margin-top:auto;display:flex;justify-content:flex-end;gap:6px;
+                            padding:10px;border-top:1px solid #f3f4f6;background:#f9fafb;" onclick="event.stopPropagation()">
+                    <button onclick="openTodoEdit('${t.id}')" title="Edit & Upload"
+                        style="background:#fff;border:1px solid #e5e7eb;cursor:pointer;
+                               color:#4b5563;padding:5px 12px;border-radius:8px;font-size:.75rem;font-weight:600;
+                               transition:all .15s;display:flex;align-items:center;gap:6px;"
+                        onmouseover="this.style.background='#f3f4f6';this.style.borderColor='#d1d5db'"
+                        onmouseout="this.style.background='#fff';this.style.borderColor='#e5e7eb'">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Edit &amp; Upload
+                    </button>
+                    <button onclick="ntpDeleteTodo('${t.id}')" title="Delete"
+                        style="background:transparent;border:1px solid transparent;cursor:pointer;
+                               color:#ef4444;padding:5px 8px;border-radius:8px;
+                               transition:all .15s;display:flex;align-items:center;"
+                        onmouseover="this.style.background='#fee2e2'"
+                        onmouseout="this.style.background='transparent'">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>
+            </div>`;
+            }
+
+            let html = '';
+            if (pending.length) html += pending.map(renderTodo).join('');
+            if (completed.length) {
+                html += `<div style="grid-column:1/-1;display:flex;justify-content:center;margin:12px 0 4px;">
+                        <button onclick="ntpToggleShowCompleted()" 
+                            style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:20px;padding:6px 18px;
+                                   font-size:0.75rem;font-weight:600;color:#4b5563;cursor:pointer;transition:all 0.15s;
+                                   display:flex;align-items:center;gap:6px;" 
+                            onmouseover="this.style.background='#e5e7eb'" 
+                            onmouseout="this.style.background='#f3f4f6'">
+                            ${NTP.showCompletedTodos ? 'Hide' : 'Show'} Completed (${completed.length})
+                        </button>
+                     </div>`;
+                if (NTP.showCompletedTodos) {
+                    html += completed.map(renderTodo).join('');
+                }
+            }
+            list.innerHTML = html;
+        }
+
+        function ntpToggleShowCompleted() {
+            NTP.showCompletedTodos = !NTP.showCompletedTodos;
+            ntpRenderTodos();
+        }
+
+        function ntpToggleTodo_acc(id) {
+            const btn = document.getElementById('todo-hdr-' + id);
+            const body = document.getElementById('todo-body-' + id);
+            if (!body) return;
+            const chevron = btn.querySelector('.ntp-chevron');
+            const isOpen = btn.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                body.style.maxHeight = '0';
+                body.style.opacity = '0';
+                btn.setAttribute('aria-expanded', 'false');
+                if (chevron) chevron.style.transform = 'rotate(-90deg)';
+            } else {
+                body.style.maxHeight = body.scrollHeight + 500 + 'px';
+                body.style.opacity = '1';
+                btn.setAttribute('aria-expanded', 'true');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        async function ntpCreateTodo() {
+            const input = document.getElementById('ntp-todo-title-input');
+            const title = input.value.trim();
+            if (!title) { input.focus(); return; }
+            const fd = new FormData();
+            fd.append('title', title);
+            const data = await ntpFetch('/tracker/api/my/todos/', 'POST', fd);
+            if (data.success) {
+                NTP.todos.unshift(data.todo);
+                ntpRenderTodos();
+                input.value = '';
+            } else {
+                alert(data.error || 'Failed to create task.');
+            }
+        }
+
+        async function ntpToggleTodo(id, checked) {
+            const data = await ntpFetch(`/tracker/api/my/todos/${id}/`, 'POST', (() => { const fd = new FormData(); fd.append('is_completed', checked); return fd; })());
+            if (data.success) {
+                const idx = NTP.todos.findIndex(t => t.id === id);
+                if (idx >= 0) NTP.todos[idx] = data.todo;
+                ntpRenderTodos();
+            }
+        }
+
+        function openTodoEdit(id) {
+            // Show edit form
+            const editDiv = document.getElementById('todo-edit-' + id);
+            const viewDiv = document.getElementById('todo-view-' + id);
+            if (!editDiv) return;
+            editDiv.style.display = 'block';
+            if (viewDiv) viewDiv.style.opacity = '0.4';
+        }
+
+        function cancelTodoEdit(id) {
+            const editDiv = document.getElementById('todo-edit-' + id);
+            const viewDiv = document.getElementById('todo-view-' + id);
+            if (editDiv) editDiv.style.display = 'none';
+            if (viewDiv) viewDiv.style.opacity = '1';
+        }
+
+        async function ntpSaveTodoEdit(id) {
+            const title = document.getElementById('todo-edit-title-' + id).value.trim();
+            const desc = document.getElementById('todo-edit-desc-' + id).value;
+            const files = document.getElementById('todo-edit-docs-' + id).files;
+            const docRef = document.getElementById('todo-edit-doc-ref-' + id).value;
+
+            if (!title) { alert('Title cannot be empty.'); return; }
+
+            const fd = new FormData();
+            fd.append('title', title);
+            fd.append('description', desc);
+            for (let i = 0; i < files.length; i++) {
+                fd.append('documents', files[i]);
+                fd.append('document_references', docRef);
+            }
+
+            const data = await ntpFetch(`/tracker/api/my/todos/${id}/`, 'POST', fd);
+            if (data.success) {
+                const idx = NTP.todos.findIndex(t => t.id === id);
+                if (idx >= 0) NTP.todos[idx] = data.todo;
+                ntpRenderTodos();
+            } else {
+                alert(data.error || 'Failed to save.');
+            }
+        }
+
+        async function ntpDeleteTodo(id) {
+            if (!confirm('Delete this task?')) return;
+            const data = await ntpFetch(`/tracker/api/my/todos/${id}/`, 'DELETE');
+            if (data.success) {
+                NTP.todos = NTP.todos.filter(t => t.id !== id);
+                ntpRenderTodos();
+            }
+        }
+
+        // ─── Utility ───
+        function escHtml(s) {
+            if (!s) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function escAttr(s) { return escHtml(s); }
+    </script>
+    {% endif %}
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{% static "sw.js" %}')
+                    .then(reg => console.log('[SW] Registered:', reg.scope))
+                    .catch(err => console.warn('[SW] Registration failed:', err));
+            });
+        }
+    </script>
+
+
+
+</body>
+
+</html>

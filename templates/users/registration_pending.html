@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Pending — ODtech ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        body { background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); background-attachment: fixed; }
+        .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.18); }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        .blob { animation: float 6s ease-in-out infinite; }
+        .blob2 { animation: float 8s ease-in-out infinite reverse; }
+
+        /* Premium Light Theme overrides */
+        .text-white { color: #0F172A !important; }
+        .text-gray-300 { color: #334155 !important; }
+        .text-gray-400 { color: #475569 !important; }
+        .text-gray-500 { color: #475569 !important; }
+        .text-gray-600 { color: #64748B !important; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center font-sans antialiased relative overflow-hidden">
+
+    <!-- Decorative blobs -->
+    <div class="blob absolute top-[-8%] left-[-5%] w-96 h-96 bg-blue-600/15 rounded-full blur-[80px] pointer-events-none"></div>
+    <div class="blob2 absolute bottom-[-8%] right-[-5%] w-96 h-96 bg-purple-600/15 rounded-full blur-[80px] pointer-events-none"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="w-full max-w-md px-4">
+        <!-- Logo + Brand -->
+        <div class="text-center mb-10">
+            <a href="/">
+                <img src="{% static 'img/logo.png' %}" alt="ODtech Logo" class="h-16 mx-auto mb-4 drop-shadow-lg">
+            </a>
+            <h1 class="text-3xl font-bold text-white mb-1">Verify Email</h1>
+            <p class="text-gray-400 text-sm">One last step to activate your account</p>
+        </div>
+
+        <!-- Card -->
+        <div class="glass rounded-3xl p-8 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19v-8.93a2 2 0 01.89-1.664l8-5.333a2 2 0 012.22 0l8 5.333A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-2.25-1.5a2 2 0 00-2.22 0l-2.25 1.5"/></svg>
+            </div>
+            
+            <p class="text-gray-300 text-sm mb-8 leading-relaxed">
+                Thank you for registering! An activation link has been sent to your email address. Please click on the link to verify your email and complete your account setup.
+            </p>
+
+            <a href="{% url 'login' %}"
+               class="inline-block w-full py-3 px-6 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-base">
+                Go to Sign In
+            </a>
+        </div>
+
+        <p class="text-center text-gray-600 text-xs mt-6">
+            ODtech ERP &copy; 2026 &mdash; All rights reserved
+        </p>
+    </div>
+</body>
+</html>

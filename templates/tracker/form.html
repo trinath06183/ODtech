@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} - ERP System{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg border border-gray-200">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center bg-gray-50">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                {{ title }}
+            </h3>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="rounded-md bg-red-50 p-4 mb-4">
+                    <div class="flex">
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Errors</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                {{ form.non_field_errors }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="flex justify-between block text-sm font-medium text-gray-700">
+                        <span>
+                            {{ field.label }}
+                            {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </span>
+                        {% if field.name == 'lot' and order %}
+                        <button type="button" onclick="promptCreateLot('{{ order.id }}', '{{ field.auto_id }}')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">+ New Lot</button>
+                        {% endif %}
+                    </label>
+                    <div class="mt-1">
+                        {{ field }}
+                    </div>
+                    {% if field.help_text %}
+                    <p class="mt-2 text-sm text-gray-500">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                    {% if field.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <datalist id="uom-suggestions">
+                    <option value="Pcs">
+                    <option value="Sets">
+                    <option value="Nos">
+                    <option value="Kgs">
+                    <option value="Mtr">
+                    <option value="Ltr">
+                    <option value="Sq.Ft">
+                    <option value="Sq.Mtr">
+                    <option value="Cu.Mtr">
+                    <option value="Ft">
+                    <option value="Inch">
+                    <option value="Ton">
+                    <option value="Box">
+                    <option value="Roll">
+                    <option value="Bundle">
+                    <option value="Pair">
+                    <option value="Bag">
+                </datalist>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-6">
+                    <a href="{{ cancel_url }}"
+                        class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function promptCreateLot(orderId, selectFieldId) {
+        var lotName = prompt("Enter new lot name:");
+        if (!lotName || !lotName.trim()) return;
+        
+        var formData = { lot_name: lotName.trim() };
+        
+        fetch(`/api/order/${orderId}/create-lot/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                var select = document.getElementById(selectFieldId);
+                if (select) {
+                    var option = new Option(data.lot_name, data.lot_id, true, true);
+                    select.add(option);
+                    select.value = data.lot_id;
+                }
+                alert("Lot created and selected successfully!");
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("An error occurred while creating the lot.");
+        });
+    }
+</script>
+{% endblock %}

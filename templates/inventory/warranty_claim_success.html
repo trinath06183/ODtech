@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Submitted — ODtech Solutions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%); min-height: 100vh; font-family: 'Outfit', sans-serif; }
+        @keyframes pop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+        .pop { animation: pop 0.5s ease forwards; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.5s ease forwards; opacity:0; }
+        .fade-up-2 { animation: fadeUp 0.5s 0.15s ease forwards; opacity:0; }
+        .fade-up-3 { animation: fadeUp 0.5s 0.3s ease forwards; opacity:0; }
+        @keyframes pulse-border { 0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0.4)} 50%{box-shadow:0 0 0 12px rgba(251,191,36,0)} }
+        .claim-box { animation: pulse-border 2.5s infinite; }
+        .copy-btn { cursor: pointer; transition: background 0.2s; }
+        .copy-btn:hover { background: rgba(255,255,255,0.12) !important; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen px-4 py-12">
+<div class="text-center max-w-md w-full">
+
+    <!-- Success icon -->
+    <div class="pop inline-flex items-center justify-center w-20 h-20 rounded-full mb-5" style="background: linear-gradient(135deg,#10B981,#059669); box-shadow: 0 0 50px rgba(16,185,129,0.35);">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+    </div>
+
+    <div class="fade-up">
+        <h1 class="text-3xl font-bold text-white mb-1">Claim Submitted!</h1>
+        <p class="text-slate-400 text-sm mb-6">Your warranty claim has been received. Save your unique claim number below.</p>
+    </div>
+
+    <!-- Claim Number Box -->
+    <div class="fade-up-2">
+        <div class="claim-box rounded-2xl p-5 mb-6" style="background: rgba(251,191,36,0.08); border: 2px solid rgba(251,191,36,0.35);">
+            <p class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2">Your Warranty Claim Number</p>
+            <div class="flex items-center justify-center gap-3">
+                <span class="text-white font-bold text-2xl tracking-widest" id="claim-num">{{ claim.claim_number }}</span>
+                <button onclick="copyClaimNum()" class="copy-btn p-2 rounded-lg" style="background: rgba(255,255,255,0.07);" title="Copy to clipboard">
+                    <svg id="copy-icon" class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-amber-600 text-xs mt-2">Screenshot or note this number — you'll need it to track your claim.</p>
+        </div>
+    </div>
+
+    <!-- Details summary -->
+    <div class="fade-up-3">
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-5 text-left">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Claim Summary</p>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Status</span>
+                    <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full text-xs font-bold">{{ claim.status }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Invoice #</span>
+                    <span class="text-white font-medium">{{ claim.registration.invoice_number }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Serial #</span>
+                    <span class="text-white font-medium">{{ claim.registration.serial_number }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Submitted</span>
+                    <span class="text-white font-medium">{{ claim.created_at|date:"d M Y, H:i" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6 text-left">
+            <p class="text-blue-300 text-sm font-semibold mb-1">What happens next?</p>
+            <ul class="text-slate-400 text-xs space-y-1">
+                <li>→ Our team will review your claim within 2-3 business days.</li>
+                <li>→ Use your claim number to track status anytime.</li>
+                <li>→ You may be contacted at <strong class="text-white">{{ claim.registration.email }}</strong> for more information.</li>
+            </ul>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{% url 'warranty_claim_status' %}?claim_number={{ claim.claim_number }}"
+               class="px-5 py-3 rounded-xl font-semibold text-white text-sm transition" style="background: linear-gradient(135deg,#3B82F6,#6366F1);">
+                Track This Claim
+            </a>
+            <a href="{% url 'warranty_register' %}" class="px-5 py-3 rounded-xl font-semibold text-slate-300 text-sm border border-white/15 hover:border-white/30 transition">
+                Back to Home
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function copyClaimNum() {
+    const num = document.getElementById('claim-num').textContent;
+    navigator.clipboard.writeText(num).then(() => {
+        const icon = document.getElementById('copy-icon');
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+        setTimeout(() => {
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>';
+        }, 2000);
+    });
+}
+</script>
+</body>
+</html>

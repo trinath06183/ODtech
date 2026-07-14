@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block header %}Stock Adjustment — {{ product.name }}{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <!-- Back -->
+    <div class="mb-6">
+        <a href="{% url 'inventory_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm w-fit">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Inventory
+        </a>
+    </div>
+
+    <!-- Flash -->
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium
+        {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+        {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="glass rounded-2xl p-8">
+        <div class="flex items-center space-x-3 mb-8">
+            <div class="w-10 h-10 rounded-xl bg-cyan-600/30 flex items-center justify-center">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-white">Adjust Stock</h2>
+                <p class="text-gray-400 text-xs mt-0.5">Product: <span class="text-cyan-400 font-semibold">{{ product.name }}</span> (SKU: {{ product.sku }})</p>
+            </div>
+        </div>
+
+        <form method="post" id="stock-adjust-form">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                <!-- Transaction Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Transaction Type <span class="text-red-400">*</span></label>
+                    <select name="transaction_type" id="transaction_type" required
+                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition appearance-none">
+                        {% for type_code, type_label in transaction_types %}
+                        <option value="{{ type_code }}">{{ type_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Adjustment Direction (Hidden by default, shown only when transaction_type is ADJUSTMENT) -->
+                <div id="direction-container" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Adjustment Type <span class="text-red-400">*</span></label>
+                    <select name="adjustment_direction"
+                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition appearance-none">
+                        <option value="add">Add Stock (+)</option>
+                        <option value="reduce">Reduce Stock (-)</option>
+                    </select>
+                </div>
+
+                <!-- Quantity -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Quantity ({{ product.unit }}) <span class="text-red-400">*</span></label>
+                    <input type="number" name="quantity" step="0.01" min="0.01" required placeholder="e.g. 10"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Batch Number -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Batch Number</label>
+                    <input type="text" name="batch_number" placeholder="e.g. BATCH-2026"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Serial Number -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Serial Number</label>
+                    <input type="text" name="serial_number" placeholder="e.g. SN-009231"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Reason -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Reason for Adjustment</label>
+                    <select name="reason"
+                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition appearance-none">
+                        <option value="">— Select reason —</option>
+                        <option value="Opening stock">Opening stock</option>
+                        <option value="Purchase received">Purchase received</option>
+                        <option value="Damaged / Defective">Damaged / Defective</option>
+                        <option value="Expired">Expired</option>
+                        <option value="Lost / Stolen">Lost / Stolen</option>
+                        <option value="Internal transfer">Internal transfer</option>
+                        <option value="Return from customer">Return from customer</option>
+                        <option value="Return to vendor">Return to vendor</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Remarks -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Additional Remarks</label>
+                    <textarea name="remarks" rows="3" placeholder="e.g. Additional context or notes..."
+                              class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+                <a href="{% url 'inventory_list' %}"
+                   class="px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-sm transition-colors">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5">
+                    Submit Adjustment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('transaction_type');
+    const directionContainer = document.getElementById('direction-container');
+
+    function toggleDirection() {
+        if (typeSelect.value === 'ADJUSTMENT') {
+            directionContainer.style.display = 'block';
+        } else {
+            directionContainer.style.display = 'none';
+        }
+    }
+
+    typeSelect.addEventListener('change', toggleDirection);
+    toggleDirection(); // run once on load
+});
+</script>
+{% endblock %}

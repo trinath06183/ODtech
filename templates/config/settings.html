@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% block header %}Company Settings{% endblock %}
+{% block content %}
+
+<div class="w-full mx-auto max-w-[1600px]">
+
+    <!-- Flash -->
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
+        {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+        {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+        {% if msg.tags == 'error' %}<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% else %}<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{% endif %}
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <!-- Company Info -->
+                <div class="glass rounded-2xl p-7">
+                    <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">Company Information</h3>
+                    <p class="text-gray-500 text-xs">Legal details shown on all documents</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Company Name <span class="text-red-400">*</span></label>
+                    <input type="text" name="name" value="{{ company.name|default:'ODtech Solutions' }}" required
+                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">GSTIN</label>
+                    <input type="text" name="gstin" value="{{ company.gstin|default:'' }}" placeholder="21AAHFO5846M1ZY" maxlength="15"
+                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">PAN</label>
+                    <input type="text" name="pan" value="{{ company.pan|default:'' }}" placeholder="AAHFO5846M" maxlength="10"
+                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Numbering -->
+        <div class="glass rounded-2xl p-7 mb-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-purple-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">Document Number Prefixes</h3>
+                    <p class="text-gray-500 text-xs">Applied to new documents — e.g. INV-2025-26/001</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-5">
+                {% for field, label, default, value in prefix_fields %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">{{ label }}</label>
+                    <input type="text" name="{{ field }}" value="{{ value|default:default }}" placeholder="{{ default }}" maxlength="10"
+                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 shadow-sm transition">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Document Number Format -->
+        <div class="glass rounded-2xl p-7 mb-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-orange-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">Document Number Format</h3>
+                    <p class="text-gray-500 text-xs">Controls the auto-generated serial number for all new documents</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 mb-5" id="fmt-radio-group">
+                {% for fmt_value, fmt_label in doc_number_formats %}
+                <label class="flex items-start gap-3 cursor-pointer group p-3 rounded-xl border transition-all
+                    {% if fmt_value == current_doc_format %}border-orange-500/60 bg-orange-500/10{% else %}border-slate-200 bg-white/60 hover:border-slate-300 hover:bg-slate-50/80{% endif %}"
+                    id="fmt-label-{{ forloop.counter }}">
+                    <input type="radio" name="doc_number_format" value="{{ fmt_value }}"
+                        {% if fmt_value == current_doc_format %}checked{% endif %}
+                        class="mt-1 text-orange-500 bg-white border-slate-300 focus:ring-orange-500"
+                        id="fmt-radio-{{ forloop.counter }}"
+                        onchange="selectFmt(this)">
+                    <div>
+                        <span class="block text-sm font-mono font-semibold text-slate-800">{{ fmt_label }}</span>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <!-- Live preview -->
+            <div class="p-3 bg-white/60 border border-slate-200 rounded-xl flex items-center gap-3">
+                <span class="text-gray-400 text-xs font-medium uppercase tracking-wider">Preview:</span>
+                <span id="fmt-preview" class="font-mono text-orange-300 font-bold text-sm tracking-wide"></span>
+            </div>
+        </div> <!-- End Document Number Format Card -->
+            </div> <!-- End Left Column -->
+
+            <!-- Right Column -->
+            <div class="space-y-6 flex flex-col h-full">
+
+        <!-- Default Terms -->
+
+        <div class="glass rounded-2xl p-7" x-data="termsSettingsApp()">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">Default Terms &amp; Conditions</h3>
+                    <p class="text-gray-500 text-xs">Select and fill default terms applied to all new documents</p>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <template x-for="(term, idx) in termsList" :key="idx">
+                    <div class="mb-4 bg-white/60 p-4 rounded-xl border border-slate-200 transition-colors hover:bg-slate-50/80">
+                        <label class="flex items-center gap-3 font-bold text-sm text-slate-700 cursor-pointer mb-2">
+                            <input type="checkbox" x-model="term.selected" @change="updateTermsString()"
+                                class="w-4 h-4 text-emerald-600 rounded border-slate-300 bg-white focus:ring-emerald-500">
+                            <span x-text="term.label"></span>
+                        </label>
+                        <div x-show="term.selected" x-transition>
+                            <template x-if="term.label !== 'Other:'">
+                                <input type="text" x-model="term.value" @input="updateTermsString()"
+                                    class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-emerald-500 focus:border-emerald-500"
+                                    :placeholder="'Default ' + term.label.replace(':', '')">
+                            </template>
+                            <template x-if="term.label === 'Other:'">
+                                <textarea x-model="term.value" @input="updateTermsString()" rows="3"
+                                    class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-emerald-500 focus:border-emerald-500"
+                                    placeholder="Enter any additional default terms..."></textarea>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <input type="hidden" name="terms_conditions" :value="termsString">
+        </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('termsSettingsApp', () => ({
+        termsString: `{{ company.terms_conditions|default:''|escapejs }}`,
+        termsList: [
+            { label: 'Payment Terms:', selected: false, value: '' },
+            { label: 'Delivery Time:', selected: false, value: '' },
+            { label: 'Packaging and Forwarding:', selected: false, value: '' },
+            { label: 'Fright and Transporting:', selected: false, value: '' },
+            { label: 'Warranty:', selected: false, value: '' },
+            { label: 'Installation,Commissioning and Training:', selected: false, value: '' },
+            { label: 'User Manual of Machine:', selected: false, value: '' },
+            { label: 'GST:', selected: false, value: '' },
+            { label: 'Quotation Validity:', selected: false, value: '' },
+            { label: 'Other:', selected: false, value: '' }
+        ],
+        init() {
+            if (this.termsString) {
+                this.parseExistingTerms(this.termsString);
+            } else {
+                this.termsList.find(t => t.label === 'Payment Terms:').selected = true;
+                this.termsList.find(t => t.label === 'Delivery Time:').selected = true;
+                this.termsList.find(t => t.label === 'GST:').selected = true;
+                this.termsList.find(t => t.label === 'Quotation Validity:').selected = true;
+                this.updateTermsString();
+            }
+        },
+        parseExistingTerms(termsStr) {
+            let unparsed = [];
+            // Remove '1. ', '2. ', etc if they exist due to old flat string format
+            termsStr = termsStr.replace(/\d+\.\s*/g, '\n');
+            let lines = termsStr.split('\n');
+            this.termsList.forEach(t => { t.selected = false; t.value = ''; });
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                let cleanedLine = line.trim();
+                
+                if (cleanedLine.toLowerCase().startsWith('other:')) {
+                    let cleaned = cleanedLine;
+                    while (cleaned.toLowerCase().startsWith('other:')) cleaned = cleaned.substring(6).trim();
+                    unparsed.push(cleaned);
+                    return;
+                }
+                let matched = false;
+                for (let t of this.termsList) {
+                    if (t.label !== 'Other:') {
+                        let lowerLabel = t.label.toLowerCase();
+                        let lowerLine = cleanedLine.toLowerCase();
+                        if (lowerLine.startsWith(lowerLabel)) {
+                            t.selected = true;
+                            t.value = cleanedLine.substring(t.label.length).trim();
+                            matched = true;
+                            break;
+                        } else if (lowerLine.startsWith(lowerLabel.replace(' terms:', ':'))) {
+                            // fallback for old 'Payment:'
+                            t.selected = true;
+                            t.value = cleanedLine.substring(t.label.replace(' Terms:', ':').length).trim();
+                            matched = true;
+                            break;
+                        } else if (lowerLine.startsWith(lowerLabel.replace(' time:', ':'))) {
+                            // fallback for old 'Delivery:'
+                            t.selected = true;
+                            t.value = cleanedLine.substring(t.label.replace(' Time:', ':').length).trim();
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (!matched) unparsed.push(cleanedLine);
+            });
+            if (unparsed.length > 0) {
+                let other = this.termsList.find(t => t.label === 'Other:');
+                if (other) { other.selected = true; other.value = unparsed.join('\n'); }
+            }
+            this.updateTermsString();
+        },
+        updateTermsString() {
+            this.termsString = this.termsList
+                .filter(t => t.selected && (t.value.trim() !== '' || t.label !== 'Other:'))
+                .map(t => {
+                    if (t.label === 'Other:') {
+                        let val = t.value.trim();
+                        return val.startsWith('Other:') ? val : `Other: ${val}`;
+                    }
+                    return `${t.label} ${t.value}`.trim();
+                })
+                .join('\n');
+        }
+    }));
+});
+</script>
+
+        <!-- Security Settings -->
+        <div class="glass rounded-2xl p-7 mb-6 border border-red-500/20">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-red-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">Security Settings</h3>
+                    <p class="text-gray-500 text-xs">Global system permissions and restrictions</p>
+                </div>
+            </div>
+            
+            <label class="flex items-center space-x-3 cursor-pointer group p-3 rounded-xl border border-slate-200 bg-white/60 hover:bg-slate-50/80 transition-all">
+                <input type="checkbox" name="allow_document_deletion" {% if company.allow_document_deletion %}checked{% endif %}
+                       class="w-5 h-5 rounded bg-white border-slate-300 text-red-500 focus:ring-red-500/50 focus:ring-offset-white transition-colors">
+                <div>
+                    <span class="block text-sm font-medium text-slate-800">Allow Document Deletion</span>
+                    <span class="block text-xs text-slate-500 mt-0.5">If disabled, the delete option for all documents will be hidden and blocked system-wide.</span>
+                </div>
+            </label>
+        </div>
+
+        <!-- Save -->
+        <div class="flex justify-end pt-4 mb-6">
+            <button type="submit"
+                    class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 text-sm">
+                Save Settings
+            </button>
+        </div>
+
+    <!-- System Backup -->
+    <div class="glass rounded-2xl p-7">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-600/30 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">System Backup &amp; Restore</h3>
+                    <p class="text-gray-500 text-xs mt-0.5">Download full system backups or restore from an archive.</p>
+                </div>
+            </div>
+            <a href="{% url 'tracker:system_admin_backup' %}"
+               class="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all shadow-sm hover:-translate-y-0.5 text-sm flex items-center gap-2 whitespace-nowrap">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Manage Backups
+            </a>
+        </div>
+    </div>
+
+            </div> <!-- End Right Column -->
+        </div> <!-- End Grid -->
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // Map format tokens → example values
+    const examples = {
+        '{TYPE}':  'INV',
+        '{FYFY}':  '2627',
+        '{FY}':    '26',
+        '{MM}':    '07',
+        '{N}':     '285',
+    };
+
+    function buildPreview(fmt) {
+        let s = fmt;
+        for (const [token, val] of Object.entries(examples)) {
+            s = s.replaceAll(token, val);
+        }
+        return s;
+    }
+
+    function highlightSelected(selectedValue) {
+        document.querySelectorAll('#fmt-radio-group label').forEach(label => {
+            const radio = label.querySelector('input[type=radio]');
+            if (radio && radio.value === selectedValue) {
+                label.classList.add('border-orange-500/60', 'bg-orange-500/10');
+                label.classList.remove('border-white/5', 'bg-slate-900/40');
+            } else {
+                label.classList.remove('border-orange-500/60', 'bg-orange-500/10');
+                label.classList.add('border-white/5', 'bg-slate-900/40');
+            }
+        });
+    }
+
+    window.selectFmt = function (radio) {
+        const val = radio.value;
+        document.getElementById('fmt-preview').textContent = buildPreview(val);
+        highlightSelected(val);
+    };
+
+    // Init on load
+    document.addEventListener('DOMContentLoaded', function () {
+        const checked = document.querySelector('input[name="doc_number_format"]:checked');
+        if (checked) {
+            document.getElementById('fmt-preview').textContent = buildPreview(checked.value);
+            highlightSelected(checked.value);
+        }
+    });
+})();
+</script>
+{% endblock %}

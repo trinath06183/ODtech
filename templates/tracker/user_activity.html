@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }} - ODtech ERP{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 font-heading">{{ page_title }}</h1>
+        <p class="mt-1 text-sm text-gray-500">Your complete activity history. Entries are immutable and cannot be modified.</p>
+    </div>
+</div>
+
+<div class="mt-4 flex flex-col">
+    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+            <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 w-48">Timestamp</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Action</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Model</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Object</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Task</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Changes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white text-sm">
+                        {% for log in logs %}
+                        <tr>
+                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-gray-500 sm:pl-6">{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                            <td class="whitespace-nowrap px-3 py-4">
+                                {% if log.action == 'CREATE' %}
+                                <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Create</span>
+                                {% elif log.action == 'UPDATE' %}
+                                <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Update</span>
+                                {% elif log.action == 'DELETE' %}
+                                <span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">Delete</span>
+                                {% elif log.action == 'COMMENT' %}
+                                <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-600/10">Comment</span>
+                                {% endif %}
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-4 text-gray-500">{{ log.model_name }}</td>
+                            <td class="px-3 py-4 text-gray-900 max-w-xs truncate" title="{{ log.object_repr }}">{{ log.object_repr }}</td>
+                            <td class="px-3 py-4 text-gray-500 max-w-xs truncate">
+                                {% if log.task %}
+                                <span title="{{ log.task.title }}">{{ log.task.title|truncatechars:35 }}</span>
+                                {% else %}
+                                <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-4 text-gray-500 max-w-md">
+                                {% if log.action == 'UPDATE' %}
+                                <div x-data="{ expanded: false }">
+                                    <button @click="expanded = !expanded" class="text-indigo-600 hover:text-indigo-900 text-xs font-medium">View Changes</button>
+                                    <div x-show="expanded" class="mt-2 p-2 bg-gray-50 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap">{{ log.changes }}</div>
+                                </div>
+                                {% else %}
+                                {{ log.changes }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-3 py-8 text-center text-gray-500">No activity found. Your actions will appear here once you start making changes.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

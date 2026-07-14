@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block header %}{{ form_title }}{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <!-- Back -->
+    <div class="mb-6">
+        <a href="{% if next_url %}{{ next_url }}{% else %}{% url 'inventory_list' %}{% endif %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm w-fit">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            {% if next_url %}Back to Form{% else %}Back to Inventory{% endif %}
+        </a>
+    </div>
+
+    <!-- Flash -->
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium
+        {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+        {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="glass rounded-2xl p-8">
+        <div class="flex items-center space-x-3 mb-8">
+            <div class="w-10 h-10 rounded-xl bg-cyan-600/30 flex items-center justify-center">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-white">{{ form_title }}</h2>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            {% endif %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                <!-- Name -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Product Name <span class="text-red-400">*</span></label>
+                    <input type="text" name="name" value="{{ product.name|default:'' }}" required placeholder="e.g. Welding Torch Pro"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- SKU -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">SKU <span class="text-red-400">*</span></label>
+                    <input type="text" name="sku" value="{{ product.sku|default:'' }}" required placeholder="e.g. WT-001"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- HSN Code -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">HSN Code</label>
+                    <input type="text" name="hsn_code" value="{{ product.hsn_code|default:'' }}" placeholder="e.g. 84669400"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Selling Price -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Selling Price (₹)</label>
+                    <input type="number" name="selling_price" step="0.01" min="0" value="{{ product.selling_price|default:'0.00' }}"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Purchase Price -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Purchase / Cost Price (₹)</label>
+                    <input type="number" name="purchase_price" step="0.01" min="0" value="{{ product.purchase_price|default:'0.00' }}" placeholder="0.00"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Tax Rate -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">GST Rate (%)</label>
+                    <select name="tax_rate"
+                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition appearance-none">
+                        <option value="0" {% if product.tax_rate|floatformat:0 == "0" %}selected{% endif %}>0%</option>
+                        <option value="5" {% if product.tax_rate|floatformat:0 == "5" %}selected{% endif %}>5%</option>
+                        <option value="12" {% if product.tax_rate|floatformat:0 == "12" %}selected{% endif %}>12%</option>
+                        <option value="18" {% if product.tax_rate|floatformat:0 == "18" or not product.tax_rate %}selected{% endif %}>18%</option>
+                        <option value="28" {% if product.tax_rate|floatformat:0 == "28" %}selected{% endif %}>28%</option>
+                    </select>
+                </div>
+
+                <!-- Unit -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Unit of Measure</label>
+                    <input type="text" name="unit" value="{{ product.unit|default:'Nos' }}" placeholder="e.g. Nos, Kg, Set"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Brand -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Brand</label>
+                    <input type="text" name="brand" value="{{ product.brand|default:'' }}" placeholder="e.g. Lincoln Electric"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                    <input type="text" name="category" value="{{ product.category|default:'' }}" placeholder="e.g. Welding Equipment"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Reorder Level -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Reorder Level
+                        <span class="text-gray-500 text-xs">(low-stock alert threshold)</span>
+                    </label>
+                    <input type="number" name="reorder_level" step="0.01" min="0" value="{{ product.reorder_level|default:'0' }}" placeholder="0"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Warranty Months -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Warranty
+                        <span class="text-gray-500 text-xs">(in months)</span>
+                    </label>
+                    <input type="number" name="warranty_months" step="1" min="0" value="{{ product.warranty_months|default:'12' }}" placeholder="12"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                </div>
+
+                <!-- Description -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                    <textarea name="description" rows="3" placeholder="Short product description…"
+                              class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition resize-none">{{ product.description|default:'' }}</textarea>
+                </div>
+                
+                <!-- Additional Descriptions -->
+                <div class="sm:col-span-2 mt-2 pt-4 border-t border-white/10">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="block text-sm font-medium text-gray-300">Additional Descriptions</label>
+                        <button type="button" id="add-desc-btn" class="px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 text-xs font-medium rounded transition-colors border border-cyan-500/30">
+                            + Add Description
+                        </button>
+                    </div>
+                    
+                    <div id="additional-descriptions-container" class="space-y-4">
+                        {% if product.additional_descriptions.all %}
+                            {% for desc in product.additional_descriptions.all %}
+                            <div class="desc-row glass rounded-xl p-4 relative border border-white/5 bg-white/5">
+                                <button type="button" class="remove-desc-btn absolute top-3 right-3 text-red-400 hover:text-red-300 transition p-1">
+                                    <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                                <input type="hidden" name="desc_id[]" value="{{ desc.id }}">
+                                <div class="mb-3 pr-8">
+                                    <label class="block text-xs text-gray-400 mb-1">Title (Optional)</label>
+                                    <input type="text" name="desc_title[]" value="{{ desc.title|default:'' }}" placeholder="e.g. Technical Specs"
+                                           class="w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-400 mb-1">Content</label>
+                                    <textarea name="desc_content[]" rows="2" placeholder="Description content…" required
+                                              class="w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition resize-none">{{ desc.content }}</textarea>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+                <a href="{% if next_url %}{{ next_url }}{% else %}{% url 'inventory_list' %}{% endif %}"
+                   class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-gray-300 font-medium rounded-xl text-sm transition-colors">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5">
+                    {{ submit_label }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('additional-descriptions-container');
+    const addBtn = document.getElementById('add-desc-btn');
+
+    addBtn.addEventListener('click', function() {
+        const row = document.createElement('div');
+        row.className = 'desc-row glass rounded-xl p-4 relative border border-white/5 bg-white/5';
+        row.innerHTML = `
+            <button type="button" class="remove-desc-btn absolute top-3 right-3 text-red-400 hover:text-red-300 transition p-1">
+                <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <input type="hidden" name="desc_id[]" value="">
+            <div class="mb-3 pr-8">
+                <label class="block text-xs text-gray-400 mb-1">Title (Optional)</label>
+                <input type="text" name="desc_title[]" value="" placeholder="e.g. Technical Specs"
+                       class="w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Content</label>
+                <textarea name="desc_content[]" rows="2" placeholder="Description content…" required
+                          class="w-full px-3 py-2 bg-slate-900/60 border border-white/10 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition resize-none"></textarea>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+
+    container.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-desc-btn')) {
+            e.target.closest('.desc-row').remove();
+        }
+    });
+});
+</script>
+{% endblock %}

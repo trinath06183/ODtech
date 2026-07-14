@@ -1,0 +1,1702 @@
+<!-- Product Modal Content Layout -->
+<div x-data="{
+    tab: 'details',
+    productId: '{{ product.id }}',
+    showCreateSupplier: false,
+    
+    // Pricing Calculator fields
+    gstPercent: {% if selected_supplier %}{{ selected_supplier.gst_percentage|default:18 }}{% else %}{{ product.gst_percentage|default:18 }}{% endif %},
+    buyingPriceExGst: {% if selected_supplier %}{{ selected_supplier.base_price|default:0.00 }}{% else %}{{ product.buying_price_ex_gst|default:0.00 }}{% endif %},
+    buyingPriceIncGst: {% if selected_supplier %}{{ selected_supplier.total_inc_gst|default:0.00 }}{% else %}{{ product.buying_price_inc_gst|default:0.00 }}{% endif %},
+    sellingPriceExGst: {{ product.selling_price_ex_gst|default:0.00 }},
+    sellingPriceIncGst: {{ product.selling_price_inc_gst|default:0.00 }},
+    profitAmount: 0.00,
+    totalProfitAmount: 0.00,
+    profitPercent: 0.00,
+    minProfitMargin: {{ product.order.minimum_profit_margin|default:25.00 }},
+    quantity: {{ product.quantity|default:0 }},
+    
+    expenses: JSON.parse('{{ product_expenses_json|escapejs|default:" []" }}'), totalExpenses: 0.00, init() {
+    this.recalcExpenses(); this.calcBuyingForward(); this.calcSellingForward(); this.updateProfits(); }, addExpense() {
+    this.expenses.push({id: '' , desc: '' , amount: '0.00', type: 'PER_UNIT' }); this.recalcExpenses(); }, removeExpense(index) {
+    this.expenses.splice(index, 1); this.recalcExpenses(); }, recalcExpenses() {
+    let total = 0; let qty = parseInt(this.quantity) || 1; if (qty === 0) qty = 1;
+    this.expenses.forEach(exp => { let amt = parseFloat(exp.amount) || 0; if (exp.type === 'TOTAL') { total += amt / qty; } else { total += amt; } });
+    this.totalExpenses = total;
+    this.updateProfits();
+    },
+
+    calcAllForward() {
+    this.calcBuyingForward();
+    this.calcSellingForward();
+    },
+
+    calcBuyingForward() {
+    let base = parseFloat(this.buyingPriceExGst) || 0;
+    let gst = parseFloat(this.gstPercent) || 0;
+    this.buyingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
+    this.updateProfits();
+    },
+
+    calcBuyingReverse() {
+    let total = parseFloat(this.buyingPriceIncGst) || 0;
+    let gst = parseFloat(this.gstPercent) || 0;
+    this.buyingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
+    this.updateProfits();
+    },
+
+    calcSellingForward(skipProfitAmount = false, skipProfitPercent = false) {
+    let base = parseFloat(this.sellingPriceExGst) || 0;
+    let gst = parseFloat(this.gstPercent) || 0;
+    this.sellingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
+    this.updateProfits(skipProfitAmount, skipProfitPercent);
+    },
+
+    calcSellingReverse(skipProfitAmount = false, skipProfitPercent = false) {
+    let total = parseFloat(this.sellingPriceIncGst) || 0;
+    let gst = parseFloat(this.gstPercent) || 0;
+    this.sellingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
+    this.updateProfits(skipProfitAmount, skipProfitPercent);
+    },
+
+    calcFromProfitAmount() {
+    let buy = parseFloat(this.buyingPriceExGst) || 0;
+    let expenses = parseFloat(this.totalExpenses) || 0;
+    let totalCost = buy + expenses;
+    let profit = parseFloat(this.profitAmount) || 0;
+    this.sellingPriceExGst = (totalCost + profit).toFixed(2);
+    this.calcSellingForward(true, false);
+    },
+
+    calcFromProfitPercent() {
+    let buy = parseFloat(this.buyingPriceExGst) || 0;
+    let expenses = parseFloat(this.totalExpenses) || 0;
+    let totalCost = buy + expenses;
+    let profitPct = parseFloat(this.profitPercent) || 0;
+    let profit = totalCost * (profitPct / 100);
+    this.sellingPriceExGst = (totalCost + profit).toFixed(2);
+    this.calcSellingForward(false, true);
+    },
+
+    updateProfits(skipProfitAmount = false, skipProfitPercent = false) {
+    let buy = parseFloat(this.buyingPriceExGst) || 0;
+    let expenses = parseFloat(this.totalExpenses) || 0;
+    let totalCost = buy + expenses;
+    let sell = parseFloat(this.sellingPriceExGst) || 0;
+    let qty = parseInt(this.quantity) || 1;
+    if (!skipProfitAmount) {
+    this.profitAmount = (sell - totalCost).toFixed(2);
+    }
+    this.totalProfitAmount = (parseFloat(this.profitAmount) * qty).toFixed(2);
+    if (!skipProfitPercent) {
+    if (totalCost > 0) {
+    this.profitPercent = (((sell - totalCost) / totalCost) * 100).toFixed(2);
+    } else {
+    this.profitPercent = '0.00';
+    }
+    }
+    }
+    }" class="h-full flex flex-col">
+    <!-- Header -->
+    <div
+        class="px-6 py-3 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 flex-shrink-0">
+        <div class="flex-1 min-w-0">
+            <!-- Title row -->
+            <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                <h2 class="text-lg font-bold text-indigo-600 whitespace-nowrap">Product Info &amp; Pricing</h2>
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-normal whitespace-nowrap">Sl No. {{ product.sl_no }}</span>
+            </div>
+            <!-- Subtitle + Stage chips on same row -->
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p class="text-xs text-gray-400">View details, calculate pricing &amp; profit margins, and manage supplier options.</p>
+                <!-- Customer Stage chip -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border
+                    {% if product.customer_stage %}bg-indigo-50 border-indigo-200 text-indigo-700{% else %}bg-gray-50 border-gray-200 text-gray-400{% endif %}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Customer</span>
+                    <span class="font-semibold">{% if product.customer_stage %}{{ product.get_customer_stage_display }}{% else %}Not set{% endif %}</span>
+                </span>
+                <!-- Supplier Stage chip -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border
+                    {% if product.supplier_stage %}bg-amber-50 border-amber-200 text-amber-700{% else %}bg-gray-50 border-gray-200 text-gray-400{% endif %}">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Supplier</span>
+                    <span class="font-semibold">{% if product.supplier_stage %}{{ product.get_supplier_stage_display }}{% else %}Not set{% endif %}</span>
+                </span>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button type="button" onclick="window.navigateProduct('prev')"
+                class="text-gray-400 hover:text-indigo-600 transition-colors p-1 bg-white hover:bg-gray-100 border rounded-md"
+                title="Previous Product">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button type="button" onclick="window.navigateProduct('next')"
+                class="text-gray-400 hover:text-indigo-600 transition-colors p-1 bg-white hover:bg-gray-100 border rounded-md"
+                title="Next Product">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scrollable Body Container -->
+    <div class="flex-1 overflow-y-auto lg:overflow-hidden p-6 min-h-0">
+        <div class="product-modal-grid grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- Item Details -->
+            <div class="product-modal-section lg:col-span-4 space-y-6"
+                x-data="{ isEditingDetails: false, savingDetails: false }">
+                <div class="space-y-2">
+                    <div class="border-b pb-1 flex items-center justify-between">
+                        <h3
+                            class="text-xs font-bold text-gray-700 uppercase tracking-wider pb-1.5 flex items-center gap-1.5">
+                            <svg class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Product Details
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            {% with bookmark=product.bookmarks.first %}
+                            {% if bookmark %}
+                            <span
+                                class="cursor-pointer hover:bg-amber-100 transition-colors text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded flex items-center gap-1 max-w-[200px]"
+                                title="Click to view full bookmark details"
+                                onclick="alert('Bookmark Details:\n\n{{ bookmark.description|default:'No description provided'|escapejs }}')">
+                                <svg class="h-3 w-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                                </svg>
+                                <span class="truncate">Bookmarked{% if bookmark.description %}: <span
+                                        class="text-green-600">{{ bookmark.description }}</span>{% endif %}</span>
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                            <button type="button" @click="isEditingDetails = !isEditingDetails"
+                                class="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors flex items-center gap-1"
+                                title="Edit Product Details">
+                                <svg x-show="!isEditingDetails" class="h-3 w-3" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                    </path>
+                                </svg>
+                                <svg x-show="isEditingDetails" x-cloak class="h-3 w-3" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                <span x-text="isEditingDetails ? 'Cancel' : 'Edit'"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div x-show="!isEditingDetails">
+                        <div class="mb-3 pl-1">
+                            <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Lot / Group</span>
+                            <!-- prettier-ignore -->
+                            <div class="relative group flex-1">
+    <span class="text-sm font-semibold text-indigo-700 block pr-7">{{ product.lot.lot_name|default:"Unassigned" }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                        </div>
+
+                        <div class="bg-white border rounded-md p-2.5 space-y-2.5 shadow-sm text-xs">
+                            <div>
+                                <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Item Name</span>
+                                <!-- prettier-ignore -->
+                                <div class="relative group flex-1">
+    <span
+                                    class="font-medium text-gray-900 block bg-gray-50 p-1.5 rounded border border-gray-100 pr-7">{{ product.item_name }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Make /
+                                        Model</span>
+                                    <!-- prettier-ignore -->
+                                    <div class="relative group flex-1">
+    <span class="text-gray-800 block bg-gray-50 p-1.5 rounded border border-gray-100 pr-7">{{ product.make_or_model|default:"-" }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                </div>
+
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Quantity</span>
+                                    <!-- prettier-ignore -->
+                                    <div class="relative group flex-1">
+    <span class="text-gray-800 block bg-gray-50 p-1.5 rounded border border-gray-100 pr-7">{{ product.quantity }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">UOM</span>
+                                    <!-- prettier-ignore -->
+                                    <div class="relative group flex-1">
+    <span class="text-gray-800 block bg-gray-50 p-1.5 rounded border border-gray-100 pr-7">{{ product.uom|default:"-" }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Status</span>
+                                    <select
+                                        @change="window.updateSingleProductStatus('{{ product.id }}', $event.target.value)"
+                                        class="text-xs font-semibold rounded border border-gray-200 py-1.5 pl-2 pr-6 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-colors cursor-pointer w-full"
+                                        :class="{
+                                            'bg-gray-50 text-gray-700': '{{ product.status }}' === 'OPEN',
+                                            'bg-purple-50 text-purple-700': '{{ product.status }}' === 'SOURCING',
+                                            'bg-indigo-50 text-indigo-700': '{{ product.status }}' === 'PROCURED',
+                                            'bg-yellow-50 text-yellow-700': '{{ product.status }}' === 'SHIPPED',
+                                            'bg-green-50 text-green-700': '{{ product.status }}' === 'RECEIVED',
+                                            'bg-blue-50 text-blue-700': '{{ product.status }}' === 'CLOSED'
+                                        }">
+                                        <option value="OPEN" {% if product.status == 'OPEN' %}selected{% endif %}>OPEN
+                                        </option>
+                                        <option value="SOURCING" {% if product.status == 'SOURCING' %}selected{% endif %}>
+                                            SOURCING</option>
+                                        <option value="PROCURED" {% if product.status == 'PROCURED' %}selected{% endif %}>
+                                            PROCURED</option>
+                                        <option value="SHIPPED" {% if product.status == 'SHIPPED' %}selected{% endif %}>
+                                            SHIPPED</option>
+                                        <option value="RECEIVED" {% if product.status == 'RECEIVED' %}selected{% endif %}>
+                                            RECEIVED</option>
+                                        <option value="CLOSED" {% if product.status == 'CLOSED' %}selected{% endif %}>
+                                            CLOSED</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ── Dual Stage Tracking Card ── -->
+                            <div class="border-l-4 border-indigo-300 bg-gradient-to-br from-indigo-50/60 to-amber-50/40 rounded-r-lg p-2.5"
+                                 x-data="modalStageCell('{{ product.id }}', '{{ product.customer_stage|default:'' }}', '{{ product.supplier_stage|default:'' }}')">
+                                <div class="flex items-center gap-1.5 mb-2">
+                                    <svg class="h-3 w-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Stage Tracking</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <!-- Customer -->
+                                    <div class="bg-white rounded-md p-1.5 border border-indigo-100 shadow-sm">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                                            <span class="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">Customer</span>
+                                            <span x-show="customerSaving" class="ml-auto">
+                                                <svg class="animate-spin h-2.5 w-2.5 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+                                            </span>
+                                        </div>
+                                        <div x-show="customerStage && !customerSaving" class="mb-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-700 w-full justify-center">
+                                                <span x-text="stageLabel(customerStage)"></span>
+                                            </span>
+                                        </div>
+                                        <select @change="setStage('customer', $event.target.value)"
+                                                class="w-full text-[10px] border border-indigo-200 rounded py-0.5 px-1 bg-indigo-50 text-indigo-700 focus:ring-1 focus:ring-indigo-300 cursor-pointer"
+                                                :disabled="customerSaving">
+                                            <option value="">— clear —</option>
+                                            <option value="REQ_RECEIVED"  {% if product.customer_stage == 'REQ_RECEIVED'  %}selected{% endif %}>Requirement Received</option>
+                                            <option value="QUOT_GIVEN"    {% if product.customer_stage == 'QUOT_GIVEN'    %}selected{% endif %}>Quotation Given</option>
+                                            <option value="PO_RECEIVED"   {% if product.customer_stage == 'PO_RECEIVED'   %}selected{% endif %}>PO Received</option>
+                                            <option value="PI_GIVEN"      {% if product.customer_stage == 'PI_GIVEN'      %}selected{% endif %}>PI Given</option>
+                                            <option value="PROD_GIVEN"    {% if product.customer_stage == 'PROD_GIVEN'    %}selected{% endif %}>Product Given</option>
+                                            <option value="INV_GIVEN"     {% if product.customer_stage == 'INV_GIVEN'     %}selected{% endif %}>Invoice Given</option>
+                                        </select>
+                                    </div>
+                                    <!-- Supplier -->
+                                    <div class="bg-white rounded-md p-1.5 border border-amber-100 shadow-sm">
+                                        <div class="flex items-center gap-1 mb-1">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                                            <span class="text-[9px] font-bold text-amber-500 uppercase tracking-wider">Supplier</span>
+                                            <span x-show="supplierSaving" class="ml-auto">
+                                                <svg class="animate-spin h-2.5 w-2.5 text-amber-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+                                            </span>
+                                        </div>
+                                        <div x-show="supplierStage && !supplierSaving" class="mb-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 w-full justify-center">
+                                                <span x-text="stageLabel(supplierStage)"></span>
+                                            </span>
+                                        </div>
+                                        <select @change="setStage('supplier', $event.target.value)"
+                                                class="w-full text-[10px] border border-amber-200 rounded py-0.5 px-1 bg-amber-50 text-amber-700 focus:ring-1 focus:ring-amber-300 cursor-pointer"
+                                                :disabled="supplierSaving">
+                                            <option value="">— clear —</option>
+                                            <option value="REQ_SEARCHING" {% if product.supplier_stage == 'REQ_SEARCHING' %}selected{% endif %}>Requirement Searching</option>
+                                            <option value="QUOT_RECEIVED" {% if product.supplier_stage == 'QUOT_RECEIVED' %}selected{% endif %}>Quotation Received</option>
+                                            <option value="PO_GIVEN"      {% if product.supplier_stage == 'PO_GIVEN'      %}selected{% endif %}>PO Given</option>
+                                            <option value="PI_RECEIVED"   {% if product.supplier_stage == 'PI_RECEIVED'   %}selected{% endif %}>PI Received</option>
+                                            <option value="PROD_RECEIVED" {% if product.supplier_stage == 'PROD_RECEIVED' %}selected{% endif %}>Product Received</option>
+                                            <option value="INV_RECEIVED"  {% if product.supplier_stage == 'INV_RECEIVED'  %}selected{% endif %}>Invoice Received</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Description</span>
+                                <!-- prettier-ignore -->
+                                <div class="relative group flex-1">
+    <span
+                                    class="text-gray-800 block bg-gray-50 p-1.5 rounded border border-gray-100 whitespace-pre-wrap pr-7">{{ product.description|default:"-" }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                            </div>
+
+                            <div>
+                                <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Remarks / Internal
+                                    Notes</span>
+                                <!-- prettier-ignore -->
+                                <div class="relative group flex-1">
+    <span
+                                    class="text-gray-800 block bg-gray-50 p-1.5 rounded border border-gray-100 whitespace-pre-wrap pr-7">{{ product.remark|default:"-" }}</span>
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('span').innerText.trim()); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                            </div>
+
+                            {% if product.photo_or_document %}
+                            <div>
+                                <span class="block text-[10px] font-semibold text-gray-500 mb-0.5">Photo / Reference
+                                    File</span>
+                                <div class="flex items-center gap-2 p-1.5 bg-gray-50 rounded border border-gray-200">
+                                    <!-- prettier-ignore -->
+                                    {% if '.jpg' in product.photo_or_document.url|lower or '.png' in product.photo_or_document.url|lower or '.jpeg' in product.photo_or_document.url|lower or '.gif' in product.photo_or_document.url|lower %}
+                                    <img src="{{ product.photo_or_document.url }}"
+                                        class="h-8 w-8 object-cover rounded border">
+                                    {% else %}
+                                    <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                    {% endif %}
+                                    <span class="text-[10px] text-gray-600 truncate max-w-xs">{{ product.photo_or_document.name }}</span>
+                                    <a href="{{ product.photo_or_document.url }}" target="_blank"
+                                        class="text-[10px] text-indigo-600 hover:text-indigo-900 font-medium ml-auto">View
+                                        Document ↗</a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form id="product-details-update-form"
+                        @submit.prevent="savingDetails = true; window.submitModalForm('product-details-update-form', 'update_product_details', true, 'Details saved successfully')"
+                        class="bg-white border rounded-md p-3 space-y-3 shadow-sm text-xs" x-show="isEditingDetails"
+                        x-cloak enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Lot / Group</label>
+                            {{ product_form.lot }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Item Name</label>
+                            {{ product_form.item_name }}
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Make / Model</label>
+                                {{ product_form.make_or_model }}
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Sl No.</label>
+                                {{ product_form.sl_no }}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Quantity</label>
+                                {{ product_form.quantity }}
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">UOM</label>
+                                {{ product_form.uom }}
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Status</label>
+                                {{ product_form.status }}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Description</label>
+                            {{ product_form.description }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Remarks / Internal
+                                Notes</label>
+                            {{ product_form.remark }}
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Photo / Reference
+                                File</label>
+                            {{ product_form.photo_or_document }}
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <button type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded text-xs transition-colors flex items-center gap-1"
+                                :disabled="savingDetails">
+                                <svg x-show="savingDetails" class="animate-spin h-3 w-3 text-white"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                                <span x-text="savingDetails ? 'Saving...' : 'Save Details'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Activity Feed (Product Level) -->
+                {% if field_visibility.can_see_internal_notes %}
+                <div class="mt-6 border-t pt-4" x-data="{
+                    newNoteContent: '',
+                    isSubmittingNote: false,
+                    submitNote() {
+                        if (!this.newNoteContent.trim() || this.isSubmittingNote) return;
+                        this.isSubmittingNote = true;
+                        fetch('/tracker/api/notes/add/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify({
+                                product_id: '{{ product.id }}',
+                                content: this.newNoteContent
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if(data.success) {
+                                window.dispatchEvent(new CustomEvent('reload-modal'));
+                            } else {
+                                this.isSubmittingNote = false;
+                                alert(data.error || 'Failed to post note.');
+                            }
+                        })
+                        .catch(() => {
+                            this.isSubmittingNote = false;
+                            alert('Failed to post note.');
+                        });
+                    },
+                    deleteNote(id, permanent=false) {
+                        const url = permanent ? `/api/notes/${id}/delete/?permanent=true` : `/api/notes/${id}/delete/`;
+                        fetch(url, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) window.dispatchEvent(new CustomEvent('reload-modal'));
+                            else alert(data.error || 'Failed to delete');
+                        });
+                    },
+                    saveEdit(id, content) {
+                        if(!content.trim()) return;
+                        fetch(`/api/notes/${id}/edit/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify({ content })
+                        }).then(res => res.json()).then(data => {
+                            if(data.success) {
+                                window.dispatchEvent(new CustomEvent('reload-modal'));
+                            } else alert(data.error || 'Failed to edit');
+                        });
+                    }
+                }">
+                    <h3
+                        class="text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                        <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                        Internal Notes
+                    </h3>
+
+                    <div class="max-h-64 overflow-y-auto pr-1 space-y-3" x-ref="notesContainer">
+                        {% for note in product.internal_notes.all %}
+                        <div class="bg-gray-50 rounded-lg p-3 border border-gray-100 shadow-sm relative group"
+                            id="note-{{ note.id }}"
+                            x-data="{ editing: false, editContent: '{{ note.content|escapejs }}' }">
+                            <div class="flex items-start justify-between mb-1">
+                                <div>
+                                    <span class="text-xs font-semibold text-gray-900">{{ note.author.username}}</span>
+                                    <span class="text-[10px] text-gray-500 ml-2">{{ note.created_at|date:"b. d, Y, g:i a" }}</span>
+                                    {% if note.created_at != note.updated_at %}
+                                    <span class="text-[9px] text-gray-400 italic ml-1"
+                                        title="Edited {{ note.updated_at|date:'b. d, Y, g:i a' }}">(edited)</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if note.author == request.user or request.user.is_staff or request.user.is_superuser %}
+                                <div
+                                    class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                    <button @click="editing = true"
+                                        class="text-indigo-600 hover:text-indigo-800 focus:outline-none"
+                                        title="Edit Note">
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        @click="if(confirm('Are you sure you want to delete this note?')) deleteNote('{{ note.id }}')"
+                                        class="text-red-600 hover:text-red-800 focus:outline-none" title="Delete Note">
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                    {% if request.user.is_staff or request.user.is_superuser %}
+                                    <button
+                                        @click="if(confirm('Permanently delete this note? This cannot be undone.')) deleteNote('{{ note.id }}', true)"
+                                        class="text-red-800 hover:text-red-900 focus:outline-none ml-1"
+                                        title="Permanent Delete">
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            {% if note.is_deleted %}
+                            <div class="flex items-center justify-between mt-1">
+                                <p class="text-[10px] text-gray-400 italic flex items-center gap-1">
+                                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    This message was deleted.
+                                </p>
+                                {% if request.user.is_staff or request.user.is_superuser %}
+                                <button
+                                    @click="if(confirm('Permanently delete this note? This cannot be undone.')) deleteNote('{{ note.id }}', true)"
+                                    class="text-red-800 hover:text-red-900 focus:outline-none" title="Permanent Delete">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% if request.user.is_staff or request.user.is_superuser %}
+                            <div class="mt-1 text-[10px] text-red-500 border border-red-100 bg-red-50 p-1 rounded">Admin
+                                View: {{ note.content }}</div>
+                            {% endif %}
+                            {% else %}
+                            <div x-show="!editing">
+                                <p class="text-xs text-gray-700 whitespace-pre-wrap">{{ note.content }}</p>
+                            </div>
+                            <div x-show="editing" style="display: none;" class="mt-2">
+                                <textarea x-model="editContent" rows="2"
+                                    class="w-full text-xs border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-1.5"></textarea>
+                                <div class="flex justify-end gap-2 mt-1.5">
+                                    <button @click="editing = false"
+                                        class="text-[10px] text-gray-500 hover:text-gray-700 focus:outline-none">Cancel</button>
+                                    <button @click="saveEdit('{{ note.id }}', editContent)"
+                                        class="text-[10px] bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700 focus:outline-none">Save</button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <p class="text-xs text-gray-500 text-center py-2" x-ref="noNotes">No notes yet.</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mt-3 relative">
+                        <textarea x-ref="noteTextarea" x-model="newNoteContent" rows="2"
+                            class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-xs"
+                            placeholder="Add a note..."></textarea>
+
+                        <div class="mt-2 flex justify-end">
+                            <button type="button" @click="submitNote()"
+                                :disabled="isSubmittingNote || !newNoteContent.trim()"
+                                class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+                                <span x-show="!isSubmittingNote">Post</span>
+                                <span x-show="isSubmittingNote">...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Pricing Column Wrapper -->
+            <div class="product-modal-section product-modal-main lg:col-span-4 space-y-6">
+                <!-- Pending Price Approval Banner -->
+                {% if pending_request %}
+                <div class="bg-orange-50 border border-orange-200 rounded-md p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-orange-800">Pending Price Approval</h3>
+                            <div class="mt-2 text-sm text-orange-700">
+                                <p>A price change is pending approval.</p>
+                                <ul class="list-disc pl-5 mt-1 text-xs">
+                                    <li>Requested By: {{ pending_request.requested_by.username}}</li>
+                                    <li>Proposed Buy (ex GST): ₹{{ pending_request.buying_price_ex_gst }}</li>
+                                    <li>Proposed Sell (ex GST): ₹{{ pending_request.selling_price_ex_gst }}</li>
+                                </ul>
+                            </div>
+                            {% if request.user.is_superuser %}
+                            <div class="mt-4">
+                                <div class="-mx-2 -my-1.5 flex">
+                                    <form method="post" action="{% url 'tracker:approve_price_request' pending_request.id %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-emerald-50 px-2 py-1.5 rounded-md text-xs font-medium text-emerald-800 hover:bg-emerald-100 focus:outline-none mr-3">Approve Pricing</button>
+                                    </form>
+                                    <form method="post" action="{% url 'tracker:reject_price_request' pending_request.id %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-red-50 px-2 py-1.5 rounded-md text-xs font-medium text-red-800 hover:bg-red-100 focus:outline-none">Reject Pricing</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+    
+                <!-- Product Pricing Form & Calculator -->
+                {% if field_visibility.can_see_purchase_price or field_visibility.can_see_selling_price or field_visibility.can_see_profit_loss %}
+                <form id="product-pricing-form" @submit.prevent="submitModalForm('product-pricing-form', 'save_product')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_product">
+    
+                    <div class="space-y-4">
+                    <h3
+                        class="text-xs font-bold text-gray-700 uppercase tracking-wider pb-1.5 flex items-center gap-1.5">
+                        <svg class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pricing & Profit Margin Calculator
+                    </h3>
+
+                    <div class="bg-emerald-50/50 rounded-xl p-4 border border-emerald-100">
+                        <!-- Approved Badge -->
+                        {% if product.price_approved_by %}
+                        <div class="mb-4 bg-emerald-100 border border-emerald-300 rounded-md p-2.5 flex items-center justify-between shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-xs font-semibold text-emerald-800">
+                                    Pricing Approved by {{ product.price_approved_by.username}} 
+                                    {% if product.price_approved_at %}on {{ product.price_approved_at|date:"M d, Y" }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="space-y-4">
+                            <!-- Buying Prices -->
+                            {% if field_visibility.can_see_purchase_price %}
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Buy Price (ex
+                                        GST)</label>
+                                    <div class="relative group">
+    <input type="number" name="buying_price_ex_gst" step="0.01"
+                                        value="{% if selected_supplier %}{{ selected_supplier.base_price|default:'0.00' }}{% else %}{{ product.buying_price_ex_gst|default:'0.00' }}{% endif %}"
+                                        x-model="buyingPriceExGst" @input="calcBuyingForward()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+
+<div class="mt-1 flex items-center gap-1.5 text-[10px] text-indigo-600 font-medium group/total">
+    <span>Total (<span x-text="quantity"></span> {{ product.uom|default:'Units' }}):</span>
+    <span class="font-bold">₹<span x-text="(buyingPriceExGst * quantity).toFixed(2)"></span></span>
+    <button type="button" x-data="{ copied: false }"
+        @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy((buyingPriceExGst * quantity).toFixed(2))); copied = true; setTimeout(() => copied = false, 2000)"
+        class="text-indigo-400 hover:text-indigo-700 opacity-0 group-hover/total:opacity-100 transition-opacity" title="Copy Total">
+        <svg x-show="!copied" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        <svg x-show="copied" x-cloak class="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    </button>
+</div>
+
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">GST %</label>
+                                    <div class="relative group">
+    <input type="number" name="gst_percentage" step="0.01"
+                                        value="{% if selected_supplier %}{{ selected_supplier.gst_percentage|default:'18.00' }}{% else %}{{ product.gst_percentage|default:'18.00' }}{% endif %}"
+                                        x-model="gstPercent" @input="calcAllForward()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('input').value); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Buy Price (inc
+                                        GST)</label>
+                                    <div class="relative group">
+    <input type="number" name="buying_price_inc_gst" step="0.01"
+                                        value="{% if selected_supplier %}{{ selected_supplier.total_inc_gst|default:'0.00' }}{% else %}{{ product.buying_price_inc_gst|default:'0.00' }}{% endif %}"
+                                        x-model="buyingPriceIncGst" @input="calcBuyingReverse()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+
+<div class="mt-1 flex items-center gap-1.5 text-[10px] text-indigo-600 font-medium group/total">
+    <span>Total (<span x-text="quantity"></span> {{ product.uom|default:'Units' }}):</span>
+    <span class="font-bold">₹<span x-text="(buyingPriceIncGst * quantity).toFixed(2)"></span></span>
+    <button type="button" x-data="{ copied: false }"
+        @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy((buyingPriceIncGst * quantity).toFixed(2))); copied = true; setTimeout(() => copied = false, 2000)"
+        class="text-indigo-400 hover:text-indigo-700 opacity-0 group-hover/total:opacity-100 transition-opacity" title="Copy Total">
+        <svg x-show="!copied" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        <svg x-show="copied" x-cloak class="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    </button>
+</div>
+
+                                </div>
+                            </div>
+                            {% else %}
+                            <input type="hidden" name="buying_price_ex_gst"
+                                value="{{ product.buying_price_ex_gst|default:'0.00' }}" x-model="buyingPriceExGst">
+                            <input type="hidden" name="gst_percentage"
+                                value="{{ product.gst_percentage|default:'18.00' }}" x-model="gstPercent">
+                            <input type="hidden" name="buying_price_inc_gst"
+                                value="{{ product.buying_price_inc_gst|default:'0.00' }}" x-model="buyingPriceIncGst">
+                            {% endif %}
+
+                            <!-- Additional Expenses Section -->
+                            {% if field_visibility.can_see_purchase_price %}
+                            <div class="border-t border-emerald-100/75 pt-3 mt-3">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-[11px] font-semibold text-gray-600">Additional
+                                        Expenses</label>
+                                    <button type="button" @click="addExpense()"
+                                        class="text-[10px] font-medium text-emerald-600 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Add Expense
+                                    </button>
+                                </div>
+                                <div class="space-y-2">
+                                    <template x-for="(expense, index) in expenses" :key="index">
+                                        <div
+                                            class="flex gap-2 items-center bg-white p-1.5 rounded border border-emerald-100 shadow-sm">
+                                            <input type="hidden" name="expense_id[]" :value="expense.id">
+                                            <div class="flex-1">
+                                                <input type="text" name="expense_desc[]" x-model="expense.desc"
+                                                    placeholder="Expense description..."
+                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border">
+                                            </div>
+                                            <div class="w-24">
+                                                <select name="expense_type[]" x-model="expense.type" @change="recalcExpenses()" class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border bg-white">
+                                                    <option value="PER_UNIT">Per Unit</option>
+                                                    <option value="TOTAL">Total Qty</option>
+                                                </select>
+                                            </div>
+                                            <div class="w-24">
+                                                <div class="relative group">
+    <input type="number" name="expense_amount[]" step="0.01"
+                                                    x-model="expense.amount" @input="recalcExpenses()"
+                                                    placeholder="0.00"
+                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy(window.formatPriceForCopy($el.parentElement.querySelector('input').value))); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                            </div>
+                                            <button type="button" @click="removeExpense(index)"
+                                                class="text-red-400 hover:text-red-600 p-1 bg-gray-50 rounded hover:bg-red-50">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <div x-show="expenses.length === 0" class="text-[10px] text-gray-400 italic py-1">No
+                                        additional expenses.</div>
+                                    <div x-show="expenses.length > 0" class="flex justify-end pt-1">
+                                        <div
+                                            class="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-100">
+                                            Total Expenses (Per Unit): ₹<span x-text="totalExpenses.toFixed(2)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Selling Prices -->
+                            {% if field_visibility.can_see_selling_price %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-emerald-100/75 pt-3 mt-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-indigo-600 mb-1">Sell Price (ex
+                                        GST)</label>
+                                    <div class="relative group">
+    <input type="number" name="selling_price_ex_gst" step="0.01"
+                                        value="{{ product.selling_price_ex_gst|default:'0.00' }}"
+                                        x-model="sellingPriceExGst" @input="calcSellingForward()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+
+<div class="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-600 font-medium group/total">
+    <span>Total (<span x-text="quantity"></span> {{ product.uom|default:'Units' }}):</span>
+    <span class="font-bold">₹<span x-text="(sellingPriceExGst * quantity).toFixed(2)"></span></span>
+    <button type="button" x-data="{ copied: false }"
+        @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy((sellingPriceExGst * quantity).toFixed(2))); copied = true; setTimeout(() => copied = false, 2000)"
+        class="text-emerald-400 hover:text-emerald-700 opacity-0 group-hover/total:opacity-100 transition-opacity" title="Copy Total">
+        <svg x-show="!copied" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        <svg x-show="copied" x-cloak class="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    </button>
+</div>
+
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-indigo-600 mb-1">Sell Price (inc
+                                        GST)</label>
+                                    <div class="relative group">
+    <input type="number" name="selling_price_inc_gst" step="0.01"
+                                        value="{{ product.selling_price_inc_gst|default:'0.00' }}"
+                                        x-model="sellingPriceIncGst" @input="calcSellingReverse()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+
+<div class="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-600 font-medium group/total">
+    <span>Total (<span x-text="quantity"></span> {{ product.uom|default:'Units' }}):</span>
+    <span class="font-bold">₹<span x-text="(sellingPriceIncGst * quantity).toFixed(2)"></span></span>
+    <button type="button" x-data="{ copied: false }"
+        @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy((sellingPriceIncGst * quantity).toFixed(2))); copied = true; setTimeout(() => copied = false, 2000)"
+        class="text-emerald-400 hover:text-emerald-700 opacity-0 group-hover/total:opacity-100 transition-opacity" title="Copy Total">
+        <svg x-show="!copied" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        <svg x-show="copied" x-cloak class="h-3 w-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    </button>
+</div>
+
+                                </div>
+                            </div>
+                            {% else %}
+                            <input type="hidden" name="selling_price_ex_gst"
+                                value="{{ product.selling_price_ex_gst|default:'0.00' }}" x-model="sellingPriceExGst">
+                            <input type="hidden" name="selling_price_inc_gst"
+                                value="{{ product.selling_price_inc_gst|default:'0.00' }}" x-model="sellingPriceIncGst">
+                            {% endif %}
+
+                            <!-- Profits -->
+                            {% if field_visibility.can_see_profit_loss %}
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-emerald-100/75 pt-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-emerald-700 mb-1">Profit
+                                        Amount (Unit)</label>
+                                    <div class="relative group">
+    <input type="number" name="profit_amount" step="0.01" value="0.00"
+                                        x-model="profitAmount" @input="calcFromProfitAmount()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 bg-emerald-50 border-emerald-200 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy(window.formatPriceForCopy(window.formatPriceForCopy($el.parentElement.querySelector('input').value)))); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-emerald-700 mb-1">Total Profit</label>
+                                    <div class="relative group">
+                                        <input type="number" step="0.01" value="0.00"
+                                            x-model="totalProfitAmount" readonly disabled
+                                            class="shadow-sm block w-full sm:text-sm border-gray-300 rounded-md border p-2 bg-emerald-50 border-emerald-200 pr-7 cursor-not-allowed">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-emerald-700 mb-1">Profit %
+                                        (Margin)</label>
+                                    <div class="relative group">
+    <input type="number" name="profit_percentage" step="0.01" value="0.00"
+                                        x-model="profitPercent" @input="calcFromProfitPercent()"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 bg-emerald-50 border-emerald-200 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('input').value); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <input type="hidden" name="profit_amount" value="0.00" x-model="profitAmount">
+                            <input type="hidden" name="profit_percentage" value="0.00" x-model="profitPercent">
+                            {% endif %}
+
+                            <!-- Save Button -->
+                            <div class="flex flex-col sm:flex-row justify-between items-center pt-3 border-t border-emerald-100/75 mt-3 gap-2">
+                                <div class="text-[10px] text-gray-500 italic">
+                                    <template x-if="parseFloat(profitPercent) < parseFloat(minProfitMargin)">
+                                        <span class="text-orange-600 flex items-center gap-1">
+                                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Margin is below minimum (<span x-text="minProfitMargin"></span>%). Approval required.
+                                        </span>
+                                    </template>
+                                </div>
+                                <div class="flex justify-end">
+                                    <template x-if="parseFloat(profitPercent) >= parseFloat(minProfitMargin)">
+                                        <button type="submit"
+                                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-3 rounded text-xs transition-colors flex items-center gap-1">
+                                            Save Pricing
+                                        </button>
+                                    </template>
+                                    <template x-if="parseFloat(profitPercent) < parseFloat(minProfitMargin)">
+                                        <button type="submit"
+                                            class="bg-orange-600 hover:bg-orange-700 text-white font-medium py-1.5 px-3 rounded text-xs transition-colors flex items-center gap-1 shadow-sm">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            Request Approval
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+
+            <!-- End Pricing Column Wrapper -->
+            </div>
+
+            <!-- Supplier Quotes Section -->
+            {% if field_visibility.can_see_purchase_price %}
+            <div class="product-modal-section product-modal-suppliers lg:col-span-4 space-y-6">
+                <div
+                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 border-b border-gray-200 pb-2">
+                    <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="h-4 w-4 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        Supplier Cost Options
+                    </h3>
+                    <button type="button" @click="showCreateSupplier = !showCreateSupplier"
+                        class="text-xs text-indigo-600 hover:text-indigo-900 font-bold flex items-center gap-0.5 px-2 py-1 bg-indigo-50 rounded-md border border-indigo-100 hover:bg-indigo-100 transition-colors">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Option
+                    </button>
+                </div>
+
+                <!-- Inline Add Supplier Option Form -->
+                <div x-show="showCreateSupplier" style="display: none;"
+                    class="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm space-y-3" x-data="{
+                        basePrice: 0.00,
+                        gstPercent: 18.00,
+                        totalPrice: 0.00,
+                        gstAmount: 0.00,
+                        init() { this.calcForward(); },
+                        calcForward() {
+                            let base = parseFloat(this.basePrice) || 0;
+                            let gst = parseFloat(this.gstPercent) || 0;
+                            this.totalPrice = (base * (1 + (gst / 100))).toFixed(2);
+                            this.gstAmount = (this.totalPrice - base).toFixed(2);
+                        },
+                        calcReverse() {
+                            let total = parseFloat(this.totalPrice) || 0;
+                            let gst = parseFloat(this.gstPercent) || 0;
+                            let base = total / (1 + (gst / 100));
+                            this.basePrice = base.toFixed(2);
+                            this.gstAmount = (total - base).toFixed(2);
+                        }
+                    }">
+                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">New Supplier
+                        Option</h4>
+                    <form id="create-supplier-form"
+                        onsubmit="event.preventDefault(); window.submitModalForm('create-supplier-form', 'create_supplier', true, 'Supplier option added successfully');"
+                        class="space-y-3 text-xs">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_supplier">
+
+                        <div>
+                            <label class="block text-gray-500 font-semibold mb-0.5">Supplier Name *</label>
+                            <input type="text" name="supplier_name" list="supplier-suggestions"
+                                oninput="autofillSupplierDetails(this)" required
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">Location</label>
+                                <input type="text" name="location"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5">
+                            </div>
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">Contact No.</label>
+                                <input type="text" name="contact_number"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">Contact Email</label>
+                                <input type="email" name="contact_email"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5">
+                            </div>
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">Product URL Link</label>
+                                <input type="url" name="product_link"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5"
+                                    placeholder="https://...">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-gray-200/50 pt-2">
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">Base Price *</label>
+                                <div class="relative group">
+    <input type="number" name="base_price" step="0.01" x-model="basePrice"
+                                    @input="calcForward()" required
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">GST %</label>
+                                <div class="relative group">
+    <input type="number" name="gst_percentage" step="0.01" x-model="gstPercent"
+                                    @input="calcForward()"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('input').value); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                            </div>
+                            <div>
+                                <label class="block text-gray-500 font-semibold mb-0.5">Total (inc GST)</label>
+                                <div class="relative group">
+    <input type="number" name="total_inc_gst" step="0.01" x-model="totalPrice"
+                                    @input="calcReverse()"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-indigo-50 border border-indigo-100 rounded p-2 text-indigo-800 text-[10px] font-medium flex justify-between">
+                            <span>GST Amount: ₹<span x-text="gstAmount">0.00</span></span>
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" name="is_selected" value="true"
+                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5">
+                                <span>Mark Selected</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-semibold mb-0.5">Quote/Invoice Attachment</label>
+                            <input type="file" name="photo_or_document"
+                                class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-semibold mb-0.5">Quote Description</label>
+                            <textarea name="description" rows="2"
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5"
+                                placeholder="Optional notes..."></textarea>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-2 border-t border-gray-200/50">
+                            <button type="button" @click="showCreateSupplier = false"
+                                class="px-3 py-1.5 border border-gray-300 rounded-md text-[11px] font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+                            <button type="submit"
+                                class="px-3 py-1.5 border border-transparent rounded-md text-[11px] font-medium text-white bg-indigo-600 hover:bg-indigo-700">Add
+                                Option</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="space-y-3 pr-1">
+                    {% for option in supplier_options %}
+                    <div x-data="{
+                        editing: false,
+                        basePrice: {{ option.base_price|default:0.00 }},
+                        gstPercent: {{ option.gst_percentage|default:18.00 }},
+                        totalPrice: {{ option.total_inc_gst|default:0.00 }},
+                        gstAmount: 0.00,
+                        init() { this.calcForward(); },
+                        calcForward() {
+                            let base = parseFloat(this.basePrice) || 0;
+                            let gst = parseFloat(this.gstPercent) || 0;
+                            this.totalPrice = (base * (1 + (gst / 100))).toFixed(2);
+                            this.gstAmount = (this.totalPrice - base).toFixed(2);
+                        },
+                        calcReverse() {
+                            let total = parseFloat(this.totalPrice) || 0;
+                            let gst = parseFloat(this.gstPercent) || 0;
+                            let base = total / (1 + (gst / 100));
+                            this.basePrice = base.toFixed(2);
+                            this.gstAmount = (total - base).toFixed(2);
+                        }
+                    }">
+                        <div x-show="!editing"
+                            class="border rounded-xl p-3.5 text-xs transition duration-150 {% if option.is_selected %}bg-green-50/60 border-green-300 shadow-sm{% else %}bg-gray-50 border-gray-200 hover:bg-gray-100/60{% endif %}">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm">{{ option.supplier_name }}</h4>
+                                    <p class="text-[10px] text-gray-500 mt-0.5">
+                                        {% if option.location %}{{ option.location }}{% endif %}
+                                        {% if option.location and option.contact_number %} | {% endif %}
+                                        {% if option.contact_number %}{{ option.contact_number }}{% endif %}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    <button type="button" @click="editing = true"
+                                        class="text-indigo-600 hover:text-indigo-900 p-1 border border-gray-200 bg-white hover:bg-indigo-50 rounded-md shadow-sm transition-colors"
+                                        title="Edit Quote">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
+                                    {% if not option.is_selected %}
+                                    <button type="button"
+                                        onclick="window.submitModalAction('select_supplier', { option_id: '{{ option.id }}' })"
+                                        class="px-2 py-0.5 text-[10px] font-bold text-green-700 bg-white hover:bg-green-100 border border-green-200 rounded-md transition-colors shadow-sm">
+                                        Select
+                                    </button>
+                                    {% else %}
+                                    <span
+                                        class="px-2 py-0.5 text-[10px] font-bold text-green-800 bg-green-200/80 rounded-md border border-green-300">Active</span>
+                                    {% endif %}
+                                    <button type="button"
+                                        onclick="window.submitModalAction('delete_supplier', { option_id: '{{ option.id }}' })"
+                                        class="text-red-500 hover:text-red-700 p-1 border border-gray-200 bg-white hover:bg-red-50 rounded-md shadow-sm transition-colors"
+                                        title="Delete Quote">
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Quote details -->
+                            {% if option.description %}
+                            <p
+                                class="text-[11px] text-gray-600 bg-white/70 p-2 rounded-md border border-gray-100 mb-2 italic">
+                                {{ option.description }}
+                            </p>
+                            {% endif %}
+
+                            <div
+                                class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white p-2 rounded-lg border border-gray-150 text-[11px] font-semibold text-gray-700 shadow-2xs">
+                                <div>
+                                    <span class="text-[9px] text-gray-400 block font-normal uppercase">Buy Price</span>
+                                    ₹{{ option.base_price }}
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-gray-400 block font-normal uppercase">GST %</span>
+                                    {{ option.gst_percentage }}%
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-gray-400 block font-normal uppercase">Inc. GST</span>
+                                    ₹{{ option.total_inc_gst }}
+                                </div>
+                            </div>
+
+                            <div class="mt-2.5 flex items-center justify-between text-[10px]">
+                                {% if option.product_link %}
+                                <a href="{{ option.product_link }}" target="_blank"
+                                    class="inline-flex items-center text-indigo-600 hover:text-indigo-950 font-bold">
+                                    <svg class="h-3 w-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+                                        </path>
+                                    </svg>
+                                    Product Link
+                                </a>
+                                {% endif %}
+
+                                {% if option.photo_or_document %}
+                                <a href="{{ option.photo_or_document.url }}" target="_blank"
+                                    class="inline-flex items-center text-gray-500 hover:text-gray-800 font-bold ml-auto">
+                                    <svg class="h-3 w-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                    View Invoice/Quote
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Inline Edit Form -->
+                        <div x-show="editing" style="display: none;"
+                            class="bg-indigo-50/50 border border-indigo-200 rounded-xl p-4 shadow-sm space-y-3 mt-2">
+                            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-1">Edit
+                                Supplier Option</h4>
+                            <form id="edit-supplier-form-{{ option.id }}"
+                                onsubmit="event.preventDefault(); window.submitModalForm('edit-supplier-form-{{ option.id }}', 'edit_supplier', true, 'Supplier option updated successfully');"
+                                class="space-y-3 text-xs">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="edit_supplier">
+                                <input type="hidden" name="option_id" value="{{ option.id }}">
+
+                                <div>
+                                    <label class="block text-gray-500 font-semibold mb-0.5">Supplier Name *</label>
+                                    <input type="text" name="supplier_name" value="{{ option.supplier_name }}"
+                                        list="supplier-suggestions" oninput="autofillSupplierDetails(this)" required
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white">
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">Location</label>
+                                        <input type="text" name="location" value="{{ option.location|default:'' }}"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">Contact No.</label>
+                                        <input type="text" name="contact_number"
+                                            value="{{ option.contact_number|default:'' }}"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">Contact Email</label>
+                                        <input type="email" name="contact_email"
+                                            value="{{ option.contact_email|default:'' }}"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">Product URL Link</label>
+                                        <input type="url" name="product_link"
+                                            value="{{ option.product_link|default:'' }}"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white"
+                                            placeholder="https://...">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-gray-200/50 pt-2">
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">Base Price *</label>
+                                        <div class="relative group">
+    <input type="number" name="base_price" step="0.01" x-model="basePrice"
+                                            @input="calcForward()" required
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">GST %</label>
+                                        <div class="relative group">
+    <input type="number" name="gst_percentage" step="0.01" x-model="gstPercent"
+                                            @input="calcForward()"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText($el.parentElement.querySelector('input').value); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-500 font-semibold mb-0.5">Total (inc GST)</label>
+                                        <div class="relative group">
+    <input type="number" name="total_inc_gst" step="0.01" x-model="totalPrice"
+                                            @input="calcReverse()"
+                                            class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white pr-7">
+    
+<button type="button" x-data="{ copied: false }"
+    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy($el.parentElement.querySelector('input').value)); copied = true; setTimeout(() => copied = false, 2000)"
+    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+</button>
+</div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="bg-white border border-indigo-100 rounded p-2 text-indigo-800 text-[10px] font-medium flex justify-between">
+                                    <span>GST Amount: ₹<span x-text="gstAmount">0.00</span></span>
+                                    <label class="flex items-center gap-1 cursor-pointer">
+                                        {% if option.is_selected %}
+                                        <input type="checkbox" name="is_selected" value="true" checked
+                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5">
+                                        {% else %}
+                                        <input type="checkbox" name="is_selected" value="true"
+                                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5">
+                                        {% endif %}
+                                        <span>Mark Selected</span>
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-500 font-semibold mb-0.5">Update Attachment
+                                        (Optional)</label>
+                                    <input type="file" name="photo_or_document"
+                                        class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                </div>
+
+                                <div>
+                                    <label class="block text-gray-500 font-semibold mb-0.5">Quote Description</label>
+                                    <textarea name="description" rows="2"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-xs border-gray-300 rounded-md border p-1.5 bg-white"
+                                        placeholder="Optional notes...">{{ option.description|default:'' }}</textarea>
+                                </div>
+
+                                <div class="flex justify-end gap-2 pt-2 border-t border-gray-200/50">
+                                    <button type="button" @click="editing = false"
+                                        class="px-3 py-1.5 border border-gray-300 rounded-md text-[11px] font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+                                    <button type="submit"
+                                        class="px-3 py-1.5 border border-transparent rounded-md text-[11px] font-medium text-white bg-indigo-600 hover:bg-indigo-700">Save
+                                        Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-xs italic text-center py-4 bg-gray-50 rounded-xl border border-dashed">
+                        No quotes added yet. Click "Add Option" to create one.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ─── HISTORY / AUDIT TRAIL (full-width, below all columns) ─── -->
+            <div class="lg:col-span-12 mt-2"
+                x-data="{
+                    open: false,
+                    loaded: false,
+                    loading: false,
+                    logs: [],
+                    toggle() {
+                        this.open = !this.open;
+                        if (this.open && !this.loaded) this.fetchLogs();
+                    },
+                    async fetchLogs() {
+                        this.loading = true;
+                        try {
+                            const r = await fetch('/tracker/api/product/{{ product.id }}/audit-log/');
+                            const d = await r.json();
+                            this.logs = d.logs || [];
+                        } catch(e) {
+                            this.logs = [];
+                        }
+                        this.loading = false;
+                        this.loaded = true;
+                    }
+                }">
+                <!-- Accordion header -->
+                <button type="button" @click="toggle()"
+                    class="w-full flex items-center justify-between border-t border-gray-200 pt-3 pb-2 focus:outline-none group">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Change History
+                    </span>
+                    <svg class="h-4 w-4 text-gray-400 transition-transform duration-200"
+                         :class="open ? 'rotate-180' : ''"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <!-- Timeline body -->
+                <div x-show="open" x-collapse class="pb-4">
+                    <!-- Loading spinner -->
+                    <div x-show="loading" class="flex items-center justify-center py-6">
+                        <svg class="animate-spin h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                    </div>
+
+                    <!-- No logs -->
+                    <div x-show="!loading && logs.length === 0" class="text-center text-xs text-gray-400 py-6 italic">
+                        No change history recorded yet.
+                    </div>
+
+                    <!-- Log entries -->
+                    <div x-show="!loading && logs.length > 0"
+                        class="relative border-l-2 border-gray-100 ml-3 mt-2 space-y-4">
+                        <template x-for="(log, idx) in logs" :key="idx">
+                            <div class="pl-5 relative">
+                                <!-- Dot on timeline -->
+                                <span class="absolute -left-[9px] top-1 w-3.5 h-3.5 rounded-full border-2 border-white flex items-center justify-center"
+                                    :class="{
+                                        'bg-green-400': log.action === 'CREATE',
+                                        'bg-indigo-400': log.action === 'UPDATE',
+                                        'bg-red-400':   log.action === 'DELETE',
+                                    }">
+                                </span>
+
+                                <!-- Entry header -->
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[10px] font-bold uppercase rounded px-1.5 py-0.5"
+                                        :class="{
+                                            'bg-green-50 text-green-700': log.action === 'CREATE',
+                                            'bg-indigo-50 text-indigo-700': log.action === 'UPDATE',
+                                            'bg-red-50 text-red-700': log.action === 'DELETE',
+                                        }"
+                                        x-text="log.action"></span>
+                                    <span class="text-xs font-semibold text-gray-700" x-text="log.user"></span>
+                                    <span class="text-[10px] text-gray-400" x-text="log.timestamp"></span>
+                                </div>
+
+                                <!-- Changes diff -->
+                                <template x-if="Object.keys(log.changes).length > 0">
+                                    <div class="mt-1 bg-gray-50 rounded border border-gray-100 divide-y divide-gray-100 text-[10px]">
+                                        <template x-for="(val, field) in log.changes" :key="field">
+                                            <div class="px-2 py-1 flex gap-2 items-start">
+                                                <span class="font-semibold text-gray-500 min-w-[80px]" x-text="field"></span>
+                                                <template x-if="Array.isArray(val) && val.length === 2">
+                                                    <span class="flex gap-1 flex-wrap">
+                                                        <span class="line-through text-red-500" x-text="val[0] ?? '—'"></span>
+                                                        <span class="text-gray-400">→</span>
+                                                        <span class="text-green-600" x-text="val[1] ?? '—'"></span>
+                                                    </span>
+                                                </template>
+                                                <template x-if="!Array.isArray(val) || val.length !== 2">
+                                                    <span class="text-gray-700" x-text="JSON.stringify(val)"></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            <!-- ─── END HISTORY ─── -->
+
+        </div>
+    </div>
+</div>
+
+<datalist id="supplier-suggestions">
+    {% for s in unique_suppliers %}
+    <option value="{{ s.name }}">{{ s.name }}</option>
+    {% endfor %}
+</datalist>
+
+<script>
+    // Autofill supplier data in the modal scope
+    var supplierData = {{ unique_suppliers_json| safe }};
+    window.autofillSupplierDetails = function (inputElement) {
+        var val = inputElement.value.trim();
+        if (!val) return;
+
+        var supplier = supplierData.find(function (s) { return s.name === val; });
+        if (supplier) {
+            var form = inputElement.closest('form');
+            if (!form) return;
+
+            var emailInput = form.querySelector('input[name="contact_email"]');
+            var phoneInput = form.querySelector('input[name="contact_number"]');
+            var locationInput = form.querySelector('input[name="location"]');
+
+            if (emailInput && !emailInput.value) emailInput.value = supplier.email;
+            if (phoneInput && !phoneInput.value) phoneInput.value = supplier.phone;
+            if (locationInput && !locationInput.value) locationInput.value = supplier.location;
+        }
+    };
+</script>
+<script>
+window.formatPriceForCopy = function(val) {
+    let n = parseFloat(val);
+    if(!isNaN(n)) return '₹ ' + n.toFixed(2);
+    return val;
+};
+</script>
+<script>
+// ── Modal-scoped dual-stage Alpine component ───────────────────
+const _MODAL_STAGE_LABELS = {
+    REQ_RECEIVED:'Requirement Received', QUOT_GIVEN:'Quotation Given',
+    PO_RECEIVED:'PO Received',           PI_GIVEN:'PI Given',
+    PROD_GIVEN:'Product Given',          INV_GIVEN:'Invoice Given',
+    REQ_SEARCHING:'Requirement Searching', QUOT_RECEIVED:'Quotation Received',
+    PO_GIVEN:'PO Given',                   PI_RECEIVED:'PI Received',
+    PROD_RECEIVED:'Product Received',      INV_RECEIVED:'Invoice Received',
+};
+function modalStageCell(productId, initCust, initSupp) {
+    return {
+        productId,
+        customerStage:  initCust || '',
+        supplierStage:  initSupp || '',
+        customerSaving: false,
+        supplierSaving: false,
+        stageLabel(s) { return _MODAL_STAGE_LABELS[s] || s; },
+        async setStage(side, value) {
+            const savingKey = side === 'customer' ? 'customerSaving' : 'supplierSaving';
+            const stageKey  = side === 'customer' ? 'customerStage'  : 'supplierStage';
+            if (this[savingKey]) return;
+            const prev = this[stageKey];
+            this[savingKey] = true;
+            this[stageKey]  = value;
+            try {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                const res = await fetch(`/api/product/${this.productId}/stage/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf ? csrf.value : '',
+                    },
+                    body: JSON.stringify({ side, stage: value }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this[stageKey] = data.stage || '';
+                    if (window.showGlobalNotification) {
+                        const lbl = data.stage
+                            ? (_MODAL_STAGE_LABELS[data.stage] || data.stage)
+                            : `${side} stage cleared`;
+                        window.showGlobalNotification(
+                            `${side.charAt(0).toUpperCase() + side.slice(1)} stage: ${lbl}`, 'success'
+                        );
+                    }
+                    // Sync the badge in the header row of the product table without reload
+                    const tr = document.querySelector(`tr[data-product-id="${this.productId}"]`);
+                    if (tr) tr.dataset[side + 'Stage'] = this[stageKey];
+                } else {
+                    this[stageKey] = prev;
+                    if (window.showGlobalNotification) window.showGlobalNotification(data.error || 'Failed to update stage', 'error');
+                }
+            } catch(e) {
+                this[stageKey] = prev;
+                console.error('Stage update error:', e);
+            } finally {
+                this[savingKey] = false;
+            }
+        },
+    };
+}
+</script>

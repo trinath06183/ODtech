@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block header %}{{ contact.name }}{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <a href="{% url 'contact_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm w-fit">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Back to Parties
+    </a>
+</div>
+
+<!-- Profile + KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+
+    <!-- Profile card -->
+    <div class="glass p-6 rounded-2xl md:col-span-1">
+        <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 rounded-xl bg-purple-600/30 flex items-center justify-center text-xl font-bold text-purple-300">
+                {{ contact.name|slice:":1"|upper }}
+            </div>
+            <div>
+                <div class="text-white font-bold text-lg">{{ contact.name }}</div>
+                <span class="px-2 py-0.5 rounded text-xs font-bold
+                    {% if contact.contact_type == 'Customer' %}bg-blue-500/20 text-blue-300
+                    {% elif contact.contact_type == 'Vendor' %}bg-orange-500/20 text-orange-300
+                    {% else %}bg-purple-500/20 text-purple-300{% endif %}">
+                    {{ contact.contact_type }}
+                </span>
+            </div>
+        </div>
+        <div class="space-y-2 text-sm">
+            {% if contact.phone %}<div class="text-gray-300">📞 {{ contact.phone }}</div>{% endif %}
+            {% if contact.email %}<div class="text-gray-300">✉️ {{ contact.email }}</div>{% endif %}
+            {% if contact.gstin %}<div class="font-mono text-gray-400 text-xs">GSTIN: {{ contact.gstin }}</div>{% endif %}
+            {% if contact.pan   %}<div class="font-mono text-gray-400 text-xs">PAN: {{ contact.pan }}</div>{% endif %}
+            {% if contact.address %}<div class="text-gray-500 text-xs mt-3 border-t border-white/10 pt-3">{{ contact.address }}</div>{% endif %}
+        </div>
+        {% if request.user.role in 'Admin,Accountant' %}
+        <a href="{% url 'contact_edit' contact.id %}" class="mt-5 w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-sm font-medium rounded-xl transition-colors">
+            ✏️ Edit Party
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Financials -->
+    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="glass p-5 rounded-2xl relative overflow-hidden">
+            <div class="absolute inset-0 bg-blue-500/5"></div>
+            <div class="relative">
+                <div class="text-blue-300 text-xs font-semibold uppercase mb-1">Total Invoiced</div>
+                <div class="text-2xl font-bold text-white">&#8377;{{ invoiced_total|floatformat:0 }}</div>
+                <div class="text-gray-500 text-xs mt-1">Approved invoices</div>
+            </div>
+        </div>
+        <div class="glass p-5 rounded-2xl relative overflow-hidden">
+            <div class="absolute inset-0 bg-emerald-500/5"></div>
+            <div class="relative">
+                <div class="text-emerald-300 text-xs font-semibold uppercase mb-1">Payments Received</div>
+                <div class="text-2xl font-bold text-emerald-400">&#8377;{{ payments_total|floatformat:0 }}</div>
+                <div class="text-gray-500 text-xs mt-1">Total recorded</div>
+            </div>
+        </div>
+        <div class="glass p-5 rounded-2xl relative overflow-hidden">
+            <div class="absolute inset-0 {% if outstanding > 0 %}bg-rose-500/5{% else %}bg-emerald-500/5{% endif %}"></div>
+            <div class="relative">
+                <div class="{% if outstanding > 0 %}text-rose-300{% else %}text-emerald-300{% endif %} text-xs font-semibold uppercase mb-1">Outstanding</div>
+                <div class="text-2xl font-bold {% if outstanding > 0 %}text-rose-400{% else %}text-emerald-400{% endif %}">&#8377;{{ outstanding|floatformat:0 }}</div>
+                <div class="text-gray-500 text-xs mt-1">{% if outstanding > 0 %}To collect{% else %}Fully settled{% endif %}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Documents & Payments -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+    <!-- Documents -->
+    <div class="glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <h3 class="text-white font-bold">Documents</h3>
+            <a href="{% url 'document_list' %}?q={{ contact.name }}" class="text-blue-400 hover:text-blue-300 text-xs transition-colors">View all →</a>
+        </div>
+        <div class="divide-y divide-white/5 max-h-80 overflow-y-auto">
+            {% for doc in documents %}
+            <a href="{% url 'document_preview' doc.id %}" class="flex items-center justify-between px-6 py-3.5 hover:bg-white/5 transition-colors">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="px-2 py-0.5 rounded text-xs font-bold flex-shrink-0
+                        {% if doc.type == 'INV' %}bg-green-500/20 text-green-300
+                        {% elif doc.type == 'QTN' %}bg-purple-500/20 text-purple-300
+                        {% elif doc.type == 'PO'  %}bg-orange-500/20 text-orange-300
+                        {% else %}bg-gray-500/20 text-gray-300{% endif %}">{{ doc.type }}</span>
+                    <div class="min-w-0">
+                        <div class="text-white text-sm font-mono truncate">{{ doc.number }}</div>
+                        <div class="text-gray-500 text-xs">{{ doc.date|date:"d M Y" }} · {{ doc.status }}</div>
+                    </div>
+                </div>
+                <div class="text-right flex-shrink-0 ml-3">
+                    <div class="text-green-400 font-bold text-sm">&#8377;{{ doc.grand_total|floatformat:0 }}</div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="px-6 py-10 text-center text-gray-600 text-sm">No documents yet</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Payments -->
+    <div class="glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <h3 class="text-white font-bold">Payment History</h3>
+            {% if request.user.role in 'Admin,Accountant' %}
+            <a href="{% url 'payment_create' %}?contact={{ contact.id }}" class="text-emerald-400 hover:text-emerald-300 text-xs transition-colors">+ Record payment →</a>
+            {% endif %}
+        </div>
+        <div class="divide-y divide-white/5 max-h-80 overflow-y-auto">
+            {% for pmt in payments %}
+            <div class="flex items-center justify-between px-6 py-3.5">
+                <div class="min-w-0">
+                    <div class="text-white text-sm font-medium">{{ pmt.payment_mode }}</div>
+                    <div class="text-gray-500 text-xs">{{ pmt.date|date:"d M Y" }}{% if pmt.reference_number %} · Ref: {{ pmt.reference_number }}{% endif %}</div>
+                    {% if pmt.notes %}<div class="text-gray-600 text-xs truncate max-w-[200px]">{{ pmt.notes }}</div>{% endif %}
+                </div>
+                <div class="text-emerald-400 font-bold text-sm flex-shrink-0 ml-3">&#8377;{{ pmt.amount|floatformat:0 }}</div>
+            </div>
+            {% empty %}
+            <div class="px-6 py-10 text-center text-gray-600 text-sm">No payments recorded</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

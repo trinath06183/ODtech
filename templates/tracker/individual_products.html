@@ -1,0 +1,256 @@
+﻿{% extends 'base.html' %}
+{% block title %}All Products — Stage Tracker{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div>
+      <div class="flex items-center gap-2 text-sm text-gray-400 mb-1">
+        <a href="{% url 'tracker:dashboard' %}" class="hover:text-indigo-600 transition-colors">Dashboard</a>
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-gray-600 font-medium">All Products</span>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-100">
+          <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </span>
+        Individual Products
+      </h1>
+      <p class="text-sm text-gray-500 mt-0.5">
+        All products across all orders — filter by stage to track progress.
+        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{{ total_count }} product{{ total_count|pluralize }}</span>
+      </p>
+    </div>
+    <a href="{% url 'tracker:dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm transition-colors">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Back to Dashboard
+    </a>
+  </div>
+
+  {% csrf_token %}
+
+  <!-- Filter Bar -->
+  <form method="get" id="filter-form" class="bg-white border border-gray-200 rounded-xl shadow-sm px-4 py-3">
+    <div class="flex flex-wrap gap-3 items-end">
+      <div class="flex-1 min-w-[200px]">
+        <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Search</label>
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" name="q" value="{{ f_search }}" placeholder="Product name, order no., customer..." class="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-gray-50">
+        </div>
+      </div>
+      <div class="min-w-[170px]">
+        <label class="block text-xs font-semibold text-indigo-500 mb-1 uppercase tracking-wider flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>Customer Stage
+        </label>
+        <select name="customer_stage" class="w-full text-sm border border-indigo-200 rounded-lg py-1.5 pl-3 pr-8 bg-indigo-50 text-indigo-700 focus:ring-2 focus:ring-indigo-300 cursor-pointer">
+          <option value="">— Any —</option>
+          {% for val, label in customer_stage_choices %}<option value="{{ val }}" {% if f_customer_stage == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="min-w-[185px]">
+        <label class="block text-xs font-semibold text-amber-500 mb-1 uppercase tracking-wider flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>Supplier Stage
+        </label>
+        <select name="supplier_stage" class="w-full text-sm border border-amber-200 rounded-lg py-1.5 pl-3 pr-8 bg-amber-50 text-amber-700 focus:ring-2 focus:ring-amber-300 cursor-pointer">
+          <option value="">— Any —</option>
+          {% for val, label in supplier_stage_choices %}<option value="{{ val }}" {% if f_supplier_stage == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="min-w-[140px]">
+        <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Order Status</label>
+        <select name="order_status" class="w-full text-sm border border-gray-200 rounded-lg py-1.5 pl-3 pr-8 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-gray-300 cursor-pointer">
+          <option value="">— Any —</option>
+          {% for val, label in order_status_choices %}<option value="{{ val }}" {% if f_order_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="flex gap-2 items-end">
+        <button type="submit" class="px-4 py-1.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors">Apply</button>
+        <a href="{% url 'tracker:individual_products' %}" class="px-4 py-1.5 text-sm font-medium text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors">Clear</a>
+      </div>
+    </div>
+    {% if f_search or f_customer_stage or f_supplier_stage or f_order_status %}
+    <div class="mt-3 flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+      <span class="text-xs text-gray-400 font-medium self-center">Active filters:</span>
+      {% if f_customer_stage %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700"><span class="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>{% for val, label in customer_stage_choices %}{% if val == f_customer_stage %}{{ label }}{% endif %}{% endfor %}</span>{% endif %}
+      {% if f_supplier_stage %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>{% for val, label in supplier_stage_choices %}{% if val == f_supplier_stage %}{{ label }}{% endif %}{% endfor %}</span>{% endif %}
+      {% if f_order_status %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">Order: {{ f_order_status }}</span>{% endif %}
+      {% if f_search %}<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">Search: {{ f_search }}</span>{% endif %}
+    </div>
+    {% endif %}
+  </form>
+
+  <!-- Legend -->
+  <div class="flex flex-wrap gap-4 text-xs text-gray-500 px-1">
+    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-400"></span><strong class="text-indigo-600">Customer</strong> stages: Requirement Received &rarr; Invoice Given</span>
+    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span><strong class="text-amber-600">Supplier</strong> stages: Requirement Searching &rarr; Invoice Received</span>
+    <span class="ml-auto text-gray-400 italic">Stage changes save instantly</span>
+  </div>
+
+  <!-- Products Table -->
+  {% if products %}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-8">#</th>
+            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Order</th>
+            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+            <th class="px-3 py-3 text-center text-xs font-semibold text-indigo-500 uppercase tracking-wider min-w-[155px]">
+              <span class="flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>Customer Stage</span>
+            </th>
+            <th class="px-3 py-3 text-center text-xs font-semibold text-amber-500 uppercase tracking-wider min-w-[165px]">
+              <span class="flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span>Supplier Stage</span>
+            </th>
+            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Order Status</th>
+            <th class="px-3 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for product in products %}
+          <tr class="hover:bg-gray-50 transition-colors group"
+              x-data="productStageCell('{{ product.id }}', '{{ product.customer_stage|default:'' }}', '{{ product.supplier_stage|default:'' }}')"
+              data-product-id="{{ product.id }}">
+            <td class="px-3 py-2.5 text-gray-400 font-mono text-xs">{{ forloop.counter }}</td>
+            <td class="px-3 py-2.5">
+              <div class="font-semibold text-gray-900 leading-tight">{{ product.item_name }}</div>
+              {% if product.make_or_model %}<div class="text-xs text-gray-400 mt-0.5">{{ product.make_or_model }}</div>{% endif %}
+              {% if product.description %}<div class="text-xs text-gray-400 truncate max-w-[220px]" title="{{ product.description }}">{{ product.description|truncatechars:60 }}</div>{% endif %}
+            </td>
+            <td class="px-3 py-2.5">
+              <a href="{% url 'tracker:order_detail' product.order.id %}" class="font-bold text-indigo-600 hover:text-indigo-800 text-xs block leading-tight">{{ product.order.order_number }}</a>
+              {% if product.lot %}<span class="text-[10px] text-teal-500 font-medium">{{ product.lot.name }}</span>{% endif %}
+              <div class="text-[10px] text-gray-400">{{ product.order.order_date }}</div>
+            </td>
+            <td class="px-3 py-2.5">
+              <div class="text-xs text-gray-700 font-medium">{{ product.order.customer_name }}</div>
+              <div class="text-[10px] text-gray-400">{{ product.order.customer_phone }}</div>
+            </td>
+            <td class="px-3 py-2.5 text-center text-sm font-medium text-gray-700">
+              {{ product.quantity }} <span class="text-xs text-gray-400">{{ product.uom }}</span>
+            </td>
+            <!-- Customer Stage -->
+            <td class="px-2 py-2 text-center">
+              <div x-show="customerStage && !customerSaving" class="mb-1">
+                <span class="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-700"><span x-text="stageLabel(customerStage)"></span></span>
+              </div>
+              <div x-show="customerSaving" class="flex justify-center mb-1">
+                <svg class="animate-spin h-3 w-3 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+              </div>
+              <select @change="setStage('customer', $event.target.value)"
+                      class="w-full text-[10px] border border-indigo-200 rounded py-px px-1 bg-indigo-50 text-indigo-700 focus:ring-1 focus:ring-indigo-300 cursor-pointer"
+                      :disabled="customerSaving">
+                <option value="">— clear —</option>
+                <option value="REQ_RECEIVED"  {% if product.customer_stage == 'REQ_RECEIVED'  %}selected{% endif %}>Requirement Received</option>
+                <option value="QUOT_GIVEN"    {% if product.customer_stage == 'QUOT_GIVEN'    %}selected{% endif %}>Quotation Given</option>
+                <option value="PO_RECEIVED"   {% if product.customer_stage == 'PO_RECEIVED'   %}selected{% endif %}>PO Received</option>
+                <option value="PI_GIVEN"      {% if product.customer_stage == 'PI_GIVEN'      %}selected{% endif %}>PI Given</option>
+                <option value="PROD_GIVEN"    {% if product.customer_stage == 'PROD_GIVEN'    %}selected{% endif %}>Product Given</option>
+                <option value="INV_GIVEN"     {% if product.customer_stage == 'INV_GIVEN'     %}selected{% endif %}>Invoice Given</option>
+              </select>
+            </td>
+            <!-- Supplier Stage -->
+            <td class="px-2 py-2 text-center">
+              <div x-show="supplierStage && !supplierSaving" class="mb-1">
+                <span class="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold bg-amber-100 text-amber-700"><span x-text="stageLabel(supplierStage)"></span></span>
+              </div>
+              <div x-show="supplierSaving" class="flex justify-center mb-1">
+                <svg class="animate-spin h-3 w-3 text-amber-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+              </div>
+              <select @change="setStage('supplier', $event.target.value)"
+                      class="w-full text-[10px] border border-amber-200 rounded py-px px-1 bg-amber-50 text-amber-700 focus:ring-1 focus:ring-amber-300 cursor-pointer"
+                      :disabled="supplierSaving">
+                <option value="">— clear —</option>
+                <option value="REQ_SEARCHING" {% if product.supplier_stage == 'REQ_SEARCHING' %}selected{% endif %}>Requirement Searching</option>
+                <option value="QUOT_RECEIVED" {% if product.supplier_stage == 'QUOT_RECEIVED' %}selected{% endif %}>Quotation Received</option>
+                <option value="PO_GIVEN"      {% if product.supplier_stage == 'PO_GIVEN'      %}selected{% endif %}>PO Given</option>
+                <option value="PI_RECEIVED"   {% if product.supplier_stage == 'PI_RECEIVED'   %}selected{% endif %}>PI Received</option>
+                <option value="PROD_RECEIVED" {% if product.supplier_stage == 'PROD_RECEIVED' %}selected{% endif %}>Product Received</option>
+                <option value="INV_RECEIVED"  {% if product.supplier_stage == 'INV_RECEIVED'  %}selected{% endif %}>Invoice Received</option>
+              </select>
+            </td>
+            <!-- Order Status badge -->
+            <td class="px-3 py-2.5 text-center">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold
+                {% if product.order.order_status == 'OPEN' %}bg-blue-100 text-blue-700
+                {% elif product.order.order_status == 'SOURCING' %}bg-purple-100 text-purple-700
+                {% elif product.order.order_status == 'PROCURED' %}bg-indigo-100 text-indigo-700
+                {% elif product.order.order_status == 'SHIPPED' %}bg-yellow-100 text-yellow-700
+                {% elif product.order.order_status == 'CLOSED' %}bg-gray-100 text-gray-600
+                {% else %}bg-gray-100 text-gray-500{% endif %}">
+                {{ product.order.order_status }}
+              </span>
+            </td>
+            <!-- Actions -->
+            <td class="px-3 py-2.5 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a href="{% url 'tracker:product_detail' product.id %}" class="text-xs text-indigo-600 hover:text-indigo-900 font-medium">View</a>
+                <a href="{% url 'tracker:order_detail' product.order.id %}" class="text-xs text-gray-500 hover:text-gray-800 font-medium">Order</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm py-16 text-center">
+    <svg class="mx-auto h-14 w-14 text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-gray-500 font-medium mb-1">No products match the current filters</p>
+    <p class="text-sm text-gray-400 mb-4">Try adjusting your search or clearing the stage filters.</p>
+    <a href="{% url 'tracker:individual_products' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">Clear all filters</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+const _STAGE_LABELS = {
+    REQ_RECEIVED:'Requirement Received', QUOT_GIVEN:'Quotation Given', PO_RECEIVED:'PO Received',
+    PI_GIVEN:'PI Given', PROD_GIVEN:'Product Given', INV_GIVEN:'Invoice Given',
+    REQ_SEARCHING:'Requirement Searching', QUOT_RECEIVED:'Quotation Received', PO_GIVEN:'PO Given',
+    PI_RECEIVED:'PI Received', PROD_RECEIVED:'Product Received', INV_RECEIVED:'Invoice Received',
+};
+function productStageCell(productId, initCust, initSupp) {
+    return {
+        productId, customerStage: initCust||'', supplierStage: initSupp||'',
+        customerSaving: false, supplierSaving: false,
+        stageLabel(s) { return _STAGE_LABELS[s]||s; },
+        async setStage(side, value) {
+            const savingKey = side==='customer'?'customerSaving':'supplierSaving';
+            const stageKey  = side==='customer'?'customerStage':'supplierStage';
+            if (this[savingKey]) return;
+            const prev = this[stageKey];
+            this[savingKey]=true; this[stageKey]=value;
+            try {
+                const res = await fetch(`/api/product/${this.productId}/stage/`, {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},
+                    body: JSON.stringify({side, stage: value}),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this[stageKey]=data.stage||'';
+                    if (window.showGlobalNotification) {
+                        const lbl=data.stage?(_STAGE_LABELS[data.stage]||data.stage):`${side} stage cleared`;
+                        window.showGlobalNotification(`${side.charAt(0).toUpperCase()+side.slice(1)} stage: ${lbl}`,'success');
+                    }
+                } else { this[stageKey]=prev; if(window.showGlobalNotification) window.showGlobalNotification(data.error||'Failed','error'); else alert(data.error); }
+            } catch(e) { this[stageKey]=prev; console.error(e); }
+            finally { this[savingKey]=false; }
+        },
+    };
+}
+</script>
+{% endblock %}

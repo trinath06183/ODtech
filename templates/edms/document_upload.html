@@ -1,0 +1,300 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">⬆ Upload Document</h1>
+        <p class="text-sm text-slate-500">Upload a new document to EDMS</p>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="flex items-center gap-0">
+        <div class="flex items-center gap-2 flex-1">
+            <div id="step1-indicator" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-violet-600 text-white">
+                <span id="step1-indicator-number">1</span>
+            </div>
+            <span id="step1-indicator-text" class="text-sm font-medium text-violet-700">
+                Select File
+            </span>
+        </div>
+        <div id="step-divider" class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+        <div class="flex items-center gap-2 flex-1">
+            <div id="step2-indicator" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-slate-200 text-slate-400">
+                2
+            </div>
+            <span id="step2-indicator-text" class="text-sm font-medium text-slate-400">
+                Add Details
+            </span>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="upload-form" novalidate>
+        {% csrf_token %}
+
+        {% if meta_form.errors or file_form.errors %}
+        <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-6">
+            <strong>Upload Failed.</strong> Please re-select your file and fix the following errors in Step 2:
+            <ul class="list-disc ml-5 mt-2">
+                {% for field in file_form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for field in meta_form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in meta_form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                {% for error in file_form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Step 1: File Selection -->
+        <div id="step1-container" class="glass rounded-2xl p-8">
+            <!-- Drop Zone -->
+            <div id="drop-zone"
+                 class="border-2 border-dashed border-violet-300 rounded-2xl p-12 text-center
+                         hover:border-violet-500 hover:bg-violet-50/30 transition-all cursor-pointer"
+                 onclick="document.getElementById('edms-file-input').click()">
+                <div class="text-5xl mb-4">📁</div>
+                <p class="text-lg font-semibold text-slate-700 mb-2">Drop your file here</p>
+                <p class="text-sm text-slate-400 mb-4">or click to browse</p>
+                <p class="text-xs text-slate-300">
+                    PDF, Word, Excel, Images, etc. — Max {{ request.edms_max_mb|default:50 }} MB
+                </p>
+                {{ file_form.file }}
+            </div>
+
+            <!-- File Preview (JS shows this after selection) -->
+            <div id="file-preview" class="hidden mt-4 p-4 bg-violet-50 rounded-xl flex items-center gap-4">
+                <div class="text-3xl" id="file-icon">📄</div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-slate-800 truncate" id="file-name">-</p>
+                    <p class="text-xs text-slate-400" id="file-size">-</p>
+                </div>
+                <button type="button" onclick="clearFile(event)"
+                        class="text-slate-400 hover:text-red-500 p-1">✕</button>
+            </div>
+
+            {% if file_form.file.errors %}
+            <div class="mt-3 text-sm text-red-600">{{ file_form.file.errors }}</div>
+            {% endif %}
+
+            <button type="button" onclick="goToStep2()"
+                    class="mt-6 w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600
+                           text-white font-semibold rounded-xl shadow hover:shadow-lg
+                           hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                Continue →
+            </button>
+        </div>
+
+        <!-- Step 2: Metadata Form -->
+        <div id="step2-container" class="glass rounded-2xl p-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Title -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Title *</label>
+                    {{ meta_form.title }}
+                    {% if meta_form.title.errors %}<p class="text-red-500 text-xs mt-1">{{ meta_form.title.errors }}</p>{% endif %}
+                </div>
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Description</label>
+                    {{ meta_form.description }}
+                    {% if meta_form.description.errors %}<p class="text-red-500 text-xs mt-1">{{ meta_form.description.errors }}</p>{% endif %}
+                </div>
+                <!-- Category -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Category *</label>
+                    {{ meta_form.category }}
+                    {% if meta_form.category.errors %}<p class="text-red-500 text-xs mt-1">{{ meta_form.category.errors }}</p>{% endif %}
+                </div>
+                <!-- Department -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Department</label>
+                    {{ meta_form.department }}
+                    {% if meta_form.department.errors %}<p class="text-red-500 text-xs mt-1">{{ meta_form.department.errors }}</p>{% endif %}
+                </div>
+                <!-- Document Type -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Document Type</label>
+                    {{ meta_form.document_type }}
+                </div>
+                <!-- Access Level -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Access Level</label>
+                    {{ meta_form.access_level }}
+                </div>
+                <!-- Reference Number -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Reference Number</label>
+                    {{ meta_form.reference_number }}
+                </div>
+                <!-- Keywords -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Keywords</label>
+                    {{ meta_form.keywords }}
+                </div>
+                <!-- Issue Date -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Issue Date</label>
+                    {{ meta_form.issue_date }}
+                </div>
+                <!-- Expiry Date -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Expiry Date</label>
+                    {{ meta_form.expiry_date }}
+                </div>
+                <!-- Vendor -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Vendor</label>
+                    {{ meta_form.vendor }}
+                </div>
+                <!-- Company -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Company Profile</label>
+                    {{ meta_form.company }}
+                </div>
+                <!-- PO Number -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">PO Number</label>
+                    {{ meta_form.po_number }}
+                </div>
+                <!-- Invoice Number -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Invoice Number</label>
+                    {{ meta_form.invoice_number }}
+                </div>
+                <!-- Amount -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Amount</label>
+                    {{ meta_form.amount }}
+                </div>
+                <!-- Currency -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Currency</label>
+                    {{ meta_form.currency }}
+                </div>
+                <!-- Confidential -->
+                <div class="flex items-center gap-3">
+                    {{ meta_form.is_confidential }}
+                    <label class="text-sm font-medium text-slate-700">Mark as Confidential</label>
+                </div>
+                <!-- Tags -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Add New Tags</label>
+                    {{ meta_form.new_tags }}
+                    <p class="text-xs text-slate-400 mt-1">Comma-separated: e.g. gst, 2025, certified</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="goToStep1()"
+                        class="px-6 py-3 border border-slate-200 text-slate-600 font-medium rounded-xl
+                               hover:bg-slate-50 transition-all text-center">
+                    ← Back
+                </button>
+                <button type="submit"
+                        class="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600
+                               text-white font-semibold rounded-xl shadow hover:shadow-lg
+                               hover:-translate-y-0.5 transition-all">
+                    📥 Upload Document
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('edms-file-input');
+    const filePreview = document.getElementById('file-preview');
+    const titleInput = document.getElementById('id_title'); // Assuming Title is automatically populated
+
+    fileInput.addEventListener('change', showPreview);
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-violet-500'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-violet-500'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('border-violet-500');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            showPreview();
+        }
+    });
+
+    function showPreview() {
+        const file = fileInput.files[0];
+        if (!file) return;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('file-size').textContent = formatBytes(file.size);
+        filePreview.classList.remove('hidden');
+        dropZone.classList.add('hidden');
+        
+        // Auto-fill title if empty
+        if (titleInput && !titleInput.value) {
+            let name = file.name;
+            const lastDot = name.lastIndexOf('.');
+            if (lastDot > 0) name = name.substring(0, lastDot);
+            titleInput.value = name.replace(/[-_]/g, ' ');
+        }
+    }
+
+    function clearFile(event) {
+        if(event) event.stopPropagation();
+        fileInput.value = '';
+        filePreview.classList.add('hidden');
+        dropZone.classList.remove('hidden');
+    }
+
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+        return (bytes/1048576).toFixed(1) + ' MB';
+    }
+
+    function goToStep2() {
+        if (!fileInput.files || !fileInput.files.length) {
+            alert("Please select a file to upload.");
+            return;
+        }
+        
+        document.getElementById('step1-container').classList.add('hidden');
+        document.getElementById('step2-container').classList.remove('hidden');
+        
+        // Update Indicators
+        document.getElementById('step1-indicator').className = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-green-500 text-white";
+        document.getElementById('step1-indicator-number').innerText = "✓";
+        document.getElementById('step1-indicator-text').className = "text-sm font-medium text-green-600";
+        
+        document.getElementById('step-divider').className = "flex-1 h-0.5 bg-violet-300 mx-2";
+        
+        document.getElementById('step2-indicator').className = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-violet-600 text-white";
+        document.getElementById('step2-indicator-text').className = "text-sm font-medium text-violet-700";
+    }
+
+    function goToStep1() {
+        document.getElementById('step2-container').classList.add('hidden');
+        document.getElementById('step1-container').classList.remove('hidden');
+        
+        // Revert Indicators
+        document.getElementById('step1-indicator').className = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-violet-600 text-white";
+        document.getElementById('step1-indicator-number').innerText = "1";
+        document.getElementById('step1-indicator-text').className = "text-sm font-medium text-violet-700";
+        
+        document.getElementById('step-divider').className = "flex-1 h-0.5 bg-slate-200 mx-2";
+        
+        document.getElementById('step2-indicator').className = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-slate-200 text-slate-400";
+        document.getElementById('step2-indicator-text').className = "text-sm font-medium text-slate-400";
+    }
+</script>
+{% endblock %}

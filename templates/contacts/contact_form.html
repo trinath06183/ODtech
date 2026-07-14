@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block header %}{{ form_title }}{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'contact_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm w-fit">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Parties
+        </a>
+    </div>
+
+    {% if messages %}{% for msg in messages %}
+    <div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25{% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">{{ msg }}</div>
+    {% endfor %}{% endif %}
+
+    <div class="glass rounded-2xl p-8">
+        <div class="flex items-center space-x-3 mb-8">
+            <div class="w-10 h-10 rounded-xl bg-purple-600/30 flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-white">{{ form_title }}</h2>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                <!-- Name -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Party Name <span class="text-red-400">*</span></label>
+                    <input type="text" name="name" value="{{ contact.name|default:'' }}" required placeholder="e.g. Acme Industries"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                </div>
+
+                <!-- Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Type <span class="text-red-400">*</span></label>
+                    <select name="contact_type" class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 appearance-none transition">
+                        <option value="Customer" {% if contact.contact_type == 'Customer' %}selected{% endif %}>Customer</option>
+                        <option value="Vendor"   {% if contact.contact_type == 'Vendor'   %}selected{% endif %}>Vendor</option>
+                        <option value="Both"     {% if contact.contact_type == 'Both'     %}selected{% endif %}>Both (Customer & Vendor)</option>
+                    </select>
+                </div>
+
+                <!-- Phone -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                    <input type="text" name="phone" value="{{ contact.phone|default:'' }}" placeholder="+91 98765 43210"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <input type="email" name="email" value="{{ contact.email|default:'' }}" placeholder="accounts@company.com"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                </div>
+
+                <!-- GSTIN -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">GSTIN</label>
+                    <input type="text" name="gstin" value="{{ contact.gstin|default:'' }}" placeholder="e.g. 21AAHFO5846M1ZY" maxlength="15"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                </div>
+
+                <!-- PAN -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">PAN</label>
+                    <input type="text" name="pan" value="{{ contact.pan|default:'' }}" placeholder="e.g. AAHFO5846M" maxlength="10"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                </div>
+
+                <!-- Address -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Billing Address</label>
+                    <textarea name="address" rows="3" placeholder="Street, City, State, PIN"
+                              class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition resize-none">{{ contact.address|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+                <a href="{% url 'contact_list' %}" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-gray-300 font-medium rounded-xl text-sm transition-colors">Cancel</a>
+                <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 hover:-translate-y-0.5">
+                    {% if contact %}Save Changes{% else %}Create Party{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

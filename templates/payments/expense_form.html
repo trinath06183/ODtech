@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex items-center justify-between">
+    <div>
+        <a href="{% url 'expense_list' %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center mb-2 transition-colors">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Expenses
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ title }}</h1>
+    </div>
+</div>
+
+<div class="bg-white shadow-sm max-w-3xl rounded-xl border border-gray-200 p-6 md:p-8"
+     x-data="expenseFormApp('{{ expense.expense_type|escapejs|default:'' }}', {% if expense.payload %}{{ expense.payload|safe }}{% else %}{}{% endif %})">
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Title / Purpose</label>
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Employee Code (Optional)</label>
+                {{ form.employee_code }}
+                {% if form.employee_code.errors %}
+                <p class="text-sm text-red-500 mt-1 font-medium">{{ form.employee_code.errors.0 }}</p>
+                {% endif %}
+                <datalist id="employee-code-suggestions"></datalist>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                {{ form.expense_type }}
+                {{ form.expense_type.errors }}
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Incurred</label>
+                {{ form.date }}
+                {{ form.date.errors }}
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Amount (&#8377;)</label>
+                {{ form.amount }}
+                {{ form.amount.errors }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">GST Amount (&#8377;)</label>
+                {{ form.gst_amount }}
+                {{ form.gst_amount.errors }}
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Receipt / Invoice</label>
+                {{ form.receipt }}
+                {{ form.receipt.errors }}
+                {% if expense and expense.receipt %}
+                <p class="text-xs text-gray-500 mt-2">Current: <a href="{{ expense.receipt.url }}" target="_blank" class="text-indigo-600 hover:underline">View File</a></p>
+                {% endif %}
+            </div>
+
+            <!-- Dynamic Category Payload Sections -->
+            <div class="md:col-span-2" x-show="category" x-cloak>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Category Details</h3>
+                    
+                    <!-- Petrol and Diesel -->
+                    <template x-if="category === 'Petrol and Diesel'">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Starting Location</label>
+                                    <input type="text" name="payload_petrol_start_location" x-model="payload.petrol_start_location" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Ending Location</label>
+                                    <input type="text" name="payload_petrol_end_location" x-model="payload.petrol_end_location" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Via Locations</label>
+                                <template x-for="(via, index) in (payload.petrol_vias || [])" :key="index">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <input type="text" name="payload_petrol_vias[]" x-model="payload.petrol_vias[index]" class="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Enter via location">
+                                        <button type="button" @click="payload.petrol_vias.splice(index, 1)" class="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Remove">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                                <button type="button" @click="payload.petrol_vias = payload.petrol_vias || []; payload.petrol_vias.push('')" class="text-xs text-indigo-600 font-medium hover:text-indigo-800 flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    Add Via Location
+                                </button>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Start Meter Reading</label>
+                                    <input type="number" name="payload_petrol_start_meter" x-model="payload.petrol_start_meter" @input="calcDistance()" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">End Meter Reading</label>
+                                    <input type="number" name="payload_petrol_end_meter" x-model="payload.petrol_end_meter" @input="calcDistance()" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-indigo-700 mb-1">Total Distance</label>
+                                    <input type="number" name="payload_petrol_total_distance" x-model="payload.petrol_total_distance" readonly class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 shadow-sm sm:text-sm text-indigo-700 font-semibold cursor-not-allowed">
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Travel -->
+                    <template x-if="category === 'Travel'">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Travel Mode</label>
+                                <select name="payload_travel_mode" x-model="payload.travel_mode" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <option value="">Select Mode</option>
+                                    <option value="Flight">Flight</option>
+                                    <option value="Train">Train</option>
+                                    <option value="Bus">Bus</option>
+                                    <option value="Taxi / Auto">Taxi / Auto</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">From</label>
+                                    <input type="text" name="payload_travel_from" x-model="payload.travel_from" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
+                                    <input type="text" name="payload_travel_to" x-model="payload.travel_to" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                                <input type="text" name="payload_travel_purpose" x-model="payload.travel_purpose" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Hotel -->
+                    <template x-if="category === 'Hotel'">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Hotel Name</label>
+                                    <input type="text" name="payload_hotel_name" x-model="payload.hotel_name" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Place / City</label>
+                                    <input type="text" name="payload_hotel_place" x-model="payload.hotel_place" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Reason</label>
+                                <input type="text" name="payload_hotel_reason" x-model="payload.hotel_reason" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Courier expenses -->
+                    <template x-if="category === 'Courier expenses'">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Transporter Details</label>
+                                <input type="text" name="payload_courier_transporter_details" x-model="payload.courier_transporter_details" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                                <input type="text" name="payload_courier_purpose" x-model="payload.courier_purpose" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Transportation Payment -->
+                    <template x-if="category === 'Transportation Payment'">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Transporter Details</label>
+                                <input type="text" name="payload_transport_details" x-model="payload.transport_details" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
+                                <input type="text" name="payload_transport_purpose" x-model="payload.transport_purpose" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Marketing Expenses -->
+                    <template x-if="category === 'Marketing Expenses'">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Requirements / Details</label>
+                            <textarea name="payload_marketing_requirements" x-model="payload.marketing_requirements" rows="2" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                        </div>
+                    </template>
+
+                    <!-- Customer Delight -->
+                    <template x-if="category === 'Customer Delight'">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Party Name</label>
+                            <input type="text" name="payload_customer_party_name" x-model="payload.customer_party_name" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                    </template>
+
+                    <!-- Staff salary -->
+                    <template x-if="category === 'Staff salary'">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Employee Code</label>
+                                <input type="text" name="payload_staff_emp_code" x-model="payload.staff_emp_code" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g. EMP001">
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <!-- Fallback if any other specific notes are needed -->
+                    <template x-if="['Food Expenses', 'Office stationary', 'Other Daily', 'OFC rent', 'Electricity bill', 'Internet Bill', 'Google workspace', 'Website and hosting cost', 'Other Fixed'].includes(category)">
+                        <p class="text-sm text-gray-500 italic">No additional specific fields required for this category. Please use the Additional Notes field below if needed.</p>
+                    </template>
+
+                </div>
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+                {{ form.notes }}
+                {{ form.notes.errors }}
+            </div>
+        </div>
+        
+        <div class="pt-6 border-t border-gray-200 flex justify-end gap-3">
+            <a href="{% url 'expense_list' %}" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors">Cancel</a>
+            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-md transition-colors">Save Expense</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[type="text"]:not([x-model]), input[type="number"]:not([x-model]), input[type="date"], select:not([x-model]), textarea:not([x-model]), input[type="file"]');
+        inputs.forEach(input => {
+            input.classList.add('mt-1', 'block', 'w-full', 'rounded-md', 'border', 'border-gray-300', 'px-3', 'py-2', 'shadow-sm', 'focus:border-indigo-500', 'focus:ring-indigo-500', 'sm:text-sm', 'bg-white');
+        });
+        
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(input => {
+            input.classList.add('p-2', 'bg-gray-50');
+        });
+    });
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('expenseFormApp', (initialCategory, initialPayload) => ({
+            category: initialCategory || '',
+            payload: initialPayload || {},
+            
+            handleCategoryChange() {
+                // Clear payload when category changes to prevent saving hidden junk data
+                this.payload = {};
+            },
+            
+            calcDistance() {
+                let start = parseFloat(this.payload.petrol_start_meter) || 0;
+                let end = parseFloat(this.payload.petrol_end_meter) || 0;
+                if (start > 0 && end > 0 && end > start) {
+                    this.payload.petrol_total_distance = end - start;
+                } else {
+                    this.payload.petrol_total_distance = '';
+                }
+            }
+        }));
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('id_employee_code');
+        const datalist = document.getElementById('employee-code-suggestions');
+        
+        if (input) {
+            input.addEventListener('input', function() {
+                const query = this.value;
+                if (query.length > 0) {
+                    fetch(`/payments/api/employee-codes/?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            datalist.innerHTML = '';
+                            data.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.code;
+                                option.textContent = item.name;
+                                datalist.appendChild(option);
+                            });
+                        })
+                        .catch(err => console.error('Error fetching employee codes:', err));
+                } else {
+                    datalist.innerHTML = '';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

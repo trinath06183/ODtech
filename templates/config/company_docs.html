@@ -1,0 +1,71 @@
+﻿{% extends 'base.html' %}
+{% block title %}Company Documents{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-white mb-1">Company Documents</h1>
+        <p class="text-gray-400 text-sm">Secure vault for official company files</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'company_docs_upload' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-lg shadow-blue-500/20">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Upload Document
+        </a>
+    </div>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden border border-white/5">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left whitespace-nowrap">
+            <thead class="bg-slate-800 border-b border-white/10">
+                <tr class="text-gray-400 text-xs uppercase tracking-wider">
+                    <th class="px-6 py-4 font-medium">Title</th>
+                    <th class="px-6 py-4 font-medium">Category</th>
+                    <th class="px-6 py-4 font-medium">Uploaded Date</th>
+                    <th class="px-6 py-4 font-medium">Uploaded By</th>
+                    <th class="px-6 py-4 font-medium text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for doc in documents %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-bold text-white flex items-center">
+                            <svg class="w-5 h-5 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            {{ doc.title }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-300">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700 text-slate-300">{{ doc.get_category_display }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-400">{{ doc.created_at|date:"d M Y" }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-400">{{ doc.uploaded_by.username}}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center justify-end space-x-2">
+                            <a href="{{ doc.file.url }}" target="_blank" class="p-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg transition-colors" title="View File">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </a>
+                            <form method="post" action="{% url 'company_docs_delete' doc.id %}" onsubmit="return confirm('Permanently delete this document?');" class="m-0 p-0 flex items-center">
+                                {% csrf_token %}
+                                <button type="submit" class="p-2 bg-red-900/30 hover:bg-red-600/40 text-red-500 hover:text-red-300 rounded-lg transition-colors" title="Delete">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <svg class="w-12 h-12 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                        <p class="text-base font-medium text-gray-400">No documents uploaded yet.</p>
+                        <p class="text-sm mt-1">Click 'Upload Document' to add a file to the vault.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

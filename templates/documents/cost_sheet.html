@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% block header %}Margin Calculator / Cost Sheet{% endblock %}
+{% block content %}
+
+{% if messages %}
+{% for msg in messages %}
+<div class="mb-4 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
+    {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
+    {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+    {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Header & Explanation -->
+<div class="glass p-5 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-white font-bold text-lg">Quotation Cost Sheet</h2>
+            <p class="text-gray-400 text-xs">Step 1: Calculate landing cost and margins before generating the quotation.</p>
+        </div>
+    </div>
+    <a href="{% url 'create_quotation' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 text-xs font-semibold rounded-xl transition-colors border border-white/5">
+        ⏩ Skip to Direct Quotation
+    </a>
+</div>
+
+<form method="POST" action="{% url 'cost_sheet' %}" x-data="costSheetForm()" class="space-y-6">
+    {% csrf_token %}
+    <input type="hidden" name="items_json" :value="JSON.stringify(items)">
+
+    <!-- Main Table Card -->
+    <div class="glass rounded-2xl overflow-hidden border border-white/5">
+        <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <h3 class="text-white font-semibold text-sm">Cost Calculations</h3>
+            <button type="button" @click="addRow()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1">
+                ➕ Add Item Row
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-800/80 border-b border-white/10">
+                    <tr class="text-gray-400 text-[10px] uppercase tracking-wider">
+                        <th class="px-4 py-3 font-semibold text-center w-12">#</th>
+                        <th class="px-4 py-3 font-semibold w-64">Product / Item</th>
+                        <th class="px-4 py-3 font-semibold text-center w-20">Qty</th>
+                        <th class="px-4 py-3 font-semibold text-right">Vendor Quote (₹)</th>
+                        <th class="px-4 py-3 font-semibold text-right">Freight (₹)</th>
+                        <th class="px-4 py-3 font-semibold text-right w-24">GST on Purchase (%)</th>
+                        <th class="px-4 py-3 font-semibold text-right">Landing Cost (₹)</th>
+                        <th class="px-4 py-3 font-semibold text-right w-24">Margin (%)</th>
+                        <th class="px-4 py-3 font-semibold text-right">Selling Price (₹)</th>
+                        <th class="px-4 py-3 font-semibold text-center w-12"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    <template x-for="(item, idx) in items" :key="idx">
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <!-- Index -->
+                            <td class="px-4 py-3.5 text-center text-gray-500 font-bold text-xs" x-text="idx + 1"></td>
+                            
+                            <!-- Product Selection -->
+                            <td class="px-4 py-3.5">
+                                <select x-model="item.product_id" @change="onProductSelect(idx)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                                    <option value="">— Select Catalog Product —</option>
+                                    {% for p in products %}
+                                    <option value="{{ p.id }}" data-price="{{ p.selling_price }}" data-tax="{{ p.tax_rate }}">{{ p.name }} ({{ p.sku }})</option>
+                                    {% endfor %}
+                                    <option value="custom">Custom Item</option>
+                                </select>
+                                <input type="text" x-show="item.product_id === 'custom'" x-model="item.name" placeholder="Enter custom item name…" class="w-full mt-2 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                            </td>
+
+                            <!-- Qty -->
+                            <td class="px-4 py-3.5">
+                                <input type="number" min="0.01" step="0.01" x-model.number="item.qty" @input="calculateRow(idx)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-white text-xs text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                            </td>
+
+                            <!-- Vendor Quote -->
+                            <td class="px-4 py-3.5">
+                                <input type="number" min="0" step="0.01" x-model.number="item.vendor_price" @input="calculateRow(idx)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-xs text-right font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="0.00">
+                            </td>
+
+                            <!-- Freight -->
+                            <td class="px-4 py-3.5">
+                                <input type="number" min="0" step="0.01" x-model.number="item.freight" @input="calculateRow(idx)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white text-xs text-right font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="0.00">
+                            </td>
+
+                            <!-- GST on Purchase -->
+                            <td class="px-4 py-3.5">
+                                <input type="number" min="0" max="100" step="0.5" x-model.number="item.purchase_gst" @input="calculateRow(idx)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-white text-xs text-right font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="18.0">
+                            </td>
+
+                            <!-- Landing Cost -->
+                            <td class="px-4 py-3.5 text-right font-semibold text-gray-300 text-xs font-mono">
+                                &#8377; <span x-text="fmtNum(item.landing_cost)"></span>
+                            </td>
+
+                            <!-- Margin % -->
+                            <td class="px-4 py-3.5">
+                                <input type="number" step="0.5" x-model.number="item.margin_pct" @input="calculateRow(idx)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-white text-xs text-right font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="15.0">
+                            </td>
+
+                            <!-- Selling Price -->
+                            <td class="px-4 py-3.5 text-right font-bold text-emerald-400 text-xs font-mono">
+                                &#8377; <span x-text="fmtNum(item.selling_price)"></span>
+                                <div class="text-[9px] text-gray-500 font-semibold mt-0.5" x-show="item.profit > 0">
+                                    Profit: +&#8377; <span x-text="fmtNum(item.profit)"></span>
+                                </div>
+                            </td>
+
+                            <!-- Remove Row -->
+                            <td class="px-4 py-3.5 text-center">
+                                <button type="button" @click="removeRow(idx)" class="p-1 text-red-500 hover:text-red-400 transition-colors" title="Remove Row">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="items.length === 0">
+                        <td colspan="10" class="px-6 py-12 text-center text-gray-600 italic text-sm">
+                            No rows added yet. Click "Add Item Row" to begin.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Summary Totals -->
+        <div class="px-6 py-4 bg-slate-800/40 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div class="flex items-center gap-6">
+                <div>
+                    <span class="text-gray-500 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Total Cost</span>
+                    <span class="text-gray-300 font-bold font-mono text-sm">&#8377; <span x-text="fmtNum(summary.total_cost)"></span></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Projected Revenue</span>
+                    <span class="text-emerald-400 font-bold font-mono text-sm">&#8377; <span x-text="fmtNum(summary.total_revenue)"></span></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 font-semibold block uppercase text-[9px] tracking-wider mb-0.5">Net Profit Margin</span>
+                    <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 font-bold rounded font-mono text-xs inline-block">
+                        &#8377; <span x-text="fmtNum(summary.total_profit)"></span> (<span x-text="summary.avg_margin.toFixed(1)"></span>%)
+                    </span>
+                </div>
+            </div>
+            
+            <button type="submit" :disabled="items.length === 0" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:pointer-events-none text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+                🚀 Proceed to Quotation
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+function costSheetForm() {
+    return {
+        items: [],
+        summary: {
+            total_cost: 0,
+            total_revenue: 0,
+            total_profit: 0,
+            avg_margin: 0
+        },
+
+        init() {
+            this.addRow();
+        },
+
+        addRow() {
+            this.items.push({
+                product_id: '',
+                name: '',
+                qty: 1,
+                vendor_price: 0,
+                freight: 0,
+                purchase_gst: 18.0,
+                landing_cost: 0,
+                margin_pct: 15.0,
+                selling_price: 0,
+                profit: 0
+            });
+            this.calculateSummary();
+        },
+
+        removeRow(idx) {
+            this.items.splice(idx, 1);
+            this.calculateSummary();
+        },
+
+        onProductSelect(idx) {
+            const selectEl = document.querySelectorAll('tbody select')[idx];
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            const item = this.items[idx];
+
+            if (item.product_id === 'custom') {
+                item.name = '';
+                item.vendor_price = 0;
+                item.purchase_gst = 18.0;
+            } else if (item.product_id !== '') {
+                item.name = selectedOpt.text.split('(')[0].strip();
+                // Catalog price maps as vendor quoted price
+                item.vendor_price = parseFloat(selectedOpt.getAttribute('data-price')) || 0;
+                item.purchase_gst = parseFloat(selectedOpt.getAttribute('data-tax')) || 18.0;
+            }
+            this.calculateRow(idx);
+        },
+
+        calculateRow(idx) {
+            const item = this.items[idx];
+            const baseCost = (parseFloat(item.vendor_price) || 0) + (parseFloat(item.freight) || 0);
+            
+            // Landing cost includes purchase GST on base components
+            item.landing_cost = baseCost * (1 + (parseFloat(item.purchase_gst) || 0) / 100);
+            
+            // Selling price calculation based on cost markup
+            const margin = parseFloat(item.margin_pct) || 0;
+            item.selling_price = item.landing_cost * (1 + margin / 100);
+            
+            // Profit calculation
+            item.profit = (item.selling_price - item.landing_cost) * item.qty;
+
+            this.calculateSummary();
+        },
+
+        calculateSummary() {
+            let totalCost = 0;
+            let totalRevenue = 0;
+            let totalProfit = 0;
+            let totalMarginSum = 0;
+            let activeRows = 0;
+
+            this.items.forEach(item => {
+                const itemQty = parseFloat(item.qty) || 0;
+                totalCost += (item.landing_cost * itemQty);
+                totalRevenue += (item.selling_price * itemQty);
+                totalProfit += item.profit;
+                totalMarginSum += (parseFloat(item.margin_pct) || 0);
+                if (item.product_id) activeRows++;
+            });
+
+            this.summary.total_cost = totalCost;
+            this.summary.total_revenue = totalRevenue;
+            this.summary.total_profit = totalProfit;
+            this.summary.avg_margin = activeRows > 0 ? (totalMarginSum / activeRows) : 0;
+        },
+
+        fmtNum(num) {
+            return (parseFloat(num) || 0).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    }
+}
+
+// polyfill string trim
+if (!String.prototype.strip) {
+    String.prototype.strip = function() {
+        return this.replace(/^\s+|\s+$/g, '');
+    };
+}
+</script>
+
+{% endblock %}

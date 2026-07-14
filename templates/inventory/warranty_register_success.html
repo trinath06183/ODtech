@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warranty Registered — ODtech Solutions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%); min-height: 100vh; font-family: 'Outfit', sans-serif; }
+        @keyframes pop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+        .pop { animation: pop 0.5s ease forwards; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.6s 0.3s ease forwards; opacity:0; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen px-4">
+<div class="text-center max-w-md w-full">
+    <div class="pop inline-flex items-center justify-center w-24 h-24 rounded-full mb-6" style="background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 0 60px rgba(16,185,129,0.4);">
+        <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+    </div>
+    <div class="fade-up">
+        <h1 class="text-3xl font-bold text-white mb-2">Warranty Registered!</h1>
+        <p class="text-slate-400 mb-6">Your product warranty has been successfully registered with ODtech Solutions. We have received your details and documents.</p>
+
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6 text-left">
+            <p class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">What's Next?</p>
+            <ul class="space-y-2 text-sm text-slate-300">
+                <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">✓</span> Your registration is now saved in our system.</li>
+                <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">✓</span> If you ever need to make a warranty claim, use your <strong class="text-white">Invoice Number</strong> and <strong class="text-white">Serial Number</strong>.</li>
+                <li class="flex items-start gap-2"><span class="text-blue-400 mt-0.5">→</span> You can file a claim anytime via the Warranty Claim page.</li>
+            </ul>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{% url 'warranty_claim' %}" class="px-6 py-3 rounded-xl font-semibold text-white text-sm transition" style="background: linear-gradient(135deg,#3B82F6,#6366F1);">
+                File a Warranty Claim
+            </a>
+            <a href="{% url 'warranty_register' %}" class="px-6 py-3 rounded-xl font-semibold text-slate-300 text-sm border border-white/15 hover:border-white/30 transition">
+                Register Another Product
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block header %}Stock Summary{% endblock %}
+{% block content %}
+
+<div class="glass p-4 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-600/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-white font-bold text-lg">Stock Summary</h2>
+            <p class="text-gray-400 text-xs">Total stock value: <span class="text-cyan-400 font-bold">&#8377;{{ total_value|floatformat:0 }}</span></p>
+        </div>
+    </div>
+    <a href="{% url 'gst_report' %}" class="px-4 py-2 bg-orange-600/20 hover:bg-orange-600/40 text-orange-300 text-sm rounded-xl transition-colors">GST Report →</a>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden overflow-x-auto">
+    <table class="w-full text-left whitespace-nowrap">
+        <thead class="bg-slate-800/80 border-b border-white/10">
+            <tr class="text-gray-400 text-xs uppercase tracking-wider">
+                <th class="px-6 py-4 font-medium">Product</th>
+                <th class="px-6 py-4 font-medium">SKU</th>
+                <th class="px-6 py-4 font-medium text-center">Unit</th>
+                <th class="px-6 py-4 font-medium text-center">Current Stock</th>
+                <th class="px-6 py-4 font-medium text-right">Purchase Price</th>
+                <th class="px-6 py-4 font-medium text-right">Selling Price</th>
+                <th class="px-6 py-4 font-medium text-right">Stock Value</th>
+                <th class="px-6 py-4 font-medium text-center">Status</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+            {% for row in rows %}
+            <tr class="hover:bg-white/5 transition-colors {% if row.product.is_low_stock %}bg-amber-500/5{% endif %}">
+                <td class="px-6 py-4">
+                    <div class="text-white font-semibold text-sm">{{ row.product.name }}</div>
+                    {% if row.product.category %}<div class="text-gray-500 text-xs">{{ row.product.category }}</div>{% endif %}
+                </td>
+                <td class="px-6 py-4 font-mono text-blue-400 text-sm">{{ row.product.sku }}</td>
+                <td class="px-6 py-4 text-center text-gray-300 text-sm">{{ row.product.unit }}</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold
+                        {% if row.product.is_low_stock %}bg-amber-500/20 text-amber-300
+                        {% elif row.stock > 0 %}bg-emerald-500/20 text-emerald-300
+                        {% else %}bg-yellow-500/20 text-yellow-300{% endif %}">
+                        {{ row.stock|floatformat:0 }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-right text-gray-300 text-sm">&#8377;{{ row.product.purchase_price|floatformat:2 }}</td>
+                <td class="px-6 py-4 text-right text-green-400 text-sm">&#8377;{{ row.product.selling_price|floatformat:2 }}</td>
+                <td class="px-6 py-4 text-right font-bold text-white">&#8377;{{ row.value|floatformat:0 }}</td>
+                <td class="px-6 py-4 text-center">
+                    {% if row.product.is_low_stock %}
+                    <span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-xs rounded font-medium">⚠️ Low Stock</span>
+                    {% elif row.stock <= 0 %}
+                    <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-300 text-xs rounded font-medium">Out of Stock</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-xs rounded font-medium">In Stock</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="px-6 py-16 text-center text-gray-600 text-sm">No products in inventory.</td></tr>
+            {% endfor %}
+        </tbody>
+        {% if rows %}
+        <tfoot class="border-t border-white/20 bg-slate-800/50">
+            <tr class="text-white font-bold text-sm">
+                <td colspan="6" class="px-6 py-3 text-gray-400">Total Stock Value</td>
+                <td class="px-6 py-3 text-right">&#8377;{{ total_value|floatformat:0 }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+{% endblock %}

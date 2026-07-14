@@ -1,0 +1,829 @@
+{% extends 'base.html' %}
+{% block header %}Sales Dashboard{% endblock %}
+{% block content %}
+
+<div x-data="salesDashboard()" x-init="init()" class="space-y-6">
+
+    {# ── Top Bar: Title + Period Filter ──────────────────────────────────── #}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900">Sales &amp; Order Overview</h1>
+            <p class="text-xs text-gray-400 mt-0.5">Data updates automatically when you change the period</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                <template x-for="p in periods" :key="p.value">
+                    <button @click="setPeriod(p.value)"
+                        :class="period === p.value ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-3 py-1.5 rounded-lg text-xs transition-all duration-200"
+                        x-text="p.label"></button>
+                </template>
+            </div>
+            <button @click="load()" :class="loading ? 'animate-spin' : ''"
+                class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+                title="Refresh">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {# ── Loading Skeleton ─────────────────────────────────────────────────── #}
+    <div x-show="loading && !data" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <template x-for="i in 8" :key="i">
+            <div class="bg-white border border-gray-100 rounded-2xl p-5 animate-pulse">
+                <div class="h-3 bg-gray-100 rounded w-2/3 mb-3"></div>
+                <div class="h-7 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div class="h-2 bg-gray-100 rounded w-full"></div>
+            </div>
+        </template>
+    </div>
+
+    {# ── KPI Cards ────────────────────────────────────────────────────────── #}
+    <div x-show="data" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        {# Revenue #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Revenue</span>
+                    <span class="text-lg">💰</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-900" x-text="'₹' + fmt(data?.kpis?.revenue?.value)"></div>
+                <div class="text-[10px] text-gray-400 mt-1">Approved Invoices</div>
+                <div class="mt-2 flex items-center gap-1">
+                    <span :class="(data?.kpis?.revenue?.change||0) >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'"
+                          class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                          x-text="((data?.kpis?.revenue?.change||0) >= 0 ? '↑ ' : '↓ ') + Math.abs(data?.kpis?.revenue?.change||0) + '%'"></span>
+                    <span class="text-[10px] text-gray-400">vs prev period</span>
+                </div>
+            </div>
+        </div>
+
+        {# Payments Received #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Payments Received</span>
+                    <span class="text-lg">✅</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-900" x-text="'₹' + fmt(data?.kpis?.paid?.value)"></div>
+                <div class="text-[10px] text-gray-400 mt-1">Collected from customers</div>
+                <div class="mt-2 flex items-center gap-1">
+                    <span :class="(data?.kpis?.paid?.change||0) >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'"
+                          class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                          x-text="((data?.kpis?.paid?.change||0) >= 0 ? '↑ ' : '↓ ') + Math.abs(data?.kpis?.paid?.change||0) + '%'"></span>
+                    <span class="text-[10px] text-gray-400">vs prev period</span>
+                </div>
+            </div>
+        </div>
+
+        {# Outstanding #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Outstanding</span>
+                    <span class="text-lg">⏳</span>
+                </div>
+                <div class="text-2xl font-bold text-amber-700" x-text="'₹' + fmt(data?.kpis?.outstanding?.value)"></div>
+                <div class="text-[10px] text-gray-400 mt-1">All-time unpaid balance</div>
+                <div class="mt-2">
+                    <a href="/payments/" class="text-[10px] text-amber-600 font-semibold hover:text-amber-800">View payments →</a>
+                </div>
+            </div>
+        </div>
+
+        {# Tracker Orders #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-violet-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Orders</span>
+                    <span class="text-lg">📦</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-900" x-text="data?.kpis?.orders?.value || 0"></div>
+                <div class="text-[10px] text-gray-400 mt-1">Tracker orders</div>
+                <div class="mt-2 flex items-center gap-1">
+                    <span :class="(data?.kpis?.orders?.change||0) >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'"
+                          class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                          x-text="((data?.kpis?.orders?.change||0) >= 0 ? '↑ ' : '↓ ') + Math.abs(data?.kpis?.orders?.change||0) + '%'"></span>
+                    <span class="text-[10px] text-gray-400">vs prev</span>
+                </div>
+            </div>
+        </div>
+
+        {# Quotations #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Quotations</span>
+                <span class="text-lg">📋</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-900" x-text="data?.kpis?.quotations?.value || 0"></div>
+            <div class="text-[10px] text-gray-400 mt-1">Sent in period</div>
+            <a href="/documents/?type=QTN" class="mt-2 block text-[10px] text-indigo-600 font-semibold hover:text-indigo-800">View all →</a>
+        </div>
+
+        {# Invoices #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Invoices</span>
+                <span class="text-lg">🧾</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-900" x-text="data?.kpis?.invoices?.value || 0"></div>
+            <div class="text-[10px] text-gray-400 mt-1">Approved invoices</div>
+            <a href="/documents/?type=INV" class="mt-2 block text-[10px] text-indigo-600 font-semibold hover:text-indigo-800">View all →</a>
+        </div>
+
+        {# Order Pipeline: Open / Processing #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Order Pipeline</span>
+                <span class="text-lg">🔄</span>
+            </div>
+            <div class="space-y-1.5 mt-1">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Open</span>
+                    <span class="text-xs font-bold text-indigo-700" x-text="data?.kpis?.orders_open || 0"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Sourcing</span>
+                    <span class="text-xs font-bold text-amber-600" x-text="data?.kpis?.orders_sourcing || 0"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Procured</span>
+                    <span class="text-xs font-bold text-blue-600" x-text="data?.kpis?.orders_procured || 0"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Shipped</span>
+                    <span class="text-xs font-bold text-purple-600" x-text="data?.kpis?.orders_shipped || 0"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Closed</span>
+                    <span class="text-xs font-bold text-emerald-600" x-text="data?.kpis?.orders_closed || 0"></span>
+                </div>
+            </div>
+        </div>
+
+        {# Payment Status Breakdown #}
+        <div class="bg-white border border-gray-100 shadow-sm p-5 rounded-2xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Payment Status</span>
+                <span class="text-lg">💳</span>
+            </div>
+            <div class="space-y-1.5 mt-1">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Unpaid</span>
+                    <span class="text-xs font-bold text-red-600" x-text="data?.kpis?.pay_unpaid || 0"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Partial</span>
+                    <span class="text-xs font-bold text-amber-600" x-text="data?.kpis?.pay_partial || 0"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500">Fully Paid</span>
+                    <span class="text-xs font-bold text-emerald-600" x-text="data?.kpis?.pay_paid || 0"></span>
+                </div>
+            </div>
+        </div>
+
+    </div>{# end KPI grid #}
+
+    {# ── Charts Row ───────────────────────────────────────────────────────── #}
+    <div x-show="data" class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+        {# Daily Revenue Chart - spans 2 cols #}
+        <div class="xl:col-span-2 bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-800">Daily Revenue</h3>
+                    <p class="text-xs text-gray-400">Last 30 days (Approved Invoices)</p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">30D</span>
+            </div>
+            <div class="h-52">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        {# Doc Type Breakdown #}
+        <div class="bg-white border border-gray-100 shadow-sm rounded-2xl p-5">
+            <div class="mb-4">
+                <h3 class="text-sm font-bold text-gray-800">Documents by Type</h3>
+                <p class="text-xs text-gray-400">Selected period</p>
+            </div>
+            <div class="h-40">
+                <canvas id="docTypeChart"></canvas>
+            </div>
+            <div class="mt-4 space-y-1.5" x-show="data?.doc_types?.length">
+                <template x-for="dt in (data?.doc_types || [])" :key="dt.type">
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+                            <span class="text-gray-600" x-text="dt.type"></span>
+                        </div>
+                        <span class="font-semibold text-gray-800" x-text="dt.count + ' | ₹' + fmt(dt.total)"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Top Customers + Recent Orders Row ────────────────────────────────── #}
+    <div x-show="data" class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+        {# Top Customers Table #}
+        <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-800">Top Customers</h3>
+                    <p class="text-xs text-gray-400">By revenue — selected period</p>
+                </div>
+                <a href="/contacts/" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View all →</a>
+            </div>
+            <div x-show="!data?.top_customers?.length" class="px-5 py-10 text-center text-gray-400 text-sm">
+                No invoice data for this period
+            </div>
+            <div class="overflow-x-auto" x-show="data?.top_customers?.length">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">#</th>
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-4 py-2.5 text-right font-semibold text-gray-500 uppercase tracking-wider">Invoiced</th>
+                            <th class="px-4 py-2.5 text-right font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
+                            <th class="px-4 py-2.5 text-right font-semibold text-gray-500 uppercase tracking-wider">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <template x-for="(c, idx) in (data?.top_customers || [])" :key="c.name">
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 text-gray-400 font-mono" x-text="idx + 1"></td>
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-800 truncate max-w-[150px]" x-text="c.name"></div>
+                                    <div class="text-gray-400 text-[10px]" x-text="c.orders + ' invoice(s)'"></div>
+                                </td>
+                                <td class="px-4 py-3 text-right font-semibold text-gray-800" x-text="'₹' + fmt(c.invoiced)"></td>
+                                <td class="px-4 py-3 text-right text-emerald-600 font-semibold" x-text="'₹' + fmt(c.paid)"></td>
+                                <td class="px-4 py-3 text-right font-semibold" :class="c.balance > 0 ? 'text-amber-600' : 'text-gray-400'" x-text="'₹' + fmt(c.balance)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {# Recent Orders Table #}
+        <div class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-800">Recent Tracker Orders</h3>
+                    <p class="text-xs text-gray-400">Latest 20 orders</p>
+                </div>
+                <a href="/tracker/" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View all →</a>
+            </div>
+            <div x-show="!data?.recent_orders?.length" class="px-5 py-10 text-center text-gray-400 text-sm">No orders yet</div>
+            <div class="overflow-x-auto" x-show="data?.recent_orders?.length">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100">
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">Order #</th>
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">Payment</th>
+                            <th class="px-4 py-2.5 text-left font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <template x-for="o in (data?.recent_orders || [])" :key="o.id">
+                            <tr class="hover:bg-gray-50 transition-colors cursor-pointer" @click="window.location.href = o.url">
+                                <td class="px-4 py-3 font-mono font-bold text-indigo-700" x-text="o.order_number"></td>
+                                <td class="px-4 py-3 text-gray-700 truncate max-w-[120px]" x-text="o.customer"></td>
+                                <td class="px-4 py-3">
+                                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                                        :class="{
+                                            'bg-indigo-100 text-indigo-700': o.status === 'OPEN',
+                                            'bg-amber-100 text-amber-700':  o.status === 'SOURCING',
+                                            'bg-blue-100 text-blue-700':    o.status === 'PROCURED',
+                                            'bg-purple-100 text-purple-700':o.status === 'SHIPPED',
+                                            'bg-emerald-100 text-emerald-700': o.status === 'CLOSED',
+                                        }"
+                                        x-text="o.status_display"></span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                                        :class="{
+                                            'bg-red-100 text-red-700':     o.payment_status === 'UNPAID',
+                                            'bg-amber-100 text-amber-700': o.payment_status === 'PARTIALLY_PAID',
+                                            'bg-emerald-100 text-emerald-700': o.payment_status === 'PAID',
+                                        }"
+                                        x-text="o.payment_status.replace('_', ' ')"></span>
+                                </td>
+                                <td class="px-4 py-3 text-gray-400" x-text="o.date"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Activity Feed ──────────────────────────────────────────────────────── #}
+    <div x-show="data" class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-bold text-gray-800">Recent Activity</h3>
+                <p class="text-xs text-gray-400">Latest documents &amp; payments</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium"
+                  x-text="(data?.activity?.length || 0) + ' events'"></span>
+        </div>
+        <div x-show="!data?.activity?.length" class="px-5 py-8 text-center text-gray-400 text-sm">No recent activity</div>
+        <div class="divide-y divide-gray-50" x-show="data?.activity?.length">
+            <template x-for="(act, idx) in (data?.activity || [])" :key="idx">
+                <div class="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+                    <span class="text-xl flex-shrink-0 mt-0.5" x-text="act.icon"></span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="text-xs font-medium text-gray-800" x-text="act.text"></div>
+                                <div class="text-[10px] text-gray-400 mt-0.5" x-text="act.sub"></div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <div x-show="act.amount > 0" class="text-xs font-bold text-gray-700"
+                                     x-text="'₹' + fmt(act.amount)"></div>
+                                <div class="text-[10px] text-gray-400" x-text="act.time"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    {# ── Sales Tracking Section ──────────────────────────────────────────────── #}
+    <div x-data="salesTracking()" x-init="init()" class="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+
+        {# Header bar #}
+        <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-bold text-gray-800">Sales Tracking</h3>
+                <p class="text-xs text-gray-400">Month-wise &amp; Year-wise breakdown of key metrics</p>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                {# Mode toggle: Monthly / Yearly #}
+                <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                    <button @click="setMode('monthly')"
+                        :class="mode==='monthly' ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500'"
+                        class="px-3 py-1.5 rounded-lg text-xs transition-all">Monthly</button>
+                    <button @click="setMode('yearly')"
+                        :class="mode==='yearly'  ? 'bg-white shadow text-indigo-700 font-semibold' : 'text-gray-500'"
+                        class="px-3 py-1.5 rounded-lg text-xs transition-all">Yearly</button>
+                </div>
+
+                {# Year selector — only shown in monthly mode #}
+                <div x-show="mode==='monthly' && availableYears.length" class="flex items-center gap-1">
+                    <button @click="prevYear()"
+                        :disabled="yearIdx >= availableYears.length - 1"
+                        :class="yearIdx >= availableYears.length-1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200'"
+                        class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <span class="text-sm font-bold text-gray-800 w-12 text-center" x-text="selectedYear"></span>
+                    <button @click="nextYear()"
+                        :disabled="yearIdx <= 0"
+                        :class="yearIdx <= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200'"
+                        class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                {# Refresh #}
+                <button @click="load()" :class="loading ? 'animate-spin' : ''"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+            </div>
+        </div>
+
+        {# Chart #}
+        <div class="px-5 pt-5 pb-2" x-show="rows.length && !loading">
+            <div class="h-40">
+                <canvas id="trackingChart"></canvas>
+            </div>
+        </div>
+
+        {# Loading skeleton #}
+        <div x-show="loading" class="px-5 py-8 flex items-center justify-center gap-2 text-gray-400 text-sm">
+            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Loading data…
+        </div>
+
+        {# Table #}
+        <div class="overflow-x-auto" x-show="!loading && rows.length">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap sticky left-0 bg-gray-50 z-10">
+                            <span x-text="mode==='monthly' ? 'Month' : 'Financial Year'"></span>
+                        </th>
+                        <th @click="sortBy('qtns')" class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-indigo-600 select-none">
+                            Quotations <span x-show="sort==='qtns'" x-text="sortDir==='asc'?'↑':'↓'" class="text-indigo-400"></span>
+                        </th>
+                        <th @click="sortBy('ord_recv')" class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-indigo-600 select-none">
+                            Orders Recv <span x-show="sort==='ord_recv'" x-text="sortDir==='asc'?'↑':'↓'" class="text-indigo-400"></span>
+                        </th>
+                        <th @click="sortBy('ord_closed')" class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-indigo-600 select-none">
+                            Orders Closed <span x-show="sort==='ord_closed'" x-text="sortDir==='asc'?'↑':'↓'" class="text-indigo-400"></span>
+                        </th>
+                        <th @click="sortBy('inv_count')" class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-indigo-600 select-none">
+                            Invoices <span x-show="sort==='inv_count'" x-text="sortDir==='asc'?'↑':'↓'" class="text-indigo-400"></span>
+                        </th>
+                        <th @click="sortBy('inv_value')" class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-indigo-600 select-none">
+                            Invoice Value <span x-show="sort==='inv_value'" x-text="sortDir==='asc'?'↑':'↓'" class="text-indigo-400"></span>
+                        </th>
+                        <th @click="sortBy('pay_recv')" class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-emerald-600 select-none">
+                            Payment Recv <span x-show="sort==='pay_recv'" x-text="sortDir==='asc'?'↑':'↓'" class="text-emerald-400"></span>
+                        </th>
+                        <th class="px-4 py-3 text-right font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Collection %</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    <template x-for="(row, idx) in sortedRows" :key="idx">
+                        <tr :class="{
+                                'bg-indigo-50/60 font-semibold': row.is_current,
+                                'opacity-40':                     row.is_future,
+                                'hover:bg-gray-50':               !row.is_current && !row.is_future,
+                            }" class="transition-colors">
+                            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap sticky left-0 z-10"
+                                :class="row.is_current ? 'bg-indigo-50' : 'bg-white'">
+                                <div class="flex items-center gap-2">
+                                    <span x-show="row.is_current" class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"></span>
+                                    <span x-text="row.label"></span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <span x-show="!row.is_future" class="text-purple-700 font-semibold" x-text="row.qtns ?? 0"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <span x-show="!row.is_future" class="text-indigo-700 font-semibold" x-text="row.ord_recv ?? 0"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <span x-show="!row.is_future" class="text-emerald-700 font-semibold" x-text="row.ord_closed ?? 0"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <span x-show="!row.is_future" class="text-blue-700 font-semibold" x-text="row.inv_count ?? 0"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <span x-show="!row.is_future" class="text-gray-800 font-bold" x-text="row.inv_value != null ? '₹' + fmt(row.inv_value) : '—'"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <span x-show="!row.is_future" class="text-emerald-700 font-bold" x-text="row.pay_recv != null ? '₹' + fmt(row.pay_recv) : '—'"></span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <span x-show="row.is_future" class="text-gray-300">—</span>
+                                <template x-if="!row.is_future">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <div class="w-14 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                            <div class="h-1.5 rounded-full transition-all"
+                                                 :class="collPct(row) >= 100 ? 'bg-emerald-500' : collPct(row) >= 60 ? 'bg-amber-400' : 'bg-red-400'"
+                                                 :style="'width:' + Math.min(collPct(row),100) + '%'"></div>
+                                        </div>
+                                        <span class="text-[10px] font-bold tabular-nums"
+                                              :class="collPct(row) >= 100 ? 'text-emerald-600' : collPct(row) >= 60 ? 'text-amber-600' : 'text-red-500'"
+                                              x-text="collPct(row) + '%'"></span>
+                                    </div>
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+
+                    {# Totals row #}
+                    <tr class="bg-gray-900 text-white text-xs font-bold" x-show="rows.length">
+                        <td class="px-4 py-3 uppercase tracking-wider sticky left-0 bg-gray-900 z-10">Total</td>
+                        <td class="px-4 py-3 text-right tabular-nums" x-text="totals.qtns"></td>
+                        <td class="px-4 py-3 text-right tabular-nums" x-text="totals.ord_recv"></td>
+                        <td class="px-4 py-3 text-right tabular-nums" x-text="totals.ord_closed"></td>
+                        <td class="px-4 py-3 text-right tabular-nums" x-text="totals.inv_count"></td>
+                        <td class="px-4 py-3 text-right tabular-nums" x-text="'₹' + fmt(totals.inv_value)"></td>
+                        <td class="px-4 py-3 text-right tabular-nums text-emerald-400" x-text="'₹' + fmt(totals.pay_recv)"></td>
+                        <td class="px-4 py-3 text-right tabular-nums">
+                            <span :class="collPct(totals) >= 100 ? 'text-emerald-400' : 'text-amber-400'" x-text="collPct(totals) + '%'"></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {# Empty state #}
+        <div x-show="!loading && !rows.length" class="px-5 py-10 text-center text-gray-400 text-sm">No data found</div>
+    </div>
+
+    {# ── Quick Actions Row ──────────────────────────────────────────────────── #}
+    <div x-show="data" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <a href="/documents/quotation/new/" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Quotation
+        </a>
+        <a href="/documents/invoice/new/" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Invoice
+        </a>
+        <a href="/tracker/order/create/" class="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Order
+        </a>
+        <a href="/documents/" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white text-xs font-semibold px-4 py-3 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            All Documents
+        </a>
+    </div>
+
+</div>{# end x-data #}
+
+
+{# ── Chart.js + Alpine Component ─────────────────────────────────────────────── #}
+{% if not request.user.is_authenticated %}{% else %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ── Number formatter ──────────────────────────────────────────────────────────
+function fmt(val) {
+    if (!val && val !== 0) return '0';
+    const v = parseFloat(val);
+    if (v >= 1_00_00_000) return (v / 1_00_00_000).toFixed(1) + 'Cr';
+    if (v >= 1_00_000)    return (v / 1_00_000).toFixed(1) + 'L';
+    if (v >= 1_000)       return (v / 1_000).toFixed(1) + 'K';
+    return Math.round(v).toLocaleString('en-IN');
+}
+
+// ── Chart instances ────────────────────────────────────────────────────────────
+let revenueChart = null;
+let docTypeChart = null;
+
+const DOC_TYPE_COLORS = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#f97316'];
+
+function buildRevenueChart(labels, values) {
+    const ctx = document.getElementById('revenueChart');
+    if (!ctx) return;
+    if (revenueChart) { revenueChart.destroy(); }
+    revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: values,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,0.08)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+                pointHoverRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ' ₹' + fmt(ctx.raw)
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 0, maxTicksLimit: 8 } },
+                y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 9 }, callback: v => '₹' + fmt(v) } }
+            }
+        }
+    });
+}
+
+function buildDocTypeChart(docTypes) {
+    const ctx = document.getElementById('docTypeChart');
+    if (!ctx) return;
+    if (docTypeChart) { docTypeChart.destroy(); }
+    const labels = docTypes.map(d => d.type);
+    const vals   = docTypes.map(d => d.total);
+    docTypeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{ data: vals, backgroundColor: DOC_TYPE_COLORS, borderWidth: 0 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => ' ₹' + fmt(ctx.raw) } }
+            }
+        }
+    });
+}
+
+// ── Tracking bar chart ───────────────────────────────────────────────────────
+let trackingChart = null;
+function buildTrackingChart(rows) {
+    const ctx = document.getElementById('trackingChart');
+    if (!ctx) return;
+    if (trackingChart) trackingChart.destroy();
+    const labels = rows.filter(r => !r.is_future).map(r => r.label);
+    trackingChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Invoice Value', data: rows.filter(r=>!r.is_future).map(r=>r.inv_value||0), backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, yAxisID: 'y' },
+                { label: 'Payment Recv', data: rows.filter(r=>!r.is_future).map(r=>r.pay_recv||0),  backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4, yAxisID: 'y' },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+                tooltip: { callbacks: { label: ctx => ' ₹' + fmt(ctx.raw) } }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 0 } },
+                y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 9 }, callback: v => '₹' + fmt(v) } }
+            }
+        }
+    });
+}
+
+// ── Sales Tracking Alpine Component ──────────────────────────────────────────
+function salesTracking() {
+    return {
+        mode:           'monthly',
+        loading:        false,
+        rows:           [],
+        availableYears: [],
+        yearIdx:        0,          // index into availableYears
+        sort:           null,
+        sortDir:        'desc',
+        today:          new Date(),
+
+        get selectedYear() {
+            return this.availableYears[this.yearIdx] || new Date().getFullYear();
+        },
+        get sortedRows() {
+            if (!this.sort) return this.rows;
+            return [...this.rows].sort((a, b) => {
+                const av = a[this.sort] ?? -1;
+                const bv = b[this.sort] ?? -1;
+                return this.sortDir === 'asc' ? av - bv : bv - av;
+            });
+        },
+        get totals() {
+            const data = this.rows.filter(r => !r.is_future);
+            return {
+                qtns:       data.reduce((s,r) => s + (r.qtns||0), 0),
+                ord_recv:   data.reduce((s,r) => s + (r.ord_recv||0), 0),
+                ord_closed: data.reduce((s,r) => s + (r.ord_closed||0), 0),
+                inv_count:  data.reduce((s,r) => s + (r.inv_count||0), 0),
+                inv_value:  data.reduce((s,r) => s + (r.inv_value||0), 0),
+                pay_recv:   data.reduce((s,r) => s + (r.pay_recv||0), 0),
+            };
+        },
+
+        collPct(row) {
+            if (!row.inv_value || row.inv_value === 0) return 0;
+            return Math.round((row.pay_recv / row.inv_value) * 100);
+        },
+
+        sortBy(col) {
+            if (this.sort === col) this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+            else { this.sort = col; this.sortDir = 'desc'; }
+        },
+
+        async init() {
+            await this.load();
+        },
+
+        async setMode(m) {
+            this.mode = m;
+            this.sort = null;
+            await this.load();
+        },
+
+        prevYear() {
+            if (this.yearIdx < this.availableYears.length - 1) {
+                this.yearIdx++;
+                this.load();
+            }
+        },
+        nextYear() {
+            if (this.yearIdx > 0) {
+                this.yearIdx--;
+                this.load();
+            }
+        },
+
+        async load() {
+            this.loading = true;
+            try {
+                let url = `/api/sales-tracking/?mode=${this.mode}`;
+                if (this.mode === 'monthly') url += `&year=${this.selectedYear}`;
+                const resp = await fetch(url);
+                const json = await resp.json();
+                this.rows = json.rows || [];
+                if (json.available_years && json.available_years.length) {
+                    const prev = this.selectedYear;
+                    this.availableYears = json.available_years;
+                    // Keep selected year if still in list
+                    const idx = this.availableYears.indexOf(prev);
+                    this.yearIdx = idx >= 0 ? idx : 0;
+                }
+                // Mark current month
+                if (this.mode === 'monthly') {
+                    const now = new Date();
+                    this.rows = this.rows.map(r => ({
+                        ...r,
+                        is_current: !r.is_future && r.month === now.getMonth() + 1 && json.year === now.getFullYear()
+                    }));
+                } else {
+                    this.rows = this.rows.map(r => ({ ...r, is_current: false }));
+                }
+                await this.$nextTick();
+                buildTrackingChart(this.rows);
+            } catch(e) {
+                console.error('Sales tracking load error:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        fmt,
+    };
+}
+
+// ── Alpine Component ──────────────────────────────────────────────────────────
+function salesDashboard() {
+    return {
+        period: 'month',
+        loading: false,
+        data: null,
+        periods: [
+            { value: 'today', label: 'Today' },
+            { value: 'week',  label: 'Week' },
+            { value: 'month', label: 'Month' },
+            { value: 'year',  label: 'FY' },
+        ],
+
+        async init() {
+            const saved = localStorage.getItem('sd_period');
+            if (saved) this.period = saved;
+            await this.load();
+            // Auto-refresh every 5 minutes
+            setInterval(() => this.load(), 5 * 60 * 1000);
+        },
+
+        async setPeriod(p) {
+            this.period = p;
+            localStorage.setItem('sd_period', p);
+            await this.load();
+        },
+
+        async load() {
+            this.loading = true;
+            try {
+                const resp = await fetch(`/api/sales-dashboard/?period=${this.period}`);
+                const json = await resp.json();
+                this.data  = json;
+                // Build charts after DOM updates
+                await this.$nextTick();
+                buildRevenueChart(json.chart_labels || [], json.chart_revenue || []);
+                if (json.doc_types && json.doc_types.length) {
+                    buildDocTypeChart(json.doc_types);
+                }
+            } catch(e) {
+                console.error('Sales dashboard load error:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        fmt,
+    };
+}
+</script>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}System Backup & Restore - ERP System{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-gray-900">System Backup & Restore</h1>
+        <p class="text-sm text-gray-500">Manage your system's data backups and restoration.</p>
+    </div>
+
+    <!-- System Administration Panel -->
+    <div class="bg-white shadow rounded-lg p-6 border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            System Admin Tools
+        </h2>
+        
+        <div class="space-y-8">
+            <!-- Backup Section -->
+            <div class="border-b border-gray-100 pb-6">
+                <h3 class="text-md font-medium text-gray-800 mb-2">Create Backup</h3>
+                <p class="text-sm text-gray-500 mb-4">Download a full system backup containing the database and all uploaded media files.</p>
+                <a href="{% url 'tracker:system_backup' %}" class="inline-flex justify-center items-center gap-2 px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download System Backup (.zip)
+                </a>
+            </div>
+            
+            <!-- Restore Section -->
+            <div>
+                <h3 class="text-md font-medium text-gray-800 mb-2">Restore System</h3>
+                <p class="text-sm text-gray-500 mb-4">Upload a previously downloaded `.zip` backup file to restore the database and media.</p>
+                
+                <div class="bg-red-50 rounded-md p-4 mb-4 border border-red-200 text-sm text-red-800 flex gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <div>
+                        <strong>Warning:</strong> Restoring a backup will <strong>permanently overwrite</strong> the current system data. Please ensure you manually restart the server after the restoration process is complete to clear any active connections.
+                    </div>
+                </div>
+
+                <form action="{% url 'tracker:system_restore' %}" method="post" enctype="multipart/form-data" class="max-w-md">
+                    {% csrf_token %}
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Backup File</label>
+                    <input type="file" name="backup_file" accept=".zip" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 mb-4 border border-gray-200 rounded-md">
+                    
+                    <button type="submit" onclick="return confirm('WARNING: This will completely replace the current database and media files. Ensure the server is restarted afterward. Are you sure?')" class="inline-flex justify-center items-center gap-2 px-6 py-3 border border-red-300 text-sm font-medium rounded-md shadow-sm text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Upload & Restore Backup
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

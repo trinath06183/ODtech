@@ -1,0 +1,56 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">⬇️ Download Center</h1>
+    <p class="text-sm text-slate-500">Your personal download history</p>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">Date</th>
+                <th class="px-6 py-3 text-left">Document</th>
+                <th class="px-6 py-3 text-left">Version</th>
+                <th class="px-6 py-3 text-left">Size</th>
+                <th class="px-6 py-3 text-left">Action</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for dl in downloads %}
+            <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="px-6 py-4 text-xs text-slate-500">{{ dl.created_at|date:"d M Y H:i" }}</td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        <span>{{ dl.version.file_extension|file_type_badge }}</span>
+                        <a href="{% url 'edms:document_detail' doc_id=dl.document.id %}" class="font-medium text-slate-700 hover:text-violet-600 truncate max-w-xs">{{ dl.document.title }}</a>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-slate-600">v{{ dl.version.version_number }}</td>
+                <td class="px-6 py-4 text-xs text-slate-400">{{ dl.version.file_size|file_size }}</td>
+                <td class="px-6 py-4">
+                    <a href="{% url 'edms:document_download_version' doc_id=dl.document.id version_number=dl.version.version_number %}" class="text-blue-600 hover:underline text-xs">Download Again</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-6 py-12 text-center text-slate-400">You haven't downloaded any documents yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="flex justify-center gap-2 mt-6">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm">Prev</a>
+    {% endif %}
+    <span class="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-medium">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

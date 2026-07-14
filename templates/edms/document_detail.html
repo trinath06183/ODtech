@@ -1,0 +1,290 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<!-- Breadcrumb -->
+<nav class="text-sm text-slate-400 flex items-center gap-1">
+    <a href="{% url 'edms:dashboard' %}" class="hover:text-violet-600">EDMS</a>
+    <span>›</span>
+    <a href="{% url 'edms:document_list' %}" class="hover:text-violet-600">Documents</a>
+    <span>›</span>
+    <span class="text-slate-600 truncate max-w-xs">{{ document.title }}</span>
+</nav>
+
+{% if document.source_type == 'commercial' and document.commercial_doc_id %}
+<!-- Commercial Document Banner -->
+<div class="bg-indigo-50 border border-indigo-200 rounded-2xl px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+        <span class="text-2xl">⚡</span>
+        <div>
+            <p class="text-sm font-bold text-indigo-800">Commercial Document (Auto-Synced)</p>
+            <p class="text-xs text-indigo-600">This record is automatically kept in sync with the <strong>Commercial Documents</strong> module. To edit it, use the button on the right.</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="{% url 'document_preview' document.commercial_doc_id %}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors" target="_blank">
+            🔗 Open Original
+        </a>
+        <a href="{% url 'edit_document' document.commercial_doc_id %}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-xl text-sm font-semibold hover:bg-indigo-50 transition-colors">
+            ✏ Edit Original
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Document Header -->
+<div class="glass rounded-2xl p-6 flex flex-col lg:flex-row gap-6">
+    <!-- Left: Metadata -->
+    <div class="flex-1 space-y-4">
+        <div class="flex items-start gap-4">
+            <div class="text-4xl">{{ document.file_extension|file_type_badge }}</div>
+            <div class="flex-1">
+                <h1 class="text-xl font-bold text-slate-800 leading-tight">{{ document.title }}</h1>
+                <div class="flex flex-wrap items-center gap-2 mt-2">
+                    {{ document.approval_status|approval_badge }}
+                    {{ document.access_level|access_level_badge }}
+                    {% if document.is_confidential %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">🔒 Confidential</span>
+                    {% endif %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+                        v{{ document.current_version }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {% if document.description %}
+        <p class="text-slate-600 text-sm leading-relaxed">{{ document.description }}</p>
+        {% endif %}
+
+        <!-- Metadata grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Category</p>
+                <p class="font-medium text-slate-700">{{ document.category.name }}</p>
+            </div>
+            {% if document.department %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Department</p>
+                <p class="font-medium text-slate-700">{{ document.department.name }}</p>
+            </div>
+            {% endif %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Type</p>
+                <p class="font-medium text-slate-700">{{ document.get_document_type_display }}</p>
+            </div>
+            {% if document.reference_number %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Reference</p>
+                <p class="font-medium text-slate-700">{{ document.reference_number }}</p>
+            </div>
+            {% endif %}
+            {% if document.issue_date %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Issue Date</p>
+                <p class="font-medium text-slate-700">{{ document.issue_date|date:"d M Y" }}</p>
+            </div>
+            {% endif %}
+            {% if document.expiry_date %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Expiry Date</p>
+                <p class="font-semibold {{ document.expiry_date|expiry_color }}">{{ document.expiry_date|date:"d M Y" }}</p>
+            </div>
+            {% endif %}
+            {% if document.vendor %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Vendor</p>
+                <p class="font-medium text-slate-700">{{ document.vendor.name }}</p>
+            </div>
+            {% endif %}
+            {% if document.po_number %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">PO Number</p>
+                <p class="font-medium text-slate-700">{{ document.po_number }}</p>
+            </div>
+            {% endif %}
+            {% if document.invoice_number %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Invoice No.</p>
+                <p class="font-medium text-slate-700">{{ document.invoice_number }}</p>
+            </div>
+            {% endif %}
+            {% if document.amount %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Amount</p>
+                <p class="font-semibold text-slate-700">{{ document.currency }} {{ document.amount }}</p>
+            </div>
+            {% endif %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">File Size</p>
+                <p class="font-medium text-slate-700">{{ document.file_size|file_size }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Uploaded</p>
+                <p class="font-medium text-slate-700">{{ document.created_at|date:"d M Y H:i" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Uploaded By</p>
+                <p class="font-medium text-slate-700">{{ document.uploaded_by.username}}</p>
+            </div>
+        </div>
+
+        <!-- Tags -->
+        {% if document.tags.all %}
+        <div class="flex flex-wrap gap-2">
+            {% for tag in document.tags.all %}
+            <span class="px-3 py-1 bg-violet-50 text-violet-700 text-xs font-medium rounded-full">#{{ tag.name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Action Panel -->
+    <div class="flex flex-col gap-3 min-w-[200px]">
+        {% if can_download %}
+        <a href="{% url 'edms:document_download' doc_id=document.id %}"
+           class="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-cyan-600
+                  text-white font-semibold rounded-xl shadow hover:shadow-lg transition-all text-sm">
+            ⬇ Download PDF
+        </a>
+        {% endif %}
+
+        {% if document.source_type == 'commercial' and document.commercial_doc_id %}
+        {# For commercial docs: show Open/Edit original instead of EDMS edit #}
+        <a href="{% url 'document_preview' document.commercial_doc_id %}"
+           target="_blank"
+           class="flex items-center justify-center gap-2 px-5 py-3 bg-indigo-50 hover:bg-indigo-100
+                  text-indigo-700 font-semibold rounded-xl transition-all text-sm">
+            👁 Open Original
+        </a>
+        <a href="{% url 'edit_document' document.commercial_doc_id %}"
+           class="flex items-center justify-center gap-2 px-5 py-3 border border-indigo-300 hover:border-indigo-500
+                  text-indigo-600 hover:text-indigo-800 font-medium rounded-xl transition-all text-sm">
+            ✏ Edit Original
+        </a>
+        {% else %}
+        {% if document.is_preview_supported %}
+        <a href="{% url 'edms:document_preview' doc_id=document.id %}"
+           target="_blank"
+           class="flex items-center justify-center gap-2 px-5 py-3 bg-slate-100 hover:bg-slate-200
+                  text-slate-700 font-semibold rounded-xl transition-all text-sm">
+            👁 Preview
+        </a>
+        {% endif %}
+
+        {% if can_edit %}
+        <a href="{% url 'edms:document_edit' doc_id=document.id %}"
+           class="flex items-center justify-center gap-2 px-5 py-3 border border-slate-200 hover:border-violet-400
+                  text-slate-600 hover:text-violet-700 font-medium rounded-xl transition-all text-sm">
+            ✏ Edit Metadata
+        </a>
+        {% endif %}
+        {% endif %}
+
+        {% if can_approve and document.approval_status == 'pending' %}
+        <form method="POST" action="{% url 'edms:document_approve' doc_id=document.id %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-700
+                           text-white font-semibold rounded-xl transition-all text-sm">
+                ✅ Approve
+            </button>
+        </form>
+        {% endif %}
+
+        <a href="{% url 'edms:version_history' doc_id=document.id %}"
+           class="flex items-center justify-center gap-2 px-5 py-3 bg-slate-50 hover:bg-slate-100
+                  text-slate-600 font-medium rounded-xl transition-all text-sm">
+            📋 Version History (v{{ document.current_version }})
+        </a>
+
+        {% if can_delete and not document.is_deleted %}
+        <a href="{% url 'edms:document_delete' doc_id=document.id %}"
+           class="flex items-center justify-center gap-2 px-5 py-3 bg-red-50 hover:bg-red-100
+                  text-red-600 font-medium rounded-xl transition-all text-sm">
+            🗑 Delete
+        </a>
+        {% endif %}
+
+        {% if document.is_deleted %}
+        <form method="POST" action="{% url 'edms:document_restore' doc_id=document.id %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-amber-50 hover:bg-amber-100
+                           text-amber-700 font-medium rounded-xl transition-all text-sm">
+                ♻ Restore
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Inline Preview -->
+{% if document.source_type == 'commercial' and document.commercial_doc_id %}
+{# Commercial doc: show the live rendered HTML invoice inside an iframe #}
+<div class="glass rounded-2xl p-4">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-slate-700">📄 Document Preview</h2>
+        <a href="{% url 'document_preview' document.commercial_doc_id %}" target="_blank"
+           class="text-xs text-indigo-600 hover:underline">Open full screen →</a>
+    </div>
+    <div class="rounded-xl overflow-hidden bg-slate-100" style="height: 600px;">
+        <iframe src="{% url 'edms:document_preview' doc_id=document.id %}"
+                class="w-full h-full border-0" title="Document Preview"></iframe>
+    </div>
+</div>
+{% elif document.is_preview_supported %}
+<div class="glass rounded-2xl p-4">
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-slate-700">📄 Preview</h2>
+        <a href="{% url 'edms:document_preview' doc_id=document.id %}" target="_blank"
+           class="text-xs text-violet-600 hover:underline">Open full screen →</a>
+    </div>
+    <div class="rounded-xl overflow-hidden bg-slate-100" style="height: 480px;">
+        {% if document.file_extension == '.pdf' %}
+        <iframe src="{% url 'edms:document_preview' doc_id=document.id %}"
+                class="w-full h-full border-0" title="Document Preview"></iframe>
+        {% else %}
+        <img src="{% url 'edms:document_preview' doc_id=document.id %}"
+             class="w-full h-full object-contain" alt="{{ document.title }}" />
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Audit Log for this Document -->
+{% if can_audit %}
+<div class="glass rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100">
+        <h2 class="font-semibold text-slate-700">🔒 Document Activity</h2>
+    </div>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-slate-50/70 text-xs text-slate-400 uppercase">
+                <th class="px-6 py-3 text-left">Time</th>
+                <th class="px-6 py-3 text-left">User</th>
+                <th class="px-6 py-3 text-left">Action</th>
+                <th class="px-6 py-3 text-left">IP</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+            {% for log in audit_logs %}
+            <tr class="hover:bg-slate-50/40">
+                <td class="px-6 py-2.5 text-xs text-slate-400">{{ log.timestamp|date:"d M Y H:i" }}</td>
+                <td class="px-6 py-2.5 font-medium text-slate-700">{{ log.username_cached }}</td>
+                <td class="px-6 py-2.5">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-violet-50 text-violet-700">{{ log.get_action_display }}</span>
+                </td>
+                <td class="px-6 py-2.5 text-xs text-slate-400 font-mono">{{ log.ip_address|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-6 py-6 text-center text-slate-400">No activity recorded.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endblock %}

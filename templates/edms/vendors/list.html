@@ -1,0 +1,85 @@
+{% extends 'edms/base_edms.html' %}
+{% load edms_tags %}
+
+{% block edms_content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">🏭 Vendors</h1>
+        <p class="text-sm text-slate-500">Manage EDMS vendor list</p>
+    </div>
+    {% if request.user|edms_can:'upload' %}
+    <a href="{% url 'edms:vendor_create' %}" class="px-5 py-2.5 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors text-sm">
+        + Add Vendor
+    </a>
+    {% endif %}
+</div>
+
+<div class="glass rounded-2xl p-5 mb-6">
+    <form method="GET" class="flex gap-2">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by name or GST..." class="flex-1 px-4 py-2 rounded-xl border border-slate-200 bg-white/70 text-sm">
+        <button type="submit" class="px-5 py-2 bg-slate-800 text-white rounded-xl text-sm font-medium hover:bg-slate-900 transition-colors">Search</button>
+        {% if request.GET.q %}
+        <a href="{% url 'edms:vendor_list' %}" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm hover:bg-slate-200 transition-colors">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="glass rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">Vendor Name</th>
+                <th class="px-6 py-3 text-left">Contact</th>
+                <th class="px-6 py-3 text-left">GST / PAN</th>
+                <th class="px-6 py-3 text-left">Status</th>
+                <th class="px-6 py-3 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for v in vendors %}
+            <tr class="hover:bg-slate-50/50">
+                <td class="px-6 py-4">
+                    <p class="font-medium text-slate-800">{{ v.name }}</p>
+                    {% if v.email %}<p class="text-xs text-slate-500">{{ v.email }}</p>{% endif %}
+                </td>
+                <td class="px-6 py-4 text-slate-600">
+                    <p>{{ v.contact_person|default:"—" }}</p>
+                    {% if v.phone %}<p class="text-xs text-slate-500">{{ v.phone }}</p>{% endif %}
+                </td>
+                <td class="px-6 py-4 text-slate-600">
+                    <p class="text-xs">GST: <span class="font-mono">{{ v.gst_number|default:"—" }}</span></p>
+                    <p class="text-xs">PAN: <span class="font-mono">{{ v.pan_number|default:"—" }}</span></p>
+                </td>
+                <td class="px-6 py-4">
+                    {% if v.is_active %}
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4">
+                    {% if request.user|edms_can:'edit_metadata' %}
+                    <a href="{% url 'edms:vendor_edit' vendor_id=v.id %}" class="text-violet-600 hover:underline text-sm font-medium">Edit</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No vendors found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="flex justify-center gap-2 mt-4">
+    {% if page_obj.has_previous %}
+    <a href="?q={{ request.GET.q }}&page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm">Prev</a>
+    {% endif %}
+    <span class="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-medium">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?q={{ request.GET.q }}&page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
