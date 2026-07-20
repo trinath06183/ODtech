@@ -91,6 +91,8 @@
     if (!skipProfitPercent) {
     if (totalCost > 0) {
     this.profitPercent = (((sell - totalCost) / totalCost) * 100).toFixed(2);
+    } else if (sell > 0) {
+    this.profitPercent = '100.00';
     } else {
     this.profitPercent = '0.00';
     }
@@ -718,7 +720,7 @@
     
                 <!-- Product Pricing Form & Calculator -->
                 {% if field_visibility.can_see_purchase_price or field_visibility.can_see_selling_price or field_visibility.can_see_profit_loss %}
-                <form id="product-pricing-form" @submit.prevent="submitModalForm('product-pricing-form', 'save_product')">
+                <form id="product-pricing-form" @submit.prevent="window.submitModalForm('product-pricing-form', 'save_product')">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="save_product">
     
@@ -1331,15 +1333,25 @@
                                 {% endif %}
 
                                 {% if option.photo_or_document %}
-                                <a href="{{ option.photo_or_document.url }}" target="_blank"
-                                    class="inline-flex items-center text-gray-500 hover:text-gray-800 font-bold ml-auto">
-                                    <svg class="h-3 w-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                        </path>
-                                    </svg>
-                                    View Invoice/Quote
-                                </a>
+                                <div class="flex items-center ml-auto gap-3">
+                                    <a href="{{ option.photo_or_document.url }}" target="_blank"
+                                        class="inline-flex items-center text-gray-500 hover:text-gray-800 font-bold">
+                                        <svg class="h-3 w-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                            </path>
+                                        </svg>
+                                        View Invoice/Quote
+                                    </a>
+                                    <button type="button" 
+                                        @click.prevent="if(confirm('Delete this attachment?')) window.submitModalAction('delete_supplier_attachment', {option_id: '{{ option.id }}'})"
+                                        class="inline-flex items-center text-red-500 hover:text-red-700 font-bold" title="Delete Attachment">
+                                        <svg class="h-3 w-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -1457,10 +1469,21 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-gray-500 font-semibold mb-0.5">Update Attachment
-                                        (Optional)</label>
+                                    <div class="flex justify-between items-center mb-0.5">
+                                        <label class="block text-gray-500 font-semibold">Update Attachment (Optional)</label>
+                                        {% if option.photo_or_document %}
+                                        <button type="button" 
+                                            @click.prevent="if(confirm('Delete this attachment?')) window.submitModalAction('delete_supplier_attachment', {option_id: '{{ option.id }}'})"
+                                            class="inline-flex items-center text-[10px] text-red-500 hover:text-red-700 font-bold">
+                                            Delete Current
+                                        </button>
+                                        {% endif %}
+                                    </div>
                                     <input type="file" name="photo_or_document"
                                         class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    {% if option.photo_or_document %}
+                                    <p class="text-[10px] text-gray-400 mt-1 truncate">Current: {{ option.photo_or_document.name }}</p>
+                                    {% endif %}
                                 </div>
 
                                 <div>

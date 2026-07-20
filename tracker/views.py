@@ -515,18 +515,27 @@ def product_modal_detail_view(request, product_id):
                 errors = {field: error_list[0] for field, error_list in form.errors.items()}
                 return JsonResponse({'success': False, 'errors': errors})
                 
-        elif action == 'delete_supplier':
-            option_id = request.POST.get('option_id')
-            option = get_object_or_404(SupplierCostOption, id=option_id, product=product)
-            was_selected = option.is_selected
-            option.delete()
-            if was_selected:
-                # Clear pricing
-                product.buying_price_ex_gst = 0
-                product.buying_price_inc_gst = 0
-                product.save()
-            return JsonResponse({'success': True})
-            
+        elif action == 'delete_supplier':\r
+            option_id = request.POST.get('option_id')\r
+            option = get_object_or_404(SupplierCostOption, id=option_id, product=product)\r
+            was_selected = option.is_selected\r
+            option.delete()\r
+            if was_selected:\r
+                # Clear pricing\r
+                product.buying_price_ex_gst = 0\r
+                product.buying_price_inc_gst = 0\r
+                product.save()\r
+            return JsonResponse({'success': True})\r
+\r
+        elif action == 'delete_supplier_attachment':\r
+            option_id = request.POST.get('option_id')\r
+            option = get_object_or_404(SupplierCostOption, id=option_id, product=product)\r
+            if option.photo_or_document:\r
+                option.photo_or_document.delete(save=False)\r
+                option.photo_or_document = None\r
+                option.save(update_fields=['photo_or_document'])\r
+            return JsonResponse({'success': True})\r
+            \r
         return JsonResponse({'success': False, 'error': 'Invalid action'})
         
     # GET request
