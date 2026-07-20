@@ -258,20 +258,60 @@ def adjust_stock(request, product_id):
 # ─── Warranty Tracker ─────────────────────────────────────────────────────────
 @login_required
 def warranty_tracker(request):
-    """
-    Warranty tracker — previously based on billing DocumentItem.
-    The billing module has been replaced by EDMS. Warranty records can now
-    be stored directly in EDMS documents with the appropriate category.
-    """
+    from documents.models import DocumentItem
+    from django.db.models import Q
+    from django.utils import timezone
+    from dateutil.relativedelta import relativedelta
+    import re
+
     query = request.GET.get('q', '').strip()
+    items = DocumentItem.objects.filter(has_warranty=True, document__status='Approved').select_related('document', 'product', 'document__contact')
+    
+    if query:
+        items = items.filter(
+            Q(serial_number__icontains=query) |
+            Q(document__number__icontains=query) |
+            Q(product__sku__icontains=query) |
+            Q(document__contact__name__icontains=query)
+        )
+        
     results = []
+    now = timezone.now().date()
+    
+    for item in items:
+        months = 0
+        if item.warranty_period:
+            match = re.search(r'(\d+)', str(item.warranty_period))
+            if match:
+                val = int(match.group(1))
+                if 'year' in item.warranty_period.lower():
+                    months = val * 12
+                else:
+                    months = val
+                    
+        start_date = item.warranty_start_date or item.document.date
+        expiry_date = None
+        is_active = False
+        
+        if start_date and months > 0:
+            expiry_date = start_date + relativedelta(months=months)
+            is_active = expiry_date >= now
+            
+        results.append({
+            'item': item,
+            'product': item.product,
+            'document': item.document,
+            'customer_name': item.document.contact.name if item.document.contact else 'Unknown',
+            'invoice_date': start_date,
+            'warranty_months': months,
+            'expiry_date': expiry_date,
+            'is_active': is_active,
+        })
 
     return render(request, 'inventory/warranty_tracker.html', {
         'query': query,
         'results': results,
-        'notice': 'Warranty tracking is now managed through the EDMS Document Management module.',
     })
-
 
 # ------------------------------------------------------------------------------
 # WARRANTY PORTAL VIEWS
