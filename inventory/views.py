@@ -266,7 +266,12 @@ def warranty_tracker(request):
     import re
 
     query = request.GET.get('q', '').strip()
+    
+    # Base query: Items with warranty checked, from approved documents
     items = DocumentItem.objects.filter(has_warranty=True, document__status='Approved').select_related('document', 'product', 'document__contact')
+    
+    # Exclude Custom Line Items and items without any warranty period defined
+    items = items.exclude(product__sku__iexact='CUSTOM').exclude(warranty_period__isnull=True).exclude(warranty_period__exact='')
     
     if query:
         items = items.filter(
