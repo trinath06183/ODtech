@@ -48,7 +48,12 @@
         .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
     </style>
 </head>
-<body class="flex items-start justify-center py-12 px-4">
+<body class="flex items-start justify-center py-12 px-4 relative">
+
+<!-- Top-Left Logo -->
+<a href="{% url 'login' %}" class="absolute top-6 left-6 z-50">
+    <img src="{% static 'img/logo.png' %}" alt="ODtech" class="h-8 md:h-10 opacity-80 hover:opacity-100 transition" onerror="this.style.display='none'">
+</a>
 
 <div class="w-full max-w-2xl">
 

@@ -14,9 +14,15 @@
         .fade-up { animation: fadeUp 0.6s 0.3s ease forwards; opacity:0; }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen px-4">
-<div class="text-center max-w-md w-full">
-    <div class="pop inline-flex items-center justify-center w-24 h-24 rounded-full mb-6" style="background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 0 60px rgba(16,185,129,0.4);">
+<body class="flex items-center justify-center min-h-screen p-4 bg-slate-900 relative">
+
+<!-- Top-Left Logo -->
+<a href="{% url 'login' %}" class="absolute top-6 left-6 z-50">
+    <img src="{% static 'img/logo.png' %}" alt="ODtech" class="h-8 md:h-10 opacity-80 hover:opacity-100 transition" onerror="this.style.display='none'">
+</a>
+
+<div class="w-full max-w-lg text-center">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500 mb-6 shadow-[0_0_40px_rgba(16,185,129,0.3)] fade-up">
         <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
         </svg>
@@ -28,9 +34,9 @@
         <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6 text-left">
             <p class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">What's Next?</p>
             <ul class="space-y-2 text-sm text-slate-300">
-                <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">✓</span> Your registration is now saved in our system.</li>
-                <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">✓</span> If you ever need to make a warranty claim, use your <strong class="text-white">Invoice Number</strong> and <strong class="text-white">Serial Number</strong>.</li>
-                <li class="flex items-start gap-2"><span class="text-blue-400 mt-0.5">→</span> You can file a claim anytime via the Warranty Claim page.</li>
+                <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5 shrink-0">✓</span> <span>Your registration is now saved in our system.</span></li>
+                <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5 shrink-0">✓</span> <span>If you ever need to make a warranty claim, use your <strong class="text-white">Invoice Number</strong> and <strong class="text-white">Serial Number</strong>.</span></li>
+                <li class="flex items-start gap-2"><span class="text-blue-400 mt-0.5 shrink-0">→</span> <span>You can file a claim anytime via the Warranty Claim page.</span></li>
             </ul>
         </div>
 

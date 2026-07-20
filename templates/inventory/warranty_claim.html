@@ -37,7 +37,12 @@
         .slide-down { animation: slideDown 0.4s ease forwards; }
     </style>
 </head>
-<body class="flex items-start justify-center py-12 px-4">
+<body class="flex items-start justify-center py-12 px-4 relative">
+
+<!-- Top-Left Logo -->
+<a href="{% url 'login' %}" class="absolute top-6 left-6 z-50">
+    <img src="{% static 'img/logo.png' %}" alt="ODtech" class="h-8 md:h-10 opacity-80 hover:opacity-100 transition" onerror="this.style.display='none'">
+</a>
 
 <div class="w-full max-w-xl">
 
