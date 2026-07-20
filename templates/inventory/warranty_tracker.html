@@ -15,6 +15,12 @@
             <p class="text-gray-400 text-xs">Search and verify product warranties</p>
         </div>
     </div>
+    
+    <div class="flex items-center gap-3">
+        <a href="{% url 'warranty_admin_list' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-white/10 transition">Manage Claims</a>
+        <a href="{% url 'warranty_register' %}" target="_blank" class="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 text-xs font-semibold rounded-lg transition">Public Reg. Link ↗</a>
+        <a href="{% url 'warranty_claim' %}" target="_blank" class="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-500/30 text-xs font-semibold rounded-lg transition">Public Claim Link ↗</a>
+    </div>
 </div>
 
 <!-- Search Controls -->
