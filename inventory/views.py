@@ -310,6 +310,12 @@ def warranty_tracker(request):
             expiry_date = add_months(start_date, months)
             is_active = expiry_date >= now
             
+        # Check if customer has registered it publicly
+        is_registered = False
+        if item.serial_number:
+            from .models import WarrantyRegistration
+            is_registered = WarrantyRegistration.objects.filter(serial_number__iexact=item.serial_number.strip()).exists()
+            
         results.append({
             'item': item,
             'product': item.product,
@@ -319,6 +325,7 @@ def warranty_tracker(request):
             'warranty_months': months,
             'expiry_date': expiry_date,
             'is_active': is_active,
+            'is_registered': is_registered,
         })
 
     return render(request, 'inventory/warranty_tracker.html', {
