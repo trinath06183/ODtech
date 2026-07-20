@@ -261,7 +261,8 @@ def warranty_tracker(request):
     from documents.models import DocumentItem
     from django.db.models import Q
     from django.utils import timezone
-    from dateutil.relativedelta import relativedelta
+    import datetime
+    import calendar
     import re
 
     query = request.GET.get('q', '').strip()
@@ -277,6 +278,13 @@ def warranty_tracker(request):
         
     results = []
     now = timezone.now().date()
+    
+    def add_months(sourcedate, months):
+        month = sourcedate.month - 1 + months
+        year = int(sourcedate.year + month / 12)
+        month = month % 12 + 1
+        day = min(sourcedate.day, calendar.monthrange(year, month)[1])
+        return datetime.date(year, month, day)
     
     for item in items:
         months = 0
@@ -294,7 +302,7 @@ def warranty_tracker(request):
         is_active = False
         
         if start_date and months > 0:
-            expiry_date = start_date + relativedelta(months=months)
+            expiry_date = add_months(start_date, months)
             is_active = expiry_date >= now
             
         results.append({
