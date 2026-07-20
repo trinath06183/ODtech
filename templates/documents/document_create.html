@@ -1223,6 +1223,8 @@ function documentForm() {
         poRefNumber: '{{ doc.po_reference_number|default_if_none:""|escapejs }}',
         poRefDate: '{% if doc and doc.po_date %}{{ doc.po_date|date:"Y-m-d" }}{% endif %}',
         invoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
+        originalInvoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
+        isConversion: {% if doc and is_conversion %}true{% else %}false{% endif %},
         placeOfSupply: {% if doc %}'{{ doc.place_of_supply|default:"21-Odisha"|escapejs }}'{% else %}(lastSettings ? (lastSettings.place_of_supply || '21-Odisha') : '21-Odisha'){% endif %},
 
         subtotal: 0, taxTotal: 0, grandTotal: 0,
@@ -1423,7 +1425,11 @@ function documentForm() {
                 this.loadDefaultTerms();
             }
 
-            if (!isEditMode && this.docType === 'INV') {
+            if (isConversion && this.docType === 'INV') {
+                this.terms = '';
+                this.termsList.forEach(t => { t.selected = false; t.value = ''; });
+                this.updateTermsString();
+            } else if (!isEditMode && this.docType === 'INV') {
                 this.termsList.forEach(t => t.selected = false);
                 this.updateTermsString();
             }
@@ -1986,10 +1992,30 @@ function documentForm() {
 
         // ── form submit ──────────────────────────────────────────────
         submitForm(action) {
+            if (this.isConversion) {
+                const today = new Date();
+                const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                if (this.invoiceDate === this.originalInvoiceDate && this.invoiceDate !== todayStr) {
+                    alert('Warning: You are generating a new document from an existing one, but the Document Date has not been updated. Please change the date to today\'s date before saving.');
+                    return;
+                }
+            }
+
             if (!this.selectedCustomer) { alert('Please select a customer first.'); return; }
             // Strip blank rows (trailing empty row from auto-append) before saving
             this.items = this.items.filter(it => (it.name || '').trim() !== '');
             if (this.items.length === 0) { alert('Please add at least one line item.'); return; }
+            
+            // Validate HSN code for Invoice/Proforma
+            if (this.docType === 'INV' || this.docType === 'PRO') {
+                for (let i = 0; i < this.items.length; i++) {
+                    if (!(this.items[i].hsn_code || '').trim()) {
+                        alert('HSN code is mandatory for all items in Invoices and Proforma Invoices (Item: ' + this.items[i].name + ').');
+                        return;
+                    }
+                }
+            }
+
             this.formAction = action;
             this.$nextTick(() => document.getElementById('document-main-form').submit());
         }
