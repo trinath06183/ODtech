@@ -342,57 +342,101 @@ def warranty_register(request):
     """Public: display and process the warranty registration form."""
     from .models import WarrantyRegistration
 
+    from documents.models import Document, DocumentItem
+    
+    step = int(request.POST.get('step', 1))
+    errors = []
+    post = request.POST.copy()
+    
     if request.method == 'POST':
-        invoice_number   = request.POST.get('invoice_number', '').strip()
-        serial_number    = request.POST.get('serial_number', '').strip()
-        invoice_date     = request.POST.get('invoice_date', '').strip()
-        invoice_amount   = request.POST.get('invoice_amount', '').strip()
-        company_name     = request.POST.get('company_name', '').strip()
-        gst_number       = request.POST.get('gst_number', '').strip() or None
-        email            = request.POST.get('email', '').strip()
-        contact_number   = request.POST.get('contact_number', '').strip()
-        product_image    = request.FILES.get('product_image')
-        invoice_document = request.FILES.get('invoice_document')
-
-        errors = []
-        if not invoice_number:   errors.append('Invoice number is required.')
-        if not serial_number:    errors.append('Serial number is required.')
-        if not invoice_date:     errors.append('Invoice date is required.')
-        if not invoice_amount:   errors.append('Invoice amount is required.')
-        if not company_name:     errors.append('Company / Customer name is required.')
-        if not email:            errors.append('Email address is required.')
-        if not contact_number:   errors.append('Contact number is required.')
-        if not product_image:    errors.append('Product image is required.')
-        if not invoice_document: errors.append('Invoice document is required.')
-
-        if not errors:
-            try:
-                from decimal import Decimal, InvalidOperation
-                amount = Decimal(invoice_amount)
-            except (InvalidOperation, ValueError):
-                errors.append('Invoice amount must be a valid number.')
-
-        if errors:
-            return render(request, 'inventory/warranty_register.html', {
-                'errors': errors,
-                'post': request.POST,
-            })
-
-        WarrantyRegistration.objects.create(
-            invoice_number=invoice_number,
-            serial_number=serial_number,
-            invoice_date=invoice_date,
-            invoice_amount=invoice_amount,
-            company_name=company_name,
-            gst_number=gst_number,
-            email=email,
-            contact_number=contact_number,
-            product_image=product_image,
-            invoice_document=invoice_document,
-        )
-        return redirect('warranty_register_success')
-
-    return render(request, 'inventory/warranty_register.html', {})
+        if step == 1:
+            invoice_number = request.POST.get('invoice_number', '').strip()
+            invoice_date = request.POST.get('invoice_date', '').strip()
+            invoice_amount = request.POST.get('invoice_amount', '').strip()
+            
+            if not invoice_number: errors.append('Invoice number is required.')
+            if not invoice_date: errors.append('Invoice date is required.')
+            if not invoice_amount: errors.append('Invoice amount is required.')
+            
+            if not errors:
+                try:
+                    from decimal import Decimal
+                    amount = Decimal(invoice_amount)
+                    doc = Document.objects.filter(
+                        number__iexact=invoice_number,
+                        date=invoice_date,
+                        grand_total=amount
+                    ).first()
+                    
+                    if not doc:
+                        errors.append('No matching invoice found. Please check your details.')
+                    else:
+                        step = 2
+                except Exception:
+                    errors.append('Invoice amount must be a valid number.')
+                    
+        elif step == 2:
+            invoice_number = request.POST.get('invoice_number', '').strip()
+            invoice_date = request.POST.get('invoice_date', '').strip()
+            serial_number = request.POST.get('serial_number', '').strip()
+            
+            if not serial_number: errors.append('Serial number is required.')
+            
+            if not errors:
+                doc = Document.objects.filter(number__iexact=invoice_number, date=invoice_date).first()
+                if not doc:
+                    errors.append('Invoice validation failed.')
+                else:
+                    item = DocumentItem.objects.filter(
+                        document=doc,
+                        has_warranty=True,
+                        serial_number__icontains=serial_number
+                    ).first()
+                    
+                    if not item:
+                        errors.append('Serial number not found or does not have warranty on this invoice.')
+                    else:
+                        step = 3
+                        
+        elif step == 3:
+            invoice_number = request.POST.get('invoice_number', '').strip()
+            invoice_date = request.POST.get('invoice_date', '').strip()
+            invoice_amount = request.POST.get('invoice_amount', '').strip()
+            serial_number = request.POST.get('serial_number', '').strip()
+            
+            company_name = request.POST.get('company_name', '').strip()
+            gst_number = request.POST.get('gst_number', '').strip() or None
+            email = request.POST.get('email', '').strip()
+            contact_number = request.POST.get('contact_number', '').strip()
+            product_image = request.FILES.get('product_image')
+            invoice_document = request.FILES.get('invoice_document')
+            
+            if not company_name: errors.append('Company / Customer name is required.')
+            if not email: errors.append('Email address is required.')
+            if not contact_number: errors.append('Contact number is required.')
+            if not product_image: errors.append('Product image is required.')
+            if not invoice_document: errors.append('Invoice document is required.')
+            
+            if not errors:
+                WarrantyRegistration.objects.create(
+                    invoice_number=invoice_number,
+                    serial_number=serial_number,
+                    invoice_date=invoice_date,
+                    invoice_amount=invoice_amount,
+                    company_name=company_name,
+                    gst_number=gst_number,
+                    email=email,
+                    contact_number=contact_number,
+                    product_image=product_image,
+                    invoice_document=invoice_document,
+                )
+                return redirect('warranty_register_success')
+                
+    return render(request, 'inventory/warranty_register.html', {
+        'step': step,
+        'errors': errors,
+        'post': post,
+    })
 
 
 def warranty_register_success(request):

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,10 +54,8 @@
 
     <!-- Header -->
     <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style="background: linear-gradient(135deg,#3B82F6,#8B5CF6);">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-            </svg>
+        <div class="inline-flex items-center justify-center mb-4">
+            <img src="{% static 'img/logo.png' %}" alt="ODtech Logo" class="h-16 mx-auto drop-shadow-lg" onerror="this.style.display='none'">
         </div>
         <h1 class="text-3xl font-bold text-white">Warranty Registration</h1>
         <p class="text-slate-400 mt-2 text-sm">Register your ODtech product warranty. All fields marked * are required.</p>
@@ -77,32 +76,20 @@
 
     <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
+        <input type="hidden" name="step" value="{{ step|default:1 }}">
 
-        <!-- Section 1: Product Details -->
+        {% if step == 1 %}
+        <!-- Step 1: Invoice Validation -->
         <div class="section-card">
             <h2 class="text-white font-semibold text-base mb-4 flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white step-active">1</span>
-                Product Details
+                Invoice Details
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="invoice_number">Invoice Number *</label>
                     <input id="invoice_number" name="invoice_number" type="text" class="input-field" placeholder="e.g. OD-I-2627-06-8245" value="{{ post.invoice_number|default:'' }}" required>
                 </div>
-                <div>
-                    <label for="serial_number">Product Serial Number(s) *</label>
-                    <textarea id="serial_number" name="serial_number" rows="2" class="input-field" placeholder="e.g. SN-XXXX-YYYY, SN-AAAA-BBBB" required>{{ post.serial_number|default:'' }}</textarea>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 2: Purchase Details -->
-        <div class="section-card">
-            <h2 class="text-white font-semibold text-base mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white step-active">2</span>
-                Purchase Details
-            </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="invoice_date">Invoice Date *</label>
                     <input id="invoice_date" name="invoice_date" type="date" class="input-field" value="{{ post.invoice_date|default:'' }}" required>
@@ -113,13 +100,51 @@
                 </div>
             </div>
         </div>
+        <div class="text-center mt-6">
+            <button type="submit" class="btn-primary w-full sm:w-auto">Next: Verify Invoice →</button>
+        </div>
 
-        <!-- Section 3: Company / Personal Details -->
+        {% elif step == 2 %}
+        <!-- Hidden inputs from Step 1 -->
+        <input type="hidden" name="invoice_number" value="{{ post.invoice_number }}">
+        <input type="hidden" name="invoice_date" value="{{ post.invoice_date }}">
+        <input type="hidden" name="invoice_amount" value="{{ post.invoice_amount }}">
+
+        <!-- Step 2: Serial Number Validation -->
+        <div class="section-card">
+            <h2 class="text-white font-semibold text-base mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white step-active">2</span>
+                Product Verification
+            </h2>
+            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mb-4 text-emerald-400 text-sm font-semibold">
+                ✓ Invoice Verified! Please enter the serial number for your product.
+            </div>
+            <div>
+                <label for="serial_number">Product Serial Number *</label>
+                <input id="serial_number" name="serial_number" type="text" class="input-field" placeholder="e.g. SN-XXXX-YYYY" value="{{ post.serial_number|default:'' }}" required>
+            </div>
+        </div>
+        <div class="text-center mt-6 flex gap-4 justify-center">
+            <a href="{% url 'warranty_register' %}" class="btn-primary bg-slate-700 text-slate-300 w-full sm:w-auto text-center block" style="background: rgba(255,255,255,0.1); text-decoration: none;">← Back</a>
+            <button type="submit" class="btn-primary w-full sm:w-auto">Next: Verify Serial →</button>
+        </div>
+
+        {% elif step == 3 %}
+        <!-- Hidden inputs from Step 1 & 2 -->
+        <input type="hidden" name="invoice_number" value="{{ post.invoice_number }}">
+        <input type="hidden" name="invoice_date" value="{{ post.invoice_date }}">
+        <input type="hidden" name="invoice_amount" value="{{ post.invoice_amount }}">
+        <input type="hidden" name="serial_number" value="{{ post.serial_number }}">
+
+        <!-- Step 3: Company / Personal Details -->
         <div class="section-card">
             <h2 class="text-white font-semibold text-base mb-4 flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white step-active">3</span>
                 Company / Customer Details
             </h2>
+            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 mb-4 text-emerald-400 text-sm font-semibold">
+                ✓ Serial Number Verified! Please provide your contact details.
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                     <label for="company_name">Company / Customer Name *</label>
@@ -175,13 +200,13 @@
             </div>
         </div>
 
-        <!-- Submit -->
         <div class="text-center mt-6">
             <button type="submit" class="btn-primary w-full sm:w-auto">
                 ✓ &nbsp;Register My Warranty
             </button>
             <p class="text-slate-500 text-xs mt-4">Your information is stored securely and used only for warranty purposes.</p>
         </div>
+        {% endif %}
     </form>
 
     <div class="text-center mt-8 pb-8">
