@@ -40,4 +40,7 @@ urlpatterns = [
 
     # All products API (for browse modal)
     path('api/all-products/',          views.all_products_api,       name='all_products_api'),
+
+    # Send document to tracking dashboard API
+    path('api/<int:document_id>/send-to-tracker/', views.send_to_tracker_api, name='send_to_tracker_api'),
 ]

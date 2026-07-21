@@ -66,6 +66,14 @@
                 </div>
             </div>
             <div class="flex items-center space-x-3">
+                {% if doc.type == 'QTN' or doc.type == 'PRO' %}
+                <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
+                   class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-emerald-500/20 text-sm" title="Send to Tracking Dashboard"
+                   style="color: #ffffff !important;">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Send to Tracker
+                </button>
+                {% endif %}
                 <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
                    class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-red-500/20 text-sm" title="Open PDF in a new tab"
                    style="color: #ffffff !important;">
@@ -237,5 +245,89 @@
         background: rgba(227,24,55,0.8);
     }
 </style>
+
+<!-- Tracker Modal -->
+<div id="trackerModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-4">Send to Tracking Dashboard</h3>
+        <p class="text-sm text-gray-400 mb-6">Create a new Order in the tracking dashboard. Please confirm or update the mandatory details below.</p>
+        
+        <input type="hidden" id="trackerDocId">
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Order Number *</label>
+                <input type="text" id="trackerOrderNumber" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Customer Phone *</label>
+                <input type="text" id="trackerCustomerPhone" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+            </div>
+        </div>
+        
+        <div class="mt-8 flex justify-end space-x-3">
+            <button type="button" onclick="closeTrackerModal()" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+            <button type="button" onclick="submitTrackerModal()" id="trackerSubmitBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center">
+                Send to Tracker
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openTrackerModal(docId, suggestedOrderNum, customerPhone) {
+    document.getElementById('trackerDocId').value = docId;
+    document.getElementById('trackerOrderNumber').value = suggestedOrderNum || '';
+    document.getElementById('trackerCustomerPhone').value = customerPhone || '';
+    document.getElementById('trackerModal').classList.remove('hidden');
+}
+
+function closeTrackerModal() {
+    document.getElementById('trackerModal').classList.add('hidden');
+}
+
+async function submitTrackerModal() {
+    const docId = document.getElementById('trackerDocId').value;
+    const orderNum = document.getElementById('trackerOrderNumber').value.trim();
+    const phone = document.getElementById('trackerCustomerPhone').value.trim();
+    
+    if (!orderNum || !phone) {
+        alert("Order Number and Customer Phone are required.");
+        return;
+    }
+    
+    const btn = document.getElementById('trackerSubmitBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "Sending...";
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/documents/api/${docId}/send-to-tracker/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                order_number: orderNum,
+                customer_phone: phone
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = data.url;
+        } else {
+            alert("Error: " + data.error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (e) {
+        alert("Network error.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+</script>
 
 {% endblock %}

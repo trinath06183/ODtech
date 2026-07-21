@@ -129,7 +129,6 @@
                             <th class="px-6 py-4 font-medium">Customer</th>
                             <th class="px-6 py-4 font-medium">Date</th>
                             <th class="px-6 py-4 font-medium text-right">Amount</th>
-                            <th class="px-6 py-4 font-medium text-center">Status</th>
                             <th class="px-6 py-4 font-medium text-center">Actions</th>
                         </tr>
                     </thead>
@@ -154,14 +153,6 @@
                             </td>
                             <td class="px-6 py-4 text-gray-400 text-sm">{{ doc.date|date:"d M Y" }}</td>
                             <td class="px-6 py-4 text-right font-bold text-green-400">&#8377; {{ doc.grand_total|floatformat:2 }}</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-2 py-1 rounded-full text-xs font-medium
-                                    {% if doc.status == 'Approved' %}bg-green-500/20 text-green-300
-                                    {% elif doc.status == 'Cancelled' %}bg-red-500/20 text-red-300
-                                    {% else %}bg-yellow-500/20 text-yellow-300{% endif %}">
-                                    {{ doc.status }}
-                                </span>
-                            </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center space-x-2">
                                     <!-- Preview -->
@@ -169,6 +160,13 @@
                                        class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Preview">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
+                                    <!-- Send to Tracker Button (QTN/PRO) -->
+                                    {% if doc.type == 'QTN' or doc.type == 'PRO' %}
+                                    <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
+                                       class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg transition-colors" title="Send to Tracking Dashboard">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    </button>
+                                    {% endif %}
                                     <!-- Edit (all roles) -->
                                     <a href="{% url 'edit_document' doc.id %}"
                                        class="p-2 bg-slate-600/30 hover:bg-slate-600/60 text-gray-300 rounded-lg transition-colors" title="Edit Document">
@@ -210,6 +208,88 @@
         </div>
     </div>
 
-    
+    <!-- Tracker Modal -->
+    <div id="trackerModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4">Send to Tracking Dashboard</h3>
+            <p class="text-sm text-gray-400 mb-6">Create a new Order in the tracking dashboard. Please confirm or update the mandatory details below.</p>
+            
+            <input type="hidden" id="trackerDocId">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Order Number *</label>
+                    <input type="text" id="trackerOrderNumber" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Customer Phone *</label>
+                    <input type="text" id="trackerCustomerPhone" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                </div>
+            </div>
+            
+            <div class="mt-8 flex justify-end space-x-3">
+                <button type="button" onclick="closeTrackerModal()" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+                <button type="button" onclick="submitTrackerModal()" id="trackerSubmitBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center">
+                    Send to Tracker
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openTrackerModal(docId, suggestedOrderNum, customerPhone) {
+        document.getElementById('trackerDocId').value = docId;
+        document.getElementById('trackerOrderNumber').value = suggestedOrderNum || '';
+        document.getElementById('trackerCustomerPhone').value = customerPhone || '';
+        document.getElementById('trackerModal').classList.remove('hidden');
+    }
+
+    function closeTrackerModal() {
+        document.getElementById('trackerModal').classList.add('hidden');
+    }
+
+    async function submitTrackerModal() {
+        const docId = document.getElementById('trackerDocId').value;
+        const orderNum = document.getElementById('trackerOrderNumber').value.trim();
+        const phone = document.getElementById('trackerCustomerPhone').value.trim();
+        
+        if (!orderNum || !phone) {
+            alert("Order Number and Customer Phone are required.");
+            return;
+        }
+        
+        const btn = document.getElementById('trackerSubmitBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "Sending...";
+        btn.disabled = true;
+        
+        try {
+            const response = await fetch(`/documents/api/${docId}/send-to-tracker/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    order_number: orderNum,
+                    customer_phone: phone
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = data.url;
+            } else {
+                alert("Error: " + data.error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        } catch (e) {
+            alert("Network error.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+    </script>
 {% endblock %}
 

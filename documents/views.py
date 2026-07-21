@@ -739,3 +739,54 @@ def cost_sheet(request):
         'products': products,
     })
 
+@require_POST
+@login_required
+def send_to_tracker_api(request, document_id):
+    try:
+        from tracker.models import Order as TrackerOrder, Product as TrackerProduct
+        doc = get_object_or_404(Document, id=document_id)
+        data = json.loads(request.body)
+        order_number = data.get('order_number', '').strip()
+        customer_phone = data.get('customer_phone', '').strip()
+
+        if not order_number or not customer_phone:
+            return JsonResponse({'success': False, 'error': 'Order Number and Customer Phone are required.'})
+
+        if TrackerOrder.objects.filter(order_number=order_number).exists():
+            return JsonResponse({'success': False, 'error': f'Order Number "{order_number}" already exists in Tracking Dashboard.'})
+
+        # Create Order
+        tracker_order = TrackerOrder.objects.create(
+            order_number=order_number,
+            customer_name=doc.contact.name,
+            customer_phone=customer_phone,
+            created_by=request.user,
+            remark=f"Imported from {doc.get_type_display()} {doc.number}"
+        )
+
+        # Create Products
+        sl_no = 1
+        for item in doc.items.all():
+            TrackerProduct.objects.create(
+                order=tracker_order,
+                sl_no=sl_no,
+                item_name=item.name or 'Unknown Product',
+                make_or_model=item.model or item.part_number or '',
+                description=item.description or '',
+                quantity=item.quantity,
+                uom=item.unit or 'Pcs',
+                selling_price_ex_gst=item.unit_price,
+                gst_percentage=item.tax_rate,
+                selling_price_inc_gst=item.unit_price * (1 + item.tax_rate / 100),
+                created_by=request.user
+            )
+            sl_no += 1
+
+        from django.urls import reverse
+        return JsonResponse({
+            'success': True, 
+            'url': reverse('order_detail', args=[tracker_order.id])
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
