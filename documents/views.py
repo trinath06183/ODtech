@@ -8,6 +8,7 @@ from inventory.models import Product
 from contacts.models import Contact
 from config.models import CompanyProfile
 import json
+from django.views.decorators.http import require_POST
 
 # ─── Document List ────────────────────────────────────────────────────────────
 @login_required
@@ -785,7 +786,7 @@ def send_to_tracker_api(request, document_id):
         from django.urls import reverse
         return JsonResponse({
             'success': True, 
-            'url': reverse('order_detail', args=[tracker_order.id])
+            'url': reverse('tracker:order_detail', args=[tracker_order.id])
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
