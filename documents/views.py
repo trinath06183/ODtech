@@ -771,7 +771,7 @@ def send_to_tracker_api(request, document_id):
             TrackerProduct.objects.create(
                 order=tracker_order,
                 sl_no=sl_no,
-                item_name=item.name or 'Unknown Product',
+                item_name=item.name or item.product.name or 'Unknown Product',
                 make_or_model=item.model or item.part_number or '',
                 description=item.description or '',
                 quantity=item.quantity,
