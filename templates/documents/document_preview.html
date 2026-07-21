@@ -66,7 +66,7 @@
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                {% if doc.type == 'QTN' or doc.type == 'PRO' %}
+                {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
                 <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-emerald-500/20 text-sm" title="Send to Tracking Dashboard"
                    style="color: #ffffff !important;">

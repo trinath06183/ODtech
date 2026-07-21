@@ -160,8 +160,8 @@
                                        class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Preview">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
-                                    <!-- Send to Tracker Button (QTN/PRO) -->
-                                    {% if doc.type == 'QTN' or doc.type == 'PRO' %}
+                                    <!-- Send to Tracker Button (QTN/PRO/INV) -->
+                                    {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
                                     <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
                                        class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg transition-colors" title="Send to Tracking Dashboard">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
