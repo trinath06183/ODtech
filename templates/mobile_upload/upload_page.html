@@ -191,6 +191,45 @@
             user-select: none;
         }
 
+        /* Crop Editor Modal */
+        #crop-editor-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+        }
+        #crop-editor-modal.show { display: flex; }
+        .crop-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            color: #fff;
+            background: #111;
+        }
+        .crop-header button {
+            background: none;
+            border: none;
+            color: #3B82F6;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .crop-canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #crop-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            touch-action: none;
+        }
+
         /* Progress */
         .progress-wrap {
             display: none;
@@ -376,6 +415,7 @@
             <div class="auto-crop-wrap" id="auto-crop-wrap">
                 <input type="checkbox" id="auto-crop" checked>
                 <label for="auto-crop">✂️ Auto-Crop Document Edges</label>
+                <button type="button" id="adjust-crop-btn" onclick="openCropEditor()" style="margin-left:auto; padding:6px 12px; font-size:0.85rem; border-radius:6px; border:1px solid #CBD5E1; background:#fff; color:#334155; font-weight:600; cursor:pointer;">Adjust</button>
             </div>
 
             <!-- Upload button -->
@@ -387,10 +427,26 @@
     </div>
 </div>
 
+<!-- Crop Editor Modal -->
+<div id="crop-editor-modal">
+    <div class="crop-header">
+        <button onclick="closeCropEditor()">Cancel</button>
+        <div style="font-weight:bold;">Adjust Corners</div>
+        <button onclick="saveCrop()">Save</button>
+    </div>
+    <div class="crop-canvas-container">
+        <canvas id="crop-canvas"></canvas>
+    </div>
+    <div style="color:#aaa; text-align:center; padding:16px; font-size:0.9rem; background:#111;">
+        Drag corners to perfectly outline the document
+    </div>
+</div>
+
 <script>
     const TOKEN        = "{{ token }}";
     const SUBMIT_URL   = `/mobile/upload/${TOKEN}/submit/`;
     let selectedFile   = null;
+    let manualCropPoints = null; // Store 4 relative points if manual crop used
     let secondsLeft    = {{ session.seconds_remaining|floatformat:0 }};
     let timerInterval  = null;
 
@@ -449,6 +505,8 @@
         // Show auto-crop only for images
         if (file.type.startsWith('image/')) {
             document.getElementById('auto-crop-wrap').classList.add('show');
+            manualCropPoints = null; // Reset manual crop points on new file
+            document.getElementById('adjust-crop-btn').textContent = "Adjust";
         } else {
             document.getElementById('auto-crop-wrap').classList.remove('show');
         }
@@ -460,6 +518,186 @@
 
     document.getElementById('file-input').addEventListener('change', e => onFileSelected(e.target.files[0]));
     document.getElementById('camera-input').addEventListener('change', e => onFileSelected(e.target.files[0]));
+
+    /* ── Crop Editor Logic ───────────────────────────────── */
+    const cropModal = document.getElementById('crop-editor-modal');
+    const canvas = document.getElementById('crop-canvas');
+    const ctx = canvas.getContext('2d');
+    let cropImage = new Image();
+    let renderW, renderH, renderX, renderY;
+    
+    // [tl, tr, br, bl] relative coordinates (0 to 1)
+    let pts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
+    let activePointIdx = -1;
+    const PIN_RADIUS = 20;
+
+    function openCropEditor() {
+        if (!selectedFile) return;
+        cropModal.classList.add('show');
+        
+        cropImage.onload = () => {
+            initCanvas();
+        };
+        cropImage.src = URL.createObjectURL(selectedFile);
+    }
+
+    function closeCropEditor() {
+        cropModal.classList.remove('show');
+    }
+
+    function saveCrop() {
+        manualCropPoints = [...pts];
+        document.getElementById('adjust-crop-btn').textContent = "✓ Adjusted";
+        document.getElementById('auto-crop').checked = false; // Disable auto if manual set
+        closeCropEditor();
+    }
+
+    function initCanvas() {
+        // Resize canvas to match display size
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        
+        // Calculate image rendering size
+        const ratio = Math.min(canvas.width / cropImage.width, canvas.height / cropImage.height);
+        renderW = cropImage.width * ratio;
+        renderH = cropImage.height * ratio;
+        renderX = (canvas.width - renderW) / 2;
+        renderY = (canvas.height - renderH) / 2;
+        
+        // If we previously saved points, use them, otherwise use defaults
+        if (manualCropPoints) {
+            pts = [...manualCropPoints];
+        } else {
+            pts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
+        }
+        
+        drawCanvas();
+    }
+
+    function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw image
+        ctx.drawImage(cropImage, renderX, renderY, renderW, renderH);
+        
+        // Darken overlay
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Cut out polygon
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        pts.forEach((p, i) => {
+            const x = renderX + p[0] * renderW;
+            const y = renderY + p[1] * renderH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        
+        // Draw polygon outline
+        ctx.strokeStyle = '#3B82F6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        pts.forEach((p, i) => {
+            const x = renderX + p[0] * renderW;
+            const y = renderY + p[1] * renderH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Draw corner pins
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#3B82F6';
+        ctx.lineWidth = 4;
+        pts.forEach((p, i) => {
+            const x = renderX + p[0] * renderW;
+            const y = renderY + p[1] * renderH;
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Draw larger transparent hit area for easier touch
+            ctx.beginPath();
+            ctx.arc(x, y, PIN_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = (activePointIdx === i) ? 'rgba(59, 130, 246, 0.3)' : 'transparent';
+            ctx.fill();
+        });
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX = evt.clientX;
+        let clientY = evt.clientY;
+        if (evt.touches && evt.touches.length > 0) {
+            clientX = evt.touches[0].clientX;
+            clientY = evt.touches[0].clientY;
+        }
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    function onPointerDown(e) {
+        const pos = getMousePos(e);
+        activePointIdx = -1;
+        // Find if we hit a pin
+        pts.forEach((p, i) => {
+            const px = renderX + p[0] * renderW;
+            const py = renderY + p[1] * renderH;
+            const dist = Math.sqrt(Math.pow(pos.x - px, 2) + Math.pow(pos.y - py, 2));
+            if (dist <= PIN_RADIUS * 1.5) {
+                activePointIdx = i;
+            }
+        });
+        if (activePointIdx !== -1) drawCanvas();
+    }
+
+    function onPointerMove(e) {
+        if (activePointIdx === -1) return;
+        e.preventDefault(); // Prevent scrolling
+        const pos = getMousePos(e);
+        
+        // Convert back to relative coords
+        let relX = (pos.x - renderX) / renderW;
+        let relY = (pos.y - renderY) / renderH;
+        
+        // Clamp to 0-1
+        relX = Math.max(0, Math.min(1, relX));
+        relY = Math.max(0, Math.min(1, relY));
+        
+        pts[activePointIdx] = [relX, relY];
+        drawCanvas();
+    }
+
+    function onPointerUp(e) {
+        activePointIdx = -1;
+        drawCanvas();
+    }
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    canvas.addEventListener('mousemove', onPointerMove);
+    canvas.addEventListener('mouseup', onPointerUp);
+    canvas.addEventListener('mouseleave', onPointerUp);
+    
+    canvas.addEventListener('touchstart', onPointerDown, {passive: false});
+    canvas.addEventListener('touchmove', onPointerMove, {passive: false});
+    canvas.addEventListener('touchend', onPointerUp);
+
+    // Re-draw canvas on resize
+    window.addEventListener('resize', () => {
+        if (cropModal.classList.contains('show')) {
+            initCanvas();
+        }
+    });
 
     document.getElementById('file-remove').addEventListener('click', () => {
         selectedFile = null;
@@ -497,9 +735,14 @@
 
         const formData = new FormData();
         formData.append('file', selectedFile);
-        const autoCropCheckbox = document.getElementById('auto-crop');
-        if (autoCropCheckbox) {
-            formData.append('auto_crop', autoCropCheckbox.checked ? 'true' : 'false');
+        
+        if (manualCropPoints) {
+            formData.append('crop_points', JSON.stringify(manualCropPoints));
+        } else {
+            const autoCropCheckbox = document.getElementById('auto-crop');
+            if (autoCropCheckbox) {
+                formData.append('auto_crop', autoCropCheckbox.checked ? 'true' : 'false');
+            }
         }
 
         const xhr = new XMLHttpRequest();

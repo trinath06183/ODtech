@@ -33,6 +33,33 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return warped
 
+def manual_crop_document(image_bytes: bytes, points: list) -> bytes:
+    """
+    Crops the document using manually provided relative coordinates.
+    points: list of 4 [x, y] coordinates (0.0 to 1.0)
+    """
+    try:
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if image is None:
+            return image_bytes
+
+        h, w = image.shape[:2]
+        
+        # Convert relative points (0.0-1.0) to absolute pixels
+        abs_points = np.array([
+            [p[0] * w, p[1] * h] for p in points
+        ], dtype="float32")
+
+        warped = four_point_transform(image, abs_points)
+        success, encoded_image = cv2.imencode('.jpg', warped)
+        if success:
+            return encoded_image.tobytes()
+    except Exception as e:
+        print("Manual crop failed:", e)
+        
+    return image_bytes
+
 def auto_crop_document(image_bytes: bytes) -> bytes:
     try:
         nparr = np.frombuffer(image_bytes, np.uint8)

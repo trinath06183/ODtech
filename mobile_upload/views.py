@@ -96,14 +96,29 @@ def mobile_upload_submit(request, token):
 
     uploaded = request.FILES['file']
 
-    # Check for auto_crop flag
+    # Check for crop flags
     auto_crop = request.POST.get('auto_crop') == 'true'
-
-    # Auto-crop document edges if requested and OpenCV is available
-    if auto_crop and uploaded.content_type and uploaded.content_type.startswith('image/'):
+    crop_points_str = request.POST.get('crop_points')
+    
+    crop_points = None
+    if crop_points_str:
+        import json
         try:
-            from mobile_upload.utils import auto_crop_document
-            cropped_bytes = auto_crop_document(uploaded.read())
+            crop_points = json.loads(crop_points_str)
+            if not isinstance(crop_points, list) or len(crop_points) != 4:
+                crop_points = None
+        except Exception:
+            crop_points = None
+
+    # Apply cropping if requested and OpenCV is available
+    if (auto_crop or crop_points) and uploaded.content_type and uploaded.content_type.startswith('image/'):
+        try:
+            from mobile_upload.utils import auto_crop_document, manual_crop_document
+            
+            if crop_points:
+                cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
+            else:
+                cropped_bytes = auto_crop_document(uploaded.read())
             
             # Create a new InMemoryUploadedFile with the processed bytes
             from django.core.files.uploadedfile import InMemoryUploadedFile
