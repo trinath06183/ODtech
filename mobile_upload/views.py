@@ -96,8 +96,34 @@ def mobile_upload_submit(request, token):
 
     uploaded = request.FILES['file']
 
+    # Check for auto_crop flag
+    auto_crop = request.POST.get('auto_crop') == 'true'
+
+    # Auto-crop document edges if requested and OpenCV is available
+    if auto_crop and uploaded.content_type and uploaded.content_type.startswith('image/'):
+        try:
+            from mobile_upload.utils import auto_crop_document
+            cropped_bytes = auto_crop_document(uploaded.read())
+            
+            # Create a new InMemoryUploadedFile with the processed bytes
+            from django.core.files.uploadedfile import InMemoryUploadedFile
+            import os
+            
+            size = len(cropped_bytes)
+            output = BytesIO(cropped_bytes)
+            output.seek(0)
+            
+            uploaded = InMemoryUploadedFile(
+                output, 'ImageField', 
+                os.path.splitext(uploaded.name)[0] + ".jpg", 
+                'image/jpeg', size, None
+            )
+        except Exception as e:
+            print("Failed to auto-crop:", e)
+            uploaded.seek(0) # Reset pointer in case it failed
+
     # Compress if it's an image and larger than 2MB
-    if 'Image' in globals() and Image and uploaded.size > 2 * 1024 * 1024 and uploaded.content_type and uploaded.content_type.startswith('image/'):
+    if 'Image' in globals() and Image and uploaded.size > 2 * 1024 * 1024 and getattr(uploaded, 'content_type', '').startswith('image/'):
         try:
             img = Image.open(uploaded)
             if img.mode != 'RGB': img = img.convert('RGB')

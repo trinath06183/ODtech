@@ -164,6 +164,33 @@
         .upload-btn:active { transform: translateY(0); }
         .upload-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
+        /* Auto Crop Toggle */
+        .auto-crop-wrap {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 16px 0;
+            padding: 10px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+        }
+        .auto-crop-wrap.show { display: flex; }
+        .auto-crop-wrap input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .auto-crop-wrap label {
+            font-size: 0.95rem;
+            color: #334155;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
         /* Progress */
         .progress-wrap {
             display: none;
@@ -345,6 +372,12 @@
                 </div>
             </div>
 
+            <!-- Auto Crop Toggle -->
+            <div class="auto-crop-wrap" id="auto-crop-wrap">
+                <input type="checkbox" id="auto-crop" checked>
+                <label for="auto-crop">✂️ Auto-Crop Document Edges</label>
+            </div>
+
             <!-- Upload button -->
             <button class="upload-btn" id="upload-btn" onclick="submitUpload()">
                 📤 Upload to Desktop
@@ -412,6 +445,13 @@
         document.getElementById('file-size-display').textContent = formatBytes(file.size);
         document.getElementById('file-preview').classList.add('show');
         document.getElementById('upload-btn').classList.add('show');
+        
+        // Show auto-crop only for images
+        if (file.type.startsWith('image/')) {
+            document.getElementById('auto-crop-wrap').classList.add('show');
+        } else {
+            document.getElementById('auto-crop-wrap').classList.remove('show');
+        }
 
         // Update drop zone hint
         document.querySelector('.drop-title').textContent = 'File selected ✓';
@@ -425,6 +465,7 @@
         selectedFile = null;
         document.getElementById('file-preview').classList.remove('show');
         document.getElementById('upload-btn').classList.remove('show');
+        document.getElementById('auto-crop-wrap').classList.remove('show');
         document.getElementById('file-input').value = '';
         document.getElementById('camera-input').value = '';
         document.querySelector('.drop-title').textContent = 'Tap to Choose a File';
@@ -456,6 +497,10 @@
 
         const formData = new FormData();
         formData.append('file', selectedFile);
+        const autoCropCheckbox = document.getElementById('auto-crop');
+        if (autoCropCheckbox) {
+            formData.append('auto_crop', autoCropCheckbox.checked ? 'true' : 'false');
+        }
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', SUBMIT_URL);
