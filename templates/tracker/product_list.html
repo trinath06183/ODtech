@@ -880,11 +880,12 @@
                                     {% endif %}
                                     <div>
                                         <a href="javascript:void(0)" @click.stop="openProductModal('{{ product.id }}')"
+                                            title="{{ product.item_name }}"
                                             class="text-sm font-medium text-indigo-600 hover:text-indigo-900 block truncate max-w-[200px]">{{ product.item_name }}</a>
                                         {% if product.make_or_model %}
-                                        <div class="text-xs font-semibold text-gray-700 truncate max-w-[200px]">M/M: {{ product.make_or_model }}</div>
+                                        <div title="M/M: {{ product.make_or_model }}" class="text-xs font-semibold text-gray-700 truncate max-w-[200px]">M/M: {{ product.make_or_model }}</div>
                                         {% endif %}
-                                        <div class="text-xs text-gray-500 truncate max-w-[200px]">{{ product.description|default:"" }}</div>
+                                        <div title="{{ product.description|default:'' }}" class="text-xs text-gray-500 truncate max-w-[200px]">{{ product.description|default:"" }}</div>
                                         {% if product.user_bookmark and product.user_bookmark.description %}
                                         <div
                                             class="mt-2 bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-800 max-w-[250px]">
