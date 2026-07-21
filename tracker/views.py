@@ -256,9 +256,43 @@ def product_detail_view(request, product_id):
                 supplier.updated_by = request.user
                 supplier.save()
                 
-            else:
-                messages.error(request, 'Error updating supplier option. Please check the form.')
+                # Attach QR-uploaded file if any
+                _apply_qr_upload(request, supplier)
                 
+                if supplier.is_selected:
+                    product.supplier_options.exclude(id=supplier.id).update(is_selected=False)
+                    product.buying_price_ex_gst = supplier.base_price
+                    product.buying_price_inc_gst = supplier.total_inc_gst
+                    product.gst_percentage = supplier.gst_percentage
+                    product.save()
+                return JsonResponse({'success': True})
+            else:
+                errors = {field: error_list[0] for field, error_list in form.errors.items()}
+                return JsonResponse({'success': False, 'errors': errors})
+
+        elif action == 'edit_supplier':
+            option_id = request.POST.get('option_id')
+            option = get_object_or_404(SupplierCostOption, id=option_id, product=product)
+            form = SupplierCostOptionForm(request.POST, request.FILES, instance=option)
+            if form.is_valid():
+                supplier = form.save(commit=False)
+                supplier.updated_by = request.user
+                supplier.save()
+                
+                # Attach QR-uploaded file if any
+                _apply_qr_upload(request, supplier)
+                
+                if supplier.is_selected:
+                    product.supplier_options.exclude(id=supplier.id).update(is_selected=False)
+                    product.buying_price_ex_gst = supplier.base_price
+                    product.buying_price_inc_gst = supplier.total_inc_gst
+                    product.gst_percentage = supplier.gst_percentage
+                    product.save()
+                return JsonResponse({'success': True})
+            else:
+                errors = {field: error_list[0] for field, error_list in form.errors.items()}
+                return JsonResponse({'success': False, 'errors': errors})
+            
         elif action == 'select_supplier':
             option_id = request.POST.get('option_id')
             option = get_object_or_404(SupplierCostOption, id=option_id, product=product)
@@ -485,6 +519,9 @@ def product_modal_detail_view(request, product_id):
                 supplier.updated_by = request.user
                 supplier.save()
                 
+                # Attach QR-uploaded file if any
+                _apply_qr_upload(request, supplier)
+                
                 if supplier.is_selected:
                     product.supplier_options.exclude(id=supplier.id).update(is_selected=False)
                     product.buying_price_ex_gst = supplier.base_price
@@ -504,6 +541,9 @@ def product_modal_detail_view(request, product_id):
                 supplier = form.save(commit=False)
                 supplier.updated_by = request.user
                 supplier.save()
+                
+                # Attach QR-uploaded file if any
+                _apply_qr_upload(request, supplier)
                 
                 if supplier.is_selected:
                     product.supplier_options.exclude(id=supplier.id).update(is_selected=False)
