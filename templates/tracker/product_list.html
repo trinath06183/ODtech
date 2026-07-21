@@ -1209,14 +1209,14 @@
     <!-- ═══════════════════════════════════════════════════════ -->
     <!-- Order Summary Cards                                    -->
     <!-- ═══════════════════════════════════════════════════════ -->
-    <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group">
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
             <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Project</span>
-            <span class="text-lg font-bold text-gray-900 relative z-10">{{ order.customer_name }}</span>
+            <span class="text-lg font-bold text-gray-900 relative z-10 truncate" title="{{ order.customer_name }}">{{ order.customer_name }}</span>
         </div>
         <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group">
@@ -1231,19 +1231,192 @@
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Filtered
-                Count</span>
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Filtered Count</span>
             <span class="text-lg font-bold text-gray-900 relative z-10" x-text="visibleCount"></span>
         </div>
         <div
-            class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group bg-primary/5 border-primary/10">
+            class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group">
             <div
-                class="absolute -right-4 -top-4 w-16 h-16 bg-primary/10 rounded-full transition-transform group-hover:scale-150">
+                class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-primary uppercase tracking-wider mb-1 relative z-10">Total (Inc.
-                GST)</span>
-            <span class="text-2xl font-bold text-primary relative z-10"
-                x-text="'₹' + visibleTotalIncGst.toFixed(2)"></span>
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Purchase (Inc GST)</span>
+            <span class="text-lg font-bold text-gray-900 relative z-10" x-text="'₹' + visibleTotalIncGst.toFixed(2)"></span>
+        </div>
+        <div
+            class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group bg-emerald-50 border-emerald-100">
+            <div
+                class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-100 rounded-full transition-transform group-hover:scale-150">
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1 relative z-10">Profit (Ex. GST)</span>
+            <span class="text-2xl font-bold text-emerald-700 relative z-10"
+                x-text="'₹' + visibleProfitEx.toFixed(2)"></span>
+        </div>
+        <div
+            class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group bg-emerald-50 border-emerald-100">
+            <div
+                class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-100 rounded-full transition-transform group-hover:scale-150">
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1 relative z-10">Profit (Inc. GST)</span>
+            <span class="text-2xl font-bold text-emerald-700 relative z-10"
+                x-text="'₹' + visibleProfitInc.toFixed(2)"></span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- Order Expenses Section                                 -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">Order Expenses</h2>
+                <p class="text-sm text-gray-500">
+                    Grand Total Expenses (Order + Product): 
+                    <span class="font-semibold text-gray-900">₹{{ order_expenses_inc_gst|add:product_expenses_total|default:"0.00" }}</span>
+                </p>
+            </div>
+            <button type="button" @click="openExpenseModal()"
+                class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Add Expense
+            </button>
+        </div>
+        {% if order_expenses %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expense Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount (Ex. GST)</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">GST %</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount (Inc. GST)</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remarks</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for expense in order_expenses %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-medium">{{ expense.expense_name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">₹{{ expense.amount_ex_gst }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ expense.gst_percentage }}%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-semibold">₹{{ expense.amount_inc_gst }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ expense.remark }}</td>
+                        <td class="px-4 py-3 text-sm text-right flex justify-end gap-2">
+                            <button type="button" @click="openExpenseModal('{{ expense.id }}', '{{ expense.expense_name|escapejs }}', '{{ expense.amount_ex_gst }}', '{{ expense.gst_percentage }}', '{{ expense.amount_inc_gst }}', '{{ expense.remark|escapejs }}')"
+                                class="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button type="button" @click="deleteExpense('{{ expense.id }}')"
+                                class="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No order expenses recorded.</p>
+        {% endif %}
+        
+        <div class="mt-8 flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-gray-900">Product Expenses</h2>
+            <div class="text-sm font-semibold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full">
+                Total: ₹{{ product_expenses_total|default:"0.00" }}
+            </div>
+        </div>
+        {% if product_expenses %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expense Description</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for p_exp in product_expenses %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-medium">{{ p_exp.product.item_name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">{{ p_exp.description }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">
+                            {% if p_exp.expense_type == 'PER_UNIT' %}Per Unit (x{{ p_exp.product.quantity }}){% else %}Total Qty{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-semibold">₹{{ p_exp.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No product expenses recorded.</p>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- Expense Modal                                          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div x-show="expenseModalOpen" style="display: none;" class="fixed z-[9999] inset-0 overflow-y-auto"
+        aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="expenseModalOpen" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                aria-hidden="true" @click="expenseModalOpen = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="expenseModalOpen" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title" x-text="expenseModalMode === 'edit' ? 'Edit Order Expense' : 'Add Order Expense'"></h3>
+                </div>
+                <form @submit.prevent="submitExpense" class="mt-5 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Expense Name</label>
+                        <input type="text" x-model="expenseData.expense_name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Amount (Ex. GST)</label>
+                            <input type="number" step="0.01" x-model="expenseData.amount_ex_gst" @input="calcExpenseIncGst()" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">GST %</label>
+                            <input type="number" step="0.01" x-model="expenseData.gst_percentage" @input="calcExpenseIncGst()" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Amount (Inc. GST)</label>
+                        <input type="number" step="0.01" x-model="expenseData.amount_inc_gst" @input="calcExpenseExGst()" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Remarks</label>
+                        <textarea x-model="expenseData.remark" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    </div>
+                    <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                        <button type="submit"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm">Save</button>
+                        <button type="button" @click="expenseModalOpen = false"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -1799,11 +1972,104 @@
 
                                 // ── Bookmark ──
                                 bookmarkModalOpen: false,
-                                    bookmarkProductId: null,
-                                        bookmarkDescription: '',
-                                            bookmarkAction: 'add',
+                                bookmarkProductId: null,
+                                bookmarkDescription: '',
+                                bookmarkAction: 'add',
 
-                                                // ── Advanced Export ──
+                                // ── Expense ──
+                                expenseModalOpen: false,
+                                expenseModalMode: 'add',
+                                expenseEditId: null,
+                                expenseData: {
+                                    expense_name: '',
+                                    amount_ex_gst: 0,
+                                    gst_percentage: 18,
+                                    amount_inc_gst: 0,
+                                    remark: ''
+                                },
+                                openExpenseModal(id='', name='', ex='0', gst='18', inc='0', remark='') {
+                                    if (id) {
+                                        this.expenseModalMode = 'edit';
+                                        this.expenseEditId = id;
+                                        this.expenseData = {
+                                            expense_name: name,
+                                            amount_ex_gst: parseFloat(ex) || 0,
+                                            gst_percentage: parseFloat(gst) || 18,
+                                            amount_inc_gst: parseFloat(inc) || 0,
+                                            remark: remark
+                                        };
+                                    } else {
+                                        this.expenseModalMode = 'add';
+                                        this.expenseEditId = null;
+                                        this.expenseData = {
+                                            expense_name: '',
+                                            amount_ex_gst: 0,
+                                            gst_percentage: 18,
+                                            amount_inc_gst: 0,
+                                            remark: ''
+                                        };
+                                    }
+                                    this.expenseModalOpen = true;
+                                },
+                                calcExpenseIncGst() {
+                                    const ex = parseFloat(this.expenseData.amount_ex_gst) || 0;
+                                    const gst = parseFloat(this.expenseData.gst_percentage) || 0;
+                                    this.expenseData.amount_inc_gst = (ex * (1 + gst / 100)).toFixed(2);
+                                },
+                                calcExpenseExGst() {
+                                    const inc = parseFloat(this.expenseData.amount_inc_gst) || 0;
+                                    const gst = parseFloat(this.expenseData.gst_percentage) || 0;
+                                    this.expenseData.amount_ex_gst = (inc / (1 + gst / 100)).toFixed(2);
+                                },
+                                async submitExpense() {
+                                    try {
+                                        const url = this.expenseModalMode === 'edit' 
+                                            ? '/tracker/api/order/expense/' + this.expenseEditId + '/edit/'
+                                            : '/tracker/api/order/{{ order.id }}/expense/add/';
+                                        const response = await fetch(url, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                            },
+                                            body: JSON.stringify(this.expenseData)
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                            window.location.reload();
+                                        } else {
+                                            if (window.showGlobalNotification) window.showGlobalNotification(data.error || 'Failed to add expense', 'error');
+                                            else alert(data.error || 'Failed to add expense');
+                                        }
+                                    } catch (e) {
+                                        if (window.showGlobalNotification) window.showGlobalNotification('An error occurred', 'error');
+                                        else alert('An error occurred');
+                                    }
+                                },
+                                async deleteExpense(expenseId) {
+                                    if (!confirm('Are you sure you want to delete this expense?')) return;
+                                    try {
+                                        const response = await fetch('/tracker/api/order/expense/' + expenseId + '/delete/', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                            }
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                            window.location.reload();
+                                        } else {
+                                            if (window.showGlobalNotification) window.showGlobalNotification(data.error || 'Failed to delete expense', 'error');
+                                            else alert(data.error || 'Failed to delete expense');
+                                        }
+                                    } catch (e) {
+                                        if (window.showGlobalNotification) window.showGlobalNotification('An error occurred', 'error');
+                                        else alert('An error occurred');
+                                    }
+                                },
+
+                                // ── Advanced Export ──
                                                 exportModalOpen: false,
                                                     exportLots: [],
                                                         exportHeaders: [
@@ -1831,6 +2097,13 @@
                                                             visibleCount: 0,
                                                                 visibleTotalExGst: 0,
                                                                     visibleTotalIncGst: 0,
+                                                                    visibleSellTotalEx: 0,
+                                                                    visibleSellTotalInc: 0,
+                                                                    orderExpensesEx: parseFloat('{{ order_expenses_ex_gst|default:"0" }}'),
+                                                                    orderExpensesInc: parseFloat('{{ order_expenses_inc_gst|default:"0" }}'),
+                                                                    productExpensesTotal: parseFloat('{{ product_expenses_total|default:"0" }}'),
+                                                                    visibleProfitEx: 0,
+                                                                    visibleProfitInc: 0,
 
                                                                         // ── Product Detail Modal ──
                                                                         productModalOpen: false,
@@ -2327,6 +2600,8 @@
         let count = 0;
         let totalEx = 0;
         let totalInc = 0;
+        let totalSellEx = 0;
+        let totalSellInc = 0;
         let newLotTotals = {};
         let lotsWithMatches = new Set();
         this.isSearching = !!(this.searchName || this.searchSpec || this.priceMin || this.priceMax || this.searchBrands.length > 0 || this.searchSupplier || this.searchStatus || this.showBookmarkedOnly || this.showUnpricedOnly);
@@ -2349,6 +2624,8 @@
 
                 totalEx += qty * basePrice;
                 totalInc += qty * incPrice;
+                totalSellEx += qty * sellPriceEx;
+                totalSellInc += qty * sellPriceInc;
 
                 const lotId = row.dataset.lotId || 'unassigned';
                 lotsWithMatches.add(lotId);
@@ -2376,6 +2653,12 @@
         this.visibleCount = count;
         this.visibleTotalExGst = totalEx;
         this.visibleTotalIncGst = totalInc;
+        this.visibleSellTotalEx = totalSellEx;
+        this.visibleSellTotalInc = totalSellInc;
+        
+        // Calculate Profit
+        this.visibleProfitEx = totalSellEx - totalEx - this.orderExpensesEx - this.productExpensesTotal;
+        this.visibleProfitInc = totalSellInc - totalInc - this.orderExpensesInc - this.productExpensesTotal;
     },
 
     clearFilters() {

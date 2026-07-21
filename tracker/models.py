@@ -406,6 +406,23 @@ class PriceApprovalRequest(models.Model):
         return f"Price Request for {self.product.item_name} by {self.requested_by}"
 
 
+class OrderExpense(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='expenses')
+    expense_name = models.CharField(max_length=255)
+    amount_ex_gst = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    gst_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=18.00)
+    amount_inc_gst = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    remark = models.TextField(blank=True, null=True)
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='order_expenses_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.expense_name} - {self.order.order_number}"
+
+
 class UserNote(models.Model):
     """Private note visible only to the owning user."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -55,7 +55,6 @@
                 <th class="px-6 py-3 text-left">Document</th>
                 <th class="px-6 py-3 text-left">Category</th>
                 <th class="px-6 py-3 text-left">Type</th>
-                <th class="px-6 py-3 text-left">Status</th>
                 <th class="px-6 py-3 text-left">Size</th>
                 <th class="px-6 py-3 text-left">Expiry</th>
                 <th class="px-6 py-3 text-left">Uploaded</th>
@@ -92,9 +91,6 @@
                 <td class="px-6 py-4 text-slate-600">{{ doc.category.name }}</td>
                 <td class="px-6 py-4">
                     <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{{ doc.get_document_type_display }}</span>
-                </td>
-                <td class="px-6 py-4">
-                    {{ doc.approval_status|approval_badge }}
                 </td>
                 <td class="px-6 py-4 text-xs text-slate-500">{{ doc.file_size|file_size }}</td>
                 <td class="px-6 py-4 text-xs {% if doc.expiry_date %}{{ doc.expiry_date|expiry_color }}{% else %}text-slate-400{% endif %}">

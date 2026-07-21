@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% block title %}Financial Dashboard — ODtech ERP{% endblock %}
+{% block header %}Financial Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-[1600px] mx-auto space-y-6">
+
+    {# ── Period Selector ─────────────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center gap-3">
+        <span class="text-sm font-semibold text-slate-600 mr-1">Period:</span>
+        {% for key, lbl in periods %}
+        <a href="?period={{ key }}"
+           class="px-4 py-1.5 rounded-full text-sm font-semibold transition
+                  {% if period == key %}bg-blue-600 text-white shadow{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+            {{ lbl }}
+        </a>
+        {% endfor %}
+        <form method="get" class="flex items-center gap-2 ml-auto" id="custom-form">
+            <input type="hidden" name="period" value="custom">
+            <input type="date" name="start" value="{{ start_date|date:'Y-m-d' }}"
+                   class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 text-slate-700 focus:ring-blue-500 focus:border-blue-500">
+            <span class="text-slate-400 text-sm">to</span>
+            <input type="date" name="end" value="{{ end_date|date:'Y-m-d' }}"
+                   class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 text-slate-700 focus:ring-blue-500 focus:border-blue-500">
+            <button type="submit" class="px-4 py-1.5 bg-slate-700 text-white text-sm rounded-lg font-semibold hover:bg-slate-800 transition">Apply</button>
+        </form>
+    </div>
+
+    {# ── Period Badge ─────────────────────────────────────────────────────── #}
+    <div class="flex items-center gap-2 text-slate-500 text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Showing data for: <span class="font-bold text-slate-800">{{ label }}</span>
+        ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})
+    </div>
+
+    {# ── Top KPI Row ──────────────────────────────────────────────────────── #}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        {# Total Sales #}
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-full -translate-y-6 translate-x-6"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                </div>
+                <span class="text-sm font-medium text-slate-500">Total Sales</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-800">₹{{ total_sales|floatformat:0 }}</div>
+            <div class="text-xs text-slate-400 mt-1">{{ sales_count }} invoice{{ sales_count|pluralize }}</div>
+        </div>
+
+        {# Total Purchases #}
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-purple-50 rounded-full -translate-y-6 translate-x-6"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                </div>
+                <span class="text-sm font-medium text-slate-500">Total Purchases</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-800">₹{{ total_purchases|floatformat:0 }}</div>
+            <div class="text-xs text-slate-400 mt-1">{{ purchases_count }} purchase order{{ purchases_count|pluralize }}</div>
+        </div>
+
+        {# Total Expenses #}
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-orange-50 rounded-full -translate-y-6 translate-x-6"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </div>
+                <span class="text-sm font-medium text-slate-500">Total Expenses</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-800">₹{{ total_expenses|floatformat:0 }}</div>
+            <div class="text-xs text-slate-400 mt-1">{{ expenses_count }} expense{{ expenses_count|pluralize }}</div>
+        </div>
+
+        {# Payments Received #}
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-full -translate-y-6 translate-x-6"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <span class="text-sm font-medium text-slate-500">Payments Received</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-800">₹{{ total_payments_received|floatformat:0 }}</div>
+            <div class="text-xs text-slate-400 mt-1">{{ payments_count }} transaction{{ payments_count|pluralize }}</div>
+        </div>
+
+    </div>
+
+    {# ── P&L Row ───────────────────────────────────────────────────────────── #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        {# Gross Profit #}
+        <div class="rounded-2xl p-6 shadow-sm border {% if gross_profit >= 0 %}bg-emerald-600 border-emerald-500{% else %}bg-red-600 border-red-500{% endif %}">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-emerald-100 text-sm font-semibold uppercase tracking-wider">Gross Profit</span>
+                <span class="text-xs px-2 py-1 rounded-full bg-white/20 text-white font-bold">
+                    {{ gross_margin_pct|floatformat:1 }}%
+                </span>
+            </div>
+            <div class="text-3xl font-black text-white mb-2">
+                {% if gross_profit >= 0 %}+{% endif %}₹{{ gross_profit|floatformat:0 }}
+            </div>
+            <p class="text-emerald-100 text-xs">Sales excl. tax (₹{{ total_sales_subtotal|floatformat:0 }}) − Purchases (₹{{ total_purchases|floatformat:0 }})</p>
+        </div>
+
+        {# Net Profit #}
+        <div class="rounded-2xl p-6 shadow-sm border {% if net_profit >= 0 %}bg-blue-600 border-blue-500{% else %}bg-red-700 border-red-600{% endif %}">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-blue-100 text-sm font-semibold uppercase tracking-wider">Net Profit</span>
+                <span class="text-xs px-2 py-1 rounded-full bg-white/20 text-white font-bold">
+                    {{ net_margin_pct|floatformat:1 }}%
+                </span>
+            </div>
+            <div class="text-3xl font-black text-white mb-2">
+                {% if net_profit >= 0 %}+{% endif %}₹{{ net_profit|floatformat:0 }}
+            </div>
+            <p class="text-blue-100 text-xs">Gross Profit − Expenses (₹{{ total_expenses|floatformat:0 }})</p>
+        </div>
+
+        {# Outstanding Receivables #}
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Outstanding</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if outstanding_receivables > 0 %}bg-amber-100 text-amber-700{% else %}bg-emerald-100 text-emerald-700{% endif %} font-bold">
+                    {% if outstanding_receivables > 0 %}Pending{% else %}Clear{% endif %}
+                </span>
+            </div>
+            <div class="text-3xl font-black text-slate-800 mb-2">₹{{ outstanding_receivables|floatformat:0 }}</div>
+            <p class="text-slate-400 text-xs">Total Sales − Payments Received</p>
+            <div class="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
+                {% if total_sales > 0 %}
+                <div class="h-2 bg-emerald-500 rounded-full" style="width: {{ total_payments_received|floatformat:0|default:0 }}px"
+                     data-sales="{{ total_sales }}" data-paid="{{ total_payments_received }}" id="payment-bar"></div>
+                {% endif %}
+            </div>
+            <div class="flex justify-between text-xs text-slate-400 mt-1">
+                <span>Paid: ₹{{ total_payments_received|floatformat:0 }}</span>
+                <span>Total: ₹{{ total_sales|floatformat:0 }}</span>
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Middle Row: Trend Chart + Expense Breakdown ─────────────────────── #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {# Monthly Trend Chart #}
+        <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg mb-1">6-Month Trend</h3>
+            <p class="text-slate-400 text-sm mb-6">Sales vs Expenses over the last 6 months</p>
+            <div id="trend-chart" class="w-full" style="height: 220px;"></div>
+        </div>
+
+        {# Expense Breakdown #}
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg mb-1">Expense Breakdown</h3>
+            <p class="text-slate-400 text-sm mb-4">Top categories (Approved)</p>
+
+            {# Daily vs Fixed #}
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="bg-orange-50 rounded-xl p-3 text-center border border-orange-100">
+                    <div class="text-xs text-orange-500 font-semibold mb-1">Daily</div>
+                    <div class="text-lg font-bold text-orange-700">₹{{ daily_expenses|floatformat:0 }}</div>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
+                    <div class="text-xs text-purple-500 font-semibold mb-1">Fixed Cost</div>
+                    <div class="text-lg font-bold text-purple-700">₹{{ fixed_expenses|floatformat:0 }}</div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                {% for exp in expense_by_type %}
+                {% with pct=exp.total|floatformat:0 %}
+                <div>
+                    <div class="flex justify-between text-xs text-slate-600 mb-1">
+                        <span class="font-medium truncate pr-2">{{ exp.expense_type }}</span>
+                        <span class="font-bold text-slate-800 whitespace-nowrap">₹{{ exp.total|floatformat:0 }}</span>
+                    </div>
+                    <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-1.5 bg-orange-400 rounded-full expense-bar" data-total="{{ total_expenses }}" data-val="{{ exp.total }}"></div>
+                    </div>
+                </div>
+                {% endwith %}
+                {% empty %}
+                <p class="text-slate-400 text-sm text-center py-4">No approved expenses in this period.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Bottom Row: Document Summary + Top Customers ─────────────────────── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {# Document Summary Table #}
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg mb-5">Transaction Summary</h3>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                        <th class="pb-3 text-left font-semibold">Type</th>
+                        <th class="pb-3 text-right font-semibold">Count</th>
+                        <th class="pb-3 text-right font-semibold">Value (₹)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    <tr class="py-3 hover:bg-blue-50/50 transition">
+                        <td class="py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>Invoices (INV + PRO)</td>
+                        <td class="py-3 text-right font-mono text-slate-600">{{ sales_count }}</td>
+                        <td class="py-3 text-right font-mono font-bold text-blue-700">₹{{ total_sales|floatformat:0 }}</td>
+                    </tr>
+                    <tr class="hover:bg-purple-50/50 transition">
+                        <td class="py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>Purchase Orders</td>
+                        <td class="py-3 text-right font-mono text-slate-600">{{ purchases_count }}</td>
+                        <td class="py-3 text-right font-mono font-bold text-purple-700">₹{{ total_purchases|floatformat:0 }}</td>
+                    </tr>
+                    <tr class="hover:bg-yellow-50/50 transition">
+                        <td class="py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block"></span>Quotations</td>
+                        <td class="py-3 text-right font-mono text-slate-600">{{ quotations_count }}</td>
+                        <td class="py-3 text-right font-mono font-bold text-yellow-700">₹{{ total_quotations|floatformat:0 }}</td>
+                    </tr>
+                    <tr class="hover:bg-red-50/50 transition">
+                        <td class="py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>Credit Notes</td>
+                        <td class="py-3 text-right font-mono text-slate-600">—</td>
+                        <td class="py-3 text-right font-mono font-bold text-red-600">₹{{ credit_notes|floatformat:0 }}</td>
+                    </tr>
+                    <tr class="hover:bg-green-50/50 transition">
+                        <td class="py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>Debit Notes</td>
+                        <td class="py-3 text-right font-mono text-slate-600">—</td>
+                        <td class="py-3 text-right font-mono font-bold text-emerald-600">₹{{ debit_notes|floatformat:0 }}</td>
+                    </tr>
+                    <tr class="hover:bg-orange-50/50 transition">
+                        <td class="py-3 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block"></span>Expenses (Approved)</td>
+                        <td class="py-3 text-right font-mono text-slate-600">{{ expenses_count }}</td>
+                        <td class="py-3 text-right font-mono font-bold text-orange-600">₹{{ total_expenses|floatformat:0 }}</td>
+                    </tr>
+                    <tr class="bg-slate-50 font-bold border-t-2 border-slate-200">
+                        <td class="py-3 text-slate-800">Net Profit / Loss</td>
+                        <td class="py-3"></td>
+                        <td class="py-3 text-right font-mono text-lg {% if net_profit >= 0 %}text-emerald-700{% else %}text-red-700{% endif %}">
+                            {% if net_profit >= 0 %}+{% endif %}₹{{ net_profit|floatformat:0 }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {# Top Customers #}
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg mb-1">Top Customers</h3>
+            <p class="text-slate-400 text-sm mb-5">By invoice value in this period</p>
+
+            {% if top_customers %}
+            <div class="space-y-4">
+                {% for c in top_customers %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1.5">
+                        <span class="font-semibold text-slate-700 truncate pr-4">{{ c.contact__name }}</span>
+                        <span class="font-bold text-blue-700 whitespace-nowrap">₹{{ c.total|floatformat:0 }}</span>
+                    </div>
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full customer-bar"
+                             data-max="{{ top_customers.0.total }}" data-val="{{ c.total }}"></div>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">{{ c.count }} invoice{{ c.count|pluralize }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm text-center py-10">No invoices in this period.</p>
+            {% endif %}
+
+            {# Tax summary #}
+            <div class="mt-6 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
+                <div class="bg-slate-50 rounded-xl p-3 text-center">
+                    <div class="text-xs text-slate-500 mb-1 font-medium">Total Tax Collected</div>
+                    <div class="text-base font-bold text-slate-800">₹{{ total_sales_tax|floatformat:0 }}</div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-3 text-center">
+                    <div class="text-xs text-slate-500 mb-1 font-medium">Sales (excl. tax)</div>
+                    <div class="text-base font-bold text-slate-800">₹{{ total_sales_subtotal|floatformat:0 }}</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ── Payment progress bar ──────────────────────────────────────────────
+    const bar = document.getElementById('payment-bar');
+    if (bar) {
+        const sales = parseFloat(bar.dataset.sales) || 1;
+        const paid  = parseFloat(bar.dataset.paid) || 0;
+        bar.style.width = Math.min((paid / sales) * 100, 100) + '%';
+    }
+
+    // ── Expense bars ─────────────────────────────────────────────────────
+    document.querySelectorAll('.expense-bar').forEach(el => {
+        const total = parseFloat(el.dataset.total) || 1;
+        const val   = parseFloat(el.dataset.val) || 0;
+        el.style.width = Math.min((val / total) * 100, 100) + '%';
+    });
+
+    // ── Customer bars ─────────────────────────────────────────────────────
+    document.querySelectorAll('.customer-bar').forEach(el => {
+        const max = parseFloat(el.dataset.max) || 1;
+        const val = parseFloat(el.dataset.val) || 0;
+        el.style.width = Math.min((val / max) * 100, 100) + '%';
+    });
+
+    // ── Monthly Trend ApexChart ───────────────────────────────────────────
+    const trendData = {{ monthly_trend|safe }};
+    const months    = trendData.map(d => d.month);
+    const sales     = trendData.map(d => d.sales);
+    const expenses  = trendData.map(d => d.expenses);
+    const profits   = trendData.map(d => d.profit);
+
+    const options = {
+        series: [
+            { name: 'Sales', type: 'bar', data: sales },
+            { name: 'Expenses', type: 'bar', data: expenses },
+            { name: 'Net Profit', type: 'line', data: profits },
+        ],
+        chart: {
+            height: 220,
+            type: 'line',
+            stacked: false,
+            toolbar: { show: false },
+            fontFamily: 'Outfit, sans-serif',
+        },
+        colors: ['#3B82F6', '#F97316', '#10B981'],
+        plotOptions: {
+            bar: { columnWidth: '55%', borderRadius: 4 }
+        },
+        stroke: {
+            width: [0, 0, 2.5],
+            curve: 'smooth',
+        },
+        fill: {
+            opacity: [0.85, 0.85, 1],
+        },
+        markers: {
+            size: [0, 0, 4],
+        },
+        xaxis: {
+            categories: months,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { style: { fontSize: '11px', colors: '#94a3b8' } },
+        },
+        yaxis: {
+            labels: {
+                formatter: val => '₹' + (val >= 100000 ? (val / 100000).toFixed(1) + 'L' : val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val),
+                style: { fontSize: '11px', colors: '#94a3b8' },
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            fontSize: '12px',
+        },
+        grid: {
+            borderColor: '#f1f5f9',
+            strokeDashArray: 4,
+        },
+        tooltip: {
+            y: {
+                formatter: val => '₹' + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 0 })
+            }
+        },
+        dataLabels: { enabled: false },
+    };
+
+    new ApexCharts(document.querySelector('#trend-chart'), options).render();
+});
+</script>
+{% endblock %}

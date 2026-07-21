@@ -137,16 +137,7 @@
                     <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
                     <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">&#8377; {{ doc.grand_total|indian_currency }}</td>
                 </tr>
-                {% if doc.type == 'INV' or doc.type == 'PRO' %}
-                <tr>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-top: none; font-size: 10px; color: #10B981; font-weight: bold;">Amount Paid</td>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 10px; color: #10B981; font-weight: bold;">&#8377; {{ doc.amount_paid|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-top: none; font-size: 10px; color: #EF4444; font-weight: bold;">Balance Due</td>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 10px; color: #EF4444; font-weight: bold;">&#8377; {{ doc.balance_due|indian_currency }}</td>
-                </tr>
-                {% endif %}
+
             </table>
         </td>
     </tr>
@@ -165,6 +156,7 @@
 {# ── Terms & Signature row ── #}
 <div class="info-grid" style="margin-top: 15px; margin-bottom: 10px;">
     <div class="info-col" style="width: 55%; padding-right: 20px;">
+        {% if doc.type != 'PO' %}
         <div class="text-red mb-1" style="font-size: 12px; font-weight: bold;">Terms And Conditions</div>
         {% if doc.terms_list %}
         <ol style="font-size: 9px; line-height: 1.4; padding-left: 14px; margin: 0;">
@@ -172,6 +164,7 @@
             <li style="margin-bottom: 2px;">{{ term }}</li>
             {% endfor %}
         </ol>
+        {% endif %}
         {% endif %}
     </div>
     <div class="info-col" style="width: 45%; text-align: right; vertical-align: top;">

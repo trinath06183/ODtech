@@ -138,16 +138,7 @@
                         <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
                         <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">&#8377; <span>{{ doc.grand_total|indian_currency }}</span></td>
                     </tr>
-                    {% if doc.type == 'INV' or doc.type == 'PRO' %}
-                    <tr>
-                        <td style="padding: 4px 6px; border: 1px solid #ddd; border-top: none; font-size: 10px; color: #10B981; font-weight: bold;">Amount Paid</td>
-                        <td style="padding: 4px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 10px; color: #10B981; font-weight: bold;">&#8377; {{ doc.amount_paid|indian_currency }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 4px 6px; border: 1px solid #ddd; border-top: none; font-size: 10px; color: #EF4444; font-weight: bold;">Balance Due</td>
-                        <td style="padding: 4px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 10px; color: #EF4444; font-weight: bold;">&#8377; {{ doc.balance_due|indian_currency }}</td>
-                    </tr>
-                    {% endif %}
+
                 {% else %}
                     <tr>
                         <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Total</td>

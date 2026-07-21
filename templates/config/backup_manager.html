@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block header %}Backup & Restore{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto">
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for msg in messages %}
+        <div class="px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
+            {% if msg.tags == 'error' %}bg-red-500/15 text-red-700 border border-red-500/30
+            {% else %}bg-emerald-500/15 text-emerald-700 border border-emerald-500/30{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left: Backup List & Generator -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">System Backups</h2>
+                        <p class="text-sm text-slate-500 mt-1">Daily snapshots of your database and media files.</p>
+                    </div>
+                    <form method="post" action="{% url 'backup_create' %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="this.innerHTML='Generating...'; this.disabled=true; this.form.submit();"
+                                class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Generate Now
+                        </button>
+                    </form>
+                </div>
+
+                {% if backups %}
+                <div class="overflow-hidden rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
+                                <th class="py-3 px-4 font-semibold">Backup File</th>
+                                <th class="py-3 px-4 font-semibold">Size</th>
+                                <th class="py-3 px-4 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-slate-700 divide-y divide-slate-100">
+                            {% for backup in backups %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-4 px-4 font-mono text-blue-600">{{ backup.name }}</td>
+                                <td class="py-4 px-4">{{ backup.size|filesizeformat }}</td>
+                                <td class="py-4 px-4 text-right">
+                                    <a href="{% url 'backup_download' backup.name %}" 
+                                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition font-medium">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                        Download
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="py-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <svg class="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                    <p class="text-slate-500 font-medium">No backups found.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Restore -->
+        <div class="space-y-6">
+            <div class="bg-red-50 rounded-2xl p-6 border border-red-100 shadow-sm">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="p-2 bg-red-100 rounded-lg text-red-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-red-900">Restore System</h3>
+                        <p class="text-sm text-red-700/80 mt-1 leading-relaxed">
+                            Warning: Restoring will instantly drop your current database and overwrite media files. Active users will be momentarily disconnected.
+                        </p>
+                    </div>
+                </div>
+
+                <form method="post" action="{% url 'backup_restore' %}" enctype="multipart/form-data" class="mt-6" onsubmit="return confirm('Are you absolutely sure you want to restore? Your current data will be PERMANENTLY OVERWRITTEN.');">
+                    {% csrf_token %}
+                    <label class="block text-sm font-semibold text-red-900 mb-2">Upload Backup File (.tar.gz)</label>
+                    <input type="file" name="backup_file" accept=".tar.gz" required
+                           class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white file:text-red-700 hover:file:bg-red-50 bg-white/50 border border-red-200 rounded-lg p-2 mb-4">
+                           
+                    <button type="submit" 
+                            class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Start Restoration
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

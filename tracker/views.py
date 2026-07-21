@@ -9,7 +9,7 @@ from django.views.generic import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
-from .models import Order, Lot, Product, SupplierCostOption, ProductBookmark, Notification, InternalNote, AuditLog, PriceApprovalRequest, Task
+from .models import Order, Lot, Product, SupplierCostOption, ProductBookmark, Notification, InternalNote, AuditLog, PriceApprovalRequest, Task, OrderExpense
 from .forms import OrderForm, LotForm, ProductForm, SupplierCostOptionForm, CSVUploadForm, ProductPricingForm
 from django.views.decorators.http import require_POST
 import json
@@ -80,6 +80,19 @@ def _build_product_list_context(request, products_qs, order, lot=None):
             .values_list('location', flat=True)
             .distinct()
     ))
+    
+    # Fetch Order Expenses
+    from .models import OrderExpense, ProductExpense
+    order_expenses = OrderExpense.objects.filter(order=order)
+    order_expenses_ex_gst = sum(e.amount_ex_gst for e in order_expenses)
+    order_expenses_inc_gst = sum(e.amount_inc_gst for e in order_expenses)
+
+    # Fetch Product Expenses
+    product_expenses = ProductExpense.objects.filter(product__order=order).select_related('product')
+    product_expenses_total = sum(
+        (e.amount * e.product.quantity) if e.expense_type == 'PER_UNIT' else e.amount 
+        for e in product_expenses
+    )
 
     return {
         'order': order,
@@ -89,6 +102,11 @@ def _build_product_list_context(request, products_qs, order, lot=None):
         'brands': sorted(brands),
         'suppliers': sorted(suppliers),
         'locations': locations,
+        'order_expenses': order_expenses,
+        'order_expenses_ex_gst': order_expenses_ex_gst,
+        'order_expenses_inc_gst': order_expenses_inc_gst,
+        'product_expenses': product_expenses,
+        'product_expenses_total': product_expenses_total,
     }
 
 
@@ -1097,6 +1115,47 @@ def mark_notification_read_api(request, notification_id):
     notif.is_read = True
     notif.save()
     return JsonResponse({'success': True})
+
+@login_required
+@require_POST
+def add_order_expense_api(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+        expense_name = data.get('expense_name', '').strip()
+        amount_ex_gst = data.get('amount_ex_gst', 0)
+        gst_percentage = data.get('gst_percentage', 18)
+        amount_inc_gst = data.get('amount_inc_gst', 0)
+        remark = data.get('remark', '').strip()
+        
+        if not expense_name:
+            return JsonResponse({'success': False, 'error': 'Expense name is required'}, status=400)
+            
+        from .models import OrderExpense
+        OrderExpense.objects.create(
+            order=order,
+            expense_name=expense_name,
+            amount_ex_gst=amount_ex_gst,
+            gst_percentage=gst_percentage,
+            amount_inc_gst=amount_inc_gst,
+            remark=remark,
+            created_by=request.user
+        )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def delete_order_expense_api(request, expense_id):
+    from .models import OrderExpense
+    expense = get_object_or_404(OrderExpense, id=expense_id)
+    try:
+        expense.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 
 @login_required
 @require_POST
@@ -2659,3 +2718,48 @@ def bulk_update_stages_api(request):
 
     return JsonResponse({'success': True, 'updated_count': updated_count})
 
+
+@require_POST
+@login_required
+def add_order_expense_api(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+        expense = OrderExpense.objects.create(
+            order=order,
+            expense_name=data.get('expense_name', ''),
+            amount_ex_gst=data.get('amount_ex_gst', 0),
+            gst_percentage=data.get('gst_percentage', 18),
+            amount_inc_gst=data.get('amount_inc_gst', 0),
+            remark=data.get('remark', ''),
+            created_by=request.user
+        )
+        return JsonResponse({'success': True, 'expense_id': str(expense.id)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_POST
+@login_required
+def edit_order_expense_api(request, expense_id):
+    expense = get_object_or_404(OrderExpense, id=expense_id)
+    try:
+        data = json.loads(request.body)
+        expense.expense_name = data.get('expense_name', expense.expense_name)
+        expense.amount_ex_gst = data.get('amount_ex_gst', expense.amount_ex_gst)
+        expense.gst_percentage = data.get('gst_percentage', expense.gst_percentage)
+        expense.amount_inc_gst = data.get('amount_inc_gst', expense.amount_inc_gst)
+        expense.remark = data.get('remark', expense.remark)
+        expense.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_POST
+@login_required
+def delete_order_expense_api(request, expense_id):
+    expense = get_object_or_404(OrderExpense, id=expense_id)
+    try:
+        expense.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

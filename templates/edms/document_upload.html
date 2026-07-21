@@ -95,6 +95,16 @@
                            hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                 Continue →
             </button>
+
+            <!-- ── QR Mobile Upload Alternative ─────────────────────────────── -->
+            <div class="mt-5 flex items-center gap-3">
+                <div class="flex-1 h-px bg-slate-200"></div>
+                <span class="text-xs text-slate-400 font-medium">OR UPLOAD FROM PHONE</span>
+                <div class="flex-1 h-px bg-slate-200"></div>
+            </div>
+            <div class="mt-4 flex justify-center">
+                {% include 'mobile_upload/qr_widget.html' %}
+            </div>
         </div>
 
         <!-- Step 2: Metadata Form -->

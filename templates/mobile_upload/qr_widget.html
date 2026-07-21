@@ -1,0 +1,392 @@
+{% comment %}
+  mobile_upload/qr_widget.html
+  ============================
+  Reusable QR-code upload widget.
+  Include this in any template to add the "📱 Scan to Upload" button.
+
+  Usage:
+    {% include 'mobile_upload/qr_widget.html' %}
+
+  The widget renders:
+    1. A button: "📱 Scan to Upload from Phone"
+    2. A modal with the live QR code, countdown timer, and polling status
+    3. When the file arrives, shows "✅ File received!" with filename + download link
+{% endcomment %}
+
+<!-- ── Trigger Button ───────────────────────────────────────────── -->
+<button
+    id="qr-upload-trigger-btn"
+    onclick="openQRUploadModal()"
+    type="button"
+    title="Scan a QR code with your phone to upload a file"
+    style="
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: linear-gradient(135deg, #7C3AED, #4F46E5);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+        transition: all 0.2s ease;
+        font-family: inherit;
+    "
+    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(79,70,229,0.4)'"
+    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 14px rgba(79,70,229,0.35)'"
+>
+    <span style="font-size:1.1rem;">📱</span>
+    <span>Scan to Upload from Phone</span>
+</button>
+
+<!-- ── QR Modal Backdrop ──────────────────────────────────────────── -->
+<div id="qr-upload-modal-backdrop" onclick="closeQRUploadModal()" style="
+    display: none;
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+"></div>
+
+<!-- ── QR Modal ───────────────────────────────────────────────────── -->
+<div id="qr-upload-modal" style="
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    width: 360px;
+    max-width: 95vw;
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.08);
+    padding: 28px 24px;
+    font-family: 'Outfit', -apple-system, sans-serif;
+    animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+">
+    <style>
+        @keyframes modalIn { 0% { opacity:0; transform:translate(-50%,-54%) scale(0.95); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+        #qr-countdown.urgent { color: #DC2626 !important; animation: urgentPulse 0.8s infinite; }
+        @keyframes urgentPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+        #qr-received-card { display: none; text-align: center; }
+        #qr-received-card.show { display: block; }
+        #qr-waiting-card { display: block; }
+        #qr-waiting-card.hide { display: none; }
+        .qr-file-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #F0FDF4;
+            border: 1px solid #86EFAC;
+            color: #15803D;
+            text-decoration: none;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-top: 14px;
+            word-break: break-all;
+            transition: background 0.2s;
+        }
+        .qr-file-link:hover { background: #DCFCE7; }
+        .qr-spin { display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <!-- Close button -->
+    <button onclick="closeQRUploadModal()" style="
+        position: absolute; top: 16px; right: 16px;
+        background: #F1F5F9; border: none; border-radius: 8px;
+        width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
+        display: flex; align-items: center; justify-content: center;
+        color: #64748B; transition: background 0.2s;
+    " onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'">✕</button>
+
+    <!-- Header -->
+    <div style="text-align:center; margin-bottom: 20px;">
+        <div style="font-size:1.15rem; font-weight:700; color:#0F172A;">📱 Scan to Upload</div>
+        <div style="font-size:0.82rem; color:#64748B; margin-top:4px;">Scan with your phone's camera app</div>
+    </div>
+
+    <!-- Waiting state -->
+    <div id="qr-waiting-card">
+
+        <!-- QR Code container -->
+        <div style="display:flex; justify-content:center; margin-bottom:16px;">
+            <div style="
+                background: #fff;
+                border: 2px solid #E2E8F0;
+                border-radius: 16px;
+                padding: 14px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            ">
+                <div id="qr-canvas" style="width:180px; height:180px;"></div>
+            </div>
+        </div>
+
+        <!-- Countdown timer -->
+        <div style="text-align:center; margin-bottom:16px;">
+            <span id="qr-countdown" style="
+                font-size:0.85rem; font-weight:600;
+                color:#92400E;
+                background:#FEF3C7;
+                border:1px solid #FCD34D;
+                border-radius:99px;
+                padding: 5px 14px;
+                display:inline-block;
+            ">⏱ Expires in <span id="qr-timer-text">10:00</span></span>
+        </div>
+
+        <!-- Polling status -->
+        <div id="qr-polling-status" style="
+            text-align:center;
+            font-size:0.85rem; color:#64748B;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        ">
+            <span class="qr-spin">⟳</span>
+            <span>Waiting for you to scan & upload…</span>
+        </div>
+
+        <!-- URL fallback (if QR fails to render) -->
+        <div id="qr-url-fallback" style="display:none; margin-top:14px; text-align:center;">
+            <p style="font-size:0.78rem; color:#64748B; margin-bottom:6px;">Or open this URL on your phone:</p>
+            <a id="qr-url-link" href="#" target="_blank" style="font-size:0.75rem; color:#2563EB; word-break:break-all;"></a>
+        </div>
+    </div>
+
+    <!-- File received state -->
+    <div id="qr-received-card">
+        <div style="
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 2.2rem;
+            animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        ">✅</div>
+        <div style="text-align:center;">
+            <div style="font-size:1.1rem; font-weight:700; color:#065F46; margin-bottom:6px;">File Received!</div>
+            <div style="font-size:0.85rem; color:#64748B; margin-bottom:4px;">Your file has been uploaded from your phone.</div>
+            <a id="qr-download-link" href="#" target="_blank" class="qr-file-link">
+                <span>📎</span>
+                <span id="qr-received-filename">file</span>
+            </a>
+            <div style="font-size:0.78rem; color:#94A3B8; margin-top:12px;" id="qr-received-size"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ── qrcode.js from CDN ─────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script>
+(function() {
+    let qrToken         = null;
+    let statusUrl       = null;
+    let pollInterval    = null;
+    let countdownInterval = null;
+    let secondsLeft     = 600; // 10 minutes
+
+    /* ── Open modal ─────────────────────────── */
+    window.openQRUploadModal = async function() {
+        // Show modal
+        document.getElementById('qr-upload-modal-backdrop').style.display = 'flex';
+        document.getElementById('qr-upload-modal').style.display = 'block';
+        resetModalState();
+
+        try {
+            // Generate session via API
+            const resp = await fetch("{% url 'mobile_generate_session' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            });
+            const data = await resp.json();
+
+            qrToken     = data.token;
+            statusUrl   = data.status_url;
+            secondsLeft = parseInt(data.seconds_remaining, 10) || 600;
+
+            // Render QR code into canvas
+            renderQR(data.upload_url);
+
+            // Show URL fallback
+            const linkEl = document.getElementById('qr-url-link');
+            linkEl.href = data.upload_url;
+            linkEl.textContent = data.upload_url;
+
+            // Start countdown + polling
+            startCountdown();
+            startPolling();
+
+        } catch (err) {
+            document.getElementById('qr-polling-status').innerHTML =
+                `<span style="color:#DC2626;">⚠ Failed to generate QR. Please try again.</span>`;
+        }
+    };
+
+    /* ── Close modal ────────────────────────── */
+    window.closeQRUploadModal = function() {
+        document.getElementById('qr-upload-modal-backdrop').style.display = 'none';
+        document.getElementById('qr-upload-modal').style.display = 'none';
+        stopPolling();
+        stopCountdown();
+    };
+
+    /* ── Reset modal to initial state ───────── */
+    function resetModalState() {
+        document.getElementById('qr-waiting-card').classList.remove('hide');
+        document.getElementById('qr-received-card').classList.remove('show');
+        document.getElementById('qr-polling-status').innerHTML =
+            `<span class="qr-spin">⟳</span><span>Generating QR code…</span>`;
+        // Clear previous QR code
+        const qrDiv = document.getElementById('qr-canvas');
+        qrDiv.innerHTML = '';
+        document.getElementById('qr-timer-text').textContent = '10:00';
+        document.getElementById('qr-url-fallback').style.display = 'none';
+    }
+
+    /* ── Render QR into div ──────────────── */
+    function renderQR(url) {
+        const qrDiv = document.getElementById('qr-canvas');
+        qrDiv.innerHTML = ''; // Clear any previous QR code
+        try {
+            new QRCode(qrDiv, {
+                text: url,
+                width: 180,
+                height: 180,
+                colorDark: '#1E3A8A',
+                colorLight: '#FFFFFF',
+                correctLevel: QRCode.CorrectLevel.M,
+            });
+            // Show fallback link too
+            document.getElementById('qr-url-fallback').style.display = 'block';
+            document.getElementById('qr-polling-status').innerHTML =
+                `<span class="qr-spin">⟳</span><span>Waiting for you to scan &amp; upload…</span>`;
+        } catch(e) {
+            console.error('QR render error:', e);
+            document.getElementById('qr-url-fallback').style.display = 'block';
+        }
+    }
+
+    /* ── Countdown timer ────────────────────── */
+    function startCountdown() {
+        stopCountdown(); // clear any existing countdown first
+        updateTimerDisplay();
+        countdownInterval = setInterval(() => {
+            secondsLeft = Math.max(0, secondsLeft - 1);
+            updateTimerDisplay();
+            if (secondsLeft <= 0) {
+                stopCountdown();
+                stopPolling();
+                document.getElementById('qr-polling-status').innerHTML =
+                    `<span style="color:#DC2626;">⏰ This QR code has expired. Close and try again.</span>`;
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        const text = `${mins}:${String(secs).padStart(2,'0')}`;
+        const el = document.getElementById('qr-timer-text');
+        const badge = document.getElementById('qr-countdown');
+        if (el) el.textContent = text;
+        if (badge && secondsLeft <= 60) badge.classList.add('urgent');
+    }
+
+    /* ── Polling ────────────────────────────── */
+    function startPolling() {
+        stopPolling();
+        pollInterval = setInterval(pollStatus, 2000);
+    }
+
+    function stopPolling() {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+
+    function stopCountdown() {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+
+    async function pollStatus() {
+        if (!statusUrl) return;
+        try {
+            const resp = await fetch(statusUrl);
+            const data = await resp.json();
+
+            if (data.status === 'completed') {
+                stopPolling();
+                showFileReceived(data);
+            } else if (data.status === 'expired') {
+                stopPolling();
+                document.getElementById('qr-polling-status').innerHTML =
+                    `<span style="color:#DC2626;">⏰ Expired. Please close and generate a new QR code.</span>`;
+            }
+        } catch (e) {
+            // silently ignore network blips
+        }
+    }
+
+    /* ── Show success state ─────────────────── */
+    async function injectFile(url, filename) {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const file = new File([blob], filename, { type: blob.type });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            const fileInput = document.getElementById('edms-file-input') || document.getElementById('id_file');
+            if(fileInput){
+                fileInput.files = dataTransfer.files;
+                if(typeof showPreview === 'function') showPreview();
+            }
+        } catch(e) {
+            console.error("Failed to inject file", e);
+        }
+    }
+
+    function showFileReceived(data) {
+        document.getElementById('qr-waiting-card').classList.add('hide');
+
+        const card     = document.getElementById('qr-received-card');
+        const link     = document.getElementById('qr-download-link');
+        const nameEl   = document.getElementById('qr-received-filename');
+        const sizeEl   = document.getElementById('qr-received-size');
+
+        nameEl.textContent = data.filename || 'uploaded file';
+        link.href = data.file_url || '#';
+        sizeEl.textContent = data.file_size ? formatBytes(data.file_size) : '';
+
+        card.classList.add('show');
+        if(data.file_url) {
+            injectFile(data.file_url, data.filename || 'uploaded_file');
+            setTimeout(closeQRUploadModal, 1500);
+        }
+    }
+
+    /* ── Helpers ────────────────────────────── */
+    function formatBytes(bytes) {
+        if (bytes < 1024)    return `${bytes} B`;
+        if (bytes < 1048576) return `${(bytes/1024).toFixed(1)} KB`;
+        return `${(bytes/1048576).toFixed(1)} MB`;
+    }
+
+    function getCookie(name) {
+        const v = `; ${document.cookie}`.split(`; ${name}=`);
+        if (v.length === 2) return v.pop().split(';').shift();
+        return '';
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeQRUploadModal();
+    });
+})();
+</script>

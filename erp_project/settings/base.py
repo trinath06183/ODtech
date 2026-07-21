@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "config",
     "tracker",
     "documents",
+    "mobile_upload",  # QR-code mobile document upload
     "compressor",
     "axes",
     "django_apscheduler",

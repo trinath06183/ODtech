@@ -244,16 +244,7 @@
                     <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
                     <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">&#8377; <span>{{ doc.grand_total|indian_currency }}</span></td>
                 </tr>
-                {% if doc.type == 'INV' or doc.type == 'PRO' %}
-                <tr>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-top: none; font-size: 10px; color: #10B981; font-weight: bold;">Amount Paid</td>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 10px; color: #10B981; font-weight: bold;">&#8377; {{ doc.amount_paid|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-top: none; font-size: 10px; color: #EF4444; font-weight: bold;">Balance Due</td>
-                    <td style="padding: 4px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 10px; color: #EF4444; font-weight: bold;">&#8377; {{ doc.balance_due|indian_currency }}</td>
-                </tr>
-                {% endif %}
+
                 {% if doc.type == 'PRO' and doc.payment_milestones_list %}
                     {% for m in doc.payment_milestones_list %}
                     <tr style="border-top: 1px solid #ddd;">
@@ -278,10 +269,10 @@
                 Bank IFSC code : HDFC0001080<br>
                 Account Holder Name : OD TECH SOLUTIONS
             </div>
-            <div class="text-red mb-1" style="font-size: 11px; font-weight: bold; margin-top: 5px;">
+            <div class="text-red mb-1" style="font-size: 11px; font-weight: bold; margin-top: 8px; line-height: 1.4; word-wrap: break-word; display: block;">
                 {% if doc.type == 'PRO' %}Proforma Invoice Amount In Words:{% else %}Invoice Amount In Words:{% endif %}
             </div>
-            <div style="font-size: 9px; font-style: italic; font-weight: bold; color: #222; line-height: 1.3;">{{ doc.amount_in_words }}</div>
+            <div style="font-size: 9px; font-style: italic; font-weight: bold; color: #222; line-height: 1.5; margin-top: 3px; word-wrap: break-word; display: block; clear: both;">{{ doc.amount_in_words }}</div>
         </td>
     </tr>
 </table>

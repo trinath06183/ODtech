@@ -85,6 +85,9 @@ urlpatterns = [
     path('price-approval/<uuid:request_id>/reject/', views.reject_price_request, name='reject_price_request'),
 
     path('api/order/<uuid:order_id>/create-lot/', views.api_create_lot, name='api_create_lot'),
+    path('api/order/<uuid:order_id>/expense/add/', views.add_order_expense_api, name='add_order_expense_api'),
+    path('api/order/expense/<uuid:expense_id>/edit/', views.edit_order_expense_api, name='edit_order_expense_api'),
+    path('api/order/expense/<uuid:expense_id>/delete/', views.delete_order_expense_api, name='delete_order_expense_api'),
     path('api/order/<uuid:order_id>/reorder-products/', views.api_reorder_products, name='api_reorder_products'),
     path('api/product/<uuid:product_id>/audit-log/', views.api_product_audit_log, name='api_product_audit_log'),
 

@@ -1,0 +1,511 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Upload File — ODtech ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #2563EB;
+            --primary-light: #3B82F6;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --bg: #F0F9FF;
+            --card: #FFFFFF;
+            --text: #0F172A;
+            --muted: #64748B;
+            --border: #E2E8F0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(145deg, #EFF6FF 0%, #F0F9FF 50%, #F5F3FF 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* Brand */
+        .brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .brand img { height: 48px; margin-bottom: 10px; filter: drop-shadow(0 2px 8px rgba(37,99,235,0.15)); }
+        .brand h1 { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+        .brand p { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+        /* Card */
+        .card {
+            background: var(--card);
+            border-radius: 24px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 60px rgba(37,99,235,0.08), 0 4px 16px rgba(0,0,0,0.04);
+            border: 1px solid rgba(37,99,235,0.08);
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            border: 2px dashed #93C5FD;
+            border-radius: 18px;
+            padding: 36px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: #F0F9FF;
+            position: relative;
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: #EFF6FF;
+            transform: scale(1.01);
+        }
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .drop-icon {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #DBEAFE, #EDE9FE);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 2rem;
+        }
+        .drop-title { font-size: 1.05rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        .drop-sub { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+        /* Camera button */
+        .camera-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 14px;
+            padding: 14px;
+            background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+            border: 1.5px solid #86EFAC;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #15803D;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .camera-btn input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .camera-btn:hover { background: linear-gradient(135deg, #DCFCE7, #BBF7D0); transform: translateY(-1px); }
+        .camera-icon { font-size: 1.3rem; }
+
+        /* Selected file preview */
+        .file-preview {
+            display: none;
+            align-items: center;
+            gap: 14px;
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-top: 18px;
+        }
+        .file-preview.show { display: flex; }
+        .file-icon { font-size: 2.2rem; flex-shrink: 0; }
+        .file-info { flex: 1; min-width: 0; }
+        .file-name { font-size: 0.9rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-size { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+        .file-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 4px; border-radius: 6px; flex-shrink: 0; }
+
+        /* Upload button */
+        .upload-btn {
+            display: none;
+            width: 100%;
+            margin-top: 18px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), #4F46E5);
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(37,99,235,0.3);
+            letter-spacing: 0.3px;
+        }
+        .upload-btn.show { display: block; }
+        .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(37,99,235,0.4); }
+        .upload-btn:active { transform: translateY(0); }
+        .upload-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+        /* Progress */
+        .progress-wrap {
+            display: none;
+            margin-top: 18px;
+        }
+        .progress-wrap.show { display: block; }
+        .progress-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .progress-bar-bg {
+            height: 8px;
+            background: #E2E8F0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8B5CF6);
+            border-radius: 99px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Success state */
+        .success-card {
+            display: none;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .success-card.show { display: block; }
+        .success-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2.5rem;
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+        .success-title { font-size: 1.3rem; font-weight: 700; color: #065F46; margin-bottom: 8px; }
+        .success-sub { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+        .success-filename {
+            margin-top: 16px;
+            background: #F0FDF4;
+            border: 1px solid #86EFAC;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            color: #15803D;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        .close-hint {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        /* Expired / error state */
+        .error-card { text-align: center; padding: 10px 0; }
+        .error-icon {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #FEE2E2, #FECACA);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            font-size: 2.2rem;
+        }
+        .error-title { font-size: 1.2rem; font-weight: 700; color: #991B1B; margin-bottom: 8px; }
+        .error-sub { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+
+        /* Timer badge */
+        .timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #FEF3C7;
+            border: 1px solid #FCD34D;
+            color: #92400E;
+            border-radius: 99px;
+            padding: 5px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 22px;
+        }
+        .timer-badge.urgent { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Brand -->
+    <div class="brand">
+        <img src="{% static 'img/logo.png' %}" alt="ODtech Logo" onerror="this.style.display='none'">
+        <h1>ODtech ERP</h1>
+        <p>Mobile Document Upload</p>
+    </div>
+
+    <!-- Main card -->
+    <div class="card">
+
+        {% if session.status == 'expired' %}
+        <!-- ─── EXPIRED ─── -->
+        <div class="error-card">
+            <div class="error-icon">⏰</div>
+            <div class="error-title">Link Expired</div>
+            <div class="error-sub">This upload link has expired.<br>Please go back to your computer and generate a new QR code.</div>
+        </div>
+
+        {% elif session.status == 'completed' %}
+        <!-- ─── ALREADY USED ─── -->
+        <div class="error-card">
+            <div class="error-icon">✅</div>
+            <div class="error-title">Already Uploaded</div>
+            <div class="error-sub">A file was already uploaded using this link. Each QR code can only be used once.<br><br>Generate a new QR code on your computer if you need to upload another file.</div>
+        </div>
+
+        {% else %}
+        <!-- ─── ACTIVE UPLOAD FORM ─── -->
+
+        <!-- Timer badge -->
+        <div style="text-align:center;">
+            <div class="timer-badge" id="timer-badge">
+                <span>⏱</span>
+                <span id="timer-text">Expires in <strong id="countdown">{{ session.seconds_remaining|floatformat:0 }}s</strong></span>
+            </div>
+        </div>
+
+        <!-- Upload success overlay (shown after successful upload) -->
+        <div class="success-card" id="success-card">
+            <div class="success-icon">✅</div>
+            <div class="success-title">File Sent!</div>
+            <div class="success-sub">Your file has been uploaded successfully and is now visible on the desktop.</div>
+            <div class="success-filename" id="success-filename"></div>
+            <p class="close-hint">You can close this tab now.</p>
+        </div>
+
+        <!-- Upload form -->
+        <div id="upload-form">
+            <!-- Drop zone -->
+            <div class="drop-zone" id="drop-zone">
+                <input type="file" id="file-input" accept="*/*">
+                <div class="drop-icon">📄</div>
+                <div class="drop-title">Tap to Choose a File</div>
+                <div class="drop-sub">PDF, images, Word, Excel and more<br>Max 50 MB</div>
+            </div>
+
+            <!-- Camera capture button (shows camera on phones) -->
+            <label class="camera-btn">
+                <input type="file" id="camera-input" accept="image/*" capture="environment">
+                <span class="camera-icon">📷</span>
+                <span>Take a Photo</span>
+            </label>
+
+            <!-- Selected file preview -->
+            <div class="file-preview" id="file-preview">
+                <span class="file-icon" id="file-icon">📎</span>
+                <div class="file-info">
+                    <div class="file-name" id="file-name-display"></div>
+                    <div class="file-size" id="file-size-display"></div>
+                </div>
+                <button class="file-remove" id="file-remove" title="Remove">✕</button>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="progress-wrap" id="progress-wrap">
+                <div class="progress-label">
+                    <span>Uploading…</span>
+                    <span id="progress-pct">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-bar"></div>
+                </div>
+            </div>
+
+            <!-- Upload button -->
+            <button class="upload-btn" id="upload-btn" onclick="submitUpload()">
+                📤 Upload to Desktop
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    const TOKEN        = "{{ token }}";
+    const SUBMIT_URL   = `/mobile/upload/${TOKEN}/submit/`;
+    let selectedFile   = null;
+    let secondsLeft    = {{ session.seconds_remaining|floatformat:0 }};
+    let timerInterval  = null;
+
+    /* ── Timer countdown ─────────────────────────────────── */
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            secondsLeft--;
+            const el      = document.getElementById('countdown');
+            const badge   = document.getElementById('timer-badge');
+            if (!el) return;
+
+            const mins = Math.floor(secondsLeft / 60);
+            const secs = secondsLeft % 60;
+            el.textContent = mins > 0
+                ? `${mins}m ${String(secs).padStart(2,'0')}s`
+                : `${secondsLeft}s`;
+
+            if (secondsLeft <= 60) badge.classList.add('urgent');
+            if (secondsLeft <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('upload-form').innerHTML =
+                    `<div class="error-card">
+                        <div class="error-icon">⏰</div>
+                        <div class="error-title">Link Expired</div>
+                        <div class="error-sub">Generate a new QR code on your computer.</div>
+                     </div>`;
+            }
+        }, 1000);
+    }
+
+    /* ── File selection helpers ───────────────────────────── */
+    function formatBytes(bytes) {
+        if (bytes < 1024)       return `${bytes} B`;
+        if (bytes < 1048576)    return `${(bytes/1024).toFixed(1)} KB`;
+        return `${(bytes/1048576).toFixed(1)} MB`;
+    }
+
+    function getFileIcon(name) {
+        const ext = name.split('.').pop().toLowerCase();
+        const icons = { pdf:'📕', doc:'📘', docx:'📘', xls:'📗', xlsx:'📗', ppt:'📙', pptx:'📙',
+                        jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
+                        zip:'📦', rar:'📦', '7z':'📦', txt:'📝', csv:'📊', mp4:'🎬', mp3:'🎵' };
+        return icons[ext] || '📎';
+    }
+
+    function onFileSelected(file) {
+        if (!file) return;
+        selectedFile = file;
+
+        document.getElementById('file-icon').textContent        = getFileIcon(file.name);
+        document.getElementById('file-name-display').textContent = file.name;
+        document.getElementById('file-size-display').textContent = formatBytes(file.size);
+        document.getElementById('file-preview').classList.add('show');
+        document.getElementById('upload-btn').classList.add('show');
+
+        // Update drop zone hint
+        document.querySelector('.drop-title').textContent = 'File selected ✓';
+        document.querySelector('.drop-sub').textContent   = 'Tap "Upload to Desktop" to send it';
+    }
+
+    document.getElementById('file-input').addEventListener('change', e => onFileSelected(e.target.files[0]));
+    document.getElementById('camera-input').addEventListener('change', e => onFileSelected(e.target.files[0]));
+
+    document.getElementById('file-remove').addEventListener('click', () => {
+        selectedFile = null;
+        document.getElementById('file-preview').classList.remove('show');
+        document.getElementById('upload-btn').classList.remove('show');
+        document.getElementById('file-input').value = '';
+        document.getElementById('camera-input').value = '';
+        document.querySelector('.drop-title').textContent = 'Tap to Choose a File';
+        document.querySelector('.drop-sub').textContent   = 'PDF, images, Word, Excel and more\nMax 50 MB';
+    });
+
+    /* ── Drag & drop (works on desktop-tested phones) ──── */
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) onFileSelected(e.dataTransfer.files[0]);
+    });
+
+    /* ── Upload ───────────────────────────────────────── */
+    function submitUpload() {
+        if (!selectedFile) return;
+
+        const btn       = document.getElementById('upload-btn');
+        const progress  = document.getElementById('progress-wrap');
+        const bar       = document.getElementById('progress-bar');
+        const pctLabel  = document.getElementById('progress-pct');
+
+        btn.disabled    = true;
+        btn.textContent = 'Uploading…';
+        progress.classList.add('show');
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', SUBMIT_URL);
+
+        xhr.upload.addEventListener('progress', e => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                bar.style.width  = pct + '%';
+                pctLabel.textContent = pct + '%';
+            }
+        });
+
+        xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+                clearInterval(timerInterval);
+                const data = JSON.parse(xhr.responseText);
+                document.getElementById('upload-form').style.display = 'none';
+                document.getElementById('timer-badge') && (document.getElementById('timer-badge').style.display = 'none');
+                const successCard = document.getElementById('success-card');
+                document.getElementById('success-filename').textContent = `📎 ${data.filename}`;
+                successCard.classList.add('show');
+            } else {
+                let errMsg = 'Server error';
+                try {
+                    const err = JSON.parse(xhr.responseText);
+                    errMsg = err.error || errMsg;
+                } catch(e) {
+                    errMsg = `Server error ${xhr.status}`;
+                }
+                alert('Upload failed: ' + errMsg);
+                btn.disabled    = false;
+                btn.textContent = '📤 Upload to Desktop';
+                progress.classList.remove('show');
+            }
+        });
+
+        xhr.addEventListener('error', () => {
+            alert('Network error. Please check your connection and try again.');
+            btn.disabled    = false;
+            btn.textContent = '📤 Upload to Desktop';
+            progress.classList.remove('show');
+        });
+
+        xhr.send(formData);
+    }
+
+    /* ── Init ─────────────────────────────────────────── */
+    {% if session.status == 'pending' %}
+    startTimer();
+    {% endif %}
+</script>
+</body>
+</html>

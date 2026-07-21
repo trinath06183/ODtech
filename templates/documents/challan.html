@@ -96,46 +96,7 @@
 
 {% include 'documents/print_items_table.html' %}
 
-{# ── Totals row: right-aligned, below items table ── #}
-<table style="width: 100%; table-layout: fixed; border: none; margin-top: 4px; border-spacing: 0; border-collapse: collapse;">
-    <tr>
-        <td style="width: 55%; border: none;"></td>
-        <td style="width: 45%; border: none; vertical-align: top; padding: 0;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                {% if doc.discount_type != 'none' %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; width: 52%; font-weight: bold;">Gross Sub Total</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; text-align: right; font-weight: bold;">&#8377; {{ doc.gross_subtotal|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">
-                        Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% endif %}
-                    </td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold;">-&#8377; {{ doc.total_discount|indian_currency }}</td>
-                </tr>
-                {% endif %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} width: 52%; font-weight: bold;">{% if doc.discount_type != 'none' %}Taxable Sub Total{% else %}Sub Total{% endif %}</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} text-align: right; font-weight: bold;">&#8377; {{ doc.subtotal|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Total</td>
-                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">&#8377; <span>{{ doc.subtotal|indian_currency }}</span></td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-
-{# ── Amount In Words row ── #}
-<table style="width: 100%; table-layout: fixed; border: none; margin-top: 10px; border-spacing: 0; border-collapse: collapse;">
-    <tr>
-        <td style="border: none; vertical-align: top; padding: 0 15px 0 0;">
-            <div class="text-red mb-1" style="font-size: 11px; font-weight: bold;">Amount In Words:</div>
-            <div style="font-size: 9px; font-style: italic; font-weight: bold; color: #222; line-height: 1.3;">{{ doc.subtotal_in_words }}</div>
-        </td>
-    </tr>
-</table>
+{# ── Pricing and Totals removed for Delivery Challan ── #}
 
 <div class="info-grid" style="margin-top: 15px; margin-bottom: 10px;">
     <div class="info-col" style="width: 55%; padding-right: 20px;">

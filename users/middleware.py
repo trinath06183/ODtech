@@ -18,12 +18,13 @@ class OnboardingMiddleware:
                     reverse('logout'),
                 ]
                 path = request.path
-                # Allow access to onboarding, logout, admin console, and static/media files
+                # Allow access to onboarding, logout, admin console, static/media, and mobile upload pages
                 is_allowed = (
                     any(path == p for p in allowed_paths)
                     or path.startswith('/admin/')
                     or path.startswith('/static/')
                     or path.startswith('/media/')
+                    or path.startswith('/mobile/upload/')  # QR phone upload — no onboarding needed
                 )
                 if not is_allowed:
                     return redirect(reverse('onboarding'))

@@ -1,4 +1,5 @@
-﻿from .base import *
+import os
+from .base import *
 
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", ".ngrok-free.dev", "*"]
@@ -7,11 +8,11 @@ CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.dev", "http://*.ngrok-free.dev"]
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "odtech_db",
-        "USER": "postgres",
-        "PASSWORD": "1111",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": os.environ.get("POSTGRES_DB", "odtech_db"),
+        "USER": os.environ.get("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "1111"),
+        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 

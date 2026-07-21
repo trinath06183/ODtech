@@ -41,14 +41,6 @@
         <p class="text-2xl font-bold text-blue-600">{{ today_downloads }}</p>
         <p class="text-xs text-slate-500 font-medium">Downloads Today</p>
     </div>
-    <!-- Pending Approvals -->
-    {% if can_approve %}
-    <div class="glass rounded-2xl p-5 flex flex-col gap-2">
-        <span class="text-3xl">⏳</span>
-        <p class="text-2xl font-bold text-amber-600">{{ pending_approvals }}</p>
-        <p class="text-xs text-slate-500 font-medium">Pending Approval</p>
-    </div>
-    {% endif %}
     <!-- Expiring Soon -->
     <div class="glass rounded-2xl p-5 flex flex-col gap-2">
         <span class="text-3xl">⚠️</span>
@@ -76,9 +68,6 @@
                         {{ doc.title }}
                     </a>
                     <p class="text-xs text-slate-400">{{ doc.category.name }} · {{ doc.created_at|date:"d M Y" }}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    {{ doc.approval_status|approval_badge }}
                 </div>
             </div>
             {% empty %}
