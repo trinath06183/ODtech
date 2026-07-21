@@ -23,6 +23,27 @@ def _sync_selected_supplier_from_product(product, user):
         selected.updated_by = user
         selected.save()
 
+def _apply_qr_upload(request, supplier_option):
+    """
+    If the form contained a qr_upload_token and no direct file was uploaded,
+    fetch the file from the MobileUploadSession and attach it to the supplier option.
+    """
+    token = request.POST.get('qr_upload_token', '').strip()
+    # Only apply if no direct file was uploaded for photo_or_document
+    if token and not request.FILES.get('photo_or_document'):
+        try:
+            from mobile_upload.models import MobileUploadSession
+            session = MobileUploadSession.objects.get(
+                token=token,
+                created_by=request.user,
+                status=MobileUploadSession.STATUS_COMPLETED
+            )
+            if session.uploaded_file:
+                supplier_option.photo_or_document = session.uploaded_file
+                supplier_option.save(update_fields=['photo_or_document'])
+        except Exception:
+            pass  # Silently skip if session not found or already used
+
 # --- Shared helper for product list context (eliminates duplication) ---
 def _build_product_list_context(request, products_qs, order, lot=None):
     """Build context for product_list.html with optimized queries."""
@@ -227,52 +248,14 @@ def product_detail_view(request, product_id):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'create_supplier':
-            create_form = SupplierCostOptionForm(request.POST, request.FILES)
-            if create_form.is_valid():
-                supplier = create_form.save(commit=False)
+            form = SupplierCostOptionForm(request.POST, request.FILES)
+            if form.is_valid():
+                supplier = form.save(commit=False)
                 supplier.product = product
                 supplier.created_by = request.user
                 supplier.updated_by = request.user
                 supplier.save()
                 
-                # If this supplier was selected on creation, deselect others and sync product price
-                if supplier.is_selected:
-                    product.supplier_options.exclude(id=supplier.id).update(is_selected=False)
-                    product.buying_price_ex_gst = supplier.base_price
-                    product.buying_price_inc_gst = supplier.total_inc_gst
-                    product.gst_percentage = supplier.gst_percentage
-                    product.save()
-                    
-                messages.success(request, 'Supplier option added successfully.')
-                redirect_url = reverse('tracker:order_detail', kwargs={'order_id': product.order.id})
-                lot_id = product.lot.id if product.lot else 'unassigned'
-                return redirect(f"{redirect_url}?selected_product_id={product.id}&open_lot_id={lot_id}")
-            else:
-                show_create = True
-                messages.error(request, 'Error adding supplier option. Please check the form.')
-                
-        elif action == 'update_supplier':
-            option_id = request.POST.get('option_id')
-            option = get_object_or_404(SupplierCostOption, id=option_id, product=product)
-            update_option_id = option.id
-            update_form = SupplierCostOptionForm(request.POST, request.FILES, instance=option)
-            if update_form.is_valid():
-                supplier = update_form.save(commit=False)
-                supplier.updated_by = request.user
-                supplier.save()
-                
-                # If this supplier was selected, deselect others and sync product price
-                if supplier.is_selected:
-                    product.supplier_options.exclude(id=supplier.id).update(is_selected=False)
-                    product.buying_price_ex_gst = supplier.base_price
-                    product.buying_price_inc_gst = supplier.total_inc_gst
-                    product.gst_percentage = supplier.gst_percentage
-                    product.save()
-                    
-                messages.success(request, 'Supplier option updated successfully.')
-                redirect_url = reverse('tracker:order_detail', kwargs={'order_id': product.order.id})
-                lot_id = product.lot.id if product.lot else 'unassigned'
-                return redirect(f"{redirect_url}?selected_product_id={product.id}&open_lot_id={lot_id}")
             else:
                 messages.error(request, 'Error updating supplier option. Please check the form.')
                 

@@ -1209,8 +1209,50 @@
 
                         <div>
                             <label class="block text-gray-500 font-semibold mb-0.5">Quote/Invoice Attachment</label>
-                            <input type="file" name="photo_or_document"
-                                class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <div x-data="qrUploadWidget('qr_add_{{ product.id }}')" class="space-y-1.5">
+                                <!-- File input row -->
+                                <div class="flex items-center gap-2">
+                                    <input type="file" name="photo_or_document" x-ref="fileInput"
+                                        class="block flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    <button type="button" @click="startQr()"
+                                        class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                                        title="Upload from phone via QR code">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                                        QR Upload
+                                    </button>
+                                </div>
+                                <!-- Hidden field to pass the QR session token to the backend -->
+                                <input type="hidden" name="qr_upload_token" x-bind:value="qrToken">
+                                <!-- QR popup -->
+                                <div x-show="qrOpen" x-transition style="display:none"
+                                    class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50">
+                                    <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-xs w-full text-center">
+                                        <h4 class="font-bold text-gray-900 mb-1 text-sm">Scan with your phone</h4>
+                                        <p class="text-xs text-gray-500 mb-3">Open camera app and scan the QR code to upload a photo/document</p>
+                                        <div x-show="qrStatus === 'pending'">
+                                            <div id="qr_add_{{ product.id }}_canvas" class="flex justify-center mb-2"></div>
+                                            <p class="text-[10px] text-gray-400">Expires in <span class="font-semibold" x-text="countdown"></span>s</p>
+                                        </div>
+                                        <div x-show="qrStatus === 'completed'" class="py-4">
+                                            <svg class="w-12 h-12 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            <p class="text-sm font-semibold text-green-700">Upload successful!</p>
+                                            <p class="text-xs text-gray-500" x-text="uploadedFilename"></p>
+                                        </div>
+                                        <div x-show="qrStatus === 'expired'" class="py-4">
+                                            <p class="text-sm text-red-600 font-semibold">QR code expired.</p>
+                                        </div>
+                                        <div class="flex gap-2 mt-4">
+                                            <button type="button" @click="closeQr()" class="flex-1 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+                                            <button type="button" x-show="qrStatus !== 'pending'" @click="startQr()" class="flex-1 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Regenerate</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Status badge when file received -->
+                                <p x-show="qrToken" x-cloak class="text-[10px] text-green-600 font-semibold flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                    Mobile upload ready: <span x-text="uploadedFilename"></span>
+                                </p>
+                            </div>
                         </div>
 
                         <div>
@@ -1468,23 +1510,61 @@
                                     </label>
                                 </div>
 
-                                <div>
-                                    <div class="flex justify-between items-center mb-0.5">
-                                        <label class="block text-gray-500 font-semibold">Update Attachment (Optional)</label>
+                                    <div>
+                                        <div class="flex justify-between items-center mb-0.5">
+                                            <label class="block text-gray-500 font-semibold">Update Attachment (Optional)</label>
+                                            {% if option.photo_or_document %}
+                                            <button type="button" 
+                                                @click.prevent="if(confirm('Delete this attachment?')) window.submitModalAction('delete_supplier_attachment', {option_id: '{{ option.id }}'})"
+                                                class="inline-flex items-center text-[10px] text-red-500 hover:text-red-700 font-bold">
+                                                Delete Current
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        <div x-data="qrUploadWidget('qr_edit_{{ option.id }}')" class="space-y-1.5">
+                                            <div class="flex items-center gap-2">
+                                                <input type="file" name="photo_or_document" x-ref="fileInput"
+                                                    class="block flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                                <button type="button" @click="startQr()"
+                                                    class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                                                    title="Upload from phone via QR code">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                                                    QR Upload
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="qr_upload_token" x-bind:value="qrToken">
+                                            <div x-show="qrOpen" x-transition style="display:none"
+                                                class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50">
+                                                <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-xs w-full text-center">
+                                                    <h4 class="font-bold text-gray-900 mb-1 text-sm">Scan with your phone</h4>
+                                                    <p class="text-xs text-gray-500 mb-3">Open camera app and scan the QR code to upload a photo/document</p>
+                                                    <div x-show="qrStatus === 'pending'">
+                                                        <div :id="'qr_edit_{{ option.id }}_canvas'" class="flex justify-center mb-2"></div>
+                                                        <p class="text-[10px] text-gray-400">Expires in <span class="font-semibold" x-text="countdown"></span>s</p>
+                                                    </div>
+                                                    <div x-show="qrStatus === 'completed'" class="py-4">
+                                                        <svg class="w-12 h-12 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                        <p class="text-sm font-semibold text-green-700">Upload successful!</p>
+                                                        <p class="text-xs text-gray-500" x-text="uploadedFilename"></p>
+                                                    </div>
+                                                    <div x-show="qrStatus === 'expired'" class="py-4">
+                                                        <p class="text-sm text-red-600 font-semibold">QR code expired.</p>
+                                                    </div>
+                                                    <div class="flex gap-2 mt-4">
+                                                        <button type="button" @click="closeQr()" class="flex-1 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+                                                        <button type="button" x-show="qrStatus !== 'pending'" @click="startQr()" class="flex-1 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Regenerate</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p x-show="qrToken" x-cloak class="text-[10px] text-green-600 font-semibold flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                                Mobile upload ready: <span x-text="uploadedFilename"></span>
+                                            </p>
+                                        </div>
                                         {% if option.photo_or_document %}
-                                        <button type="button" 
-                                            @click.prevent="if(confirm('Delete this attachment?')) window.submitModalAction('delete_supplier_attachment', {option_id: '{{ option.id }}'})"
-                                            class="inline-flex items-center text-[10px] text-red-500 hover:text-red-700 font-bold">
-                                            Delete Current
-                                        </button>
+                                        <p class="text-[10px] text-gray-400 mt-1 truncate">Current: {{ option.photo_or_document.name }}</p>
                                         {% endif %}
                                     </div>
-                                    <input type="file" name="photo_or_document"
-                                        class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                    {% if option.photo_or_document %}
-                                    <p class="text-[10px] text-gray-400 mt-1 truncate">Current: {{ option.photo_or_document.name }}</p>
-                                    {% endif %}
-                                </div>
 
                                 <div>
                                     <label class="block text-gray-500 font-semibold mb-0.5">Quote Description</label>
@@ -1722,4 +1802,99 @@ function modalStageCell(productId, initCust, initSupp) {
         },
     };
 }
+
+// ══════════════════════════════════════════
+// QR Upload Widget — Alpine component
+// ══════════════════════════════════════════
+function qrUploadWidget(widgetId) {
+    return {
+        widgetId,
+        qrOpen: false,
+        qrStatus: 'idle',  // idle | pending | completed | expired
+        qrToken: '',
+        countdown: 0,
+        uploadedFilename: '',
+        _pollInterval: null,
+        _countdownInterval: null,
+
+        async startQr() {
+            this.qrStatus = 'pending';
+            this.qrToken = '';
+            this.uploadedFilename = '';
+            this.qrOpen = true;
+
+            try {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                const res = await fetch('/mobile/generate-session/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf ? csrf.value : '' }
+                });
+                const data = await res.json();
+                if (!data.token) throw new Error('No token returned');
+
+                this._sessionToken = data.token;
+                this._statusUrl = data.status_url;
+                this.countdown = data.seconds_remaining;
+
+                // Render QR code using qrcodejs
+                await this.$nextTick();
+                const canvasEl = document.getElementById(this.widgetId + '_canvas');
+                if (canvasEl) {
+                    canvasEl.innerHTML = '';
+                    new QRCode(canvasEl, {
+                        text: data.upload_url,
+                        width: 180,
+                        height: 180,
+                        colorDark: '#1e1b4b',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                }
+
+                // Countdown timer
+                this._countdownInterval = setInterval(() => {
+                    if (this.countdown > 0) this.countdown--;
+                }, 1000);
+
+                // Poll for completion every 2 seconds
+                this._pollInterval = setInterval(() => this._pollStatus(), 2000);
+
+            } catch(e) {
+                console.error('QR session error:', e);
+                this.qrStatus = 'expired';
+                this._stopPolling();
+            }
+        },
+
+        async _pollStatus() {
+            try {
+                const res = await fetch(this._statusUrl);
+                const data = await res.json();
+                if (data.status === 'completed') {
+                    this.qrStatus = 'completed';
+                    this.qrToken = this._sessionToken;
+                    this.uploadedFilename = data.filename || '';
+                    this._stopPolling();
+                } else if (data.status === 'expired' || data.seconds_remaining === 0) {
+                    this.qrStatus = 'expired';
+                    this._stopPolling();
+                }
+            } catch(e) {
+                console.error('Poll error:', e);
+            }
+        },
+
+        _stopPolling() {
+            if (this._pollInterval) { clearInterval(this._pollInterval); this._pollInterval = null; }
+            if (this._countdownInterval) { clearInterval(this._countdownInterval); this._countdownInterval = null; }
+        },
+
+        closeQr() {
+            this.qrOpen = false;
+            this._stopPolling();
+        }
+    };
+}
 </script>
+<!-- qrcodejs library for QR generation -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
