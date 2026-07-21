@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}All Products — Stage Tracker{% endblock %}
 
 {% block content %}
@@ -234,7 +234,7 @@ function productStageCell(productId, initCust, initSupp) {
             const prev = this[stageKey];
             this[savingKey]=true; this[stageKey]=value;
             try {
-                const res = await fetch(`/api/product/${this.productId}/stage/`, {
+                const res = await fetch(`/tracker/api/product/${this.productId}/stage/`, {
                     method:'POST',
                     headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},
                     body: JSON.stringify({side, stage: value}),

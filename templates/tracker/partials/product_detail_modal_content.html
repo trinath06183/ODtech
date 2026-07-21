@@ -531,7 +531,7 @@
                         });
                     },
                     deleteNote(id, permanent=false) {
-                        const url = permanent ? `/api/notes/${id}/delete/?permanent=true` : `/api/notes/${id}/delete/`;
+                        const url = permanent ? `/tracker/api/notes/${id}/delete/?permanent=true` : `/tracker/api/notes/${id}/delete/`;
                         fetch(url, {
                             method: 'POST',
                             headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
@@ -542,7 +542,7 @@
                     },
                     saveEdit(id, content) {
                         if(!content.trim()) return;
-                        fetch(`/api/notes/${id}/edit/`, {
+                        fetch(`/tracker/api/notes/${id}/edit/`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1687,7 +1687,7 @@ function modalStageCell(productId, initCust, initSupp) {
             this[stageKey]  = value;
             try {
                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                const res = await fetch(`/api/product/${this.productId}/stage/`, {
+                const res = await fetch(`/tracker/api/product/${this.productId}/stage/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

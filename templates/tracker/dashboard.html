@@ -432,7 +432,7 @@ function orderDashboard() {
     },
 
     updateOrderStatus(orderId, newStatus) {
-      fetch(`/api/order/${orderId}/status/`, {
+      fetch(`/tracker/api/order/${orderId}/status/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
         body: JSON.stringify({ status: newStatus })

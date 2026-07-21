@@ -130,7 +130,7 @@
         
         var formData = { lot_name: lotName.trim() };
         
-        fetch(`/api/order/${orderId}/create-lot/`, {
+        fetch(`/tracker/api/order/${orderId}/create-lot/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

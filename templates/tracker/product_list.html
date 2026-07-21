@@ -935,6 +935,20 @@
                                     <div class="text-gray-500 text-xs font-normal"
                                         x-text="'₹' + (qty * incGst).toFixed(2)"></div>
                                 </div>
+                                {% elif product.buying_price_ex_gst %}
+                                <div
+                                    x-data="{ qty: {{ product.quantity }}, base: {{ product.buying_price_ex_gst|default:0 }}, incGst: {{ product.buying_price_inc_gst|default:0 }} }">
+                                    <template x-if="base > 0">
+                                        <div>
+                                            <div x-text="'₹' + (qty * base).toFixed(2)"></div>
+                                            <div class="text-gray-500 text-xs font-normal"
+                                                x-text="'₹' + (qty * incGst).toFixed(2)"></div>
+                                        </div>
+                                    </template>
+                                    <template x-if="base == 0">
+                                        <span class="text-gray-400 text-xs">-</span>
+                                    </template>
+                                </div>
                                 {% else %}
                                 <span class="text-gray-400 text-xs">-</span>
                                 {% endif %}
@@ -1720,7 +1734,7 @@
             async saveInlineEdit() {
                 if (!this.editingRowId) return;
                 try {
-                    const response = await fetch(`/api/product/${this.editingRowId}/inline-update/`, {
+                    const response = await fetch(`/tracker/api/product/${this.editingRowId}/inline-update/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -3453,7 +3467,7 @@
     }
 
     function updateSingleProductStatus(productId, newStatus) {
-        fetch(`/api/product/bulk-status/`, {
+        fetch(`/tracker/api/product/bulk-status/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3481,7 +3495,7 @@
             return;
         }
 
-        fetch(`/api/product/bulk-status/`, {
+        fetch(`/tracker/api/product/bulk-status/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3546,7 +3560,7 @@
                 this[stageKey] = value;               // optimistic update
 
                 try {
-                    const res = await fetch(`/api/product/${this.productId}/stage/`, {
+                    const res = await fetch(`/tracker/api/product/${this.productId}/stage/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -4060,7 +4074,7 @@
     // ─────────────────────────────────────────────────
     (function initSortable() {
         const ORDER_ID = '{{ order.id }}';
-        const REORDER_URL = `/api/order/${ORDER_ID}/reorder-products/`;
+        const REORDER_URL = `/tracker/api/order/${ORDER_ID}/reorder-products/`;
 
         function getCsrf() {
             const el = document.querySelector('[name=csrfmiddlewaretoken]');
