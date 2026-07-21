@@ -4414,6 +4414,102 @@
             attachSortables();
         }
     })();
+
+// ══════════════════════════════════════════
+// QR Upload Widget — Alpine component
+// ══════════════════════════════════════════
+function qrUploadWidget(widgetId) {
+    return {
+        widgetId,
+        qrOpen: false,
+        qrStatus: 'idle',  // idle | pending | completed | expired
+        qrToken: '',
+        countdown: 0,
+        uploadedFilename: '',
+        _pollInterval: null,
+        _countdownInterval: null,
+
+        async startQr() {
+            this.qrStatus = 'pending';
+            this.qrToken = '';
+            this.uploadedFilename = '';
+            this.qrOpen = true;
+
+            try {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                const res = await fetch('/mobile/generate-session/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrf ? csrf.value : '' }
+                });
+                const data = await res.json();
+                if (!data.token) throw new Error('No token returned');
+
+                this._sessionToken = data.token;
+                this._statusUrl = data.status_url;
+                this.countdown = data.seconds_remaining;
+
+                // Render QR code using qrcodejs
+                await this.$nextTick();
+                const canvasEl = document.getElementById(this.widgetId + '_canvas');
+                if (canvasEl) {
+                    canvasEl.innerHTML = '';
+                    new QRCode(canvasEl, {
+                        text: data.upload_url,
+                        width: 180,
+                        height: 180,
+                        colorDark: '#1e1b4b',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                }
+
+                // Countdown timer
+                this._countdownInterval = setInterval(() => {
+                    if (this.countdown > 0) this.countdown--;
+                }, 1000);
+
+                // Poll for completion every 2 seconds
+                this._pollInterval = setInterval(() => this._pollStatus(), 2000);
+
+            } catch(e) {
+                console.error('QR session error:', e);
+                this.qrStatus = 'expired';
+                this._stopPolling();
+            }
+        },
+
+        async _pollStatus() {
+            try {
+                const res = await fetch(this._statusUrl);
+                const data = await res.json();
+                if (data.status === 'completed') {
+                    this.qrStatus = 'completed';
+                    this.qrToken = this._sessionToken;
+                    this.uploadedFilename = data.filename || '';
+                    this._stopPolling();
+                } else if (data.status === 'expired' || data.seconds_remaining === 0) {
+                    this.qrStatus = 'expired';
+                    this._stopPolling();
+                }
+            } catch(e) {
+                console.error('Poll error:', e);
+            }
+        },
+
+        _stopPolling() {
+            if (this._pollInterval) { clearInterval(this._pollInterval); this._pollInterval = null; }
+            if (this._countdownInterval) { clearInterval(this._countdownInterval); this._countdownInterval = null; }
+        },
+
+        closeQr() {
+            this.qrOpen = false;
+            this._stopPolling();
+        }
+    };
+}
 </script>
+
+<!-- qrcodejs library for QR generation -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 {% endblock %}
