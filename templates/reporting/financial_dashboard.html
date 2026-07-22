@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ── Financial Trend Multi-Chart ─────────────────────────────────────────
-    const trendData = {{ monthly_trend|safe }};
+    const trendData = {{ monthly_trend_json|default:"[]"|safe }};
     const months    = trendData.map(d => d.month);
     const sales     = trendData.map(d => d.sales);
     const purchases = trendData.map(d => d.purchases);

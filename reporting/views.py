@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render
 from django.db.models import Sum, Q, Count
 from django.utils import timezone
@@ -327,6 +329,7 @@ def financial_dashboard(request):
             'reminder_count': len(reminders),
             # Charts
             'monthly_trend': monthly_trend,
+            'monthly_trend_json': json.dumps(monthly_trend),
             'expense_by_type': expense_by_type,
             'top_customers': top_customers,
         }
@@ -348,5 +351,18 @@ def financial_dashboard(request):
             ],
             'label': 'This Month',
             'error_message': str(e),
+            'monthly_trend_json': '[]',
+            'total_sales': Decimal('0'),
+            'total_purchases': Decimal('0'),
+            'total_expenses': Decimal('0'),
+            'gross_profit': Decimal('0'),
+            'net_profit': Decimal('0'),
+            'total_orders': 0,
+            'order_open': 0,
+            'order_in_progress': 0,
+            'order_completed': 0,
+            'order_other': 0,
+            'reminders': [],
+            'reminder_count': 0,
         })
 
