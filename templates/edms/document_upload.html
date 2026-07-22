@@ -46,16 +46,35 @@
         padding: 20px;
         min-height: 430px;
     }
+    /* ── Zoom viewport ── */
+    .preview-zoom-viewport {
+        overflow: auto;
+        width: 100%;
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        background: #f1f0fb;
+        border-radius: 0 0 14px 14px;
+    }
+    .preview-zoom-inner {
+        transform-origin: top center;
+        transition: transform 0.2s ease;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
     #doc-preview-iframe {
         width: 100%;
-        height: 520px;
+        height: 560px;
         border: none;
         border-radius: 8px;
         display: none;
     }
     #doc-preview-image {
         max-width: 100%;
-        max-height: 520px;
+        max-height: 560px;
         border-radius: 8px;
         object-fit: contain;
         display: none;
@@ -64,10 +83,12 @@
     #doc-preview-placeholder {
         text-align: center;
         color: #94a3b8;
+        padding: 40px 20px;
     }
     #doc-preview-generic {
         display: none;
         text-align: center;
+        padding: 30px 20px;
     }
     #doc-preview-generic .file-big-icon {
         font-size: 72px;
@@ -83,6 +104,32 @@
         font-size: 11px;
         color: #6b7280;
         margin-top: 4px;
+    }
+    /* ── Zoom toolbar buttons ── */
+    .zoom-btn {
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 700;
+        transition: background 0.15s;
+        flex-shrink: 0;
+    }
+    .zoom-btn:hover { background: rgba(255,255,255,0.32); }
+    #zoom-level-label {
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 42px;
+        text-align: center;
+        letter-spacing: 0.02em;
+        color: rgba(255,255,255,0.9);
     }
     @media (max-width: 900px) {
         .upload-layout { flex-direction: column; }
@@ -320,35 +367,47 @@
         <!-- RIGHT: Live Document Preview -->
         <div class="upload-right">
             <div class="preview-panel">
+                <!-- Header with zoom controls -->
                 <div class="preview-panel-header">
-                    👁 Document Preview
-                    <span id="preview-filename-label" style="margin-left:auto; font-weight:400; opacity:0.8; font-size:11px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                    <span>👁 Document Preview</span>
+                    <span id="preview-filename-label" style="margin-left:8px; font-weight:400; opacity:0.8; font-size:11px; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;"></span>
+                    <!-- Zoom toolbar (hidden until a previewable file is loaded) -->
+                    <div id="zoom-toolbar" style="display:none; align-items:center; gap:5px; margin-left:8px;">
+                        <button class="zoom-btn" onclick="changeZoom(-25)" title="Zoom out">−</button>
+                        <span id="zoom-level-label">100%</span>
+                        <button class="zoom-btn" onclick="changeZoom(+25)" title="Zoom in">+</button>
+                        <button class="zoom-btn" onclick="resetZoom()" title="Fit / Reset" style="font-size:12px; width:36px;">Fit</button>
+                    </div>
                 </div>
-                <div class="preview-panel-body">
 
-                    <!-- Placeholder (no file yet) -->
-                    <div id="doc-preview-placeholder">
-                        <div style="font-size:56px; margin-bottom:14px;">📂</div>
-                        <p style="font-size:13px; font-weight:600; color:#7c3aed;">No file selected</p>
-                        <p style="font-size:12px; margin-top:6px; color:#94a3b8;">Select or drop a file on the left<br>to preview it here.</p>
-                    </div>
+                <!-- Scrollable zoom viewport -->
+                <div class="preview-zoom-viewport" id="preview-zoom-viewport">
+                    <div class="preview-zoom-inner" id="preview-zoom-inner">
 
-                    <!-- PDF preview -->
-                    <iframe id="doc-preview-iframe" title="Document Preview"></iframe>
-
-                    <!-- Image preview -->
-                    <img id="doc-preview-image" alt="Image Preview" />
-
-                    <!-- Generic file preview (unsupported types) -->
-                    <div id="doc-preview-generic">
-                        <div class="file-big-icon" id="generic-icon">📄</div>
-                        <div class="file-label" id="generic-name"></div>
-                        <div class="file-size-label" id="generic-size"></div>
-                        <div style="margin-top:14px; padding:8px 16px; background:#ede9fe; border-radius:8px; font-size:11px; color:#5b21b6;">
-                            Preview not available for this file type
+                        <!-- Placeholder (no file yet) -->
+                        <div id="doc-preview-placeholder">
+                            <div style="font-size:56px; margin-bottom:14px;">📂</div>
+                            <p style="font-size:13px; font-weight:600; color:#7c3aed;">No file selected</p>
+                            <p style="font-size:12px; margin-top:6px; color:#94a3b8;">Select or drop a file on the left<br>to preview it here.</p>
                         </div>
-                    </div>
 
+                        <!-- PDF preview -->
+                        <iframe id="doc-preview-iframe" title="Document Preview"></iframe>
+
+                        <!-- Image preview -->
+                        <img id="doc-preview-image" alt="Image Preview" />
+
+                        <!-- Generic file preview (unsupported types) -->
+                        <div id="doc-preview-generic">
+                            <div class="file-big-icon" id="generic-icon">📄</div>
+                            <div class="file-label" id="generic-name"></div>
+                            <div class="file-size-label" id="generic-size"></div>
+                            <div style="margin-top:14px; padding:8px 16px; background:#ede9fe; border-radius:8px; font-size:11px; color:#5b21b6;">
+                                Preview not available for this file type
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div><!-- /upload-right -->
@@ -396,6 +455,39 @@
         updateRightPreview(file);
     }
 
+    // ── Zoom state ────────────────────────────────────────
+    let currentZoom     = 100;
+    const ZOOM_MIN      = 25;
+    const ZOOM_MAX      = 300;
+    const zoomInner     = document.getElementById('preview-zoom-inner');
+    const zoomToolbar   = document.getElementById('zoom-toolbar');
+    const zoomLabel     = document.getElementById('zoom-level-label');
+
+    function applyZoom() {
+        zoomInner.style.transform = `scale(${currentZoom / 100})`;
+        // Adjust inner height so scrollbar works correctly
+        zoomInner.style.height    = currentZoom !== 100 ? (currentZoom / 100 * 100) + '%' : '';
+        zoomLabel.textContent     = currentZoom + '%';
+    }
+
+    function changeZoom(delta) {
+        currentZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, currentZoom + delta));
+        applyZoom();
+    }
+
+    function resetZoom() {
+        currentZoom = 100;
+        applyZoom();
+    }
+
+    // Ctrl+Scroll to zoom
+    document.getElementById('preview-zoom-viewport').addEventListener('wheel', function(e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            changeZoom(e.deltaY < 0 ? 25 : -25);
+        }
+    }, { passive: false });
+
     function updateRightPreview(file) {
         const placeholder = document.getElementById('doc-preview-placeholder');
         const iframe      = document.getElementById('doc-preview-iframe');
@@ -408,6 +500,10 @@
         iframe.style.display      = 'none';
         img.style.display         = 'none';
         generic.style.display     = 'none';
+        zoomToolbar.style.display = 'none';
+
+        // Reset zoom for new file
+        resetZoom();
 
         fnLabel.textContent = file.name;
 
@@ -415,20 +511,19 @@
         const type = file.type;
 
         if (type === 'application/pdf') {
-            // PDF → iframe with object URL
             const url = URL.createObjectURL(file);
             iframe.src = url;
-            iframe.style.display = 'block';
+            iframe.style.display      = 'block';
+            zoomToolbar.style.display = 'flex';
 
         } else if (type.startsWith('image/')) {
-            // Image → <img>
             const reader = new FileReader();
             reader.onload = e => { img.src = e.target.result; };
             reader.readAsDataURL(file);
-            img.style.display = 'block';
+            img.style.display         = 'block';
+            zoomToolbar.style.display = 'flex';
 
         } else {
-            // Generic: show icon + name + size
             const iconMap = {
                 doc: '📝', docx: '📝',
                 xls: '📊', xlsx: '📊', csv: '📊',
@@ -442,6 +537,7 @@
             document.getElementById('generic-name').textContent = file.name;
             document.getElementById('generic-size').textContent = formatBytes(file.size);
             generic.style.display = 'block';
+            // No zoom toolbar for generic files
         }
     }
 
@@ -458,6 +554,8 @@
         document.getElementById('doc-preview-generic').style.display     = 'none';
         document.getElementById('doc-preview-iframe').src                = '';
         document.getElementById('preview-filename-label').textContent    = '';
+        zoomToolbar.style.display                                        = 'none';
+        resetZoom();
     }
 
     function formatBytes(bytes) {
