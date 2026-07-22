@@ -307,6 +307,30 @@
         .error-title { font-size: 1.2rem; font-weight: 700; color: #991B1B; margin-bottom: 8px; }
         .error-sub { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
 
+        /* Scan-again button (shown on success + already-uploaded screens) */
+        .scan-again-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #7C3AED, #4F46E5);
+            color: #fff;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 6px 20px rgba(124,58,237,0.35);
+            transition: transform 0.15s, box-shadow 0.15s;
+            width: 100%;
+        }
+        .scan-again-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 3px 10px rgba(124,58,237,0.25);
+        }
+
+
         /* Timer badge */
         .timer-badge {
             display: inline-flex;
@@ -350,7 +374,10 @@
         <div class="error-card">
             <div class="error-icon">✅</div>
             <div class="error-title">Already Uploaded</div>
-            <div class="error-sub">A file was already uploaded using this link. Each QR code can only be used once.<br><br>Generate a new QR code on your computer if you need to upload another file.</div>
+            <div class="error-sub">A file was already uploaded using this link. Each QR code can only be used once.<br><br>To upload another file, scan a new QR code generated from your computer — or use the button below to scan one now.</div>
+            <a href="/mobile/qr-scan/" class="scan-again-btn">
+                📷 Scan Another QR Code
+            </a>
         </div>
 
         {% else %}
@@ -370,7 +397,10 @@
             <div class="success-title">File Sent!</div>
             <div class="success-sub">Your file has been uploaded successfully and is now visible on the desktop.</div>
             <div class="success-filename" id="success-filename"></div>
-            <p class="close-hint">You can close this tab now.</p>
+            <a href="/mobile/qr-scan/" class="scan-again-btn" style="margin-top: 18px;">
+                📷 Scan Another QR Code
+            </a>
+            <p class="close-hint" style="margin-top: 10px;">Or you can close this tab.</p>
         </div>
 
         <!-- Upload form -->
