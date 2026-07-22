@@ -508,14 +508,17 @@
 <div id="crop-editor-modal">
     <div class="crop-header">
         <button onclick="closeCropEditor()">Cancel</button>
-        <div style="font-weight:bold;">Adjust Corners</div>
-        <button onclick="saveCrop()">Save</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="modal-auto-crop" checked onchange="toggleModalAutoCrop(this.checked)" style="width:18px; height:18px; accent-color:#3B82F6; cursor:pointer;">
+            <label for="modal-auto-crop" style="font-size:0.9rem; color:#fff; font-weight:600; cursor:pointer; user-select:none;">✂️ Auto-Crop</label>
+        </div>
+        <button onclick="saveCrop()" style="background:#3B82F6; color:#fff; padding:6px 16px; border-radius:8px; font-weight:700;">Done</button>
     </div>
     <div class="crop-canvas-container">
         <canvas id="crop-canvas"></canvas>
     </div>
-    <div style="color:#aaa; text-align:center; padding:16px; font-size:0.9rem; background:#111;">
-        Drag corners to perfectly outline the document
+    <div style="color:#cbd5e1; text-align:center; padding:12px; font-size:0.85rem; background:#111;">
+        Drag corners to manually adjust • Moving edges unchecks Auto-Crop
     </div>
 </div>
 
@@ -569,6 +572,24 @@
         return icons[ext] || '📎';
     }
 
+    function setAutoCropState(checked) {
+        const cb1 = document.getElementById('auto-crop');
+        const cb2 = document.getElementById('modal-auto-crop');
+        if (cb1) cb1.checked = checked;
+        if (cb2) cb2.checked = checked;
+        if (checked) {
+            manualCropPoints = null; // Use backend auto-crop when checked
+        }
+    }
+
+    function toggleModalAutoCrop(checked) {
+        setAutoCropState(checked);
+        if (checked) {
+            pts = [[0.05, 0.05], [0.95, 0.05], [0.95, 0.95], [0.05, 0.95]];
+            drawCanvas();
+        }
+    }
+
     function onFileSelected(file) {
         if (!file) return;
         selectedFile = file;
@@ -582,8 +603,15 @@
         // Show auto-crop only for images
         if (file.type.startsWith('image/')) {
             document.getElementById('auto-crop-wrap').classList.add('show');
-            manualCropPoints = null; // Reset manual crop points on new file
-            document.getElementById('adjust-crop-btn').textContent = "Adjust";
+            if (!manualCropPoints) {
+                setAutoCropState(true); // By default checked for images
+                document.getElementById('adjust-crop-btn').textContent = "Adjust";
+            }
+            
+            // Automatically open crop editor over the image for manual adjustment
+            setTimeout(() => {
+                openCropEditor();
+            }, 300);
         } else {
             document.getElementById('auto-crop-wrap').classList.remove('show');
         }
@@ -594,7 +622,8 @@
     }
 
     document.getElementById('file-input').addEventListener('change', e => onFileSelected(e.target.files[0]));
-    document.getElementById('camera-input').addEventListener('change', e => onFileSelected(e.target.files[0]));
+    const camInputEl = document.getElementById('camera-input');
+    if (camInputEl) camInputEl.addEventListener('change', e => onFileSelected(e.target.files[0]));
 
     /* ── Crop Editor Logic ───────────────────────────────── */
     const cropModal = document.getElementById('crop-editor-modal');
@@ -629,10 +658,14 @@
     }
 
     function saveCrop() {
-        manualCropPoints = JSON.parse(JSON.stringify(pts));
-        document.getElementById('adjust-crop-btn').textContent = "✓ Adjusted";
         const autoCb = document.getElementById('auto-crop');
-        if (autoCb) autoCb.checked = false; // Disable backend auto-crop if manual points set
+        if (autoCb && autoCb.checked) {
+            manualCropPoints = null; // Auto-crop selected
+            document.getElementById('adjust-crop-btn').textContent = "Auto-Crop";
+        } else {
+            manualCropPoints = JSON.parse(JSON.stringify(pts));
+            document.getElementById('adjust-crop-btn').textContent = "✓ Manual Crop";
+        }
         closeCropEditor();
     }
 
@@ -762,6 +795,10 @@
         relY = Math.max(0, Math.min(1, relY));
         
         pts[activePointIdx] = [relX, relY];
+        
+        // Automatically uncheck auto-crop when user moves edges
+        setAutoCropState(false);
+
         drawCanvas();
     }
 
