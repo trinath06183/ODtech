@@ -216,12 +216,33 @@
                     </div>
 
                     <!-- File Preview bar (after selection) -->
-                    <div id="file-preview" class="hidden mt-4 p-4 bg-violet-50 rounded-xl flex items-center gap-4">
+                    <div id="file-preview" class="hidden mt-4 p-4 bg-violet-50 rounded-xl flex items-center gap-4 flex-wrap">
                         <div class="text-3xl" id="file-icon">📄</div>
                         <div class="flex-1 min-w-0">
                             <p class="font-semibold text-slate-800 truncate" id="file-name">-</p>
                             <p class="text-xs text-slate-400" id="file-size">-</p>
                         </div>
+                        <!-- Scan QR Again button -->
+                        <a href="{% url 'mobile_qr_scan' %}" target="_blank"
+                           title="Open camera to scan another QR code"
+                           style="
+                               display: inline-flex;
+                               align-items: center;
+                               gap: 6px;
+                               padding: 6px 12px;
+                               background: linear-gradient(135deg, #7c3aed, #4f46e5);
+                               color: white;
+                               border-radius: 8px;
+                               font-size: 12px;
+                               font-weight: 600;
+                               text-decoration: none;
+                               white-space: nowrap;
+                               transition: opacity 0.2s;
+                           "
+                           onmouseover="this.style.opacity='0.85'"
+                           onmouseout="this.style.opacity='1'">
+                            📷 Scan QR Again
+                        </a>
                         <button type="button" onclick="clearFile(event)"
                                 class="text-slate-400 hover:text-red-500 p-1">✕</button>
                     </div>
@@ -243,8 +264,28 @@
                         <span class="text-xs text-slate-400 font-medium">OR UPLOAD FROM PHONE</span>
                         <div class="flex-1 h-px bg-slate-200"></div>
                     </div>
-                    <div class="mt-4 flex justify-center">
+                    <div class="mt-4 flex flex-col items-center gap-3">
                         {% include 'mobile_upload/qr_widget.html' %}
+                        <!-- Scan QR code from this device -->
+                        <a href="{% url 'mobile_qr_scan' %}" target="_blank"
+                           style="
+                               display: inline-flex;
+                               align-items: center;
+                               gap: 8px;
+                               padding: 9px 18px;
+                               background: #f5f3ff;
+                               border: 1.5px solid #c4b5fd;
+                               color: #6d28d9;
+                               border-radius: 10px;
+                               font-size: 13px;
+                               font-weight: 600;
+                               text-decoration: none;
+                               transition: background 0.2s;
+                           "
+                           onmouseover="this.style.background='#ede9fe'"
+                           onmouseout="this.style.background='#f5f3ff'">
+                            📷 Scan QR Code with This Device
+                        </a>
                     </div>
                 </div>
 

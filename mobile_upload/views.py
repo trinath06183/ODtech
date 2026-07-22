@@ -27,6 +27,17 @@ from django.views.decorators.http import require_POST, require_GET
 from .models import MobileUploadSession
 
 
+# ── 0. QR Scanner page (camera-based QR reader) ───────────────────────────────
+
+def qr_scanner_page(request):
+    """
+    GET /mobile/qr-scan/
+    A standalone camera-based QR code scanner page.
+    Opens the device camera, detects a QR code, and redirects to the URL found.
+    No login required — it's a read-only utility.
+    """
+    return render(request, 'mobile_upload/qr_scanner_page.html')
+
 # ── 1. Desktop: generate a new session and return the QR URL ──────────────────
 
 @login_required

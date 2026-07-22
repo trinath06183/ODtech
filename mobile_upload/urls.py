@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # QR Scanner page (camera opens automatically, scans QR, redirects)
+    path('qr-scan/',                           views.qr_scanner_page,        name='mobile_qr_scan'),
+
     # Desktop: generate a new QR session (POST, login required)
     path('generate-session/',              views.generate_qr_session,    name='mobile_generate_session'),
 
