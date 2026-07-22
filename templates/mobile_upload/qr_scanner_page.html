@@ -283,13 +283,29 @@
         setStatus('⟳', 'Requesting camera access…');
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: 'environment' }, // back camera
-                    width:  { ideal: 1280 },
-                    height: { ideal: 720 },
-                }
-            });
+            let stream;
+
+            // ── Always try rear (primary) camera first ──
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { exact: 'environment' }, // force rear camera
+                        width:  { ideal: 1920 },
+                        height: { ideal: 1080 },
+                    }
+                });
+            } catch (rearErr) {
+                // Device has no rear camera (e.g. desktop) — fall back to any camera
+                console.warn('Rear camera unavailable, falling back:', rearErr.message);
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width:  { ideal: 1280 },
+                        height: { ideal: 720 },
+                    }
+                });
+            }
+
             video.srcObject = stream;
             video.addEventListener('loadedmetadata', () => {
                 video.play();
