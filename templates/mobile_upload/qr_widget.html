@@ -345,7 +345,9 @@
             const fileInput = document.getElementById('edms-file-input') || document.getElementById('id_file');
             if(fileInput){
                 fileInput.files = dataTransfer.files;
-                if(typeof showPreview === 'function') showPreview();
+                // Support both old (showPreview) and new (handleFileSelected) upload pages
+                if(typeof handleFileSelected === 'function') handleFileSelected();
+                else if(typeof showPreview === 'function') showPreview();
             }
         } catch(e) {
             console.error("Failed to inject file", e);
