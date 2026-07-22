@@ -347,7 +347,55 @@
         }
         .timer-badge.urgent { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; animation: pulse 1s infinite; }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* ── Smart Camera Modal ── */
+        .smart-cam-modal {
+            display: none; position: fixed; inset: 0;
+            background: #000; z-index: 9000; flex-direction: column;
+        }
+        .smart-cam-modal.show { display: flex; }
+        .smart-cam-header {
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
+            z-index: 10;
+        }
+        .smart-cam-close {
+            background: rgba(255,255,255,0.15); border: none; color: white;
+            width: 36px; height: 36px; border-radius: 50%; font-size: 18px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .smart-cam-title { color: white; font-size: 14px; font-weight: 700; }
+        .smart-cam-sublabel { color: rgba(255,255,255,0.55); font-size: 10px; }
+        #smart-cam-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #smart-cam-overlay { position: absolute; inset: 0; pointer-events: none; }
+        .smart-cam-body { flex: 1; position: relative; overflow: hidden; }
+        .smart-cam-hint {
+            position: absolute; bottom: 108px; left: 0; right: 0;
+            text-align: center; color: rgba(255,255,255,0.75); font-size: 12px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        }
+        .smart-cam-footer {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 20px 24px 40px;
+            display: flex; align-items: center; justify-content: center; gap: 40px;
+            background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+        }
+        .capture-btn {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: white; border: 5px solid rgba(255,255,255,0.35);
+            cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        .capture-btn:active { transform: scale(0.9); }
+        .cam-round-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+            color: white; border-radius: 50%; width: 44px; height: 44px;
+            font-size: 18px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
     </style>
+
 </head>
 <body>
 <div class="container">
@@ -413,12 +461,11 @@
                 <div class="drop-sub">PDF, images, Word, Excel and more<br>Max 50 MB</div>
             </div>
 
-            <!-- Camera capture button (shows camera on phones) -->
-            <label class="camera-btn">
-                <input type="file" id="camera-input" accept="image/*" capture="environment">
+            <!-- Camera capture button — smart camera with primary cam + doc border -->
+            <button type="button" class="camera-btn" onclick="openSmartCamera()">
                 <span class="camera-icon">📷</span>
                 <span>Take a Photo</span>
-            </label>
+            </button>
 
             <!-- Selected file preview -->
             <div class="file-preview" id="file-preview">
@@ -825,5 +872,202 @@
     startTimer();
     {% endif %}
 </script>
+
+<!-- ══ Smart Camera Modal ══ -->
+<div class="smart-cam-modal" id="smart-cam-modal">
+    <div class="smart-cam-body">
+        <video id="smart-cam-video" autoplay playsinline muted></video>
+        <canvas id="smart-cam-overlay"></canvas>
+        <div class="smart-cam-hint" id="smart-cam-hint">Position the document in view</div>
+    </div>
+    <div class="smart-cam-header">
+        <button class="smart-cam-close" onclick="closeSmartCamera()">✕</button>
+        <div style="flex:1">
+            <div class="smart-cam-title">📷 Take a Photo</div>
+            <div class="smart-cam-sublabel" id="smart-cam-label">Loading camera…</div>
+        </div>
+        <button class="cam-round-btn" id="smart-switch-btn" onclick="switchSmartCamera()" style="display:none" title="Switch camera">🔄</button>
+    </div>
+    <div class="smart-cam-footer">
+        <div style="width:44px"></div>
+        <button class="capture-btn" onclick="captureSmartPhoto()" title="Take photo"></button>
+        <button class="cam-round-btn" onclick="switchSmartCamera()" title="Switch camera">🔄</button>
+    </div>
+</div>
+<canvas id="smart-cap-canvas" style="display:none"></canvas>
+
+<script>
+(function () {
+    const LS_KEY   = 'odtech_qr_primary_cam';
+    const modal    = document.getElementById('smart-cam-modal');
+    const scVideo  = document.getElementById('smart-cam-video');
+    const scOvl    = document.getElementById('smart-cam-overlay');
+    const scLabel  = document.getElementById('smart-cam-label');
+    const scHint   = document.getElementById('smart-cam-hint');
+    const capCv    = document.getElementById('smart-cap-canvas');
+    const switchBtn= document.getElementById('smart-switch-btn');
+
+    let allCams    = [];
+    let camIdx     = 0;
+    let scStream   = null;
+    let borderTimer= null;
+    let ovlCtx     = null;
+
+    /* ── Open ── */
+    window.openSmartCamera = async function () {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        ovlCtx = scOvl.getContext('2d', { willReadFrequently: true });
+        scLabel.textContent = 'Finding cameras…';
+
+        try {
+            // Trigger permission prompt so labels appear
+            const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+            tmp.getTracks().forEach(t => t.stop());
+
+            const devs = await navigator.mediaDevices.enumerateDevices();
+            allCams = devs.filter(d => d.kind === 'videoinput')
+                         .map((d, i) => ({ deviceId: d.deviceId, label: d.label || 'Camera ' + (i+1) }));
+
+            if (allCams.length === 0) { scLabel.textContent = 'No camera found.'; return; }
+
+            // Use primary from localStorage (set by QR scanner page)
+            const pid  = localStorage.getItem(LS_KEY);
+            const pidx = allCams.findIndex(c => c.deviceId === pid);
+            camIdx = pidx >= 0 ? pidx : 0;
+
+            if (allCams.length > 1) switchBtn.style.display = 'flex';
+            await launchCam(camIdx);
+        } catch (err) {
+            scLabel.textContent = 'Camera error: ' + err.message;
+        }
+    };
+
+    /* ── Close ── */
+    window.closeSmartCamera = function () {
+        clearInterval(borderTimer);
+        if (scStream) { scStream.getTracks().forEach(t => t.stop()); scStream = null; }
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    };
+
+    /* ── Switch camera ── */
+    window.switchSmartCamera = async function () {
+        if (allCams.length < 2) return;
+        camIdx = (camIdx + 1) % allCams.length;
+        await launchCam(camIdx);
+    };
+
+    async function launchCam(idx) {
+        clearInterval(borderTimer);
+        if (scStream) { scStream.getTracks().forEach(t => t.stop()); scStream = null; }
+        const cam = allCams[idx];
+        scLabel.textContent = cam.label;
+        try {
+            scStream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { exact: cam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+            scVideo.srcObject = scStream;
+            scVideo.onloadedmetadata = () => {
+                scVideo.play().then(() => { borderTimer = setInterval(drawDocBorder, 200); });
+            };
+        } catch (err) { scLabel.textContent = 'Error: ' + err.message; }
+    }
+
+    /* ══════════════════════════════════════════
+       LIVE DOCUMENT BORDER (Sobel edge detection)
+    ══════════════════════════════════════════ */
+    function drawDocBorder() {
+        if (!scVideo || scVideo.readyState < scVideo.HAVE_ENOUGH_DATA) return;
+        const vw = scVideo.videoWidth, vh = scVideo.videoHeight;
+        if (!vw || !vh) return;
+
+        const rect = scVideo.getBoundingClientRect();
+        scOvl.width  = rect.width;
+        scOvl.height = rect.height;
+        ovlCtx.clearRect(0, 0, scOvl.width, scOvl.height);
+
+        // Downscale for speed
+        const SCALE = 0.22;
+        const sw = Math.round(vw * SCALE), sh = Math.round(vh * SCALE);
+        const offCv = new OffscreenCanvas(sw, sh);
+        const octx  = offCv.getContext('2d');
+        octx.drawImage(scVideo, 0, 0, sw, sh);
+        const id    = octx.getImageData(0, 0, sw, sh);
+        const gray  = toGray(id.data, sw, sh);
+        const edges = sobel(gray, sw, sh);
+        const quad  = findQuad(edges, sw, sh);
+
+        if (quad) {
+            const sx = scOvl.width / sw, sy = scOvl.height / sh;
+            const pts = quad.map(p => [p[0]*sx, p[1]*sy]);
+            ovlCtx.save();
+            ovlCtx.shadowBlur  = 18; ovlCtx.shadowColor = 'rgba(34,197,94,0.85)';
+            ovlCtx.strokeStyle = '#22c55e'; ovlCtx.lineWidth = 3; ovlCtx.lineJoin = 'round';
+            ovlCtx.beginPath();
+            ovlCtx.moveTo(pts[0][0], pts[0][1]);
+            pts.slice(1).forEach(p => ovlCtx.lineTo(p[0], p[1]));
+            ovlCtx.closePath(); ovlCtx.stroke();
+            ovlCtx.shadowBlur = 0; ovlCtx.fillStyle = 'rgba(34,197,94,0.07)'; ovlCtx.fill();
+            ovlCtx.fillStyle = '#22c55e';
+            pts.forEach(p => { ovlCtx.beginPath(); ovlCtx.arc(p[0],p[1],5,0,Math.PI*2); ovlCtx.fill(); });
+            ovlCtx.restore();
+            scHint.textContent = '✅ Document detected — tap ⚪ to capture';
+            scHint.style.color = '#86efac';
+        } else {
+            scHint.textContent = 'Position the document in view';
+            scHint.style.color = 'rgba(255,255,255,0.7)';
+        }
+    }
+
+    function toGray(data, w, h) {
+        const g = new Uint8Array(w*h);
+        for (let i=0; i<w*h; i++) g[i] = (data[i*4]*77 + data[i*4+1]*150 + data[i*4+2]*29) >> 8;
+        return g;
+    }
+    function sobel(g, w, h) {
+        const m = new Uint8Array(w*h);
+        for (let y=1; y<h-1; y++) for (let x=1; x<w-1; x++) {
+            const i = y*w+x;
+            const gx = -g[i-w-1]-2*g[i-1]-g[i+w-1]+g[i-w+1]+2*g[i+1]+g[i+w+1];
+            const gy = -g[i-w-1]-2*g[i-w]-g[i-w+1]+g[i+w-1]+2*g[i+w]+g[i+w+1];
+            m[i] = Math.min(255, Math.sqrt(gx*gx+gy*gy));
+        }
+        return m;
+    }
+    function findQuad(edges, w, h) {
+        const T=55, mx=Math.round(w*0.06), my=Math.round(h*0.06);
+        let tl=null,tr=null,bl=null,br=null, mTL=Infinity,mTR=Infinity,mBL=Infinity,mBR=Infinity;
+        for (let y=my; y<h-my; y++) for (let x=mx; x<w-mx; x++) {
+            if (edges[y*w+x] < T) continue;
+            const dTL=x+y, dTR=(w-x)+y, dBL=x+(h-y), dBR=(w-x)+(h-y);
+            if (dTL<mTL){mTL=dTL;tl=[x,y];}
+            if (dTR<mTR){mTR=dTR;tr=[x,y];}
+            if (dBL<mBL){mBL=dBL;bl=[x,y];}
+            if (dBR<mBR){mBR=dBR;br=[x,y];}
+        }
+        if (!tl||!tr||!bl||!br) return null;
+        const qw=Math.max(tr[0],br[0])-Math.min(tl[0],bl[0]);
+        const qh=Math.max(bl[1],br[1])-Math.min(tl[1],tr[1]);
+        if (qw < w*0.28 || qh < h*0.28) return null;
+        return [tl, tr, br, bl];
+    }
+
+    /* ── Capture ── */
+    window.captureSmartPhoto = function () {
+        const vw = scVideo.videoWidth, vh = scVideo.videoHeight;
+        capCv.width = vw; capCv.height = vh;
+        capCv.getContext('2d').drawImage(scVideo, 0, 0, vw, vh);
+        capCv.toBlob(blob => {
+            if (!blob) return;
+            const ts   = new Date().toISOString().replace(/[:.]/g, '-');
+            const file = new File([blob], 'photo_' + ts + '.jpg', { type: 'image/jpeg' });
+            closeSmartCamera();
+            if (typeof onFileSelected === 'function') onFileSelected(file);
+        }, 'image/jpeg', 0.92);
+    };
+})();
+</script>
 </body>
 </html>
+
