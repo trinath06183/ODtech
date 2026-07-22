@@ -51,96 +51,101 @@ def stock_summary(request):
 
 
 @login_required
+@login_required
 def financial_dashboard(request):
     """Financial & Operational Summary Dashboard with P&L, sales, purchases, expenses, orders & reminders."""
+    today = date.today()
+
+    # ── Date filter ────────────────────────────────────────────────────────────
+    period = request.GET.get('period', 'this_month')
+
+    if period == 'today':
+        start_date = today
+        end_date = today
+        label = "Today"
+    elif period == 'this_week':
+        start_date = today - timedelta(days=today.weekday())
+        end_date = today
+        label = "This Week"
+    elif period == 'this_month':
+        start_date = today.replace(day=1)
+        end_date = today
+        label = "This Month"
+    elif period == 'last_month':
+        first_of_month = today.replace(day=1)
+        end_date = first_of_month - timedelta(days=1)
+        start_date = end_date.replace(day=1)
+        label = "Last Month"
+    elif period == 'this_quarter':
+        q = (today.month - 1) // 3
+        start_date = date(today.year, q * 3 + 1, 1)
+        end_date = today
+        label = "This Quarter"
+    elif period == 'this_fy':
+        fy_start_year = today.year if today.month >= 4 else today.year - 1
+        start_date = date(fy_start_year, 4, 1)
+        end_date = today
+        label = f"FY {fy_start_year}-{str(fy_start_year + 1)[2:]}"
+    elif period == 'this_year':
+        start_date = date(today.year, 1, 1)
+        end_date = today
+        label = f"Year {today.year}"
+    elif period == 'custom':
+        try:
+            start_date = date.fromisoformat(request.GET.get('start', ''))
+            end_date = date.fromisoformat(request.GET.get('end', ''))
+            label = f"{start_date.strftime('%d %b %Y')} – {end_date.strftime('%d %b %Y')}"
+        except (ValueError, TypeError):
+            start_date = today.replace(day=1)
+            end_date = today
+            label = "This Month"
+    else:
+        start_date = today.replace(day=1)
+        end_date = today
+        label = "This Month"
+
+    # ── Approved Documents in period ──────────────────────────────────────────
+    docs_qs = Document.objects.filter(
+        status='Approved',
+        date__gte=start_date,
+        date__lte=end_date,
+    )
+
+    # Sales = Invoices + Proforma Invoices
+    sales_qs = docs_qs.filter(type__in=['INV', 'PRO'])
+    total_sales = sales_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    total_sales_tax = sales_qs.aggregate(t=Sum('tax_total'))['t'] or Decimal('0')
+    total_sales_subtotal = sales_qs.aggregate(t=Sum('subtotal'))['t'] or Decimal('0')
+    sales_count = sales_qs.count()
+
+    # Purchase Orders
+    po_qs = docs_qs.filter(type='PO')
+    total_purchases = po_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    purchases_count = po_qs.count()
+
+    # Quotations
+    qtn_qs = docs_qs.filter(type='QTN')
+    total_quotations = qtn_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    quotations_count = qtn_qs.count()
+
+    # Credit Notes / Debit Notes
+    credit_notes = docs_qs.filter(type='CRN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    debit_notes = docs_qs.filter(type='DBN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+
+    # ── Payments received in period ───────────────────────────────────────────
     try:
-        today = date.today()
-
-        # ── Date filter ────────────────────────────────────────────────────────────
-        period = request.GET.get('period', 'this_month')
-
-        if period == 'today':
-            start_date = today
-            end_date = today
-            label = "Today"
-        elif period == 'this_week':
-            start_date = today - timedelta(days=today.weekday())
-            end_date = today
-            label = "This Week"
-        elif period == 'this_month':
-            start_date = today.replace(day=1)
-            end_date = today
-            label = "This Month"
-        elif period == 'last_month':
-            first_of_month = today.replace(day=1)
-            end_date = first_of_month - timedelta(days=1)
-            start_date = end_date.replace(day=1)
-            label = "Last Month"
-        elif period == 'this_quarter':
-            q = (today.month - 1) // 3
-            start_date = date(today.year, q * 3 + 1, 1)
-            end_date = today
-            label = "This Quarter"
-        elif period == 'this_fy':
-            fy_start_year = today.year if today.month >= 4 else today.year - 1
-            start_date = date(fy_start_year, 4, 1)
-            end_date = today
-            label = f"FY {fy_start_year}-{str(fy_start_year + 1)[2:]}"
-        elif period == 'this_year':
-            start_date = date(today.year, 1, 1)
-            end_date = today
-            label = f"Year {today.year}"
-        elif period == 'custom':
-            try:
-                start_date = date.fromisoformat(request.GET.get('start', ''))
-                end_date = date.fromisoformat(request.GET.get('end', ''))
-                label = f"{start_date.strftime('%d %b %Y')} – {end_date.strftime('%d %b %Y')}"
-            except (ValueError, TypeError):
-                start_date = today.replace(day=1)
-                end_date = today
-                label = "This Month"
-        else:
-            start_date = today.replace(day=1)
-            end_date = today
-            label = "This Month"
-
-        # ── Approved Documents in period ──────────────────────────────────────────
-        docs_qs = Document.objects.filter(
-            status='Approved',
-            date__gte=start_date,
-            date__lte=end_date,
-        )
-
-        # Sales = Invoices + Proforma Invoices
-        sales_qs = docs_qs.filter(type__in=['INV', 'PRO'])
-        total_sales = sales_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-        total_sales_tax = sales_qs.aggregate(t=Sum('tax_total'))['t'] or Decimal('0')
-        total_sales_subtotal = sales_qs.aggregate(t=Sum('subtotal'))['t'] or Decimal('0')
-        sales_count = sales_qs.count()
-
-        # Purchase Orders
-        po_qs = docs_qs.filter(type='PO')
-        total_purchases = po_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-        purchases_count = po_qs.count()
-
-        # Quotations
-        qtn_qs = docs_qs.filter(type='QTN')
-        total_quotations = qtn_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-        quotations_count = qtn_qs.count()
-
-        # Credit Notes / Debit Notes
-        credit_notes = docs_qs.filter(type='CRN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-        debit_notes = docs_qs.filter(type='DBN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-
-        # ── Payments received in period ───────────────────────────────────────────
         payments_qs = Payment.objects.filter(
             date__gte=start_date,
             date__lte=end_date,
         )
         total_payments_received = payments_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         payments_count = payments_qs.count()
+    except Exception:
+        total_payments_received = Decimal('0')
+        payments_count = 0
 
-        # ── Expenses & Payments Given in period ────────────────────────────────────
+    # ── Expenses & Payments Given in period ────────────────────────────────────
+    try:
         expenses_qs = Expense.objects.filter(
             date__gte=start_date,
             date__lte=end_date,
@@ -150,12 +155,8 @@ def financial_dashboard(request):
         total_payments_given = total_expenses
         expenses_count = expenses_qs.count()
 
-        # Outstanding Payables = Pending Expenses + Unpaid Approved Purchase Orders
         pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        unpaid_pos = Document.objects.filter(type='PO', status='Approved').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-        amount_needed_to_pay = pending_expenses + (unpaid_pos * Decimal('0.3'))  # Estimated outstanding payables balance
 
-        # Daily expenses vs fixed cost split
         daily_expenses = expenses_qs.filter(
             expense_type__in=['Petrol and Diesel', 'Travel', 'Hotel', 'Food Expenses',
                               'Office stationary', 'Courier expenses', 'Transportation Payment',
@@ -165,36 +166,49 @@ def financial_dashboard(request):
             expense_type__in=['Staff salary', 'OFC rent', 'Electricity bill', 'Internet Bill',
                               'Google workspace', 'Website and hosting cost', 'Other Fixed']
         ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+    except Exception:
+        total_expenses = Decimal('0')
+        total_payments_given = Decimal('0')
+        expenses_count = 0
+        pending_expenses = Decimal('0')
+        daily_expenses = Decimal('0')
+        fixed_expenses = Decimal('0')
 
-        # ── Order Tracker Metrics ──────────────────────────────────────────────────
+    unpaid_pos = Document.objects.filter(type='PO', status='Approved').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    amount_needed_to_pay = pending_expenses + (unpaid_pos * Decimal('0.3'))
+
+    # ── Order Tracker Metrics ──────────────────────────────────────────────────
+    total_orders = 0
+    order_open = 0
+    order_in_progress = 0
+    order_completed = 0
+    order_other = 0
+    try:
         from tracker.models import Order
         orders_qs = Order.objects.filter(
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date,
+            created_at__gte=timezone.make_aware(timezone.datetime.combine(start_date, timezone.datetime.min.time())),
+            created_at__lte=timezone.make_aware(timezone.datetime.combine(end_date, timezone.datetime.max.time())),
         )
         total_orders = orders_qs.count()
-        
-        # Status breakdown for Donut Chart
         order_open = orders_qs.filter(order_status='OPEN').count()
         order_in_progress = orders_qs.filter(order_status='IN_PROGRESS').count()
         order_completed = orders_qs.filter(order_status='CLOSED').count()
         order_other = max(0, total_orders - (order_open + order_in_progress + order_completed))
+    except Exception:
+        pass
 
-        # ── Profit Calculations ───────────────────────────────────────────────────
-        # Gross Profit = Sales Revenue (excluding tax) - Cost of Goods (Purchases)
-        gross_profit = total_sales_subtotal - total_purchases
-        gross_margin_pct = (gross_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
+    # ── Profit Calculations ───────────────────────────────────────────────────
+    gross_profit = total_sales_subtotal - total_purchases
+    gross_margin_pct = (gross_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
 
-        # Net Profit = Gross Profit - Total Operating Expenses + (Debit Notes - Credit Notes)
-        net_profit = gross_profit - total_expenses + (debit_notes - credit_notes)
-        net_margin_pct = (net_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
+    net_profit = gross_profit - total_expenses + (debit_notes - credit_notes)
+    net_margin_pct = (net_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
 
-        # Outstanding / Receivables = Total Sales - Total Payments Received
-        outstanding_receivables = max(Decimal('0'), total_sales - total_payments_received)
+    outstanding_receivables = max(Decimal('0'), total_sales - total_payments_received)
 
-        # ── Payment Reminders & Urgent Alerts ──────────────────────────────────────
-        reminders = []
-        # Overdue Invoices older than 30 days
+    # ── Payment Reminders & Urgent Alerts ──────────────────────────────────────
+    reminders = []
+    try:
         overdue_docs = Document.objects.filter(
             type='INV', status='Approved',
             date__lt=today - timedelta(days=30)
@@ -210,7 +224,6 @@ def financial_dashboard(request):
                 'link': f"/documents/{doc.id}/"
             })
 
-        # Pending Vendor Expenses needing payment
         pending_exp_list = Expense.objects.filter(
             status='Pending'
         ).order_by('-date')[:5]
@@ -224,9 +237,12 @@ def financial_dashboard(request):
                 'is_urgent': False,
                 'link': "/payments/expenses/"
             })
+    except Exception:
+        pass
 
-        # ── Monthly / Yearly trend data (last 6 intervals) ─────────────────────────
-        monthly_trend = []
+    # ── Monthly / Yearly trend data (last 6 intervals) ─────────────────────────
+    monthly_trend = []
+    try:
         for i in range(5, -1, -1):
             ref = today.replace(day=1) - timedelta(days=i * 28)
             m_start = ref.replace(day=1)
@@ -245,9 +261,12 @@ def financial_dashboard(request):
                 date__gte=m_start, date__lte=m_end
             ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
-            m_exp = Expense.objects.filter(
-                status='Approved', date__gte=m_start, date__lte=m_end
-            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+            try:
+                m_exp = Expense.objects.filter(
+                    status='Approved', date__gte=m_start, date__lte=m_end
+                ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+            except Exception:
+                m_exp = Decimal('0')
 
             m_profit = m_sales - m_purchases - m_exp
 
@@ -258,111 +277,92 @@ def financial_dashboard(request):
                 'expenses': float(m_exp),
                 'profit': float(m_profit),
             })
+    except Exception:
+        pass
 
-        # ── Expense breakdown by category ─────────────────────────────────────────
+    # ── Expense breakdown by category ─────────────────────────────────────────
+    expense_by_type = []
+    try:
         expense_by_type = list(
-            expenses_qs.values('expense_type')
+            Expense.objects.filter(date__gte=start_date, date__lte=end_date, status='Approved')
+            .values('expense_type')
             .annotate(total=Sum('amount'), count=Count('id'))
             .order_by('-total')[:8]
         )
+    except Exception:
+        pass
 
-        # ── Top customers by sales value ─────────────────────────────────────────
+    # ── Top customers by sales value ─────────────────────────────────────────
+    top_customers = []
+    try:
         top_customers = list(
             sales_qs.values('contact__name')
             .annotate(total=Sum('grand_total'), count=Count('id'))
             .order_by('-total')[:5]
         )
+    except Exception:
+        pass
 
-        periods = [
-            ('today', 'Today'),
-            ('this_week', 'This Week'),
-            ('this_month', 'This Month'),
-            ('last_month', 'Last Month'),
-            ('this_quarter', 'This Quarter'),
-            ('this_fy', 'This FY'),
-            ('this_year', 'This Year'),
-        ]
+    periods = [
+        ('today', 'Today'),
+        ('this_week', 'This Week'),
+        ('this_month', 'This Month'),
+        ('last_month', 'Last Month'),
+        ('this_quarter', 'This Quarter'),
+        ('this_fy', 'This FY'),
+        ('this_year', 'This Year'),
+    ]
 
-        context = {
-            # Period
-            'period': period,
-            'periods': periods,
-            'label': label,
-            'start_date': start_date,
-            'end_date': end_date,
-            # Sales & Purchases
-            'total_sales': total_sales,
-            'total_sales_subtotal': total_sales_subtotal,
-            'total_sales_tax': total_sales_tax,
-            'sales_count': sales_count,
-            'total_purchases': total_purchases,
-            'purchases_count': purchases_count,
-            'total_quotations': total_quotations,
-            'quotations_count': quotations_count,
-            # Payments & Payables
-            'total_payments_received': total_payments_received,
-            'payments_count': payments_count,
-            'outstanding_receivables': outstanding_receivables,
-            'total_payments_given': total_payments_given,
-            'amount_needed_to_pay': amount_needed_to_pay,
-            # Orders
-            'total_orders': total_orders,
-            'order_open': order_open,
-            'order_in_progress': order_in_progress,
-            'order_completed': order_completed,
-            'order_other': order_other,
-            # Expenses
-            'total_expenses': total_expenses,
-            'daily_expenses': daily_expenses,
-            'fixed_expenses': fixed_expenses,
-            'expenses_count': expenses_count,
-            # Profit
-            'gross_profit': gross_profit,
-            'gross_margin_pct': gross_margin_pct,
-            'net_profit': net_profit,
-            'net_margin_pct': net_margin_pct,
-            # Credit/Debit Notes
-            'credit_notes': credit_notes,
-            'debit_notes': debit_notes,
-            # Reminders
-            'reminders': reminders,
-            'reminder_count': len(reminders),
-            # Charts
-            'monthly_trend': monthly_trend,
-            'monthly_trend_json': json.dumps(monthly_trend),
-            'expense_by_type': expense_by_type,
-            'top_customers': top_customers,
-        }
+    context = {
+        # Period
+        'period': period,
+        'periods': periods,
+        'label': label,
+        'start_date': start_date,
+        'end_date': end_date,
+        # Sales & Purchases
+        'total_sales': total_sales,
+        'total_sales_subtotal': total_sales_subtotal,
+        'total_sales_tax': total_sales_tax,
+        'sales_count': sales_count,
+        'total_purchases': total_purchases,
+        'purchases_count': purchases_count,
+        'total_quotations': total_quotations,
+        'quotations_count': quotations_count,
+        # Payments & Payables
+        'total_payments_received': total_payments_received,
+        'payments_count': payments_count,
+        'outstanding_receivables': outstanding_receivables,
+        'total_payments_given': total_payments_given,
+        'amount_needed_to_pay': amount_needed_to_pay,
+        # Orders
+        'total_orders': total_orders,
+        'order_open': order_open,
+        'order_in_progress': order_in_progress,
+        'order_completed': order_completed,
+        'order_other': order_other,
+        # Expenses
+        'total_expenses': total_expenses,
+        'daily_expenses': daily_expenses,
+        'fixed_expenses': fixed_expenses,
+        'expenses_count': expenses_count,
+        # Profit
+        'gross_profit': gross_profit,
+        'gross_margin_pct': gross_margin_pct,
+        'net_profit': net_profit,
+        'net_margin_pct': net_margin_pct,
+        # Credit/Debit Notes
+        'credit_notes': credit_notes,
+        'debit_notes': debit_notes,
+        # Reminders
+        'reminders': reminders,
+        'reminder_count': len(reminders),
+        # Charts
+        'monthly_trend': monthly_trend,
+        'monthly_trend_json': json.dumps(monthly_trend),
+        'expense_by_type': expense_by_type,
+        'top_customers': top_customers,
+    }
 
-        return render(request, 'reporting/financial_dashboard.html', context)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return render(request, 'reporting/financial_dashboard.html', {
-            'period': 'this_month',
-            'periods': [
-                ('today', 'Today'),
-                ('this_week', 'This Week'),
-                ('this_month', 'This Month'),
-                ('last_month', 'Last Month'),
-                ('this_quarter', 'This Quarter'),
-                ('this_fy', 'This FY'),
-                ('this_year', 'This Year'),
-            ],
-            'label': 'This Month',
-            'error_message': str(e),
-            'monthly_trend_json': '[]',
-            'total_sales': Decimal('0'),
-            'total_purchases': Decimal('0'),
-            'total_expenses': Decimal('0'),
-            'gross_profit': Decimal('0'),
-            'net_profit': Decimal('0'),
-            'total_orders': 0,
-            'order_open': 0,
-            'order_in_progress': 0,
-            'order_completed': 0,
-            'order_other': 0,
-            'reminders': [],
-            'reminder_count': 0,
-        })
+    return render(request, 'reporting/financial_dashboard.html', context)
 
