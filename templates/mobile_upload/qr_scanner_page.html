@@ -56,9 +56,10 @@
             object-fit: cover;
             display: block;
         }
+        /* canvas is hidden — used only for pixel capture */
         #camera-canvas { display: none; }
 
-        /* ── Scan overlay ── */
+        /* ── Scan overlay — corner brackets only, NO laser bar ── */
         .scan-overlay {
             position: absolute;
             inset: 0;
@@ -73,7 +74,6 @@
             height: min(72vw, 280px);
             position: relative;
         }
-        /* Corner brackets */
         .scan-frame::before,
         .scan-frame::after,
         .corner-br,
@@ -88,21 +88,6 @@
         .scan-frame::after   { top: 0;    right: 0;  border-width: 4px 4px 0 0; border-radius: 0 4px 0 0; }
         .corner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-radius: 0 0 4px 0; }
         .corner-bl { bottom: 0; left: 0;  border-width: 0 0 4px 4px; border-radius: 0 0 0 4px; }
-
-        /* Scanning laser line */
-        .scan-line {
-            position: absolute;
-            left: 4px; right: 4px; height: 2px;
-            background: linear-gradient(90deg, transparent, #a78bfa, #7c3aed, #a78bfa, transparent);
-            border-radius: 2px;
-            animation: scanMove 2s ease-in-out infinite;
-            box-shadow: 0 0 8px #a78bfa;
-        }
-        @keyframes scanMove {
-            0%   { top: 4px; }
-            50%  { top: calc(100% - 6px); }
-            100% { top: 4px; }
-        }
 
         .scan-hint {
             margin-top: 24px;
@@ -121,7 +106,7 @@
             align-items: center;
             gap: 10px;
             flex-shrink: 0;
-            min-height: 56px;
+            min-height: 52px;
         }
         .status-dot {
             width: 10px; height: 10px;
@@ -165,7 +150,7 @@
             display: none;
             position: absolute;
             inset: 0;
-            background: rgba(16, 185, 129, 0.92);
+            background: rgba(16, 185, 129, 0.95);
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -178,19 +163,19 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .success-overlay .check { font-size: 72px; margin-bottom: 16px; }
         .success-overlay h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-        .success-overlay p  { font-size: 13px; opacity: 0.85; word-break: break-all; margin-bottom: 20px; }
+        .success-overlay p  { font-size: 13px; opacity: 0.85; margin-bottom: 12px; }
         .success-overlay .url-pill {
             background: rgba(255,255,255,0.2);
             border-radius: 8px;
             padding: 8px 14px;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 20px;
             word-break: break-all;
             max-width: 100%;
         }
         .success-overlay .redirect-note {
-            font-size: 12px;
-            opacity: 0.75;
+            font-size: 13px;
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -210,10 +195,9 @@
     <video id="camera-video" autoplay playsinline muted></video>
     <canvas id="camera-canvas"></canvas>
 
-    <!-- Scan overlay -->
+    <!-- Scan overlay — corner brackets only, no laser bar -->
     <div class="scan-overlay" id="scan-overlay">
         <div class="scan-frame">
-            <div class="scan-line"></div>
             <div class="corner-br"></div>
             <div class="corner-bl"></div>
         </div>
@@ -251,23 +235,22 @@
     <span class="status-text" id="status-text">Starting camera…</span>
 </div>
 
-<!-- jsQR library -->
+<!-- jsQR — reliable QR detection library -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
 <script>
     const video          = document.getElementById('camera-video');
     const canvas         = document.getElementById('camera-canvas');
-    const ctx            = canvas.getContext('2d');
+    const ctx            = canvas.getContext('2d', { willReadFrequently: true });
     const statusText     = document.getElementById('status-text');
-    const statusDot      = document.getElementById('status-dot');
     const successOverlay = document.getElementById('success-overlay');
     const detectedUrlEl  = document.getElementById('detected-url-text');
     const countdownEl    = document.getElementById('redirect-countdown');
     const scanOverlay    = document.getElementById('scan-overlay');
 
-    let scanning       = true;
-    let animFrameId    = null;
-    let detectedOnce   = false;
+    let scanning      = false;
+    let detectedOnce  = false;
+    let scanTimer     = null;
 
     /* ── Start camera ── */
     async function startCamera() {
@@ -276,74 +259,79 @@
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             document.getElementById('nosupport-screen').classList.add('show');
-            document.getElementById('camera-area').style.background = '#0f0e1a';
             return;
         }
 
-        setStatus('⟳', 'Requesting camera access…');
+        setStatus('Requesting camera access…');
 
         try {
             let stream;
 
-            // ── Always try rear (primary) camera first ──
+            // Always try rear (environment) camera first
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        facingMode: { exact: 'environment' }, // force rear camera
-                        width:  { ideal: 1920 },
-                        height: { ideal: 1080 },
-                    }
-                });
-            } catch (rearErr) {
-                // Device has no rear camera (e.g. desktop) — fall back to any camera
-                console.warn('Rear camera unavailable, falling back:', rearErr.message);
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { ideal: 'environment' },
+                        facingMode: { exact: 'environment' },
                         width:  { ideal: 1280 },
                         height: { ideal: 720 },
                     }
                 });
+            } catch (_) {
+                // Fallback for devices with no rear camera (desktops)
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user' }
+                });
             }
 
             video.srcObject = stream;
-            video.addEventListener('loadedmetadata', () => {
-                video.play();
-                setStatus('🟢', 'Camera active — scanning for QR code…');
-                requestAnimationFrame(scanFrame);
-            });
+            video.onloadedmetadata = () => {
+                video.play().then(() => {
+                    setStatus('Camera active — scanning for QR code…');
+                    scanning = true;
+                    // Use setInterval at ~10 fps — more reliable than rAF for decoding
+                    scanTimer = setInterval(scanFrame, 100);
+                });
+            };
+
         } catch (err) {
             console.error('Camera error:', err);
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 document.getElementById('permission-screen').classList.add('show');
-                setStatus('🔴', 'Camera permission denied.');
+                setStatus('Camera permission denied.');
             } else {
-                setStatus('🔴', 'Could not access camera: ' + err.message);
+                setStatus('Camera error: ' + err.message);
             }
         }
     }
 
-    /* ── Scan each frame ── */
+    /* ── Scan one frame ── */
     function scanFrame() {
-        if (!scanning) return;
+        if (!scanning || detectedOnce) return;
+        if (video.readyState < video.HAVE_ENOUGH_DATA) return;
 
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width  = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        if (!w || !h) return;
 
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: 'dontInvert',
-            });
+        canvas.width  = w;
+        canvas.height = h;
+        ctx.drawImage(video, 0, 0, w, h);
 
-            if (code && code.data) {
-                handleDetected(code.data);
-                return; // stop loop
-            }
+        let imageData;
+        try {
+            imageData = ctx.getImageData(0, 0, w, h);
+        } catch (e) {
+            return; // cross-origin guard — shouldn't happen here
         }
 
-        animFrameId = requestAnimationFrame(scanFrame);
+        // attemptBoth tries normal + inverted — catches dark-background QR codes too
+        const code = jsQR(imageData.data, w, h, {
+            inversionAttempts: 'attemptBoth',
+        });
+
+        if (code && code.data && code.data.trim().length > 0) {
+            handleDetected(code.data.trim());
+        }
     }
 
     /* ── QR detected ── */
@@ -351,28 +339,27 @@
         if (detectedOnce) return;
         detectedOnce = true;
         scanning     = false;
+        clearInterval(scanTimer);
 
-        // Vibrate for feedback (mobile)
+        // Vibrate for feedback on mobile
         if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
 
-        // Validate it's a URL
-        let targetUrl = rawData.trim();
-        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-            // Not a URL — show it but don't redirect
-            setStatus('⚠️', 'QR detected — not a URL: ' + targetUrl);
+        // Only redirect if it's a URL
+        if (!rawData.startsWith('http://') && !rawData.startsWith('https://')) {
+            setStatus('QR detected — not a URL, continuing scan…');
             detectedOnce = false;
             scanning     = true;
-            animFrameId  = requestAnimationFrame(scanFrame);
+            scanTimer    = setInterval(scanFrame, 100);
             return;
         }
 
         // Show success overlay
-        detectedUrlEl.textContent = targetUrl;
+        detectedUrlEl.textContent = rawData;
         successOverlay.classList.add('show');
         scanOverlay.style.display = 'none';
-        setStatus('✅', 'QR code detected! Redirecting…');
+        setStatus('QR code detected! Redirecting…');
 
-        // Countdown then redirect
+        // 3-second countdown then redirect
         let count = 3;
         countdownEl.textContent = count;
         const timer = setInterval(() => {
@@ -380,20 +367,21 @@
             countdownEl.textContent = count;
             if (count <= 0) {
                 clearInterval(timer);
-                window.location.href = targetUrl;
+                window.location.href = rawData;
             }
         }, 1000);
     }
 
-    function setStatus(icon, text) {
+    function setStatus(text) {
         statusText.textContent = text;
     }
 
-    /* ── Auto-start ── */
+    /* ── Auto-start on load ── */
     window.addEventListener('DOMContentLoaded', startCamera);
 
-    /* ── Stop camera on page unload ── */
+    /* ── Clean up camera on page leave ── */
     window.addEventListener('pagehide', () => {
+        clearInterval(scanTimer);
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(t => t.stop());
         }
