@@ -611,29 +611,39 @@
     function openCropEditor() {
         if (!selectedFile) return;
         cropModal.classList.add('show');
-        
+        document.body.style.overflow = 'hidden';
+
+        const objUrl = URL.createObjectURL(selectedFile);
+        cropImage = new Image();
         cropImage.onload = () => {
-            initCanvas();
+            requestAnimationFrame(() => {
+                setTimeout(initCanvas, 60);
+            });
         };
-        cropImage.src = URL.createObjectURL(selectedFile);
+        cropImage.src = objUrl;
     }
 
     function closeCropEditor() {
         cropModal.classList.remove('show');
+        document.body.style.overflow = '';
     }
 
     function saveCrop() {
-        manualCropPoints = [...pts];
+        manualCropPoints = JSON.parse(JSON.stringify(pts));
         document.getElementById('adjust-crop-btn').textContent = "✓ Adjusted";
-        document.getElementById('auto-crop').checked = false; // Disable auto if manual set
+        const autoCb = document.getElementById('auto-crop');
+        if (autoCb) autoCb.checked = false; // Disable backend auto-crop if manual points set
         closeCropEditor();
     }
 
     function initCanvas() {
-        // Resize canvas to match display size
         const container = canvas.parentElement;
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+        if (!container || !cropImage.width || !cropImage.height) return;
+
+        const cW = container.clientWidth || window.innerWidth;
+        const cH = container.clientHeight || (window.innerHeight - 100);
+        canvas.width  = cW;
+        canvas.height = cH;
         
         // Calculate image rendering size
         const ratio = Math.min(canvas.width / cropImage.width, canvas.height / cropImage.height);
@@ -644,7 +654,7 @@
         
         // If we previously saved points, use them, otherwise use defaults
         if (manualCropPoints) {
-            pts = [...manualCropPoints];
+            pts = JSON.parse(JSON.stringify(manualCropPoints));
         } else {
             pts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
         }
@@ -977,6 +987,9 @@
     /* ══════════════════════════════════════════
        LIVE DOCUMENT BORDER (Sobel edge detection)
     ══════════════════════════════════════════ */
+    let sampleCanvas = null;
+    let lastDetectedQuadNorm = null;
+
     function drawDocBorder() {
         if (!scVideo || scVideo.readyState < scVideo.HAVE_ENOUGH_DATA) return;
         const vw = scVideo.videoWidth, vh = scVideo.videoHeight;
@@ -987,11 +1000,15 @@
         scOvl.height = rect.height;
         ovlCtx.clearRect(0, 0, scOvl.width, scOvl.height);
 
-        // Downscale for speed
+        // Downscale for speed without OffscreenCanvas
         const SCALE = 0.22;
         const sw = Math.round(vw * SCALE), sh = Math.round(vh * SCALE);
-        const offCv = new OffscreenCanvas(sw, sh);
-        const octx  = offCv.getContext('2d');
+        if (!sampleCanvas) {
+            sampleCanvas = document.createElement('canvas');
+        }
+        sampleCanvas.width  = sw;
+        sampleCanvas.height = sh;
+        const octx  = sampleCanvas.getContext('2d');
         octx.drawImage(scVideo, 0, 0, sw, sh);
         const id    = octx.getImageData(0, 0, sw, sh);
         const gray  = toGray(id.data, sw, sh);
@@ -999,6 +1016,12 @@
         const quad  = findQuad(edges, sw, sh);
 
         if (quad) {
+            // Normalize quad relative to sample canvas (0 to 1)
+            lastDetectedQuadNorm = quad.map(p => [
+                Math.max(0, Math.min(1, p[0] / sw)),
+                Math.max(0, Math.min(1, p[1] / sh))
+            ]);
+
             const sx = scOvl.width / sw, sy = scOvl.height / sh;
             const pts = quad.map(p => [p[0]*sx, p[1]*sy]);
             ovlCtx.save();
@@ -1015,6 +1038,7 @@
             scHint.textContent = '✅ Document detected — tap ⚪ to capture';
             scHint.style.color = '#86efac';
         } else {
+            lastDetectedQuadNorm = null;
             scHint.textContent = 'Position the document in view';
             scHint.style.color = 'rgba(255,255,255,0.7)';
         }
@@ -1036,7 +1060,7 @@
         return m;
     }
     function findQuad(edges, w, h) {
-        const T=55, mx=Math.round(w*0.06), my=Math.round(h*0.06);
+        const T=35, mx=Math.round(w*0.04), my=Math.round(h*0.04);
         let tl=null,tr=null,bl=null,br=null, mTL=Infinity,mTR=Infinity,mBL=Infinity,mBR=Infinity;
         for (let y=my; y<h-my; y++) for (let x=mx; x<w-mx; x++) {
             if (edges[y*w+x] < T) continue;
@@ -1049,7 +1073,7 @@
         if (!tl||!tr||!bl||!br) return null;
         const qw=Math.max(tr[0],br[0])-Math.min(tl[0],bl[0]);
         const qh=Math.max(bl[1],br[1])-Math.min(tl[1],tr[1]);
-        if (qw < w*0.28 || qh < h*0.28) return null;
+        if (qw < w*0.22 || qh < h*0.22) return null;
         return [tl, tr, br, bl];
     }
 
@@ -1058,12 +1082,27 @@
         const vw = scVideo.videoWidth, vh = scVideo.videoHeight;
         capCv.width = vw; capCv.height = vh;
         capCv.getContext('2d').drawImage(scVideo, 0, 0, vw, vh);
+
+        // Pre-save detected live quad for manual crop adjustment
+        const capturedQuad = lastDetectedQuadNorm ? JSON.parse(JSON.stringify(lastDetectedQuadNorm)) : null;
+
         capCv.toBlob(blob => {
             if (!blob) return;
             const ts   = new Date().toISOString().replace(/[:.]/g, '-');
             const file = new File([blob], 'photo_' + ts + '.jpg', { type: 'image/jpeg' });
             closeSmartCamera();
-            if (typeof onFileSelected === 'function') onFileSelected(file);
+
+            if (typeof onFileSelected === 'function') {
+                onFileSelected(file);
+            }
+
+            if (capturedQuad) {
+                manualCropPoints = capturedQuad;
+                const adjBtn = document.getElementById('adjust-crop-btn');
+                if (adjBtn) adjBtn.textContent = "✓ Auto-Aligned";
+                const autoCb = document.getElementById('auto-crop');
+                if (autoCb) autoCb.checked = false;
+            }
         }, 'image/jpeg', 0.92);
     };
 })();
