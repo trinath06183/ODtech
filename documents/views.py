@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
@@ -215,6 +216,103 @@ def change_document_status(request, document_id):
     return redirect('document_list')
 
 
+@login_required
+def get_next_number_api(request):
+    """Returns the next available n+1 document number for a given document type."""
+    doc_type = request.GET.get('type', 'QTN')
+    doc_id = request.GET.get('doc_id')
+    doc_id = int(doc_id) if doc_id and doc_id.isdigit() else None
+    next_num = NumberingService.generate_document_number(doc_type, exclude_doc_id=doc_id)
+    return JsonResponse({'success': True, 'type': doc_type, 'next_number': next_num})
+
+
+@login_required
+def get_po_items_api(request, document_id):
+    """Returns PO items for stock receiving modal with already received & remaining quantities."""
+    doc = get_object_or_404(Document, id=document_id)
+    from inventory.models import StockTransaction
+    from django.db.models import Sum
+
+    items_data = []
+    for item in doc.items.select_related('product'):
+        ordered_qty = Decimal(str(item.quantity))
+        
+        # Calculate already received quantity for this product on this PO
+        already_received = Decimal('0')
+        if item.product_id:
+            already_received = StockTransaction.objects.filter(
+                reference_document=doc.number,
+                product_id=item.product_id,
+                transaction_type='IN'
+            ).aggregate(total=Sum('quantity'))['total'] or Decimal('0')
+            
+        remaining_qty = max(Decimal('0'), ordered_qty - already_received)
+
+        items_data.append({
+            'item_id': item.id,
+            'product_id': item.product_id,
+            'name': item.name or (item.product.name if item.product else 'Unnamed Item'),
+            'sku': item.product.sku if item.product else (item.part_number or ''),
+            'unit': item.unit or (item.product.unit if item.product else 'Nos'),
+            'ordered_qty': float(ordered_qty),
+            'already_received_qty': float(already_received),
+            'remaining_qty': float(remaining_qty),
+            'current_stock': float(item.product.current_stock) if item.product else 0,
+        })
+    return JsonResponse({
+        'success': True,
+        'doc_number': doc.number,
+        'doc_type': doc.type,
+        'items': items_data
+    })
+
+
+@login_required
+def receive_po_items_api(request, document_id):
+    """Receives selected items from a PO and increases inventory stock."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid HTTP method'})
+    
+    doc = get_object_or_404(Document, id=document_id)
+    try:
+        data = json.loads(request.body)
+        received_items = data.get('received_items', [])
+        remarks = (data.get('remarks') or '').strip() or f"Goods received for PO #{doc.number}"
+        
+        if not received_items:
+            return JsonResponse({'success': False, 'error': 'Please select at least one item to receive.'})
+            
+        from inventory.services import StockService
+        total_received = 0
+        
+        for r_item in received_items:
+            product_id = r_item.get('product_id')
+            try:
+                received_qty = Decimal(str(r_item.get('received_qty', 0)))
+            except Exception:
+                received_qty = Decimal('0')
+                
+            if product_id and received_qty > 0:
+                StockService.create_transaction(
+                    product_id=product_id,
+                    transaction_type='IN',
+                    quantity=received_qty,
+                    reference_document=doc.number,
+                    remarks=remarks
+                )
+                total_received += 1
+                
+        if doc.status != 'Approved':
+            doc.status = 'Approved'
+            doc.save(update_fields=['status', 'updated_at'])
+            
+        return JsonResponse({
+            'success': True,
+            'message': f"Successfully received {total_received} item(s) and updated inventory stock!"
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
 # ─── Product Search API ───────────────────────────────────────────────────────
 @login_required
 def search_products(request):
@@ -264,6 +362,16 @@ def document_form(request, doc=None, default_type='QTN'):
         enable_warranty = request.POST.get('enable_warranty') in ('on', 'true', True)
         shipping_address = request.POST.get('shipping_address', '').strip()
         repeat_header = request.POST.get('repeat_header') in ('on', 'true', True)
+        
+        # Transporter Details POST parameters (For Delivery Challans)
+        transporter_details = request.POST.get('transporter_details', 'Local Transportation').strip()
+        vehicle_number = request.POST.get('vehicle_number', '').strip()
+        transport_doc_no = request.POST.get('transport_doc_no', '').strip()
+        transport_doc_date = request.POST.get('transport_doc_date', '').strip() or None
+        eway_bill = request.POST.get('eway_bill', '').strip()
+        eway_bill_date = request.POST.get('eway_bill_date', '').strip() or None
+        transport_reason = request.POST.get('transport_reason', 'Refilling only, No Commercial involvement.').strip()
+        
         items_json = request.POST.get('items_json', '[]')
         table_columns_json = request.POST.get('table_columns', '{}')
         
@@ -342,6 +450,13 @@ def document_form(request, doc=None, default_type='QTN'):
                     self.enable_warranty = enable_warranty
                     self.shipping_address = shipping_address
                     self.repeat_header = repeat_header
+                    self.transporter_details = transporter_details
+                    self.vehicle_number = vehicle_number
+                    self.transport_doc_no = transport_doc_no
+                    self.transport_doc_date = parse_date(transport_doc_date)
+                    self.eway_bill = eway_bill
+                    self.eway_bill_date = parse_date(eway_bill_date)
+                    self.transport_reason = transport_reason
                 def get_type_display(self):
                     return dict(Document.DOCUMENT_TYPES).get(self.type, self.type)
                 def __bool__(self):
@@ -387,6 +502,13 @@ def document_form(request, doc=None, default_type='QTN'):
                 shipping_address=shipping_address,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
+                transporter_details=transporter_details,
+                vehicle_number=vehicle_number,
+                transport_doc_no=transport_doc_no,
+                transport_doc_date=transport_doc_date,
+                eway_bill=eway_bill,
+                eway_bill_date=eway_bill_date,
+                transport_reason=transport_reason,
             )
         else:
             source_doc = None
@@ -416,6 +538,13 @@ def document_form(request, doc=None, default_type='QTN'):
                 shipping_address=shipping_address,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
+                transporter_details=transporter_details,
+                vehicle_number=vehicle_number,
+                transport_doc_no=transport_doc_no,
+                transport_doc_date=transport_doc_date,
+                eway_bill=eway_bill,
+                eway_bill_date=eway_bill_date,
+                transport_reason=transport_reason,
             )
 
         # Optional payment tracking

@@ -94,6 +94,46 @@
     {% endif %}
 </div>
 
+<!-- Transporter & Transport Reason Details Section (Full Width) -->
+<div style="clear: both; width: 100%; margin-top: 10px; margin-bottom: 12px; border: 1px solid #1e293b; border-radius: 4px; background-color: #fafafa; padding: 8px 12px; box-sizing: border-box;">
+    <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; color: #1e293b; text-transform: uppercase;">
+        🚛 Transporter & Transport Details
+    </div>
+    <table style="width: 100%; font-size: 9.5px; border: none; border-collapse: collapse;">
+        <tr>
+            <td style="width: 50%; border: none; padding: 2px 0;">
+                <strong>Transporter Details:</strong> {{ doc.transporter_details|default:"Local Transportation" }}
+            </td>
+            <td style="width: 50%; border: none; padding: 2px 0;">
+                <strong>E-Way Bill No. :</strong> {{ doc.eway_bill|default:"N/A" }}
+            </td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 2px 0;">
+                <strong>Transporter Vehicle No. :</strong> {{ doc.vehicle_number|default:"N/A" }}
+            </td>
+            <td style="border: none; padding: 2px 0;">
+                <strong>E-Way Bill Date :</strong> {% if doc.eway_bill_date %}{{ doc.eway_bill_date|date:"d/m/Y" }}{% else %}N/A{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 2px 0;">
+                <strong>Transporter Doc No. :</strong> {{ doc.transport_doc_no|default:"N/A" }}
+            </td>
+            <td style="border: none; padding: 2px 0;">
+                <strong>Transporter Doc Date :</strong> {% if doc.transport_doc_date %}{{ doc.transport_doc_date|date:"d/m/Y" }}{% else %}N/A{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="border: none; padding: 4px 0 0 0; border-top: 1px dashed #cbd5e1; margin-top: 4px;">
+                <strong>Transport Reason :</strong> {{ doc.transport_reason|default:"Refilling only, No Commercial involvement." }}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="clear: both; width: 100%;"></div>
+
 {% include 'documents/print_items_table.html' %}
 
 {# ── Pricing and Totals removed for Delivery Challan ── #}

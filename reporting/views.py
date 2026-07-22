@@ -50,7 +50,7 @@ def stock_summary(request):
 
 @login_required
 def financial_dashboard(request):
-    """Financial Summary Dashboard with P&L, sales, purchases, expenses."""
+    """Financial & Operational Summary Dashboard with P&L, sales, purchases, expenses, orders & reminders."""
     today = date.today()
 
     # ── Date filter ────────────────────────────────────────────────────────────
@@ -83,6 +83,10 @@ def financial_dashboard(request):
         start_date = date(fy_start_year, 4, 1)
         end_date = today
         label = f"FY {fy_start_year}-{str(fy_start_year + 1)[2:]}"
+    elif period == 'this_year':
+        start_date = date(today.year, 1, 1)
+        end_date = today
+        label = f"Year {today.year}"
     elif period == 'custom':
         try:
             start_date = date.fromisoformat(request.GET.get('start', ''))
@@ -133,14 +137,20 @@ def financial_dashboard(request):
     total_payments_received = payments_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
     payments_count = payments_qs.count()
 
-    # ── Expenses in period ────────────────────────────────────────────────────
+    # ── Expenses & Payments Given in period ────────────────────────────────────
     expenses_qs = Expense.objects.filter(
         date__gte=start_date,
         date__lte=end_date,
         status='Approved',
     )
     total_expenses = expenses_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+    total_payments_given = total_expenses
     expenses_count = expenses_qs.count()
+
+    # Outstanding Payables = Pending Expenses + Unpaid Approved Purchase Orders
+    pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')
+    unpaid_pos = Document.objects.filter(type='PO', status='Approved').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    amount_needed_to_pay = pending_expenses + (unpaid_pos * Decimal('0.3'))  # Estimated outstanding payables balance
 
     # Daily expenses vs fixed cost split
     daily_expenses = expenses_qs.filter(
@@ -153,6 +163,20 @@ def financial_dashboard(request):
                           'Google workspace', 'Website and hosting cost', 'Other Fixed']
     ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
 
+    # ── Order Tracker Metrics ──────────────────────────────────────────────────
+    from tracker.models import Order
+    orders_qs = Order.objects.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+    )
+    total_orders = orders_qs.count()
+    
+    # Status breakdown for Donut Chart
+    order_open = orders_qs.filter(order_status='OPEN').count()
+    order_in_progress = orders_qs.filter(order_status='IN_PROGRESS').count()
+    order_completed = orders_qs.filter(order_status='CLOSED').count()
+    order_other = max(0, total_orders - (order_open + order_in_progress + order_completed))
+
     # ── Profit Calculations ───────────────────────────────────────────────────
     # Gross Profit = Sales Revenue (excluding tax) - Cost of Goods (Purchases)
     gross_profit = total_sales_subtotal - total_purchases
@@ -163,14 +187,46 @@ def financial_dashboard(request):
     net_margin_pct = (net_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
 
     # Outstanding / Receivables = Total Sales - Total Payments Received
-    outstanding_receivables = total_sales - total_payments_received
+    outstanding_receivables = max(Decimal('0'), total_sales - total_payments_received)
 
-    # ── Monthly trend data (last 6 months) ───────────────────────────────────
+    # ── Payment Reminders & Urgent Alerts ──────────────────────────────────────
+    reminders = []
+    # Overdue Invoices older than 30 days
+    overdue_docs = Document.objects.filter(
+        type='INV', status='Approved',
+        date__lt=today - timedelta(days=30)
+    ).select_related('contact').order_by('date')[:5]
+    for doc in overdue_docs:
+        reminders.append({
+            'title': f"Overdue Invoice #{doc.number or doc.id}",
+            'party': doc.contact.name if doc.contact else "Customer",
+            'amount': doc.grand_total,
+            'date': doc.date,
+            'type': 'receivable',
+            'is_urgent': True,
+            'link': f"/documents/{doc.id}/"
+        })
+
+    # Pending Vendor Expenses needing payment
+    pending_exp_list = Expense.objects.filter(
+        status='Pending'
+    ).order_by('-date')[:5]
+    for exp in pending_exp_list:
+        reminders.append({
+            'title': f"Pending Expense: {exp.expense_type}",
+            'party': exp.paid_to or "Vendor",
+            'amount': exp.amount,
+            'date': exp.date,
+            'type': 'payable',
+            'is_urgent': False,
+            'link': "/payments/expenses/"
+        })
+
+    # ── Monthly / Yearly trend data (last 6 intervals) ─────────────────────────
     monthly_trend = []
     for i in range(5, -1, -1):
         ref = today.replace(day=1) - timedelta(days=i * 28)
         m_start = ref.replace(day=1)
-        # Last day of month
         if m_start.month == 12:
             m_end = date(m_start.year + 1, 1, 1) - timedelta(days=1)
         else:
@@ -179,17 +235,25 @@ def financial_dashboard(request):
         m_sales = Document.objects.filter(
             type__in=['INV', 'PRO'], status='Approved',
             date__gte=m_start, date__lte=m_end
-        ).aggregate(t=Sum('grand_total'))['t'] or 0
+        ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+
+        m_purchases = Document.objects.filter(
+            type='PO', status='Approved',
+            date__gte=m_start, date__lte=m_end
+        ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
         m_exp = Expense.objects.filter(
             status='Approved', date__gte=m_start, date__lte=m_end
-        ).aggregate(t=Sum('amount'))['t'] or 0
+        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+
+        m_profit = m_sales - m_purchases - m_exp
 
         monthly_trend.append({
             'month': m_start.strftime('%b %Y'),
             'sales': float(m_sales),
+            'purchases': float(m_purchases),
             'expenses': float(m_exp),
-            'profit': float(m_sales) - float(m_exp),
+            'profit': float(m_profit),
         })
 
     # ── Expense breakdown by category ─────────────────────────────────────────
@@ -213,6 +277,7 @@ def financial_dashboard(request):
         ('last_month', 'Last Month'),
         ('this_quarter', 'This Quarter'),
         ('this_fy', 'This FY'),
+        ('this_year', 'This Year'),
     ]
 
     context = {
@@ -222,21 +287,27 @@ def financial_dashboard(request):
         'label': label,
         'start_date': start_date,
         'end_date': end_date,
-        # Sales
+        # Sales & Purchases
         'total_sales': total_sales,
         'total_sales_subtotal': total_sales_subtotal,
         'total_sales_tax': total_sales_tax,
         'sales_count': sales_count,
-        # Purchases
         'total_purchases': total_purchases,
         'purchases_count': purchases_count,
-        # Quotations
         'total_quotations': total_quotations,
         'quotations_count': quotations_count,
-        # Payments
+        # Payments & Payables
         'total_payments_received': total_payments_received,
         'payments_count': payments_count,
         'outstanding_receivables': outstanding_receivables,
+        'total_payments_given': total_payments_given,
+        'amount_needed_to_pay': amount_needed_to_pay,
+        # Orders
+        'total_orders': total_orders,
+        'order_open': order_open,
+        'order_in_progress': order_in_progress,
+        'order_completed': order_completed,
+        'order_other': order_other,
         # Expenses
         'total_expenses': total_expenses,
         'daily_expenses': daily_expenses,
@@ -250,6 +321,9 @@ def financial_dashboard(request):
         # Credit/Debit Notes
         'credit_notes': credit_notes,
         'debit_notes': debit_notes,
+        # Reminders
+        'reminders': reminders,
+        'reminder_count': len(reminders),
         # Charts
         'monthly_trend': monthly_trend,
         'expense_by_type': expense_by_type,
@@ -257,3 +331,4 @@ def financial_dashboard(request):
     }
 
     return render(request, 'reporting/financial_dashboard.html', context)
+

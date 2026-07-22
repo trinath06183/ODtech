@@ -406,7 +406,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Document Type</label>
-                            <select name="type" form="document-main-form" x-model="docType"
+                            <select name="type" form="document-main-form" x-model="docType" @change="onDocTypeChange($event)"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
                                 {% for type_val, type_label in document_types %}
                                 <option value="{{ type_val }}">{{ type_label }}</option>
@@ -455,6 +455,62 @@
                             <input type="text" name="place_of_supply" form="document-main-form" x-model="placeOfSupply"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
                                 placeholder="e.g. 21-Odisha">
+                        </div>
+
+                        <!-- Transporter Details Section (for Delivery Challan & Dispatch) -->
+                        <div x-show="docType === 'CHL'" class="pt-4 border-t border-slate-700/50 space-y-3">
+                            <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                                🚛 Transporter & Dispatch Details
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Transporter Details</label>
+                                <input type="text" name="transporter_details" form="document-main-form" x-model="transporterDetails"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                    placeholder="e.g. Local Transportation">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Vehicle No.</label>
+                                    <input type="text" name="vehicle_number" form="document-main-form" x-model="vehicleNumber"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                        placeholder="e.g. OD 05 C H2134">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Transport Doc No.</label>
+                                    <input type="text" name="transport_doc_no" form="document-main-form" x-model="transportDocNo"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                        placeholder="e.g. LR / GR No.">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">Transport Doc Date</label>
+                                    <input type="date" name="transport_doc_date" form="document-main-form" x-model="transportDocDate"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-300 mb-1">E-Way Bill No.</label>
+                                    <input type="text" name="eway_bill" form="document-main-form" x-model="ewayBill"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                        placeholder="e.g. E-Way Bill No.">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">E-Way Bill Date</label>
+                                <input type="date" name="eway_bill_date" form="document-main-form" x-model="ewayBillDate"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-300 mb-1">Transport Reason</label>
+                                <input type="text" name="transport_reason" form="document-main-form" x-model="transportReason"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                    placeholder="e.g. Refilling only, No Commercial involvement.">
+                            </div>
                         </div>
                         <div class="pt-3 border-t border-slate-700/50">
                             <label class="flex items-center gap-3 cursor-pointer group py-1">
@@ -1023,6 +1079,42 @@
         </div>
     </div>
 
+    {# Document Type Change Approval Modal #}
+    <div x-show="showTypeChangeModal" x-cloak
+        style="display:flex; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+        <div @click.away="cancelTypeChange()"
+            style="background:#0f172a; border:1px solid #334155; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; width:100%; max-width:440px; padding:1.5rem;">
+            
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+                <div style="width:2.5rem; height:2.5rem; border-radius:0.75rem; background:rgba(245,158,11,0.2); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.2rem;">
+                    ⚠️
+                </div>
+                <div>
+                    <h3 style="font-weight:700; font-size:1.1rem; color:#fff; margin:0;">Approve Document Type Change</h3>
+                    <p style="font-size:0.75rem; color:#94a3b8; margin:2px 0 0 0;">Auto-Assignment Approval</p>
+                </div>
+            </div>
+            
+            <p style="font-size:0.875rem; color:#cbd5e1; line-height:1.5; margin-bottom:1rem;">
+                Changing Document Type to <strong style="color:#fff;" x-text="getDocTypeLabel(pendingNewType)"></strong>.
+                <br>The document number will be automatically updated to the next available sequence number (<strong style="color:#10b981;">n+1</strong>):
+            </p>
+
+            <div style="font-family:monospace; font-weight:700; font-size:1.1rem; color:#10b981; background:#1e293b; padding:0.6rem 1rem; border-radius:0.5rem; text-align:center; border:1px solid #334155; margin-bottom:1.25rem;" x-text="pendingNextNumber"></div>
+
+            <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                <button type="button" @click="cancelTypeChange()"
+                    style="padding:0.55rem 1.25rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; border-radius:0.625rem; font-size:0.875rem; cursor:pointer; font-family:inherit;">
+                    Cancel
+                </button>
+                <button type="button" @click="confirmTypeChange()"
+                    style="padding:0.55rem 1.4rem; background:#10b981; border:none; color:#fff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit;">
+                    Approve & Assign Number
+                </button>
+            </div>
+        </div>
+    </div>
+
     {# Product Modal #}
     <div x-show="showProductModal"
         style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
@@ -1217,6 +1309,57 @@ function documentForm() {
 
         formAction: '{% if doc and not is_conversion %}update{% else %}save_as_new{% endif %}',
         docType: '{% if is_conversion %}{{ default_type }}{% else %}{{ doc.type|default:default_type }}{% endif %}',
+        previousDocType: '{% if is_conversion %}{{ default_type }}{% else %}{{ doc.type|default:default_type }}{% endif %}',
+        showTypeChangeModal: false,
+        pendingNewType: '',
+        pendingNextNumber: '',
+
+        getDocTypeLabel(t) {
+            const types = {
+                'QTN': 'Quotation',
+                'INV': 'Invoice',
+                'PRO': 'Proforma Invoice',
+                'CHL': 'Delivery Challan',
+                'PO': 'Purchase Order',
+                'CRN': 'Credit Note',
+                'DBN': 'Debit Note'
+            };
+            return types[t] || t;
+        },
+
+        onDocTypeChange(event) {
+            const newType = event.target.value;
+            if (newType === this.previousDocType) return;
+            
+            this.pendingNewType = newType;
+            // Temporarily revert select dropdown until user confirms
+            this.docType = this.previousDocType;
+
+            const docId = '{% if doc and not is_conversion %}{{ doc.id }}{% endif %}';
+            fetch(`/documents/api/next-number/?type=${newType}&doc_id=${docId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        this.pendingNextNumber = data.next_number;
+                        this.showTypeChangeModal = true;
+                    }
+                });
+        },
+
+        confirmTypeChange() {
+            this.docType = this.pendingNewType;
+            this.previousDocType = this.pendingNewType;
+            if (this.numberingMode === 'auto') {
+                this.docNumber = this.pendingNextNumber;
+            }
+            this.showTypeChangeModal = false;
+        },
+
+        cancelTypeChange() {
+            this.docType = this.previousDocType;
+            this.showTypeChangeModal = false;
+        },
+
         items: {{ existing_items_json|default:"[]"|safe }},
         docNumber: '{{ next_number|escapejs }}',
         numberingMode: {% if doc %}'{{ doc.numbering_mode|default:"auto" }}'{% else %}(lastSettings ? lastSettings.numbering_mode : 'auto'){% endif %},
@@ -1240,6 +1383,13 @@ function documentForm() {
         enableShippingAddress: {% if doc and doc.shipping_address %}true{% else %}false{% endif %},
         repeatHeader: {% if doc %}{{ doc.repeat_header|yesno:"true,false" }}{% else %}(lastSettings && lastSettings.repeat_header !== undefined ? lastSettings.repeat_header : true){% endif %},
         shippingAddress: '{{ doc.shipping_address|default_if_none:""|escapejs }}',
+        transporterDetails: '{{ doc.transporter_details|default:"Local Transportation"|escapejs }}',
+        vehicleNumber: '{{ doc.vehicle_number|default_if_none:""|escapejs }}',
+        transportDocNo: '{{ doc.transport_doc_no|default_if_none:""|escapejs }}',
+        transportDocDate: '{% if doc and doc.transport_doc_date %}{{ doc.transport_doc_date|date:"Y-m-d" }}{% endif %}',
+        ewayBill: '{{ doc.eway_bill|default_if_none:""|escapejs }}',
+        ewayBillDate: '{% if doc and doc.eway_bill_date %}{{ doc.eway_bill_date|date:"Y-m-d" }}{% endif %}',
+        transportReason: '{{ doc.transport_reason|default:"Refilling only, No Commercial involvement."|escapejs }}',
 
         selectedTermsTemplate: '0',
         terms: '',

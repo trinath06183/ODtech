@@ -10,6 +10,21 @@ class DocumentsConfig(AppConfig):
         # Register EDMS auto-sync signals for commercial documents
         import documents.signals  # noqa: F401
 
+        # Auto-ensure missing Transporter columns exist on PostgreSQL documents_document table
+        try:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    ALTER TABLE documents_document ADD COLUMN IF NOT EXISTS eway_bill_date date;
+                    ALTER TABLE documents_document ADD COLUMN IF NOT EXISTS transporter_details varchar(255) DEFAULT 'Local Transportation';
+                    ALTER TABLE documents_document ADD COLUMN IF NOT EXISTS vehicle_number varchar(100);
+                    ALTER TABLE documents_document ADD COLUMN IF NOT EXISTS transport_doc_no varchar(100);
+                    ALTER TABLE documents_document ADD COLUMN IF NOT EXISTS transport_doc_date date;
+                    ALTER TABLE documents_document ADD COLUMN IF NOT EXISTS transport_reason text DEFAULT 'Refilling only, No Commercial involvement.';
+                """)
+        except Exception:
+            pass
+
         # Only trigger this pre-import on startup of the main server process
         # to avoid double execution under development reloader
         if os.environ.get('RUN_MAIN') == 'true' or not os.environ.get('DJANGO_SETTINGS_MODULE'):

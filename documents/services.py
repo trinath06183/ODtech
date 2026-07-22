@@ -46,7 +46,7 @@ class NumberingService:
             return default
 
     @classmethod
-    def generate_document_number(cls, document_type, document_date=None):
+    def generate_document_number(cls, document_type, document_date=None, exclude_doc_id=None):
         document_date = document_date or timezone.localdate()
 
         # Compute FY parts
@@ -62,13 +62,18 @@ class NumberingService:
 
         month_str = document_date.strftime("%m")
 
-        # Get all documents of this type to find the absolute max sequence number
-        existing = Document.objects.filter(type=document_type).values_list("number", flat=True)
+        # Get all documents to find the max sequence number
+        existing = Document.objects.all()
+        if exclude_doc_id:
+            existing = existing.exclude(id=exclude_doc_id)
+        number_list = existing.values_list("number", flat=True)
+
         next_number = 1
-        for number in existing:
-            match = re.search(r"[-/](\d+)$", number)
-            if match:
-                next_number = max(next_number, int(match.group(1)) + 1)
+        for num_str in number_list:
+            if num_str:
+                match = re.search(r"[-/](\d+)$", num_str)
+                if match:
+                    next_number = max(next_number, int(match.group(1)) + 1)
 
         # Read configured format from CompanyProfile
         fmt = 'OD-{FY}-{MM}-{N}'  # default
@@ -80,15 +85,23 @@ class NumberingService:
         except Exception:
             pass
 
-        number = (
-            fmt
-            .replace('{TYPE}', document_type)
-            .replace('{FYFY}', fy_4)
-            .replace('{FY}',   fy_2)
-            .replace('{MM}',   month_str)
-            .replace('{N}',    str(next_number))
-        )
-        return number
+        # Guarantee strict uniqueness (n+1 loop)
+        while True:
+            candidate = (
+                fmt
+                .replace('{TYPE}', document_type)
+                .replace('{FYFY}', fy_4)
+                .replace('{FY}',   fy_2)
+                .replace('{MM}',   month_str)
+                .replace('{N}',    str(next_number))
+            )
+            qs = Document.objects.filter(number=candidate)
+            if exclude_doc_id:
+                qs = qs.exclude(id=exclude_doc_id)
+            if not qs.exists():
+                return candidate
+            next_number += 1
+
 
 
 class TaxService:
@@ -293,9 +306,15 @@ class DocumentService:
             project_name=kwargs.get("project_name") or None,
             site_address=kwargs.get("site_address") or None,
             eway_bill=kwargs.get("eway_bill") or None,
+            eway_bill_date=kwargs.get("eway_bill_date") or None,
             po_reference_number=kwargs.get("po_reference_number") or None,
             po_date=kwargs.get("po_date") or None,
             place_of_supply=kwargs.get("place_of_supply", "21-Odisha"),
+            transporter_details=kwargs.get("transporter_details", "Local Transportation"),
+            vehicle_number=kwargs.get("vehicle_number") or None,
+            transport_doc_no=kwargs.get("transport_doc_no") or None,
+            transport_doc_date=kwargs.get("transport_doc_date") or None,
+            transport_reason=kwargs.get("transport_reason", "Refilling only, No Commercial involvement."),
             terms_and_conditions=terms,
             show_gst=kwargs.get("show_gst", False),
             split_gst=kwargs.get("split_gst", False),
@@ -321,7 +340,11 @@ class DocumentService:
         if document.type != document_type:
             document.type = document_type
             if document.numbering_mode == 'auto':
-                document.number = NumberingService.generate_document_number(document_type)
+                document.number = NumberingService.generate_document_number(
+                    document_type,
+                    kwargs.get("invoice_date") or document.date,
+                    exclude_doc_id=document.id
+                )
         
         if document.numbering_mode == 'manual' and kwargs.get("number"):
             document.number = kwargs.get("number")
@@ -330,6 +353,18 @@ class DocumentService:
         document.project_name = kwargs.get("project_name") or None
         document.site_address = kwargs.get("site_address") or None
         document.eway_bill = kwargs.get("eway_bill") or None
+        if "eway_bill_date" in kwargs:
+            document.eway_bill_date = kwargs.get("eway_bill_date") or None
+        if "transporter_details" in kwargs:
+            document.transporter_details = kwargs.get("transporter_details") or "Local Transportation"
+        if "vehicle_number" in kwargs:
+            document.vehicle_number = kwargs.get("vehicle_number") or None
+        if "transport_doc_no" in kwargs:
+            document.transport_doc_no = kwargs.get("transport_doc_no") or None
+        if "transport_doc_date" in kwargs:
+            document.transport_doc_date = kwargs.get("transport_doc_date") or None
+        if "transport_reason" in kwargs:
+            document.transport_reason = kwargs.get("transport_reason") or "Refilling only, No Commercial involvement."
         document.po_reference_number = kwargs.get("po_reference_number") or None
         document.po_date = kwargs.get("po_date") or None
         if "invoice_date" in kwargs and kwargs["invoice_date"]:
@@ -474,12 +509,16 @@ class DocumentService:
         doc.status = "Approved"
         doc.save(update_fields=["status", "updated_at"])
 
-        if doc.type == "INV" and not doc.stock_transactions.exists():
-            for item in doc.items.select_related("product"):
-                StockService.create_transaction(
-                    product_id=item.product_id,
-                    transaction_type="OUT",
-                    quantity=item.quantity,
-                    reference_document=doc,
-                )
+        if doc.type == "INV":
+            from inventory.models import StockTransaction
+            from inventory.services import StockService
+            if not StockTransaction.objects.filter(reference_document=doc.number).exists():
+                for item in doc.items.select_related("product"):
+                    if item.product_id:
+                        StockService.create_transaction(
+                            product_id=item.product_id,
+                            transaction_type="OUT",
+                            quantity=item.quantity,
+                            reference_document=doc.number,
+                        )
         return doc

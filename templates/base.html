@@ -340,15 +340,15 @@
                         class="whitespace-nowrap ml-3 font-medium">Sales Dashboard</span>
                 </a>
 
-                <!-- Financial Dashboard -->
+                <!-- Financial / Company Dashboard -->
                 <a href="{% url 'financial_dashboard' %}"
                     class="nav-link group relative rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors mb-1"
-                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Financial Dashboard">
-                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Company Overview Dashboard">
+                    <svg class="w-6 h-6 flex-shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
-                        class="whitespace-nowrap ml-3 font-medium">Financials</span>
+                        class="whitespace-nowrap ml-3 font-semibold text-emerald-800">Company Overview</span>
                 </a>
 
                 <!-- Material Tracker -->

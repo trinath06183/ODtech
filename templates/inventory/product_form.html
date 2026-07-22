@@ -180,6 +180,65 @@
             </div>
         </form>
     </div>
+
+    <!-- Linked Commercial Documents & Bills Section -->
+    {% if product %}
+    <div class="glass rounded-2xl p-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>🧾 Linked Documents & Commercial Bills</span>
+                <span class="text-xs bg-slate-800 text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-slate-700">{{ linked_doc_items|length }}</span>
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-white/5">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-slate-800/80 text-gray-400 text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3 font-medium">Doc Number</th>
+                        <th class="px-4 py-3 font-medium">Type</th>
+                        <th class="px-4 py-3 font-medium">Customer / Party</th>
+                        <th class="px-4 py-3 font-medium">Date</th>
+                        <th class="px-4 py-3 font-medium text-center">Billed Qty</th>
+                        <th class="px-4 py-3 font-medium text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for item in linked_doc_items %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-4 py-3 font-mono font-bold text-blue-400">
+                            <a href="{% url 'document_preview' item.document.id %}" class="hover:underline">{{ item.document.number }}</a>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                {{ item.document.get_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-white font-medium">{{ item.document.contact.name|default:"N/A" }}</td>
+                        <td class="px-4 py-3 text-gray-400 text-xs">{{ item.document.date|date:"d M Y" }}</td>
+                        <td class="px-4 py-3 text-center font-bold">
+                            {% if item.document.type == 'PO' or item.document.type == 'CRN' %}
+                                <span class="text-emerald-400 font-bold">+{{ item.quantity }}</span>
+                            {% else %}
+                                <span class="text-red-400 font-bold">-{{ item.quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if item.document.status == 'Approved' %}bg-emerald-500/20 text-emerald-300{% else %}bg-amber-500/20 text-amber-300{% endif %}">
+                                {{ item.document.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500 italic">No commercial documents or bills linked to this product yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>

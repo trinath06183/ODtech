@@ -28,14 +28,22 @@ class Document(TimeStampedModel):
     date = models.DateField(default=timezone.now)
     contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name='documents')
     
-    # Industrial Fields (Optional)
+    # Industrial & Transporter Fields (Optional)
     project_name = models.CharField(max_length=255, blank=True, null=True)
     site_address = models.TextField(blank=True, null=True)
-    eway_bill = models.CharField(max_length=50, blank=True, null=True)
+    eway_bill = models.CharField(max_length=100, blank=True, null=True, verbose_name="E-Way Bill No.")
+    eway_bill_date = models.DateField(blank=True, null=True, verbose_name="E-Way Bill Date")
     po_reference_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="PO Reference Number")
     po_date = models.DateField(blank=True, null=True, verbose_name="PO Reference Date")
     place_of_supply = models.CharField(max_length=100, default='21-Odisha', blank=True, null=True, verbose_name="Place of Supply")
     source_document = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='converted_documents')
+    
+    # Transporter Details (For Delivery Challan)
+    transporter_details = models.CharField(max_length=255, blank=True, null=True, default='Local Transportation', verbose_name="Transporter Details")
+    vehicle_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Transporter Vehicle No.")
+    transport_doc_no = models.CharField(max_length=100, blank=True, null=True, verbose_name="Transporter Doc No.")
+    transport_doc_date = models.DateField(blank=True, null=True, verbose_name="Transporter Doc Date")
+    transport_reason = models.TextField(blank=True, null=True, default='Refilling only, No Commercial involvement.', verbose_name="Transport Reason")
     
     # Totals
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)

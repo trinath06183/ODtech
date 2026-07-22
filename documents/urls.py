@@ -43,4 +43,11 @@ urlpatterns = [
 
     # Send document to tracking dashboard API
     path('api/<int:document_id>/send-to-tracker/', views.send_to_tracker_api, name='send_to_tracker_api'),
+
+    # Next number API
+    path('api/next-number/', views.get_next_number_api, name='get_next_number_api'),
+
+    # PO Goods Receiving APIs
+    path('api/<int:document_id>/po-items/', views.get_po_items_api, name='get_po_items_api'),
+    path('api/<int:document_id>/receive-po-items/', views.receive_po_items_api, name='receive_po_items_api'),
 ]

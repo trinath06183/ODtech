@@ -108,7 +108,10 @@
             <tr class="hover:bg-white/5 transition-colors {% if product.is_low_stock %}bg-amber-500/5{% endif %}">
                 <!-- Product Name / Category -->
                 <td class="px-6 py-4">
-                    <div class="font-semibold text-white text-sm">{{ product.name }}</div>
+                    <a href="javascript:void(0)" onclick="openLinkedBillsModal('{{ product.id }}')" class="font-semibold text-white hover:text-cyan-400 text-sm transition-colors cursor-pointer flex items-center gap-1.5 group" title="Click to view linked bills">
+                        <span>{{ product.name }}</span>
+                        <span class="text-xs text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity">🧾</span>
+                    </a>
                     {% if product.brand or product.category %}
                     <div class="text-gray-500 text-xs mt-0.5">
                         {% if product.brand %}{{ product.brand }}{% endif %}{% if product.brand and product.category %} · {% endif %}{% if product.category %}{{ product.category }}{% endif %}
@@ -154,6 +157,11 @@
                 <!-- Actions -->
                 <td class="px-6 py-4">
                     <div class="flex items-center justify-center space-x-2">
+                        <!-- Linked Bills -->
+                        <button type="button" onclick="openLinkedBillsModal('{{ product.id }}')"
+                           class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg transition-colors" title="View Linked Bills & Invoices">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </button>
                         {% if request.user.role == 'Admin' %}
                         <!-- Adjust Stock -->
                         <a href="{% url 'adjust_stock' product.id %}"
@@ -193,4 +201,124 @@
         </tbody>
     </table>
 </div>
+
+<!-- Linked Bills Modal -->
+<div id="linkedBillsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl p-6 shadow-2xl text-white">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-lg">
+                    🧾
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Linked Bills & Invoices — <span id="linkedProductName" class="text-cyan-400"></span></h3>
+                    <p class="text-xs text-slate-400">SKU: <span id="linkedProductSku" class="font-mono text-slate-300"></span> • Current Stock: <span id="linkedProductStock" class="font-bold text-emerald-400"></span></p>
+                </div>
+            </div>
+            <button type="button" onclick="closeLinkedBillsModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+        </div>
+
+        <div id="linkedBillsLoading" class="py-12 text-center text-slate-400">
+            Loading linked bills...
+        </div>
+
+        <div id="linkedBillsContent" class="hidden space-y-4">
+            <div class="max-h-[400px] overflow-y-auto rounded-xl border border-slate-800">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
+                        <tr>
+                            <th class="p-3">Doc Number</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3">Customer / Party</th>
+                            <th class="p-3">Date</th>
+                            <th class="p-3 text-center">Qty</th>
+                            <th class="p-3 text-center">Status</th>
+                            <th class="p-3 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linkedBillsTbody" class="divide-y divide-slate-800 bg-slate-900/50">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-end">
+            <button type="button" onclick="closeLinkedBillsModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function openLinkedBillsModal(productId) {
+    document.getElementById('linkedBillsModal').classList.remove('hidden');
+    document.getElementById('linkedBillsLoading').classList.remove('hidden');
+    document.getElementById('linkedBillsContent').classList.add('hidden');
+
+    try {
+        const res = await fetch(`/inventory/product/${productId}/linked-bills/`);
+        if (!res.ok) throw new Error(`HTTP ${res.status} Error`);
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('linkedProductName').innerText = data.product_name || '';
+            document.getElementById('linkedProductSku').innerText = data.sku || '';
+            document.getElementById('linkedProductStock').innerText = (data.current_stock || 0) + ' ' + (data.unit || 'Nos');
+            
+            renderLinkedBillsTable(data.bills);
+            document.getElementById('linkedBillsLoading').classList.add('hidden');
+            document.getElementById('linkedBillsContent').classList.remove('hidden');
+        } else {
+            alert("Failed to fetch linked bills.");
+            closeLinkedBillsModal();
+        }
+    } catch(err) {
+        alert("Error: " + err.message);
+        closeLinkedBillsModal();
+    }
+}
+
+function closeLinkedBillsModal() {
+    document.getElementById('linkedBillsModal').classList.add('hidden');
+}
+
+function renderLinkedBillsTable(bills) {
+    const tbody = document.getElementById('linkedBillsTbody');
+    if (!bills || bills.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 italic">No linked commercial bills or documents found for this product.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = bills.map(b => `
+        <tr class="hover:bg-slate-800/50 transition">
+            <td class="p-3 font-mono font-bold text-blue-400">
+                <a href="${b.url}" class="hover:underline">${b.number}</a>
+            </td>
+            <td class="p-3">
+                <span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                    ${b.type_display}
+                </span>
+            </td>
+            <td class="p-3 font-medium text-white">${b.contact_name}</td>
+            <td class="p-3 text-slate-400 text-xs">${b.date}</td>
+            <td class="p-3 text-center font-bold">
+                ${b.is_addition 
+                    ? `<span class="text-emerald-400 font-bold">+${b.quantity}</span>` 
+                    : `<span class="text-red-400 font-bold">-${b.quantity}</span>`}
+            </td>
+            <td class="p-3 text-center">
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${b.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
+                    ${b.status}
+                </span>
+            </td>
+            <td class="p-3 text-center">
+                <a href="${b.url}" class="px-2.5 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded-lg text-xs font-semibold transition">
+                    Open Bill →
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
+</script>
 {% endblock %}

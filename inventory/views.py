@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -166,11 +167,15 @@ def product_edit(request, product_id):
         messages.success(request, f'Product "{product.name}" updated successfully.')
         return redirect('inventory_list')
 
+    from documents.models import DocumentItem
+    linked_doc_items = DocumentItem.objects.filter(product=product).select_related('document', 'document__contact').order_by('-document__date')
+
     next_url = request.POST.get('next') or request.GET.get('next', '').strip()
     return render(request, 'inventory/product_form.html', {
         'form_title':   f'Edit Product — {product.name}',
         'submit_label': 'Save Changes',
         'product':      product,
+        'linked_doc_items': linked_doc_items,
         'next_url':     next_url,
     })
 
@@ -181,22 +186,8 @@ def product_delete(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
-        # Safety check: block deletion if product is referenced
-        has_stock_txns = StockTransaction.objects.filter(product=product).exists()
-        has_doc_items  = product.documentitem_set.exists()
-
-        if has_stock_txns or has_doc_items:
-            messages.error(
-                request,
-                f'Cannot delete "{product.name}" — it is referenced by existing '
-                f'{"stock transactions" if has_stock_txns else ""}'
-                f'{" and " if has_stock_txns and has_doc_items else ""}'
-                f'{"document line items" if has_doc_items else ""}. '
-                'Remove those references first.'
-            )
-            return redirect('inventory_list')
-
         name = product.name
+        # Delete product (Django ORM handles cascading deletion of linked stock transactions & items)
         product.delete()
         messages.success(request, f'Product "{name}" deleted successfully.')
         return redirect('inventory_list')
@@ -680,6 +671,42 @@ def warranty_admin_edit_registration(request, reg_id):
     reg = get_object_or_404(WarrantyRegistration, id=reg_id)
 
     if request.method == 'POST':
-        pass
+        reg.save()
+        messages.success(request, f'Warranty registration #{reg.registration_number} updated successfully.')
+        return redirect(reverse("warranty_admin_list") + "?tab=registrations")
 
     return render(request, 'inventory/warranty_admin_edit_registration.html', {'reg': reg})
+
+
+@login_required
+def get_product_linked_bills_api(request, product_id):
+    """Returns linked commercial bills/documents for an inventory product."""
+    product = get_object_or_404(Product, id=product_id)
+    from documents.models import DocumentItem
+    doc_items = DocumentItem.objects.filter(product=product).select_related('document', 'document__contact').order_by('-document__date')
+    
+    linked_bills = []
+    for item in doc_items:
+        doc = item.document
+        is_addition = doc.type in ['PO', 'CRN']
+        linked_bills.append({
+            'doc_id': doc.id,
+            'number': doc.number,
+            'type': doc.type,
+            'type_display': doc.get_type_display(),
+            'contact_name': doc.contact.name if doc.contact else 'N/A',
+            'date': doc.date.strftime('%d %b %Y') if doc.date else '',
+            'quantity': float(item.quantity),
+            'is_addition': is_addition,
+            'status': doc.status,
+            'url': f"/documents/{doc.id}/preview/"
+        })
+        
+    return JsonResponse({
+        'success': True,
+        'product_name': product.name,
+        'sku': product.sku,
+        'current_stock': float(product.current_stock),
+        'unit': product.unit,
+        'bills': linked_bills
+    })

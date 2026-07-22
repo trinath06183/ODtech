@@ -7,6 +7,7 @@ urlpatterns = [
     path('product/<int:product_id>/edit/',   views.product_edit,  name='product_edit'),
     path('product/<int:product_id>/delete/', views.product_delete, name='product_delete'),
     path('product/<int:product_id>/adjust-stock/', views.adjust_stock, name='adjust_stock'),
+    path('product/<int:product_id>/linked-bills/', views.get_product_linked_bills_api, name='get_product_linked_bills_api'),
     path('warranty/',                     views.warranty_tracker, name='warranty_tracker'),
 
     # -- Warranty Portal (public) --
