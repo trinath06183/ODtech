@@ -51,7 +51,8 @@ def stock_summary(request):
 @login_required
 def financial_dashboard(request):
     """Financial & Operational Summary Dashboard with P&L, sales, purchases, expenses, orders & reminders."""
-    today = date.today()
+    try:
+        today = date.today()
 
     # ── Date filter ────────────────────────────────────────────────────────────
     period = request.GET.get('period', 'this_month')
@@ -330,5 +331,22 @@ def financial_dashboard(request):
         'top_customers': top_customers,
     }
 
-    return render(request, 'reporting/financial_dashboard.html', context)
+        return render(request, 'reporting/financial_dashboard.html', context)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return render(request, 'reporting/financial_dashboard.html', {
+            'period': 'this_month',
+            'periods': [
+                ('today', 'Today'),
+                ('this_week', 'This Week'),
+                ('this_month', 'This Month'),
+                ('last_month', 'Last Month'),
+                ('this_quarter', 'This Quarter'),
+                ('this_fy', 'This FY'),
+                ('this_year', 'This Year'),
+            ],
+            'label': 'This Month',
+            'error_message': str(e),
+        })
 
