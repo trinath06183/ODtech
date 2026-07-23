@@ -512,4 +512,10 @@ def business_planning_dashboard(request):
     
     context['next_orders_total'] = context['next_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     context['next_purchases_total'] = context['next_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    return render(request, 'reporting/planning_dashboard.html', context)
+    try:
+        return render(request, 'reporting/planning_dashboard.html', context)
+    except Exception as e:
+        import traceback
+        with open('error_debug_log.txt', 'w') as f:
+            f.write(traceback.format_exc())
+        raise
