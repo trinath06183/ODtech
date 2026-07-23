@@ -396,6 +396,16 @@ def financial_dashboard(request):
 
 @login_required
 def business_planning_dashboard(request):
+    try:
+        return _business_planning_dashboard(request)
+    except Exception as e:
+        import traceback
+        import os
+        with open(os.path.join(os.path.dirname(__file__), 'error_debug_log.txt'), 'w') as f:
+            f.write(traceback.format_exc())
+        raise
+
+def _business_planning_dashboard(request):
     from .models import PlannedOrder, PlannedPurchase
     from dateutil.relativedelta import relativedelta
     from datetime import date
@@ -509,13 +519,6 @@ def business_planning_dashboard(request):
     
     context['prev_orders_total'] = context['prev_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     context['prev_purchases_total'] = context['prev_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    
     context['next_orders_total'] = context['next_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     context['next_purchases_total'] = context['next_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    try:
-        return render(request, 'reporting/planning_dashboard.html', context)
-    except Exception as e:
-        import traceback
-        with open('error_debug_log.txt', 'w') as f:
-            f.write(traceback.format_exc())
-        raise
+    return render(request, 'reporting/planning_dashboard.html', context)
