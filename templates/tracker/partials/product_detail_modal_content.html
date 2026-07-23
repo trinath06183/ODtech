@@ -18,7 +18,7 @@
     
     expenses: JSON.parse('{{ product_expenses_json|escapejs|default:" []" }}'), totalExpenses: 0.00, init() {
     this.recalcExpenses(); this.calcBuyingForward(); this.calcSellingForward(); this.updateProfits(); }, addExpense() {
-    this.expenses.push({id: '' , desc: '' , amount: '0.00', type: 'PER_UNIT' }); this.recalcExpenses(); }, removeExpense(index) {
+    this.expenses.push({id: '' , desc: '' , amount: '0.00', type: 'PER_UNIT', is_linked: false }); this.recalcExpenses(); }, removeExpense(index) {
     this.expenses.splice(index, 1); this.recalcExpenses(); }, recalcExpenses() {
     let total = 0; let qty = parseInt(this.quantity) || 1; if (qty === 0) qty = 1;
     this.expenses.forEach(exp => { let amt = parseFloat(exp.amount) || 0; if (exp.type === 'TOTAL') { total += amt / qty; } else { total += amt; } });
@@ -843,27 +843,37 @@
                                 <div class="flex justify-between items-center mb-2">
                                     <label class="block text-[11px] font-semibold text-gray-600">Additional
                                         Expenses</label>
-                                    <button type="button" @click="addExpense()"
-                                        class="text-[10px] font-medium text-emerald-600 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded">
-                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Add Expense
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{% url 'expense_create' %}?product_id={{ product.id }}&product_name={{ product.item_name|urlencode }}" target="_blank"
+                                            class="text-[10px] font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                            </svg>
+                                            Link App Expense
+                                        </a>
+                                        <button type="button" @click="addExpense()"
+                                            class="text-[10px] font-medium text-emerald-600 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-colors">
+                                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Add Manual
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="space-y-2">
                                     <template x-for="(expense, index) in expenses" :key="index">
                                         <div
-                                            class="flex gap-2 items-center bg-white p-1.5 rounded border border-emerald-100 shadow-sm">
-                                            <input type="hidden" name="expense_id[]" :value="expense.id">
+                                            class="flex gap-2 items-center bg-white p-1.5 rounded border shadow-sm" :class="expense.is_linked ? 'border-gray-200 bg-gray-50' : 'border-emerald-100'">
+                                            <input type="hidden" name="expense_id[]" :value="expense.id" x-bind:disabled="expense.is_linked === true">
                                             <div class="flex-1">
                                                 <input type="text" name="expense_desc[]" x-model="expense.desc"
                                                     placeholder="Expense description..."
-                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border">
+                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border"
+                                                    x-bind:readonly="expense.is_linked === true" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''">
                                             </div>
                                             <div class="w-24">
-                                                <select name="expense_type[]" x-model="expense.type" @change="recalcExpenses()" class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border bg-white">
+                                                <select name="expense_type[]" x-model="expense.type" @change="recalcExpenses()" class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'">
                                                     <option value="PER_UNIT">Per Unit</option>
                                                     <option value="TOTAL">Total Qty</option>
                                                 </select>
@@ -873,7 +883,7 @@
     <input type="number" name="expense_amount[]" step="0.01"
                                                     x-model="expense.amount" @input="recalcExpenses()"
                                                     placeholder="0.00"
-                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border pr-7">
+                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border pr-7" x-bind:readonly="expense.is_linked === true" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''">
     
 <button type="button" x-data="{ copied: false }"
     @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy(window.formatPriceForCopy($el.parentElement.querySelector('input').value))); copied = true; setTimeout(() => copied = false, 2000)"
@@ -883,8 +893,8 @@
 </button>
 </div>
                                             </div>
-                                            <button type="button" @click="removeExpense(index)"
-                                                class="text-red-400 hover:text-red-600 p-1 bg-gray-50 rounded hover:bg-red-50">
+                                            <button type="button" @click="if(!expense.is_linked) removeExpense(index)"
+                                                class="p-1 rounded transition-colors" :class="expense.is_linked ? 'text-gray-300 cursor-not-allowed bg-transparent' : 'text-red-400 hover:text-red-600 bg-gray-50 hover:bg-red-50'">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor"
                                                     viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"

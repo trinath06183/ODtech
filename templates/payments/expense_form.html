@@ -19,6 +19,18 @@
         {% csrf_token %}
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% if request.GET.product_id %}
+            <div class="md:col-span-2 p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-700 text-sm flex items-start gap-3">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                    <span class="block font-semibold mb-1">Product Link Active</span>
+                    This expense will be automatically linked to product: <strong>{{ request.GET.product_name }}</strong> once approved. It will then appear on the product details page.
+                    <input type="hidden" name="payload_product_id" value="{{ request.GET.product_id }}">
+                    <input type="hidden" name="payload_product_name" value="{{ request.GET.product_name }}">
+                </div>
+            </div>
+            {% endif %}
+
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Title / Purpose</label>
                 {{ form.title }}

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% block title %}Execution Planning Dashboard — ODtech ERP{% endblock %}
+{% block header %}Execution Planning Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-[1600px] mx-auto space-y-6">
+
+    {# Header #}
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-indigo-200">
+                🎯
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight">Execution Planning Dashboard</h1>
+                <p class="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                    Plan individual orders and purchases. Incomplete items automatically roll over to the current month!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {# Split Screen: Left Sales, Right Purchases #}
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        
+        {# LEFT: PLANNED ORDERS #}
+        <div class="space-y-6">
+            <div class="flex items-center justify-between border-b pb-2">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">📈</span>
+                    Planned Orders
+                </h2>
+            </div>
+
+            {# Add New Form #}
+            <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                <form method="POST" class="flex flex-col sm:flex-row gap-3 items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_order">
+                    <div class="flex-1 w-full">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Customer / Title</label>
+                        <input type="text" name="title" required class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500">
+                    </div>
+                    <div class="w-full sm:w-32">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Amount (₹)</label>
+                        <input type="number" step="0.01" name="amount" class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500">
+                    </div>
+                    <div class="w-full sm:w-40">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Planned Month</label>
+                        <input type="month" name="expected_month" value="{{ current_month_start|date:'Y-m' }}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500" required>
+                    </div>
+                    <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition-colors">
+                        Add
+                    </button>
+                </form>
+            </div>
+
+            {# Current Month #}
+            <div>
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    Current Month ({{ current_month_start|date:'M Y' }})
+                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ curr_orders|length }} Items</span>
+                    {% if curr_orders_total > 0 %}
+                    <span class="text-xs font-bold text-emerald-600 ml-auto">₹{{ curr_orders_total|floatformat:2 }}</span>
+                    {% endif %}
+                </h3>
+                <div class="space-y-3">
+                    {% for order in curr_orders %}
+                        {% include "reporting/partials/_order_row.html" with item=order %}
+                    {% empty %}
+                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No pending orders for this month.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Future Months #}
+            <div>
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    Future Months
+                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ next_orders|length }} Items</span>
+                    {% if next_orders_total > 0 %}
+                    <span class="text-xs font-bold text-emerald-600 ml-auto">₹{{ next_orders_total|floatformat:2 }}</span>
+                    {% endif %}
+                </h3>
+                <div class="space-y-3">
+                    {% for order in next_orders %}
+                        {% include "reporting/partials/_order_row.html" with item=order %}
+                    {% empty %}
+                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No orders planned for the future.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            {# Previous Month (Completed Only) #}
+            <div>
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    Previous Month ({{ prev_month_start|date:'M Y' }})
+                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ prev_orders|length }} Completed</span>
+                    {% if prev_orders_total > 0 %}
+                    <span class="text-xs font-bold text-emerald-600 ml-auto">₹{{ prev_orders_total|floatformat:2 }}</span>
+                    {% endif %}
+                </h3>
+                <div class="space-y-3 opacity-75">
+                    {% for order in prev_orders %}
+                        {% include "reporting/partials/_order_row.html" with item=order %}
+                    {% empty %}
+                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No orders completed last month.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# RIGHT: PLANNED PURCHASES #}
+        <div class="space-y-6">
+            <div class="flex items-center justify-between border-b pb-2">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">🛒</span>
+                    Planned Purchases
+                </h2>
+            </div>
+
+            {# Add New Form #}
+            <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                <form method="POST" class="flex flex-col sm:flex-row gap-3 items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_purchase">
+                    <div class="flex-1 w-full">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendor / Title</label>
+                        <input type="text" name="title" required class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500">
+                    </div>
+                    <div class="w-full sm:w-32">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Amount (₹)</label>
+                        <input type="number" step="0.01" name="amount" class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500">
+                    </div>
+                    <div class="w-full sm:w-40">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Planned Month</label>
+                        <input type="month" name="expected_month" value="{{ current_month_start|date:'Y-m' }}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500" required>
+                    </div>
+                    <button type="submit" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition-colors">
+                        Add
+                    </button>
+                </form>
+            </div>
+
+            {# Current Month #}
+            <div>
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    Current Month ({{ current_month_start|date:'M Y' }})
+                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ curr_purchases|length }} Items</span>
+                    {% if curr_purchases_total > 0 %}
+                    <span class="text-xs font-bold text-purple-600 ml-auto">₹{{ curr_purchases_total|floatformat:2 }}</span>
+                    {% endif %}
+                </h3>
+                <div class="space-y-3">
+                    {% for purchase in curr_purchases %}
+                        {% include "reporting/partials/_purchase_row.html" with item=purchase %}
+                    {% empty %}
+                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No pending purchases for this month.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Future Months #}
+            <div>
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    Future Months
+                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ next_purchases|length }} Items</span>
+                    {% if next_purchases_total > 0 %}
+                    <span class="text-xs font-bold text-purple-600 ml-auto">₹{{ next_purchases_total|floatformat:2 }}</span>
+                    {% endif %}
+                </h3>
+                <div class="space-y-3">
+                    {% for purchase in next_purchases %}
+                        {% include "reporting/partials/_purchase_row.html" with item=purchase %}
+                    {% empty %}
+                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No purchases planned for the future.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            {# Previous Month (Completed Only) #}
+            <div>
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    Previous Month ({{ prev_month_start|date:'M Y' }})
+                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ prev_purchases|length }} Completed</span>
+                    {% if prev_purchases_total > 0 %}
+                    <span class="text-xs font-bold text-purple-600 ml-auto">₹{{ prev_purchases_total|floatformat:2 }}</span>
+                    {% endif %}
+                </h3>
+                <div class="space-y-3 opacity-75">
+                    {% for purchase in prev_purchases %}
+                        {% include "reporting/partials/_purchase_row.html" with item=purchase %}
+                    {% empty %}
+                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No purchases completed last month.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

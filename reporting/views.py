@@ -132,13 +132,24 @@ def financial_dashboard(request):
     credit_notes = docs_qs.filter(type='CRN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
     debit_notes = docs_qs.filter(type='DBN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
-    # ── Payments received in period ───────────────────────────────────────────
+    # ── Payments received vs given in period ─────────────────────────────────
+    po_payments_total = Decimal('0')
     try:
         payments_qs = Payment.objects.filter(
             date__gte=start_date,
             date__lte=end_date,
         )
-        total_payments_received = payments_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        
+        po_numbers = set(Document.objects.filter(type='PO').values_list('number', flat=True))
+        
+        total_received = Decimal('0')
+        for p in payments_qs:
+            if p.document_ref and p.document_ref in po_numbers:
+                po_payments_total += p.amount
+            else:
+                total_received += p.amount
+
+        total_payments_received = total_received
         payments_count = payments_qs.count()
     except Exception:
         total_payments_received = Decimal('0')
@@ -152,7 +163,7 @@ def financial_dashboard(request):
             status='Approved',
         )
         total_expenses = expenses_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        total_payments_given = total_expenses
+        total_payments_given = total_expenses + po_payments_total
         expenses_count = expenses_qs.count()
 
         pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')
@@ -174,8 +185,24 @@ def financial_dashboard(request):
         daily_expenses = Decimal('0')
         fixed_expenses = Decimal('0')
 
-    unpaid_pos = Document.objects.filter(type='PO', status='Approved').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    amount_needed_to_pay = pending_expenses + (unpaid_pos * Decimal('0.3'))
+    unpaid_po_advances = Decimal('0')
+    try:
+        approved_pos = Document.objects.filter(type='PO', status='Approved')
+        po_numbers = list(approved_pos.values_list('number', flat=True))
+        
+        po_payments = Payment.objects.filter(document_ref__in=po_numbers).values('document_ref').annotate(total_paid=Sum('amount'))
+        po_paid_dict = {item['document_ref']: item['total_paid'] or Decimal('0') for item in po_payments}
+        
+        for po in approved_pos:
+            paid_amount = po_paid_dict.get(po.number, Decimal('0'))
+            advance_required = po.grand_total * Decimal('0.3')
+            remaining_advance = advance_required - paid_amount
+            if remaining_advance > 0:
+                unpaid_po_advances += remaining_advance
+    except Exception:
+        pass
+
+    amount_needed_to_pay = pending_expenses + unpaid_po_advances
 
     # ── Order Tracker Metrics ──────────────────────────────────────────────────
     total_orders = 0
@@ -366,3 +393,122 @@ def financial_dashboard(request):
 
     return render(request, 'reporting/financial_dashboard.html', context)
 
+
+@login_required
+def business_planning_dashboard(request):
+    from .models import PlannedOrder, PlannedPurchase
+    from dateutil.relativedelta import relativedelta
+    from datetime import date
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from django.db.models import Q
+
+    today = date.today()
+    current_month_start = date(today.year, today.month, 1)
+    prev_month_start = current_month_start - relativedelta(months=1)
+    next_month_start = current_month_start + relativedelta(months=1)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        def parse_month(month_str):
+            if month_str and len(month_str) == 7: # YYYY-MM
+                return month_str + '-01'
+            return month_str
+
+        
+        if action == 'add_order':
+            PlannedOrder.objects.create(
+                title=request.POST.get('title'),
+                amount=request.POST.get('amount') or 0,
+                expected_month=parse_month(request.POST.get('expected_month')),
+            )
+            messages.success(request, 'Planned order added.')
+            
+        elif action == 'add_purchase':
+            PlannedPurchase.objects.create(
+                title=request.POST.get('title'),
+                amount=request.POST.get('amount') or 0,
+                expected_month=parse_month(request.POST.get('expected_month')),
+            )
+            messages.success(request, 'Planned purchase added.')
+            
+        elif action == 'edit_order':
+            order = PlannedOrder.objects.get(id=request.POST.get('id'))
+            order.title = request.POST.get('title', order.title)
+            order.amount = request.POST.get('amount') or order.amount
+            if request.POST.get('expected_month'):
+                order.expected_month = parse_month(request.POST.get('expected_month'))
+            order.payments_received = request.POST.get('payments_received') or 0
+            order.status = request.POST.get('status')
+            if order.status == 'Completed' and not order.completed_month:
+                order.completed_month = current_month_start
+            elif order.status != 'Completed':
+                order.completed_month = None
+            order.save()
+            messages.success(request, 'Order updated.')
+            
+        elif action == 'edit_purchase':
+            purchase = PlannedPurchase.objects.get(id=request.POST.get('id'))
+            purchase.title = request.POST.get('title', purchase.title)
+            purchase.amount = request.POST.get('amount') or purchase.amount
+            if request.POST.get('expected_month'):
+                purchase.expected_month = parse_month(request.POST.get('expected_month'))
+            purchase.payments_given = request.POST.get('payments_given') or 0
+            purchase.status = request.POST.get('status')
+            if purchase.status == 'Completed' and not purchase.completed_month:
+                purchase.completed_month = current_month_start
+            elif purchase.status != 'Completed':
+                purchase.completed_month = None
+            purchase.save()
+            messages.success(request, 'Purchase updated.')
+
+        elif action == 'delete_order':
+            order = PlannedOrder.objects.get(id=request.POST.get('id'))
+            order.delete()
+            messages.success(request, 'Order deleted.')
+
+        elif action == 'delete_purchase':
+            purchase = PlannedPurchase.objects.get(id=request.POST.get('id'))
+            purchase.delete()
+            messages.success(request, 'Purchase deleted.')
+            
+        return redirect('business_planning')
+
+    def get_month_items(model, month_start, is_current=False):
+        if is_current:
+            return model.objects.filter(
+                Q(expected_month=month_start) | 
+                (Q(expected_month__lt=month_start) & ~Q(status='Completed'))
+            ).order_by('expected_month', '-created_at')
+        else:
+            if month_start < current_month_start:
+                return model.objects.filter(completed_month=month_start).order_by('-created_at')
+            else:
+                return model.objects.filter(expected_month__gt=current_month_start).order_by('expected_month', '-created_at')
+
+    context = {
+        'current_month_start': current_month_start,
+        'prev_month_start': prev_month_start,
+        'next_month_start': next_month_start,
+        
+        'curr_orders': get_month_items(PlannedOrder, current_month_start, True),
+        'curr_purchases': get_month_items(PlannedPurchase, current_month_start, True),
+        
+        'prev_orders': get_month_items(PlannedOrder, prev_month_start, False),
+        'prev_purchases': get_month_items(PlannedPurchase, prev_month_start, False),
+        
+        'next_orders': get_month_items(PlannedOrder, next_month_start, False),
+        'next_purchases': get_month_items(PlannedPurchase, next_month_start, False),
+    }
+
+    # Calculate Totals
+    context['curr_orders_total'] = sum(item.amount for item in context['curr_orders'])
+    context['curr_purchases_total'] = sum(item.amount for item in context['curr_purchases'])
+    
+    context['prev_orders_total'] = sum(item.amount for item in context['prev_orders'])
+    context['prev_purchases_total'] = sum(item.amount for item in context['prev_purchases'])
+    
+    context['next_orders_total'] = sum(item.amount for item in context['next_orders'])
+    context['next_purchases_total'] = sum(item.amount for item in context['next_purchases'])
+    return render(request, 'reporting/planning_dashboard.html', context)

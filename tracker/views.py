@@ -109,11 +109,45 @@ def _build_product_list_context(request, products_qs, order, lot=None):
     order_expenses_inc_gst = sum(e.amount_inc_gst for e in order_expenses)
 
     # Fetch Product Expenses
-    product_expenses = ProductExpense.objects.filter(product__order=order).select_related('product')
-    product_expenses_total = sum(
-        (e.amount * e.product.quantity) if e.expense_type == 'PER_UNIT' else e.amount 
-        for e in product_expenses
-    )
+    product_expenses = list(ProductExpense.objects.filter(product__order=order).select_related('product'))
+    product_expenses_total = 0
+    for e in product_expenses:
+        if e.expense_type == 'PER_UNIT':
+            e.total_amount = e.amount * e.product.quantity
+        else:
+            e.total_amount = e.amount
+        product_expenses_total += e.total_amount
+
+    # Fetch Linked Expenses from Payments
+    linked_expenses = []
+    try:
+        from payments.models import Expense
+        import json
+        approved_expenses = Expense.objects.filter(status='Approved')
+        for le in approved_expenses:
+            p_payload = le.payload or {}
+            if isinstance(p_payload, str):
+                try:
+                    p_payload = json.loads(p_payload)
+                except Exception:
+                    p_payload = {}
+            prod_id = p_payload.get('product_id')
+            if prod_id:
+                p_name = None
+                for p in products:
+                    if str(p.id) == prod_id:
+                        p_name = p.item_name
+                        break
+                if p_name:
+                    linked_expenses.append({
+                        'product_name': p_name,
+                        'description': f"{le.expense_type or le.title} (Linked Payment Expense)",
+                        'type': 'TOTAL',
+                        'amount': le.amount,
+                    })
+                    product_expenses_total += le.amount
+    except Exception as e:
+        pass
 
     return {
         'order': order,
@@ -127,6 +161,7 @@ def _build_product_list_context(request, products_qs, order, lot=None):
         'order_expenses_ex_gst': order_expenses_ex_gst,
         'order_expenses_inc_gst': order_expenses_inc_gst,
         'product_expenses': product_expenses,
+        'linked_expenses': linked_expenses,
         'product_expenses_total': product_expenses_total,
     }
 
@@ -385,6 +420,7 @@ def product_detail_view(request, product_id):
         .exclude(supplier_name='')
         .values('supplier_name', 'contact_email', 'contact_number', 'location')
         .order_by('-updated_at')
+        .order_by('-updated_at')
     )
     supplier_dict = {}
     for s in all_suppliers:
@@ -401,7 +437,31 @@ def product_detail_view(request, product_id):
 
     # Fetch expenses
     expenses = product.expenses.all()
-    expenses_list = [{'id': str(e.id), 'desc': e.description, 'amount': str(e.amount), 'type': getattr(e, 'expense_type', 'PER_UNIT')} for e in expenses]
+    expenses_list = [{'id': str(e.id), 'desc': e.description, 'amount': str(e.amount), 'type': getattr(e, 'expense_type', 'PER_UNIT'), 'is_linked': False} for e in expenses]
+
+    # Fetch linked payments.Expense items
+    try:
+        from payments.models import Expense
+        approved_expenses = Expense.objects.filter(status='Approved')
+        for le in approved_expenses:
+            p_payload = le.payload or {}
+            if isinstance(p_payload, str):
+                import json
+                try:
+                    p_payload = json.loads(p_payload)
+                except Exception:
+                    p_payload = {}
+            if p_payload.get('product_id') == str(product.id):
+                expenses_list.append({
+                    'id': f'linked_{le.id}', 
+                    'desc': f"{le.title} (Linked Expense)", 
+                    'amount': str(le.amount), 
+                    'type': 'TOTAL',
+                    'is_linked': True
+                })
+    except Exception:
+        pass
+
     product_expenses_json = json.dumps(expenses_list)
 
     pending_request = product.price_approval_requests.filter(status='PENDING').first()
@@ -421,7 +481,6 @@ def product_detail_view(request, product_id):
         'pending_request': pending_request,
     }
     return render(request, 'tracker/product_detail.html', context)
-
 
 @login_required
 def product_modal_detail_view(request, product_id):
@@ -608,7 +667,31 @@ def product_modal_detail_view(request, product_id):
     
     # Fetch expenses
     expenses = product.expenses.all()
-    expenses_list = [{'id': str(e.id), 'desc': e.description, 'amount': str(e.amount), 'type': getattr(e, 'expense_type', 'PER_UNIT')} for e in expenses]
+    expenses_list = [{'id': str(e.id), 'desc': e.description, 'amount': str(e.amount), 'type': getattr(e, 'expense_type', 'PER_UNIT'), 'is_linked': False} for e in expenses]
+    
+    # Fetch linked payments.Expense items
+    try:
+        from payments.models import Expense
+        approved_expenses = Expense.objects.filter(status='Approved')
+        for le in approved_expenses:
+            p_payload = le.payload or {}
+            if isinstance(p_payload, str):
+                import json
+                try:
+                    p_payload = json.loads(p_payload)
+                except Exception:
+                    p_payload = {}
+            if p_payload.get('product_id') == str(product.id):
+                expenses_list.append({
+                    'id': f'linked_{le.id}', 
+                    'desc': f"{le.title} (Linked Expense)", 
+                    'amount': str(le.amount), 
+                    'type': 'TOTAL',
+                    'is_linked': True
+                })
+    except Exception:
+        pass
+        
     product_expenses_json = json.dumps(expenses_list)
     
     pending_request = product.price_approval_requests.filter(status='PENDING').first()

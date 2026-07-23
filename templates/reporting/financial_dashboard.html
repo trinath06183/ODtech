@@ -79,8 +79,7 @@
 
         {# 1. Total Sales #}
         <a href="{% url 'document_list' %}?type=INV" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
                         📈
@@ -92,7 +91,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Sales</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">₹{{ total_sales|floatformat:0 }}</div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>{{ sales_count }} Invoice{{ sales_count|pluralize }}</span>
                 <span class="text-emerald-600 font-semibold">Approved</span>
             </div>
@@ -100,8 +99,7 @@
 
         {# 2. Total Purchases #}
         <a href="{% url 'document_list' %}?type=PO" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
                         🛒
@@ -113,7 +111,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Purchases</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">₹{{ total_purchases|floatformat:0 }}</div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>{{ purchases_count }} Purchase Order{{ purchases_count|pluralize }}</span>
                 <span class="text-purple-600 font-semibold">Vendor</span>
             </div>
@@ -121,8 +119,7 @@
 
         {# 3. Total Profit #}
         <div class="group bg-gradient-to-br {% if net_profit >= 0 %}from-emerald-600 to-teal-700{% else %}from-red-600 to-rose-700{% endif %} text-white rounded-2xl p-5 shadow-md border border-transparent hover:shadow-lg transition-all flex flex-col justify-between relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold">
                         💰
@@ -136,16 +133,15 @@
                     {% if net_profit >= 0 %}+{% endif %}₹{{ net_profit|floatformat:0 }}
                 </div>
             </div>
-            <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-white/90">
+            <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-white/90 relative z-10">
                 <span>Gross: ₹{{ gross_profit|floatformat:0 }}</span>
-                <button type="button" onclick="openPnLModal()" class="font-bold underline cursor-pointer hover:text-white/80 transition-colors">P&L Report</button>
+                <button type="button" onclick="openPnLModal()" class="font-bold underline cursor-pointer hover:text-white/80 transition-colors relative z-50">P&L Report</button>
             </div>
         </div>
 
         {# 4. Total Orders #}
         <a href="{% url 'tracker:individual_products' %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
                         📦
@@ -157,7 +153,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Orders</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">{{ total_orders }}</div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>Active: {{ order_in_progress|add:order_open }}</span>
                 <span class="text-indigo-600 font-semibold">Done: {{ order_completed }}</span>
             </div>
@@ -165,8 +161,7 @@
 
         {# 5. Total Payments Received #}
         <a href="{% url 'payment_list' %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
                         📥
@@ -178,7 +173,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Payments Received</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">₹{{ total_payments_received|floatformat:0 }}</div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>{{ payments_count }} Transaction{{ payments_count|pluralize }}</span>
                 <span class="text-blue-600 font-semibold">Receivables</span>
             </div>
@@ -186,8 +181,7 @@
 
         {# 6. Total Payments Given #}
         <a href="{% url 'expense_list' %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
                         📤
@@ -199,7 +193,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Payments Given</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">₹{{ total_payments_given|floatformat:0 }}</div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>{{ expenses_count }} Approved Bills</span>
                 <span class="text-orange-600 font-semibold">Payables</span>
             </div>
@@ -207,8 +201,7 @@
 
         {# 7. Amount Needed to Pay (Outstanding Payables) #}
         <a href="{% url 'expense_list' %}?status=Pending" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-red-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between col-span-1 sm:col-span-2 md:col-span-1">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform"></div>
-            <div>
+            <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
                         ⚠️
@@ -220,7 +213,7 @@
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Amount Needed to Pay</span>
                 <div class="text-2xl font-black text-red-600 mt-1">₹{{ amount_needed_to_pay|floatformat:0 }}</div>
             </div>
-            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>Pending Bills & POs</span>
                 <span class="text-red-600 font-bold">Action Req.</span>
             </div>
@@ -498,10 +491,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function openPnLModal() {
-    document.getElementById('pnl-modal')?.classList.remove('hidden');
+    const modal = document.getElementById('pnl-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 }
 function closePnLModal() {
-    document.getElementById('pnl-modal')?.classList.add('hidden');
+    const modal = document.getElementById('pnl-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 }
 document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
     if (e.target === this) closePnLModal();
@@ -509,7 +510,7 @@ document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
 </script>
 
 <!-- ── P&L Statement Modal ── -->
-<div id="pnl-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+<div id="pnl-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
         <!-- Header -->
         <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-6 text-white flex items-center justify-between">
