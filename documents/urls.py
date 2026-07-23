@@ -14,6 +14,7 @@ urlpatterns = [
     path('invoice/new/',   views.create_invoice,   name='create_invoice'),
 
     # Preview wrapper page
+    path('<int:document_id>/',         views.document_preview,      name='document_detail'),
     path('<int:document_id>/preview/', views.document_preview,      name='document_preview'),
     path('<int:document_id>/change-status/', views.change_document_status, name='change_document_status'),
 

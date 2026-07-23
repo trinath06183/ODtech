@@ -221,7 +221,7 @@ def financial_dashboard(request):
                 'date': doc.date,
                 'type': 'receivable',
                 'is_urgent': True,
-                'link': f"/documents/{doc.id}/"
+                'link': f"/documents/{doc.id}/preview/"
             })
 
         pending_exp_list = Expense.objects.filter(
