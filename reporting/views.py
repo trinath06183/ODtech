@@ -400,10 +400,8 @@ def business_planning_dashboard(request):
         return _business_planning_dashboard(request)
     except Exception as e:
         import traceback
-        import os
-        with open(os.path.join(os.path.dirname(__file__), 'error_debug_log.txt'), 'w') as f:
-            f.write(traceback.format_exc())
-        raise
+        from django.http import HttpResponse
+        return HttpResponse(f"<pre>{traceback.format_exc()}</pre>")
 
 def _business_planning_dashboard(request):
     from .models import PlannedOrder, PlannedPurchase
