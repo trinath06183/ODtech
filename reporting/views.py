@@ -401,7 +401,7 @@ def business_planning_dashboard(request):
     from datetime import date
     from django.contrib import messages
     from django.shortcuts import redirect
-    from django.db.models import Q
+    from django.db.models import Q, Sum
     from decimal import Decimal
 
     today = date.today()
@@ -503,13 +503,13 @@ def business_planning_dashboard(request):
         'next_purchases': get_month_items(PlannedPurchase, next_month_start, False),
     }
 
-    # Calculate Totals
-    context['curr_orders_total'] = sum((item.amount for item in context['curr_orders']), Decimal('0.00'))
-    context['curr_purchases_total'] = sum((item.amount for item in context['curr_purchases']), Decimal('0.00'))
+    # Calculate Totals using Django aggregation
+    context['curr_orders_total'] = context['curr_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    context['curr_purchases_total'] = context['curr_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     
-    context['prev_orders_total'] = sum((item.amount for item in context['prev_orders']), Decimal('0.00'))
-    context['prev_purchases_total'] = sum((item.amount for item in context['prev_purchases']), Decimal('0.00'))
+    context['prev_orders_total'] = context['prev_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    context['prev_purchases_total'] = context['prev_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     
-    context['next_orders_total'] = sum((item.amount for item in context['next_orders']), Decimal('0.00'))
-    context['next_purchases_total'] = sum((item.amount for item in context['next_purchases']), Decimal('0.00'))
+    context['next_orders_total'] = context['next_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    context['next_purchases_total'] = context['next_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     return render(request, 'reporting/planning_dashboard.html', context)
