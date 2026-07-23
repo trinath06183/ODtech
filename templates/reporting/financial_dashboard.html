@@ -138,7 +138,7 @@
             </div>
             <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-white/90">
                 <span>Gross: ₹{{ gross_profit|floatformat:0 }}</span>
-                <span class="font-bold underline cursor-pointer">P&L Report</span>
+                <button type="button" onclick="openPnLModal()" class="font-bold underline cursor-pointer hover:text-white/80 transition-colors">P&L Report</button>
             </div>
         </div>
 
@@ -496,6 +496,159 @@ document.addEventListener('DOMContentLoaded', function() {
 
     new ApexCharts(document.querySelector('#order-donut-chart'), orderOptions).render();
 });
+
+function openPnLModal() {
+    document.getElementById('pnl-modal')?.classList.remove('hidden');
+}
+function closePnLModal() {
+    document.getElementById('pnl-modal')?.classList.add('hidden');
+}
+document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closePnLModal();
+});
 </script>
+
+<!-- ── P&L Statement Modal ── -->
+<div id="pnl-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-6 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl">
+                    📊
+                </div>
+                <div>
+                    <h2 class="font-black text-lg text-white tracking-wide">Profit & Loss (P&L) Statement</h2>
+                    <p class="text-xs text-indigo-200/80 font-medium">Period: <span class="font-bold text-white">{{ label }}</span> ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="window.print()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                    🖨️ Print Report
+                </button>
+                <button type="button" onclick="closePnLModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors">
+                    ✕
+                </button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto font-sans">
+
+            <!-- 1. Revenue Section -->
+            <div>
+                <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2 border-b border-indigo-100 pb-1">
+                    <span>1. Revenue / Income</span>
+                    <span>Amount (₹)</span>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Sales Subtotal (Tax Exclusive)</span>
+                        <span class="font-semibold text-slate-800">₹{{ total_sales_subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-500 text-xs">
+                        <span>GST Tax Collected</span>
+                        <span class="font-medium text-slate-600">+ ₹{{ total_sales_tax|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-800 font-bold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span>Total Invoiced Revenue ({{ sales_count }} Invoice{{ sales_count|pluralize }})</span>
+                        <span class="text-indigo-600">₹{{ total_sales|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Cost of Goods Sold (COGS) -->
+            <div>
+                <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 border-b border-slate-100 pb-1">
+                    <span>2. Direct Costs (COGS / Purchases)</span>
+                    <span>Amount (₹)</span>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Purchase Orders & Direct Material ({{ purchases_count }} PO{{ purchases_count|pluralize }})</span>
+                        <span class="font-semibold text-red-600">- ₹{{ total_purchases|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gross Profit Summary Card -->
+            <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-indigo-100 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block">Gross Profit</span>
+                    <span class="text-xs text-slate-500">Gross Margin: <strong>{{ gross_margin_pct|floatformat:1 }}%</strong></span>
+                </div>
+                <div class="text-xl font-black text-indigo-700">
+                    ₹{{ gross_profit|floatformat:2 }}
+                </div>
+            </div>
+
+            <!-- 3. Operating Expenses -->
+            <div>
+                <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 border-b border-slate-100 pb-1">
+                    <span>3. Operating Expenses</span>
+                    <span>Amount (₹)</span>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Daily & Travel Expenses</span>
+                        <span class="font-medium text-slate-700">- ₹{{ daily_expenses|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Fixed & Salary Expenses</span>
+                        <span class="font-medium text-slate-700">- ₹{{ fixed_expenses|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-700 font-bold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span>Total Expenses ({{ expenses_count }} Approved Bill{{ expenses_count|pluralize }})</span>
+                        <span class="text-orange-600">- ₹{{ total_expenses|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Adjustments -->
+            {% if debit_notes > 0 or credit_notes > 0 %}
+            <div>
+                <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 border-b border-slate-100 pb-1">
+                    <span>4. Credit / Debit Adjustments</span>
+                    <span>Amount (₹)</span>
+                </div>
+                <div class="space-y-2 text-sm">
+                    {% if debit_notes > 0 %}
+                    <div class="flex justify-between text-slate-600">
+                        <span>Debit Notes (Additions)</span>
+                        <span class="font-semibold text-emerald-600">+ ₹{{ debit_notes|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if credit_notes > 0 %}
+                    <div class="flex justify-between text-slate-600">
+                        <span>Credit Notes (Deductions)</span>
+                        <span class="font-semibold text-red-600">- ₹{{ credit_notes|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Net Profit Final Summary -->
+            <div class="p-5 rounded-2xl {% if net_profit >= 0 %}bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20{% else %}bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-red-500/20{% endif %} shadow-lg flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider opacity-90 block">Net Profit / Loss</span>
+                    <span class="text-xs opacity-80">Net Profit Margin: <strong>{{ net_margin_pct|floatformat:1 }}%</strong></span>
+                </div>
+                <div class="text-2xl font-black">
+                    {% if net_profit >= 0 %}+{% endif %}₹{{ net_profit|floatformat:2 }}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs text-slate-400">Financial Dashboard Statement</span>
+            <button type="button" onclick="closePnLModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors">
+                Close Report
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
