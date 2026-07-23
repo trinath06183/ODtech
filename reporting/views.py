@@ -396,16 +396,8 @@ def financial_dashboard(request):
 
 @login_required
 def business_planning_dashboard(request):
-    try:
-        return _business_planning_dashboard(request)
-    except Exception as e:
-        import traceback
-        from django.http import HttpResponse
-        return HttpResponse(f"<pre>{traceback.format_exc()}</pre>")
 
-def _business_planning_dashboard(request):
     from .models import PlannedOrder, PlannedPurchase
-    from dateutil.relativedelta import relativedelta
     from datetime import date
     from django.contrib import messages
     from django.shortcuts import redirect
@@ -414,8 +406,16 @@ def _business_planning_dashboard(request):
 
     today = date.today()
     current_month_start = date(today.year, today.month, 1)
-    prev_month_start = current_month_start - relativedelta(months=1)
-    next_month_start = current_month_start + relativedelta(months=1)
+    
+    if today.month == 1:
+        prev_month_start = date(today.year - 1, 12, 1)
+    else:
+        prev_month_start = date(today.year, today.month - 1, 1)
+        
+    if today.month == 12:
+        next_month_start = date(today.year + 1, 1, 1)
+    else:
+        next_month_start = date(today.year, today.month + 1, 1)
 
     if request.method == 'POST':
         action = request.POST.get('action')
