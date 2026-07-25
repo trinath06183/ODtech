@@ -108,7 +108,6 @@ def mobile_upload_submit(request, token):
     uploaded = request.FILES['file']
 
     # Check for crop flags
-    auto_crop = request.POST.get('auto_crop') == 'true'
     crop_points_str = request.POST.get('crop_points')
     
     crop_points = None
@@ -121,15 +120,12 @@ def mobile_upload_submit(request, token):
         except Exception:
             crop_points = None
 
-    # Apply cropping if requested and OpenCV is available
-    if (auto_crop or crop_points) and uploaded.content_type and uploaded.content_type.startswith('image/'):
+    # Apply manual cropping if requested and OpenCV is available
+    if crop_points and uploaded.content_type and uploaded.content_type.startswith('image/'):
         try:
-            from mobile_upload.utils import auto_crop_document, manual_crop_document
+            from mobile_upload.utils import manual_crop_document
             
-            if crop_points:
-                cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
-            else:
-                cropped_bytes = auto_crop_document(uploaded.read())
+            cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
             
             # Create a new InMemoryUploadedFile with the processed bytes
             from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -148,8 +144,10 @@ def mobile_upload_submit(request, token):
             print("Failed to auto-crop:", e)
             uploaded.seek(0) # Reset pointer in case it failed
 
-    # Compress if it's an image and larger than 2MB
-    if 'Image' in globals() and Image and uploaded.size > 2 * 1024 * 1024 and getattr(uploaded, 'content_type', '').startswith('image/'):
+    # Compress if it's an image and larger than 2MB, UNLESS client already compressed it
+    client_compressed = request.POST.get('client_compressed') == 'true'
+    
+    if not client_compressed and 'Image' in globals() and Image and uploaded.size > 2 * 1024 * 1024 and getattr(uploaded, 'content_type', '').startswith('image/'):
         try:
             img = Image.open(uploaded)
             if img.mode != 'RGB': img = img.convert('RGB')
