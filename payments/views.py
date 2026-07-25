@@ -235,6 +235,15 @@ def expense_edit(request, pk):
     return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Edit Expense', 'expense': expense})
 
 @login_required
+def expense_detail(request, pk):
+    if request.user.is_superuser:
+        expense = get_object_or_404(Expense, pk=pk)
+    else:
+        expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
+        
+    return render(request, 'payments/expense_detail.html', {'title': 'View Expense', 'expense': expense})
+
+@login_required
 def expense_delete(request, pk):
     if request.user.is_superuser:
         expense = get_object_or_404(Expense, pk=pk)

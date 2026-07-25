@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex items-center justify-between">
+    <div>
+        <a href="{% url 'expense_list' %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center mb-2 transition-colors">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Expenses
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ title }}</h1>
+    </div>
+    {% if request.user.is_superuser %}
+    <div>
+        <a href="{% url 'expense_edit' expense.id %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-md">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Edit Expense
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="bg-white shadow-sm max-w-3xl rounded-xl border border-gray-200 p-6 md:p-8">
+    <div class="space-y-6">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2 flex items-center justify-between border-b border-gray-100 pb-4">
+                <div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold
+                        {% if expense.status == 'Approved' %}bg-green-100 text-green-700
+                        {% elif expense.status == 'Rejected' %}bg-red-100 text-red-700
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {{ expense.status }}
+                    </span>
+                    {% if expense.is_paid %}
+                    <span class="px-2.5 py-1 inline-block rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 ml-2">
+                        Paid
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-500 mb-1">Title / Purpose</label>
+                <div class="text-gray-900 font-semibold text-lg">{{ expense.title }}</div>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-500 mb-1">Employee Code</label>
+                <div class="text-gray-900 font-semibold">{{ expense.employee_code|default:"N/A" }}</div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">Category</label>
+                <div class="text-gray-900 font-semibold">{{ expense.expense_type }}</div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">Date Incurred</label>
+                <div class="text-gray-900 font-semibold">{{ expense.date|date:"d M Y" }}</div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">Amount (&#8377;)</label>
+                <div class="text-gray-900 font-semibold text-lg">&#8377; {{ expense.amount }}</div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">GST Amount (&#8377;)</label>
+                <div class="text-gray-900 font-semibold text-lg">&#8377; {{ expense.gst_amount }}</div>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-500 mb-1">Receipt / Invoice</label>
+                {% if expense.receipt %}
+                <a href="{{ expense.receipt.url }}" target="_blank" class="inline-flex text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-md transition-colors items-center font-semibold border border-indigo-100 bg-white">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    View Attached File
+                </a>
+                {% else %}
+                <div class="text-gray-400 italic">No receipt attached</div>
+                {% endif %}
+            </div>
+
+            {% if expense.payload %}
+            <div class="md:col-span-2">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Category Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for key, value in expense.get_formatted_payload.items %}
+                            {% if value %}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1 capitalize">{{ key }}</label>
+                                <div class="text-gray-900 text-sm font-medium">{{ value }}</div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-500 mb-1">Additional Notes</label>
+                <div class="text-gray-900 bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-wrap">{{ expense.notes|default:"No additional notes provided." }}</div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
