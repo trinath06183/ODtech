@@ -74,6 +74,9 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Receipt / Invoice</label>
                 {{ form.receipt }}
                 {{ form.receipt.errors }}
+                <div class="mt-3">
+                    {% include 'mobile_upload/qr_widget.html' %}
+                </div>
                 {% if expense and expense.receipt %}
                 <p class="text-xs text-gray-500 mt-2">Current: <a href="{{ expense.receipt.url }}" target="_blank" class="text-indigo-600 hover:underline">View File</a></p>
                 {% endif %}

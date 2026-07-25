@@ -342,7 +342,7 @@
             const file = new File([blob], filename, { type: blob.type });
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
-            const fileInput = document.getElementById('edms-file-input') || document.getElementById('id_file');
+            const fileInput = document.getElementById('edms-file-input') || document.getElementById('id_file') || document.getElementById('id_receipt');
             if(fileInput){
                 fileInput.files = dataTransfer.files;
                 // Support both old (showPreview) and new (handleFileSelected) upload pages
