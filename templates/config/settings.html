@@ -55,29 +55,6 @@
             </div>
         </div>
 
-        <!-- Document Numbering -->
-        <div class="glass rounded-2xl p-7 mb-6">
-            <div class="flex items-center space-x-3 mb-6">
-                <div class="w-10 h-10 rounded-xl bg-purple-600/30 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-gray-900 font-bold">Document Number Prefixes</h3>
-                    <p class="text-gray-500 text-xs">Applied to new documents — e.g. INV-2025-26/001</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                {% for field, label, default, value in prefix_fields %}
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">{{ label }}</label>
-                    <input type="text" name="{{ field }}" value="{{ value|default:default }}" placeholder="{{ default }}" maxlength="10"
-                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 shadow-sm transition">
-                </div>
-                {% endfor %}
-            </div>
-        </div>
 
         <!-- Document Number Format -->
         <div class="glass rounded-2xl p-7 mb-6">

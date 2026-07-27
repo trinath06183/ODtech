@@ -737,14 +737,7 @@
     }
 
     function saveCrop() {
-        const autoCb = document.getElementById('auto-crop');
-        if (autoCb && autoCb.checked) {
-            manualCropPoints = null; // Auto-crop selected
-            document.getElementById('adjust-crop-btn').textContent = "Auto-Crop";
-        } else {
-            manualCropPoints = JSON.parse(JSON.stringify(pts));
-            document.getElementById('adjust-crop-btn').textContent = "✓ Manual Crop";
-        }
+        manualCropPoints = JSON.parse(JSON.stringify(pts));
         closeCropEditor();
     }
 
@@ -856,9 +849,6 @@
         
         pts[activePointIdx] = [relX, relY];
         
-        // Automatically uncheck auto-crop when user moves edges
-        setAutoCropState(false);
-
         drawCanvas();
     }
 

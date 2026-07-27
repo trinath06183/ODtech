@@ -33,15 +33,18 @@ def backup_manager_view(request):
 def backup_create_view(request):
     """Trigger the auto-backup script and redirect back."""
     if request.method == 'POST':
-        try:
-            # We call the script installed on the server
-            result = subprocess.run(["/usr/local/bin/odtech-autobackup"], capture_output=True, text=True)
-            if result.returncode == 0:
-                messages.success(request, "Backup created successfully!")
-            else:
-                messages.error(request, f"Backup failed: {result.stderr}")
-        except Exception as e:
-            messages.error(request, f"Failed to execute backup script: {e}")
+        if os.name == 'nt':
+            messages.warning(request, "Backup creation is only supported on the production Linux server.")
+        else:
+            try:
+                # We call the script installed on the server
+                result = subprocess.run(["/usr/local/bin/odtech-autobackup"], capture_output=True, text=True)
+                if result.returncode == 0:
+                    messages.success(request, "Backup created successfully!")
+                else:
+                    messages.error(request, f"Backup failed: {result.stderr}")
+            except Exception as e:
+                messages.error(request, f"Failed to execute backup script: {e}")
             
     return redirect('backup_manager')
 
