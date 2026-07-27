@@ -62,26 +62,31 @@ class NumberingService:
 
         month_str = document_date.strftime("%m")
 
-        # Get all documents to find the max sequence number
-        existing = Document.objects.all()
-        if exclude_doc_id:
-            existing = existing.exclude(id=exclude_doc_id)
-        number_list = existing.values_list("number", flat=True)
-
-        next_number = 1
-        for num_str in number_list:
-            if num_str:
-                match = re.search(r"[-/](\d+)$", num_str)
-                if match:
-                    next_number = max(next_number, int(match.group(1)) + 1)
-
-        # Read configured format from CompanyProfile
+        # Read configured format and next sequence from CompanyProfile
         fmt = 'OD-{FY}-{MM}-{N}'  # default
+        next_number = 1
+        
+        config_field_map = {
+            'QTN': 'seq_qtn',
+            'INV': 'seq_inv',
+            'PRO': 'seq_pro',
+            'CHL': 'seq_chl',
+            'PO':  'seq_po',
+            'CRN': 'seq_crn',
+            'DBN': 'seq_dbn',
+        }
+        
         try:
             from config.models import CompanyProfile
             company = CompanyProfile.objects.first()
-            if company and company.doc_number_format:
-                fmt = company.doc_number_format
+            if company:
+                if company.doc_number_format:
+                    fmt = company.doc_number_format
+                    
+                config_field = config_field_map.get(document_type)
+                if config_field:
+                    # Next number is exactly the sequence setting + 1
+                    next_number = getattr(company, config_field, 0) + 1
         except Exception:
             pass
 
@@ -102,8 +107,30 @@ class NumberingService:
                 return candidate
             next_number += 1
 
+    @classmethod
+    def bump_sequence(cls, document_type):
+        config_field_map = {
+            'QTN': 'seq_qtn',
+            'INV': 'seq_inv',
+            'PRO': 'seq_pro',
+            'CHL': 'seq_chl',
+            'PO':  'seq_po',
+            'CRN': 'seq_crn',
+            'DBN': 'seq_dbn',
+        }
+        config_field = config_field_map.get(document_type)
+        if not config_field:
+            return
 
-
+        try:
+            from config.models import CompanyProfile
+            company = CompanyProfile.objects.first()
+            if company:
+                current_val = getattr(company, config_field, 0)
+                setattr(company, config_field, current_val + 1)
+                company.save(update_fields=[config_field])
+        except Exception:
+            pass
 class TaxService:
     COMPANY_STATE_TOKENS = {"odisha", "orissa", "21", "21-odisha"}
 
@@ -296,6 +323,7 @@ class DocumentService:
         invoice_date = kwargs.get("invoice_date") or None
         doc_date_kwargs = {"date": invoice_date} if invoice_date else {}
 
+        is_auto_number = not bool(kwargs.get("number"))
         document = Document.objects.create(
             type=document_type,
             status=kwargs.get("status", "Draft"),
@@ -329,6 +357,8 @@ class DocumentService:
             source_document=kwargs.get("source_document"),
         )
         DocumentService.replace_items(document, items)
+        if is_auto_number:
+            NumberingService.bump_sequence(document_type)
         return document
 
     @staticmethod
@@ -345,6 +375,7 @@ class DocumentService:
                     kwargs.get("invoice_date") or document.date,
                     exclude_doc_id=document.id
                 )
+                NumberingService.bump_sequence(document_type)
         
         if document.numbering_mode == 'manual' and kwargs.get("number"):
             document.number = kwargs.get("number")

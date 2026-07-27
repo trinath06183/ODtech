@@ -17,14 +17,18 @@
 <!-- Stats Row -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
     {% for stat in stats %}
-    <a href="?type={{ stat.type }}{% if query %}&q={{ query }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="glass p-5 rounded-2xl flex items-center space-x-4 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
+    <label for="filter-type-{{ stat.type }}" id="tile-{{ stat.type }}" class="glass p-5 rounded-2xl flex items-center space-x-4 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
         <div class="text-3xl">{{ stat.icon }}</div>
         <div>
             <div class="text-2xl font-bold text-white">{{ stat.count }}</div>
             <div class="text-xs text-gray-400">{{ stat.label }}</div>
         </div>
-    </a>
+    </label>
     {% endfor %}
+    <a href="{% url 'create_document' %}" class="glass p-5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer border border-blue-500/30 hover:border-blue-500 bg-blue-600/10 hover:bg-blue-600/20 group">
+        <svg class="w-8 h-8 text-blue-400 group-hover:text-blue-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <div class="text-lg font-bold text-blue-400 group-hover:text-blue-300">New Document</div>
+    </a>
 </div>
 
 <!-- Grid Container for Split Screen Dashboard -->
@@ -33,39 +37,14 @@
     <!-- Left Column (Controls & Table list) - Spans 3 columns on large screens -->
     <div class="space-y-6">
         
-        <!-- Filter & Actions Bar -->
-        <div class="glass p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-3 flex-wrap gap-2">
-                <span class="text-gray-400 text-sm">Showing:</span>
-                
-                <label class="cursor-pointer">
-                    <input type="checkbox" class="peer hidden" {% if not current_types %}checked{% endif %} onchange="if(this.checked){ document.querySelectorAll('.type-checkbox').forEach(cb => cb.checked = false); } document.getElementById('filter-form').submit();">
-                    <div class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors peer-checked:bg-blue-600 peer-checked:text-white bg-slate-800 text-gray-300 hover:bg-slate-700">
-                        All
-                    </div>
-                </label>
-
-                {% for f in filters %}
-                <label class="cursor-pointer">
-                    <input type="checkbox" name="type" value="{{ f.type }}" form="filter-form" class="peer hidden type-checkbox" {% if f.type in current_types %}checked{% endif %}>
-                    <div class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors peer-checked:bg-blue-600 peer-checked:text-white bg-slate-800 text-gray-300 hover:bg-slate-700">
-                        {{ f.label }}
-                    </div>
-                </label>
-                {% endfor %}
-            </div>
-
-            <div class="flex items-center space-x-3">
-                <a href="{% url 'create_document' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    New Document
-                </a>
-            </div>
-        </div>
-
         <!-- Search, Filter & Sort Controls (Red Box Element) -->
         <div class="glass p-4 rounded-2xl">
             <form id="filter-form" method="get" class="flex flex-wrap items-center justify-between gap-4">
+                <div class="hidden">
+                    {% for f in filters %}
+                    <input type="checkbox" id="filter-type-{{ f.type }}" name="type" value="{{ f.type }}" class="type-checkbox" {% if f.type in current_types %}checked{% endif %} onchange="var t=document.getElementById('tile-{{ f.type }}'); if(this.checked){t.classList.add('border-blue-500');t.classList.remove('border-white/5');}else{t.classList.remove('border-blue-500');t.classList.add('border-white/5');}">
+                    {% endfor %}
+                </div>
 
                 <!-- Left: Search Box with Autocomplete Datalist -->
                 <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">

@@ -21,6 +21,14 @@ def settings_view(request):
         doc_number_format = request.POST.get('doc_number_format', 'OD-{FY}-{MM}-{N}').strip()
         allow_document_deletion = request.POST.get('allow_document_deletion') == 'on'
 
+        seq_qtn = request.POST.get('seq_qtn')
+        seq_inv = request.POST.get('seq_inv')
+        seq_pro = request.POST.get('seq_pro')
+        seq_chl = request.POST.get('seq_chl')
+        seq_po = request.POST.get('seq_po')
+        seq_crn = request.POST.get('seq_crn')
+        seq_dbn = request.POST.get('seq_dbn')
+
         if not name:
             messages.error(request, 'Company name is required.')
         else:
@@ -39,6 +47,20 @@ def settings_view(request):
             valid_formats = [c[0] for c in CompanyProfile.DOC_NUMBER_FORMAT_CHOICES]
             if doc_number_format in valid_formats:
                 company.doc_number_format = doc_number_format
+        
+            # Save sequence numbers only if user is strictly Admin
+            if getattr(request.user, 'role', '') == 'Admin':
+                try:
+                    if seq_qtn is not None: company.seq_qtn = int(seq_qtn)
+                    if seq_inv is not None: company.seq_inv = int(seq_inv)
+                    if seq_pro is not None: company.seq_pro = int(seq_pro)
+                    if seq_chl is not None: company.seq_chl = int(seq_chl)
+                    if seq_po is not None: company.seq_po = int(seq_po)
+                    if seq_crn is not None: company.seq_crn = int(seq_crn)
+                    if seq_dbn is not None: company.seq_dbn = int(seq_dbn)
+                except ValueError:
+                    pass
+                
             company.save()
             messages.success(request, 'Company settings saved successfully.')
             return redirect('settings')
@@ -50,9 +72,20 @@ def settings_view(request):
         ('challan_prefix',   'Challan',   'CHL-', getattr(company, 'challan_prefix',    'CHL-') if company else 'CHL-'),
     ]
 
+    sequence_fields = [
+        ('seq_qtn', 'Quotations', getattr(company, 'seq_qtn', 0) if company else 0, 'QTN'),
+        ('seq_pro', 'Proforma Invoices', getattr(company, 'seq_pro', 0) if company else 0, 'PRO'),
+        ('seq_inv', 'Invoices', getattr(company, 'seq_inv', 0) if company else 0, 'INV'),
+        ('seq_po', 'Purchase Orders', getattr(company, 'seq_po', 0) if company else 0, 'PO'),
+        ('seq_chl', 'Delivery Challans', getattr(company, 'seq_chl', 0) if company else 0, 'CHL'),
+        ('seq_dbn', 'Debit Notes', getattr(company, 'seq_dbn', 0) if company else 0, 'DBN'),
+        ('seq_crn', 'Credit Notes', getattr(company, 'seq_crn', 0) if company else 0, 'CRN'),
+    ]
+
     return render(request, 'config/settings.html', {
         'company':              company,
         'prefix_fields':        prefix_fields,
+        'sequence_fields':      sequence_fields,
         'doc_number_formats':   CompanyProfile.DOC_NUMBER_FORMAT_CHOICES,
         'current_doc_format':   getattr(company, 'doc_number_format', 'OD-{FY}-{MM}-{N}') if company else 'OD-{FY}-{MM}-{N}',
     })

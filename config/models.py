@@ -15,6 +15,15 @@ class CompanyProfile(TimeStampedModel):
     po_prefix = models.CharField(max_length=10, default="PO-")
     challan_prefix = models.CharField(max_length=10, default="CHL-")
 
+    # Sequence tracking
+    seq_qtn = models.IntegerField(default=0, verbose_name="Last Quotation Sequence")
+    seq_inv = models.IntegerField(default=0, verbose_name="Last Invoice Sequence")
+    seq_pro = models.IntegerField(default=0, verbose_name="Last Proforma Invoice Sequence")
+    seq_chl = models.IntegerField(default=0, verbose_name="Last Delivery Challan Sequence")
+    seq_po = models.IntegerField(default=0, verbose_name="Last Purchase Order Sequence")
+    seq_crn = models.IntegerField(default=0, verbose_name="Last Credit Note Sequence")
+    seq_dbn = models.IntegerField(default=0, verbose_name="Last Debit Note Sequence")
+
     # Document number format
     DOC_NUMBER_FORMAT_CHOICES = [
         ('OD-{FY}-{MM}-{N}',            'OD-26-07-285  (FY + Month + S.No.)'),

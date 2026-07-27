@@ -116,6 +116,40 @@
                 <span id="fmt-preview" class="font-mono text-orange-300 font-bold text-sm tracking-wide"></span>
             </div>
         </div> <!-- End Document Number Format Card -->
+        
+        {% if request.user.role == 'Admin' %}
+        <!-- Document Sequences -->
+        <div class="glass rounded-2xl p-7 mb-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-cyan-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-gray-900 font-bold">Document Sequences</h3>
+                    <p class="text-gray-500 text-xs">Sets the last used sequence number. The next document will use this number + 1.</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {% for field, label, value, type in sequence_fields %}
+                <div class="p-3 bg-white border border-gray-300 rounded-xl">
+                    <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">{{ label }}</label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-400 text-sm font-medium">Last:</span>
+                        <input type="number" name="{{ field }}" value="{{ value }}" min="0" required
+                               class="w-full px-2 py-1.5 bg-slate-50 border border-gray-200 rounded-lg text-gray-900 text-sm font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                    </div>
+                    <div class="mt-2 text-[11px] text-gray-400 font-medium">
+                        Next Generated: <span class="text-cyan-600 font-bold ml-1">...{{ type }}...-<span x-text="parseInt($el.parentElement.previousElementSibling.querySelector('input').value) + 1"></span></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
             </div> <!-- End Left Column -->
 
             <!-- Right Column -->
