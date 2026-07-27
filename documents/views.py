@@ -26,7 +26,6 @@ def document_list(request):
 
     if query:
         from django.db.models import Q
-        from inventory.models import Product
         
         # Find categories of products matching the query to show similar products
         matching_categories = list(Product.objects.filter(
