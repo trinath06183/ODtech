@@ -26,10 +26,23 @@ def document_list(request):
 
     if query:
         from django.db.models import Q
+        from inventory.models import Product
+        
+        # Find categories of products matching the query to show similar products
+        matching_categories = Product.objects.filter(
+            Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
+        ).exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct()
+
         qs = qs.filter(
             Q(number__icontains=query) |
             Q(contact__name__icontains=query) |
-            Q(items__product__name__icontains=query)
+            Q(items__product__name__icontains=query) |
+            Q(items__product__sku__icontains=query) |
+            Q(items__product__description__icontains=query) |
+            Q(items__name__icontains=query) |
+            Q(items__description__icontains=query) |
+            Q(items__product__category__in=matching_categories) |
+            Q(items__product__category__icontains=query)
         ).distinct()
 
     if date_filter:
