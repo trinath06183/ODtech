@@ -18,6 +18,8 @@ from django.db import transaction
 
 
 DB_PATH = r"d:\ODtech\Main_work\Deployment\vyp_extracted\database.db"
+if not os.path.exists(DB_PATH):
+    DB_PATH = "database.db"
 
 # Vyapar txn_type → ODtech Document type
 TXN_TYPE_MAP = {
