@@ -89,10 +89,7 @@ from django.db.models import Q, Sum
 
 @login_required
 def expense_list(request):
-    if request.user.is_superuser:
-        expenses = Expense.objects.all()
-    else:
-        expenses = Expense.objects.filter(submitted_by=request.user)
+    expenses = Expense.objects.all()
 
     search = request.GET.get('search', '').strip()
     category = request.GET.get('category', '').strip()
@@ -236,10 +233,7 @@ def expense_edit(request, pk):
 
 @login_required
 def expense_detail(request, pk):
-    if request.user.is_superuser:
-        expense = get_object_or_404(Expense, pk=pk)
-    else:
-        expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
+    expense = get_object_or_404(Expense, pk=pk)
         
     return render(request, 'payments/expense_detail.html', {'title': 'View Expense', 'expense': expense})
 
