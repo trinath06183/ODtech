@@ -29,9 +29,9 @@ def document_list(request):
         from inventory.models import Product
         
         # Find categories of products matching the query to show similar products
-        matching_categories = Product.objects.filter(
+        matching_categories = list(Product.objects.filter(
             Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
-        ).exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct()
+        ).exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct())
 
         qs = qs.filter(
             Q(number__icontains=query) |
