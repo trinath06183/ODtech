@@ -17,7 +17,7 @@
 <!-- Stats Row -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
     {% for stat in stats %}
-    <a href="?type={{ stat.type }}{% if query %}&q={{ query }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="glass p-5 rounded-2xl flex items-center space-x-4 hover:scale-105 transition-transform cursor-pointer border {% if current_type == stat.type %}border-blue-500{% else %}border-white/5{% endif %}">
+    <a href="?type={{ stat.type }}{% if query %}&q={{ query }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="glass p-5 rounded-2xl flex items-center space-x-4 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
         <div class="text-3xl">{{ stat.icon }}</div>
         <div>
             <div class="text-2xl font-bold text-white">{{ stat.count }}</div>
@@ -37,10 +37,21 @@
         <div class="glass p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center space-x-3 flex-wrap gap-2">
                 <span class="text-gray-400 text-sm">Showing:</span>
+                
+                <label class="cursor-pointer">
+                    <input type="checkbox" class="peer hidden" {% if not current_types %}checked{% endif %} onchange="if(this.checked){ document.querySelectorAll('.type-checkbox').forEach(cb => cb.checked = false); } document.getElementById('filter-form').submit();">
+                    <div class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors peer-checked:bg-blue-600 peer-checked:text-white bg-slate-800 text-gray-300 hover:bg-slate-700">
+                        All
+                    </div>
+                </label>
+
                 {% for f in filters %}
-                <a href="?type={{ f.type }}{% if query %}&q={{ query }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {% if current_type == f.type %}bg-blue-600 text-white{% else %}bg-slate-800 text-gray-300 hover:bg-slate-700{% endif %}">
-                    {{ f.label }}
-                </a>
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="type" value="{{ f.type }}" form="filter-form" class="peer hidden type-checkbox" {% if f.type in current_types %}checked{% endif %}>
+                    <div class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors peer-checked:bg-blue-600 peer-checked:text-white bg-slate-800 text-gray-300 hover:bg-slate-700">
+                        {{ f.label }}
+                    </div>
+                </label>
                 {% endfor %}
             </div>
 
@@ -54,11 +65,7 @@
 
         <!-- Search, Filter & Sort Controls (Red Box Element) -->
         <div class="glass p-4 rounded-2xl">
-            <form method="get" class="flex flex-wrap items-center justify-between gap-4">
-                <!-- Preserve Type Filter -->
-                {% if current_type %}
-                <input type="hidden" name="type" value="{{ current_type }}">
-                {% endif %}
+            <form id="filter-form" method="get" class="flex flex-wrap items-center justify-between gap-4">
 
                 <!-- Left: Search Box with Autocomplete Datalist -->
                 <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">
@@ -68,7 +75,7 @@
                         <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     {% if query %}
-                    <a href="?{% if current_type %}type={{ current_type }}{% endif %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
+                    <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                     {% endif %}
@@ -102,7 +109,7 @@
                             Apply
                         </button>
                         {% if query or date_filter or sort_by != '-id' %}
-                        <a href="?{% if current_type %}type={{ current_type }}{% endif %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+                        <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
                             Reset
                         </a>
                         {% endif %}

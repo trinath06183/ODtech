@@ -14,14 +14,15 @@ from django.views.decorators.http import require_POST
 # ─── Document List ────────────────────────────────────────────────────────────
 @login_required
 def document_list(request):
-    doc_type = request.GET.get('type', '')
+    doc_types = request.GET.getlist('type')
+    doc_types = [t for t in doc_types if t]
     query = request.GET.get('q', '').strip()
     date_filter = request.GET.get('date_filter', '')
     sort_by = request.GET.get('sort_by', '-id')
 
     qs = Document.objects.select_related('contact')
-    if doc_type:
-        qs = qs.filter(type=doc_type)
+    if doc_types:
+        qs = qs.filter(type__in=doc_types)
 
     if query:
         from django.db.models import Q
@@ -41,16 +42,21 @@ def document_list(request):
 
     stats = [
         {'type': 'QTN', 'label': 'Quotations',  'icon': '📋', 'count': Document.objects.filter(type='QTN').count()},
+        {'type': 'PRO', 'label': 'Proforma Invoices', 'icon': '📄', 'count': Document.objects.filter(type='PRO').count()},
         {'type': 'INV', 'label': 'Invoices',     'icon': '🧾', 'count': Document.objects.filter(type='INV').count()},
         {'type': 'PO',  'label': 'Purchase Orders','icon': '🛒', 'count': Document.objects.filter(type='PO').count()},
         {'type': 'CHL', 'label': 'Challans',     'icon': '🚚', 'count': Document.objects.filter(type='CHL').count()},
+        {'type': 'DBN', 'label': 'Debit Notes',  'icon': '➖', 'count': Document.objects.filter(type='DBN').count()},
+        {'type': 'CRN', 'label': 'Credit Notes', 'icon': '➕', 'count': Document.objects.filter(type='CRN').count()},
     ]
     filters = [
-        {'type': '',    'label': 'All'},
         {'type': 'QTN', 'label': 'Quotations'},
+        {'type': 'PRO', 'label': 'Proforma Invoices'},
         {'type': 'INV', 'label': 'Invoices'},
         {'type': 'PO',  'label': 'Purchase Orders'},
         {'type': 'CHL', 'label': 'Challans'},
+        {'type': 'DBN', 'label': 'Debit Notes'},
+        {'type': 'CRN', 'label': 'Credit Notes'},
     ]
 
     # Suggestions for autocomplete
@@ -65,7 +71,7 @@ def document_list(request):
         'documents': qs,
         'stats': stats,
         'filters': filters,
-        'current_type': doc_type,
+        'current_types': doc_types,
         'query': query,
         'date_filter': date_filter,
         'sort_by': sort_by,
