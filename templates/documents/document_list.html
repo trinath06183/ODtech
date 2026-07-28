@@ -2,16 +2,22 @@
 {% block header %}Documents{% endblock %}
 {% block content %}
 
-<!-- Flash Messages -->
+<!-- Flash Messages (Toast style) -->
 {% if messages %}
-{% for msg in messages %}
-<div class="mb-4 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
-    {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
-    {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
-    {% if msg.tags == 'error' %}<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{% else %}<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{% endif %}
-    {{ msg }}
+<div class="fixed bottom-5 right-5 z-50 flex flex-col gap-3">
+    {% for msg in messages %}
+    <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 10000)" x-show="show" x-transition.duration.500ms
+         class="px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3 shadow-2xl min-w-[300px] border
+         {% if msg.tags == 'error' %}bg-white border-red-500/50 text-gray-800 border-l-4 border-l-red-500
+         {% else %}bg-white border-emerald-500/50 text-gray-800 border-l-4 border-l-emerald-500{% endif %}">
+        {% if msg.tags == 'error' %}<svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{% else %}<svg class="w-5 h-5 flex-shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{% endif %}
+        <div class="flex-grow">{{ msg }}</div>
+        <button @click="show = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+    {% endfor %}
 </div>
-{% endfor %}
 {% endif %}
 
 <!-- Stats Row -->
@@ -109,13 +115,23 @@
             <div class="overflow-y-auto overflow-x-auto max-h-[580px]">
                 <table class="w-full text-left whitespace-nowrap">
                     <thead class="bg-slate-800 border-b border-white/10 sticky top-0 z-10">
-                        <tr class="text-gray-400 text-xs uppercase tracking-wider">
+                        <tr class="text-gray-400 text-xs uppercase tracking-wider select-none">
                             <th class="px-6 py-4 font-medium">Doc Number</th>
-                            <th class="px-6 py-4 font-medium">Type</th>
-                            <th class="px-6 py-4 font-medium">Customer</th>
-                            <th class="px-6 py-4 font-medium">Date</th>
-                            <th class="px-6 py-4 font-medium">Status</th>
-                            <th class="px-6 py-4 font-medium text-right">Amount</th>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('type')">
+                                <div class="flex items-center gap-1">Type <span class="{% if sort_by != 'type' and sort_by != '-type' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-type' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('contact__name')">
+                                <div class="flex items-center gap-1">Customer <span class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('date')">
+                                <div class="flex items-center gap-1">Date <span class="{% if sort_by != 'date' and sort_by != '-date' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-date' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('status')">
+                                <div class="flex items-center gap-1">Status <span class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group text-right" onclick="applySort('grand_total')">
+                                <div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
                             <th class="px-6 py-4 font-medium text-center">Actions</th>
                         </tr>
                     </thead>
@@ -488,6 +504,27 @@ async function submitReceiveGoods() {
         btn.innerHTML = origText;
         btn.disabled = false;
     }
+}
+
+function applySort(column) {
+    let form = document.getElementById('filter-form');
+    let sortSelect = form.querySelector('select[name=sort_by]');
+    let currentSort = "{{ sort_by }}";
+    
+    let newSort = column;
+    if (currentSort === column) {
+        newSort = "-" + column;
+    }
+    
+    let option = Array.from(sortSelect.options).find(opt => opt.value === newSort);
+    if (!option) {
+        option = document.createElement('option');
+        option.value = newSort;
+        sortSelect.appendChild(option);
+    }
+    sortSelect.value = newSort;
+    
+    form.submit();
 }
 </script>
 

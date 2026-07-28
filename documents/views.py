@@ -47,7 +47,7 @@ def document_list(request):
     if date_filter:
         qs = qs.filter(date=date_filter)
 
-    allowed_sorts = ['date', '-date', 'grand_total', '-grand_total', '-id']
+    allowed_sorts = ['date', '-date', 'grand_total', '-grand_total', '-id', 'type', '-type', 'contact__name', '-contact__name', 'status', '-status']
     if sort_by not in allowed_sorts:
         sort_by = '-id'
     qs = qs.order_by(sort_by)
