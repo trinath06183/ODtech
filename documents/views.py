@@ -998,8 +998,8 @@ def document_export_csv(request):
             doc.get_type_display(),
             doc.contact.name if doc.contact else '',
             doc.status,
-            doc.taxable_value,
-            doc.total_tax,
+            doc.subtotal,
+            doc.tax_total,
             doc.grand_total
         ])
         
