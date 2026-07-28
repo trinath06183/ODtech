@@ -123,16 +123,6 @@ def login_view(request):
         password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            if user.role in ['Admin', 'Finance']:
-                request.session['login_2fa_uid'] = str(user.pk)
-                request.session['login_next_url'] = request.GET.get('next') or 'dashboard'
-                
-                otp_token = OTPToken.generate_for_user(user)
-                send_login_otp_email(user, otp_token)
-                
-                messages.info(request, f'A 6-digit login verification OTP has been sent to {user.email}.')
-                return redirect('login_verify_otp')
-
             login(request, user)
             next_url = request.GET.get('next') or 'dashboard'
             return redirect(next_url)

@@ -2,7 +2,9 @@
 {% block header %}Vendor Price Log{% endblock %}
 {% block content %}
 
-">
+{% if messages %}
+{% for msg in messages %}
+<div class="mb-4 p-3 rounded-xl text-sm font-medium flex items-center gap-2 {% if msg.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% else %}bg-emerald-50 border border-emerald-200 text-emerald-700{% endif %}">
     {{ msg }}
 </div>
 {% endfor %}

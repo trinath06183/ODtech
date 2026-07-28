@@ -301,7 +301,10 @@
 <div x-data="documentForm()" class="w-full space-y-5">
 
     {# ── Flash Messages ──────────────────────────────────────────────────── #}
-    ">
+    {% if messages %}
+    <div class="space-y-2">
+        {% for msg in messages %}
+        <div class="p-4 rounded-xl text-sm font-medium flex items-center gap-2 {% if msg.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% else %}bg-emerald-50 border border-emerald-200 text-emerald-700{% endif %}">
             {{ msg }}
         </div>
         {% endfor %}
