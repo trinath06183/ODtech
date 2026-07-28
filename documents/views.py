@@ -54,14 +54,17 @@ def document_list(request):
         sort_by = '-id'
     qs = qs.order_by(sort_by)
 
+    from django.db.models import Count
+    type_counts = dict(Document.objects.values('type').annotate(c=Count('id')).values_list('type', 'c'))
+
     stats = [
-        {'type': 'QTN', 'label': 'Quotations',  'icon': '📋', 'count': Document.objects.filter(type='QTN').count()},
-        {'type': 'PRO', 'label': 'Proforma Invoices', 'icon': '📄', 'count': Document.objects.filter(type='PRO').count()},
-        {'type': 'INV', 'label': 'Invoices',     'icon': '🧾', 'count': Document.objects.filter(type='INV').count()},
-        {'type': 'PO',  'label': 'Purchase Orders','icon': '🛒', 'count': Document.objects.filter(type='PO').count()},
-        {'type': 'CHL', 'label': 'Challans',     'icon': '🚚', 'count': Document.objects.filter(type='CHL').count()},
-        {'type': 'DBN', 'label': 'Debit Notes',  'icon': '➖', 'count': Document.objects.filter(type='DBN').count()},
-        {'type': 'CRN', 'label': 'Credit Notes', 'icon': '➕', 'count': Document.objects.filter(type='CRN').count()},
+        {'type': 'QTN', 'label': 'Quotations',        'icon': '📋', 'count': type_counts.get('QTN', 0)},
+        {'type': 'PRO', 'label': 'Proforma Invoices', 'icon': '📄', 'count': type_counts.get('PRO', 0)},
+        {'type': 'INV', 'label': 'Invoices',          'icon': '🧾', 'count': type_counts.get('INV', 0)},
+        {'type': 'PO',  'label': 'Purchase Orders',   'icon': '🛒', 'count': type_counts.get('PO', 0)},
+        {'type': 'CHL', 'label': 'Challans',          'icon': '🚚', 'count': type_counts.get('CHL', 0)},
+        {'type': 'DBN', 'label': 'Debit Notes',       'icon': '➖', 'count': type_counts.get('DBN', 0)},
+        {'type': 'CRN', 'label': 'Credit Notes',      'icon': '➕', 'count': type_counts.get('CRN', 0)},
     ]
     filters = [
         {'type': 'QTN', 'label': 'Quotations'},
