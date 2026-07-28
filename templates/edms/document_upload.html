@@ -734,8 +734,9 @@
     let deskOriginalFile = null;
 
     function openDesktopEditor() {
-        if (!fileInput.files || !fileInput.files.length) return;
-        deskOriginalFile = fileInput.files[0];
+        const fileInputElem = document.getElementById('edms-file-input');
+        if (!fileInputElem.files || !fileInputElem.files.length) return;
+        deskOriginalFile = fileInputElem.files[0];
         
         deskModal.classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -972,7 +973,7 @@
             // Replace in fileInput
             const dt = new DataTransfer();
             dt.items.add(newFile);
-            fileInput.files = dt.files;
+            document.getElementById('edms-file-input').files = dt.files;
 
             // Save crop points
             const isAutoCrop = document.getElementById('desktop-auto-crop').checked;
@@ -985,7 +986,7 @@
             }
 
             closeDesktopEditor();
-            showFilePreview(newFile); // Refresh preview
+            handleFileSelected(); // Refresh preview and file size metadata
             
             btn.textContent = 'Save Edits';
             btn.disabled = false;
