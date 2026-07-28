@@ -776,7 +776,7 @@
         scLabel.textContent = cam.label;
         try {
             scStream = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { exact: cam.deviceId }, width: { ideal: 4096 }, height: { ideal: 2160 } }
+                video: { deviceId: { exact: cam.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
             });
             scVideo.srcObject = scStream;
             scVideo.onloadedmetadata = () => {
@@ -880,6 +880,11 @@
 
     /* ── Capture ── */
     window.captureSmartPhoto = function () {
+        const btn = document.querySelector('.capture-btn');
+        if (btn) { btn.style.transform = 'scale(0.9)'; setTimeout(() => btn.style.transform = '', 150); }
+        scOvl.style.background = 'rgba(255,255,255,0.8)';
+        setTimeout(() => { scOvl.style.background = 'transparent'; }, 80);
+
         const vw = scVideo.videoWidth, vh = scVideo.videoHeight;
         capCv.width = vw; capCv.height = vh;
         capCv.getContext('2d').drawImage(scVideo, 0, 0, vw, vh);
