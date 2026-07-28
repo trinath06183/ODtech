@@ -802,6 +802,21 @@
                     setTimeout(() => { this.phase = 2; }, 400);  // Reveal Skeleton
                     setTimeout(() => { this.phase = 3; }, 800);  // Reveal Primary Data
                     setTimeout(() => { this.phase = 4; }, 1200); // Reveal Background Data
+                    
+                    // Show global overlay immediately on navigation clicks
+                    document.addEventListener('click', (e) => {
+                        const link = e.target.closest('a');
+                        if (link && link.href && !link.href.includes('#') && link.target !== '_blank' && !e.ctrlKey && !e.metaKey && !link.hasAttribute('x-data')) {
+                            this.phase = 1;
+                        }
+                    });
+                    
+                    // Show global overlay immediately on form submissions
+                    document.addEventListener('submit', (e) => {
+                        if (!e.defaultPrevented && !e.target.hasAttribute('x-data')) {
+                            this.phase = 1;
+                        }
+                    });
                 },
                 toggleSidebar() {
                     this.sidebarOpen = !this.sidebarOpen;
