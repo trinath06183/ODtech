@@ -175,6 +175,7 @@
             <form method="POST" enctype="multipart/form-data" id="upload-form" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="crop_points" id="crop_points_input" value="">
+                <input type="hidden" name="auto_crop" id="auto_crop_input" value="true">
 
                 {% if meta_form.errors or file_form.errors %}
                 <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-4">
@@ -817,28 +818,44 @@
 
     function getDeskMousePos(evt) {
         const rect = deskCanvas.getBoundingClientRect();
+        
+        // Handle touch events gracefully
+        let clientX = evt.clientX;
+        let clientY = evt.clientY;
+        if (evt.touches && evt.touches.length > 0) {
+            clientX = evt.touches[0].clientX;
+            clientY = evt.touches[0].clientY;
+        } else if (evt.changedTouches && evt.changedTouches.length > 0) {
+            clientX = evt.changedTouches[0].clientX;
+            clientY = evt.changedTouches[0].clientY;
+        }
+        
+        // Calculate scale in case CSS resizing altered the canvas size
+        const scaleX = deskCanvas.width / rect.width;
+        const scaleY = deskCanvas.height / rect.height;
+        
         return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
         };
     }
 
-    deskCanvas.addEventListener('mousedown', (e) => {
+    const startDrag = (e) => {
         const pos = getDeskMousePos(e);
         deskActivePointIdx = -1;
         deskPts.forEach((p, i) => {
             const px = deskRenderX + p[0] * deskRenderW;
             const py = deskRenderY + p[1] * deskRenderH;
             const dist = Math.sqrt(Math.pow(pos.x - px, 2) + Math.pow(pos.y - py, 2));
-            if (dist <= DESK_PIN_RADIUS * 2) {
+            if (dist <= DESK_PIN_RADIUS * 3) { // Make the hit area slightly larger for easier clicking
                 deskActivePointIdx = i;
                 document.getElementById('desktop-auto-crop').checked = false;
             }
         });
         if (deskActivePointIdx !== -1) drawDesktopCanvas();
-    });
+    };
 
-    deskCanvas.addEventListener('mousemove', (e) => {
+    const moveDrag = (e) => {
         if (deskActivePointIdx === -1) return;
         e.preventDefault();
         const pos = getDeskMousePos(e);
@@ -848,14 +865,23 @@
         relY = Math.max(0, Math.min(1, relY));
         deskPts[deskActivePointIdx] = [relX, relY];
         drawDesktopCanvas();
-    });
+    };
 
-    window.addEventListener('mouseup', () => {
+    const endDrag = () => {
         if (deskActivePointIdx !== -1) {
             deskActivePointIdx = -1;
             drawDesktopCanvas();
         }
-    });
+    };
+
+    deskCanvas.addEventListener('mousedown', startDrag);
+    deskCanvas.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+    
+    // Add touch support explicitly
+    deskCanvas.addEventListener('touchstart', startDrag, {passive: false});
+    deskCanvas.addEventListener('touchmove', moveDrag, {passive: false});
+    window.addEventListener('touchend', endDrag);
 
     window.addEventListener('resize', () => {
         if (deskModal.classList.contains('show')) initDesktopCanvas();
@@ -917,6 +943,8 @@
 
             // Save crop points
             const isAutoCrop = document.getElementById('desktop-auto-crop').checked;
+            document.getElementById('auto_crop_input').value = isAutoCrop ? "true" : "false";
+            
             if (!isAutoCrop) {
                 document.getElementById('crop_points_input').value = JSON.stringify(deskPts);
             } else {
