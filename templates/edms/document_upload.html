@@ -814,7 +814,16 @@
             deskCtx.fillStyle = (deskActivePointIdx === i) ? 'rgba(99, 102, 241, 0.3)' : 'transparent';
             deskCtx.fill();
         });
+        
+        // Render debug info
+        deskCtx.fillStyle = 'rgba(0,0,0,0.7)';
+        deskCtx.fillRect(10, 10, 400, 30);
+        deskCtx.fillStyle = '#fff';
+        deskCtx.font = '14px monospace';
+        deskCtx.fillText(debugInfo, 20, 30);
     }
+
+    let debugInfo = "Click to see coordinates";
 
     function getDeskMousePos(evt) {
         // For touch events, we must use bounding client rect
@@ -826,19 +835,20 @@
             const scaleY = deskCanvas.height / rect.height;
             return {
                 x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY
+                y: (clientY - rect.top) * scaleY,
+                debug: `Touch: scaleX=${scaleX.toFixed(2)} clientX=${clientX.toFixed(1)}`
             };
         }
         
-        // For mouse events, offsetX/Y is the most bulletproof approach
         let offsetX = evt.offsetX;
         let offsetY = evt.offsetY;
+        let method = 'offsetX';
         
-        // If offsetX is undefined (some older browsers), fallback to rect
         if (offsetX === undefined) {
             const rect = deskCanvas.getBoundingClientRect();
             offsetX = evt.clientX - rect.left;
             offsetY = evt.clientY - rect.top;
+            method = 'rect';
         }
         
         const scaleX = deskCanvas.width / deskCanvas.clientWidth;
@@ -846,7 +856,8 @@
         
         return {
             x: offsetX * scaleX,
-            y: offsetY * scaleY
+            y: offsetY * scaleY,
+            debug: `${method}: offX=${offsetX.toFixed(1)} scX=${scaleX.toFixed(2)} cW=${deskCanvas.clientWidth}`
         };
     }
 
@@ -867,13 +878,14 @@
             }
         });
         
-        // Grab the closest corner if we click anywhere near it (within 150 canvas pixels)
+        debugInfo = `x:${pos.x.toFixed(1)} y:${pos.y.toFixed(1)} | minDist:${minDist.toFixed(1)} | ${pos.debug}`;
+        
         if (minDist <= 150) {
             deskActivePointIdx = bestIdx;
             document.getElementById('desktop-auto-crop').checked = false;
         }
         
-        if (deskActivePointIdx !== -1) drawDesktopCanvas();
+        drawDesktopCanvas(); // Always draw to update debug info
     };
 
     const moveDrag = (e) => {
