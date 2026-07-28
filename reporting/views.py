@@ -1,7 +1,8 @@
 import json
 
 from django.shortcuts import render
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q, Count, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
@@ -31,11 +32,18 @@ def gst_report(request):
 
 @login_required
 def stock_summary(request):
-    products = Product.objects.all().order_by('name')
+    products = Product.objects.annotate(
+        annotated_stock=Coalesce(
+            Sum('stock_transactions__quantity'),
+            Value(0),
+            output_field=DecimalField()
+        )
+    ).order_by('name')
+    
     rows = []
     total_value = 0
     for p in products:
-        stock = p.current_stock
+        stock = p.annotated_stock
         value = float(stock) * float(p.purchase_price)
         rows.append({
             'product': p,

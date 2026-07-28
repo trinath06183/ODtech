@@ -169,7 +169,7 @@ def _build_product_list_context(request, products_qs, order, lot=None):
 # --- Original Function Based Views for Reading ---
 @login_required
 def dashboard_view(request):
-    base_qs = Order.objects.prefetch_related('products', 'tasks').order_by('-order_date')
+    base_qs = Order.objects.select_related('created_by', 'updated_by').prefetch_related('products', 'tasks').order_by('-order_date')
     # Completed: CLOSED status + PAID payment — shown in a separate archived section
     completed_orders = base_qs.filter(order_status='CLOSED', payment_status='PAID')
     active_orders    = base_qs.exclude(order_status='CLOSED', payment_status='PAID')
@@ -216,7 +216,7 @@ def individual_products_view(request):
     # Base queryset — eager-load related objects to avoid N+1
     products_qs = (
         Product.objects
-        .select_related('order', 'lot')
+        .select_related('order', 'lot', 'order__created_by', 'order__updated_by')
         .prefetch_related('supplier_options')
         .order_by('-order__order_date', 'sl_no')
     )
