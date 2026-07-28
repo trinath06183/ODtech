@@ -11,21 +11,23 @@ import os
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import (
-    FileResponse, Http404, HttpResponse, JsonResponse,
+    FileResponse, Http404, HttpResponse, JsonResponse, HttpResponseForbidden,
 )
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.utils.timezone import now
 from django.views.generic import (
     CreateView, DeleteView, DetailView,
     ListView, TemplateView, UpdateView, View,
 )
-
 from edms.forms import (
     CategoryForm, CompanyProfileForm, DepartmentForm,
     DocumentFileForm, DocumentMetadataForm, SavedSearchForm,
     SearchForm, VendorForm, VersionUploadForm,
 )
+
+logger = logging.getLogger(__name__)
 from edms.mixins import (
     EDMSContextMixin, EDMSDocumentPermissionMixin,
     EDMSLoginRequiredMixin, EDMSPermissionMixin,
@@ -166,24 +168,49 @@ class DocumentUploadView(EDMSPermissionMixin, EDMSContextMixin, TemplateView):
             try:
                 uploaded = file_form.cleaned_data['file']
 
+                auto_crop_str = request.POST.get('auto_crop')
                 crop_points_str = request.POST.get('crop_points')
-                if crop_points_str and uploaded.content_type and uploaded.content_type.startswith('image/'):
-                    import json
-                    try:
-                        crop_points = json.loads(crop_points_str)
-                        if isinstance(crop_points, list) and len(crop_points) == 4:
-                            from mobile_upload.utils import manual_crop_document
+                
+                if uploaded.content_type and uploaded.content_type.startswith('image/'):
+                    if crop_points_str:
+                        import json
+                        try:
+                            crop_points = json.loads(crop_points_str)
+                            if isinstance(crop_points, list) and len(crop_points) == 4:
+                                from mobile_upload.utils import manual_crop_document
+                                from django.core.files.uploadedfile import InMemoryUploadedFile
+                                from io import BytesIO
+                                import os
+                                
+                                cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
+                                size = len(cropped_bytes)
+                                buffer = BytesIO(cropped_bytes)
+                                buffer.seek(0)
+                                uploaded = InMemoryUploadedFile(
+                                    buffer, 'file', 
+                                    os.path.splitext(uploaded.name)[0] + ".jpg", 
+                                    'image/jpeg', size, None
+                                )
+                        except Exception as e:
+                            uploaded.seek(0)
+                    elif auto_crop_str == 'true':
+                        try:
+                            from mobile_upload.utils import auto_crop_document
                             from django.core.files.uploadedfile import InMemoryUploadedFile
                             from io import BytesIO
+                            import os
                             
-                            # Apply OpenCV perspective warp
-                            cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
+                            cropped_bytes = auto_crop_document(uploaded.read())
+                            size = len(cropped_bytes)
                             buffer = BytesIO(cropped_bytes)
+                            buffer.seek(0)
                             uploaded = InMemoryUploadedFile(
-                                buffer, 'file', uploaded.name, uploaded.content_type, len(cropped_bytes), None
+                                buffer, 'file', 
+                                os.path.splitext(uploaded.name)[0] + ".jpg", 
+                                'image/jpeg', size, None
                             )
-                    except Exception as e:
-                        pass
+                        except Exception as e:
+                            uploaded.seek(0)
                 validated = meta_form.cleaned_data.copy()
                 # Remove the tags field — handled separately in create_document
                 tags = validated.pop('tags', [])
