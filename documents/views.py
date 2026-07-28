@@ -631,18 +631,18 @@ def document_form(request, doc=None, default_type='QTN'):
             gross = float(di.quantity) * float(di.unit_price)
             pct = round((float(di.discount) / gross * 100), 2) if gross > 0 else 0
             existing_items.append({
-                'product_id': '' if di.product.sku == 'CUSTOM' else di.product_id,
-                'name': di.name or di.product.name or 'Custom Line Item',
+                'product_id': '' if (di.product and getattr(di.product, 'sku', '') == 'CUSTOM') else (di.product_id or ''),
+                'name': di.name or (di.product.name if di.product else 'Custom Line Item'),
                 'description': di.description or '',
                 'part_number': di.part_number or '',
                 'qty': float(di.quantity),
-                'unit': di.unit or di.product.unit or 'EA',
+                'unit': di.unit or (di.product.unit if di.product else 'EA'),
                 'rate': float(di.unit_price),
                 'discount': float(di.discount),
                 'discount_pct': pct,
                 'tax': float(di.tax_rate),
                 'total': float(di.total),
-                'hsn_code': di.hsn_code or di.product.hsn_code or '',
+                'hsn_code': di.hsn_code or (di.product.hsn_code if di.product else ''),
                 'serial_number': di.serial_number or '',
                 'has_warranty': di.has_warranty,
                 'model': di.model or '',
