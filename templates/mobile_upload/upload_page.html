@@ -690,6 +690,8 @@
             originalImageObj = new Image();
             originalImageObj.onload = () => {
                 processImage();
+                // Automatically open the perspective crop editor for uploaded images
+                openCropEditor();
             };
             originalImageObj.src = objUrl;
         } else {
@@ -1058,7 +1060,7 @@
         scLabel.textContent = cam.label;
         try {
             scStream = await navigator.mediaDevices.getUserMedia({
-                video: { deviceId: { exact: cam.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+                video: { deviceId: { exact: cam.deviceId }, width: { ideal: 4096 }, height: { ideal: 2160 } }
             });
             scVideo.srcObject = scStream;
             scVideo.onloadedmetadata = () => {
