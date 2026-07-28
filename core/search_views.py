@@ -27,13 +27,13 @@ def global_search(request):
     def get_documents(query, limit=10):
         qs = Document.objects.select_related('contact').all().order_by('-date', '-created_at')
         if query:
-            qs = qs.filter(Q(document_number__icontains=query) | Q(contact__name__icontains=query))
+            qs = qs.filter(Q(number__icontains=query) | Q(contact__name__icontains=query))
         
         doc_list = []
         for doc in qs[:limit]:
             doc_list.append({
                 'id': doc.id,
-                'document_number': doc.document_number,
+                'document_number': doc.number,
                 'type': doc.get_type_display(),
                 'contact_name': doc.contact.name if doc.contact else 'N/A',
                 'grand_total': str(doc.grand_total)
