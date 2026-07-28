@@ -16,7 +16,16 @@ def global_search(request):
         qs = Product.objects.all().order_by('-created_at')
         if query:
             qs = qs.filter(Q(name__icontains=query) | Q(sku__icontains=query))
-        return list(qs[:limit].values('id', 'name', 'sku', 'stock_quantity'))
+        
+        prod_list = []
+        for p in qs[:limit]:
+            prod_list.append({
+                'id': p.id,
+                'name': p.name,
+                'sku': p.sku,
+                'stock_quantity': float(p.current_stock)
+            })
+        return prod_list
 
     def get_contacts(query, limit=10):
         qs = Contact.objects.all().order_by('-created_at')
