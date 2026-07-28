@@ -158,7 +158,7 @@ class TaxService:
         }
 
     @classmethod
-    def calculate_document_totals(cls, items):
+    def calculate_document_totals(cls, items, show_gst=True):
         subtotal = Decimal("0.00")
         tax_total = Decimal("0.00")
         grand_total = Decimal("0.00")
@@ -167,7 +167,7 @@ class TaxService:
             line = cls.calculate_line(
                 item.get("qty", 0),
                 item.get("rate", 0),
-                item.get("tax", 0),
+                item.get("tax", 0) if show_gst else 0,
                 item.get("discount", 0),
             )
             subtotal += line["taxable_amount"]
@@ -436,7 +436,7 @@ class DocumentService:
         # Apportion discount prior to total calculation
         DocumentService.apportion_discount(document.discount_type, document.discount_value, valid_items)
         
-        totals = TaxService.calculate_document_totals(valid_items)
+        totals = TaxService.calculate_document_totals(valid_items, show_gst=document.show_gst)
         from inventory.models import Product
         for item in valid_items:
             product_id = item.get("product_id")
@@ -471,7 +471,7 @@ class DocumentService:
             line = TaxService.calculate_line(
                 item.get("qty", 0),
                 item.get("rate", 0),
-                item.get("tax", 0),
+                item.get("tax", 0) if document.show_gst else 0,
                 item.get("discount", 0),
             )
             DocumentItem.objects.create(
