@@ -98,6 +98,9 @@
                             Reset
                         </a>
                         {% endif %}
+                        <a href="{% url 'document_export_csv' %}?{{ request.GET.urlencode }}" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2">
+                            ⬇ Export
+                        </a>
                     </div>
                 </div>
             </form>
@@ -135,101 +138,28 @@
                             <th class="px-6 py-4 font-medium text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5">
-                        {% for doc in documents %}
-                        <tr id="doc-row-{{ doc.id }}" data-doc-id="{{ doc.id }}" data-doc-number="{{ doc.number }}" class="hover:bg-white/5 transition-colors document-row">
-                            <td class="px-6 py-4">
-                                <a href="{% url 'document_preview' doc.id %}" class="font-mono font-bold text-blue-400 hover:text-blue-300 text-sm transition-colors">{{ doc.number }}</a>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 rounded text-xs font-bold
-                                    {% if doc.type == 'QTN' %}bg-purple-500/20 text-purple-300
-                                    {% elif doc.type == 'INV' %}bg-green-500/20 text-green-300
-                                    {% elif doc.type == 'PO' %}bg-orange-500/20 text-orange-300
-                                    {% elif doc.type == 'CHL' %}bg-cyan-500/20 text-cyan-300
-                                    {% else %}bg-gray-500/20 text-gray-300{% endif %}">
-                                    {{ doc.get_type_display }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <a href="{% url 'document_preview' doc.id %}" class="text-white hover:text-blue-400 text-sm font-medium transition-colors">{{ doc.contact.name }}</a>
-                            </td>
-                            <td class="px-6 py-4 text-gray-400 text-sm">{{ doc.date|date:"d M Y" }}</td>
-                            <td class="px-6 py-4">
-                                {% if doc.status == 'Approved' %}
-                                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                    ✓ Approved
-                                </span>
-                                {% else %}
-                                <form method="post" action="{% url 'change_document_status' doc.id %}" class="inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="status" value="Approved">
-                                    <button type="submit" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-emerald-600 hover:text-white transition cursor-pointer" title="Click to Approve Document">
-                                        ● {{ doc.status }} (Approve)
-                                    </button>
-                                </form>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 text-right font-bold text-green-400">&#8377; {{ doc.grand_total|floatformat:2 }}</td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center space-x-2">
-                                    <!-- Preview -->
-                                    <a href="{% url 'document_preview' doc.id %}"
-                                       class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Preview">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    </a>
-                                    <!-- Send to Tracker Button (QTN/PRO/INV) -->
-                                    {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
-                                    <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
-                                       class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg transition-colors" title="Send to Tracking Dashboard">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                    </button>
-                                    {% endif %}
-                                    <!-- Receive PO Stock Button (PO only) -->
-                                    {% if doc.type == 'PO' %}
-                                    <button type="button" onclick="openReceiveGoodsModal('{{ doc.id }}', '{{ doc.number|escapejs }}')"
-                                       class="p-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded-lg transition-colors" title="Mark Goods Received (Increase Stock)">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                                    </button>
-                                    {% endif %}
-                                    <!-- Edit (all roles) -->
-                                    <a href="{% url 'edit_document' doc.id %}"
-                                       class="p-2 bg-slate-600/30 hover:bg-slate-600/60 text-gray-300 rounded-lg transition-colors" title="Edit Document">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    </a>
-                                    <!-- PDF -->
-                                    <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
-                                       class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Download PDF">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    </a>
-                                    <!-- Delete (Admin / Accountant only, and if enabled in settings) -->
-                                    {% if company.allow_document_deletion %}
-                                    {% if request.user.role == 'Admin' or request.user.role == 'Accountant' %}
-                                    <form method="post" action="{% url 'delete_document' doc.id %}" class="m-0 p-0 flex items-center"
-                                          onsubmit="return confirm('Delete document {{ doc.number }}? This cannot be undone.');">
-                                        {% csrf_token %}
-                                        <button type="submit"
-                                                class="p-2 bg-red-900/30 hover:bg-red-600/40 text-red-500 hover:text-red-300 rounded-lg transition-colors" title="Delete Document">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="px-6 py-16 text-center">
-                                <div class="text-gray-500 text-lg mb-2">No documents found</div>
-                                <div class="text-gray-600 text-sm mb-4">Create your first quotation to get started</div>
-                                <a href="{% url 'create_quotation' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm inline-block">New Quotation</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                    <tbody class="divide-y divide-white/5" id="doc-tbody">
+                        {% include 'documents/partials/document_rows.html' %}
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Sentinel + Spinner for Infinite Scroll -->
+        <div id="scroll-sentinel" class="flex justify-center items-center py-4"
+             data-next-page="{{ next_page }}"
+             data-query="{{ query|urlencode }}"
+             data-sort="{{ sort_by|urlencode }}"
+             data-date="{{ date_filter|urlencode }}"
+             data-types="{% for t in current_types %}{{ t }},{% endfor %}">
+            <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
+                <svg class="animate-spin w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading more documents...
+            </div>
+            <div id="scroll-end-msg" class="hidden text-gray-600 text-xs italic">All documents loaded</div>
         </div>
     </div>
 
@@ -526,6 +456,70 @@ function applySort(column) {
     
     form.submit();
 }
+</script>
+
+<script>
+(function() {
+    const sentinel = document.getElementById('scroll-sentinel');
+    const spinner  = document.getElementById('scroll-spinner');
+    const endMsg   = document.getElementById('scroll-end-msg');
+    const tbody    = document.getElementById('doc-tbody');
+    let loading    = false;
+
+    if (!sentinel) return;
+
+    function buildUrl(page) {
+        const types = (sentinel.dataset.types || '').split(',').filter(Boolean);
+        const params = new URLSearchParams();
+        types.forEach(t => params.append('type', t));
+        if (sentinel.dataset.query)  params.set('q', sentinel.dataset.query);
+        if (sentinel.dataset.sort)   params.set('sort_by', sentinel.dataset.sort);
+        if (sentinel.dataset.date)   params.set('date_filter', sentinel.dataset.date);
+        params.set('page', page);
+        return '?' + params.toString();
+    }
+
+    async function loadMore() {
+        const nextPage = sentinel.dataset.nextPage || null;
+        if (!nextPage || loading) return;
+        loading = true;
+        spinner.classList.remove('hidden');
+
+        try {
+            const res = await fetch(buildUrl(nextPage), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) throw new Error('Network error');
+            const data = await res.json();
+
+            const tmp = document.createElement('tbody');
+            tmp.innerHTML = data.html;
+            while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
+
+            if (data.has_next) {
+                sentinel.dataset.nextPage = data.next_page;
+            } else {
+                observer.unobserve(sentinel);
+                spinner.classList.add('hidden');
+                endMsg.classList.remove('hidden');
+                loading = false;
+                return;
+            }
+        } catch(e) { console.error('Infinite scroll error:', e); }
+
+        spinner.classList.add('hidden');
+        loading = false;
+    }
+
+    const observer = new IntersectionObserver(
+        (entries) => { if (entries[0].isIntersecting) loadMore(); },
+        { rootMargin: '200px' }
+    );
+
+    if (sentinel.dataset.nextPage) {
+        observer.observe(sentinel);
+    } else {
+        endMsg.classList.remove('hidden');
+    }
+})();
 </script>
 
 {% endblock %}

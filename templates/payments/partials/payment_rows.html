@@ -1,0 +1,36 @@
+{% for pmt in payments %}
+{% with doc=pmt.linked_document %}
+<tr class="hover:bg-white/5 transition-colors {% if doc %}cursor-pointer{% endif %}" {% if doc %}onclick="window.location='{% url 'document_preview' doc.id %}'"{% endif %}>
+    <td class="px-6 py-4 text-gray-300 text-sm">{{ pmt.date|date:"d M Y" }}</td>
+    <td class="px-6 py-4">
+        <a href="{% url 'contact_detail' pmt.contact.id %}" onclick="event.stopPropagation()" class="text-white font-medium hover:text-purple-300 transition-colors text-sm">{{ pmt.contact.name }}</a>
+    </td>
+    <td class="px-6 py-4">
+        {% if doc %}
+        <a href="{% url 'document_preview' doc.id %}" onclick="event.stopPropagation()" class="font-mono text-blue-400 hover:text-blue-300 text-xs transition-colors">{{ pmt.document_ref }}</a>
+        {% elif pmt.document_ref %}
+        <span class="font-mono text-gray-400 text-xs">{{ pmt.document_ref }}</span>
+        {% else %}<span class="text-gray-600 text-xs">—</span>{% endif %}
+    </td>
+    <td class="px-6 py-4">
+        <span class="px-2 py-0.5 bg-slate-700 text-white text-xs rounded font-medium">{{ pmt.payment_mode }}</span>
+    </td>
+    <td class="px-6 py-4 text-gray-400 text-xs font-mono">{{ pmt.reference_number|default:'—' }}</td>
+    <td class="px-6 py-4 text-right font-bold text-emerald-400">&#8377;{{ pmt.amount|floatformat:0 }}</td>
+    {% if request.user.role == 'Admin' %}
+    <td class="px-6 py-4 text-center">
+        <form method="post" action="{% url 'payment_delete' pmt.id %}" onsubmit="return confirm('Delete this payment record?');" onclick="event.stopPropagation()">
+            {% csrf_token %}
+            <button type="submit" class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+        </form>
+    </td>
+    {% endif %}
+</tr>
+{% endwith %}
+{% empty %}
+<tr>
+    <td colspan="7" class="px-6 py-16 text-center text-gray-600 text-sm">No payments recorded yet.</td>
+</tr>
+{% endfor %}

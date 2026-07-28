@@ -42,6 +42,13 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="Allow Document Deletion",
         help_text="If disabled, the delete option for documents will be hidden and blocked."
     )
+    
+    # System Settings
+    admin_backup_email = models.EmailField(
+        blank=True, null=True,
+        verbose_name="Admin Backup Email",
+        help_text="Email address to receive daily database backups."
+    )
 
     def __str__(self):
         return self.name

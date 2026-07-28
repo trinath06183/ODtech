@@ -15,13 +15,19 @@
             <p class="text-gray-400 text-xs">{{ contact_data|length }} contact{{ contact_data|length|pluralize }}</p>
         </div>
     </div>
-    {% if request.user.role in 'Admin,Accountant' %}
-    <a href="{% url 'contact_create' %}"
-       class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-purple-500/20">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        New Party
-    </a>
-    {% endif %}
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{% url 'contact_export_csv' %}?{{ request.GET.urlencode }}"
+           class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-slate-900/20">
+            ⬇ Export CSV
+        </a>
+        {% if request.user.role in 'Admin,Accountant' %}
+        <a href="{% url 'contact_create' %}"
+           class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-purple-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Party
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 <!-- Filters -->
@@ -60,64 +66,55 @@
                 <th class="px-6 py-4 font-medium text-center">Actions</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-white/5">
-            {% for row in contact_data %}
-            {% with c=row.contact %}
-            <tr class="hover:bg-white/5 transition-colors">
-                <td class="px-6 py-4">
-                    <a href="{% url 'contact_detail' c.id %}" class="font-semibold text-white hover:text-purple-300 transition-colors">{{ c.name }}</a>
-                </td>
-                <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 rounded text-xs font-bold
-                        {% if c.contact_type == 'Customer' %}bg-blue-500/20 text-blue-300
-                        {% elif c.contact_type == 'Vendor' %}bg-orange-500/20 text-orange-300
-                        {% else %}bg-purple-500/20 text-purple-300{% endif %}">
-                        {{ c.contact_type }}
-                    </span>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-white">{{ c.phone|default:'—' }}</div>
-                    <div class="text-xs text-gray-500">{{ c.email|default:'' }}</div>
-                </td>
-                <td class="px-6 py-4 font-mono text-xs text-gray-300">{{ c.gstin|default:'—' }}</td>
-                <td class="px-6 py-4 text-right">
-                    <span class="font-bold {% if row.outstanding > 0 %}text-rose-400{% else %}text-emerald-400{% endif %}">
-                        &#8377;{{ row.outstanding|floatformat:0 }}
-                    </span>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="flex items-center justify-center gap-2">
-                        <a href="{% url 'contact_detail' c.id %}" class="p-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded-lg transition-colors" title="View Ledger">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        </a>
-                        {% if request.user.role in 'Admin,Accountant' %}
-                        <a href="{% url 'contact_edit' c.id %}" class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Edit">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        </a>
-                        {% endif %}
-                        {% if request.user.role == 'Admin' %}
-                        <form method="post" action="{% url 'contact_delete' c.id %}" onsubmit="return confirm('Delete {{ c.name }}?');">
-                            {% csrf_token %}
-                            <button type="submit" class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Delete">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% endwith %}
-            {% empty %}
-            <tr>
-                <td colspan="6" class="px-6 py-16 text-center text-gray-500">
-                    No contacts found.
-                    {% if request.user.role in 'Admin,Accountant' %}
-                    <a href="{% url 'contact_create' %}" class="text-purple-400 hover:underline ml-1">Add first party →</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
+        <tbody class="divide-y divide-white/5" id="contact-tbody">
+            {% include 'contacts/partials/contact_rows.html' %}
         </tbody>
     </table>
 </div>
+<!-- Sentinel + Spinner for Infinite Scroll -->
+<div id="scroll-sentinel" class="flex justify-center items-center py-4"
+     data-next-page="{{ next_page }}"
+     data-query="{{ query|urlencode }}"
+     data-type="{{ contact_type|urlencode }}">
+    <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
+        <svg class="animate-spin w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Loading more contacts...
+    </div>
+    <div id="scroll-end-msg" class="hidden text-gray-600 text-xs italic">All contacts loaded</div>
+</div>
+<script>
+(function() {
+    const sentinel = document.getElementById('scroll-sentinel');
+    const spinner  = document.getElementById('scroll-spinner');
+    const endMsg   = document.getElementById('scroll-end-msg');
+    const tbody    = document.getElementById('contact-tbody');
+    let loading    = false;
+    if (!sentinel) return;
+    async function loadMore() {
+        const nextPage = sentinel.dataset.nextPage || null;
+        if (!nextPage || loading) return;
+        loading = true;
+        spinner.classList.remove('hidden');
+        try {
+            const params = new URLSearchParams();
+            if (sentinel.dataset.query) params.set('q', sentinel.dataset.query);
+            if (sentinel.dataset.type)  params.set('type', sentinel.dataset.type);
+            params.set('page', nextPage);
+            const res = await fetch('?' + params.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            const tmp = document.createElement('tbody');
+            tmp.innerHTML = data.html;
+            while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
+            if (data.has_next) { sentinel.dataset.nextPage = data.next_page; }
+            else { observer.unobserve(sentinel); spinner.classList.add('hidden'); endMsg.classList.remove('hidden'); loading = false; return; }
+        } catch(e) { console.error(e); }
+        spinner.classList.add('hidden'); loading = false;
+    }
+    const observer = new IntersectionObserver((e) => { if (e[0].isIntersecting) loadMore(); }, { rootMargin: '200px' });
+    if (sentinel.dataset.nextPage) { observer.observe(sentinel); } else { endMsg.classList.remove('hidden'); }
+})();
+</script>
 {% endblock %}

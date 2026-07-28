@@ -52,6 +52,12 @@
                     <input type="text" name="pan" value="{{ company.pan|default:'' }}" placeholder="AAHFO5846M" maxlength="10"
                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
                 </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Admin Backup Email</label>
+                    <input type="email" name="admin_backup_email" value="{{ company.admin_backup_email|default:'' }}" placeholder="admin@example.com"
+                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
+                    <p class="mt-1 text-xs text-gray-500">Email address to receive daily database backups.</p>
+                </div>
             </div>
         </div>
 

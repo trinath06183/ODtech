@@ -14,13 +14,19 @@
             <p class="text-gray-400 text-xs">Total recorded: <span class="text-emerald-400 font-bold">&#8377;{{ total|floatformat:0 }}</span></p>
         </div>
     </div>
-    {% if request.user.role in 'Admin,Accountant' %}
-    <a href="{% url 'payment_create' %}"
-       class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Record Payment
-    </a>
-    {% endif %}
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{% url 'payment_export_csv' %}?{{ request.GET.urlencode }}"
+           class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-slate-900/20">
+            ⬇ Export CSV
+        </a>
+        {% if request.user.role in 'Admin,Accountant' %}
+        <a href="{% url 'payment_create' %}"
+           class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Record Payment
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 {% if messages %}{% for msg in messages %}
@@ -40,44 +46,43 @@
                 {% if request.user.role == 'Admin' %}<th class="px-6 py-4 font-medium text-center">Actions</th>{% endif %}
             </tr>
         </thead>
-        <tbody class="divide-y divide-white/5">
-            {% for pmt in payments %}
-            {% with doc=pmt.linked_document %}
-            <tr class="hover:bg-white/5 transition-colors {% if doc %}cursor-pointer{% endif %}" {% if doc %}onclick="window.location='{% url 'document_preview' doc.id %}'"{% endif %}>
-                <td class="px-6 py-4 text-gray-300 text-sm">{{ pmt.date|date:"d M Y" }}</td>
-                <td class="px-6 py-4">
-                    <a href="{% url 'contact_detail' pmt.contact.id %}" onclick="event.stopPropagation()" class="text-white font-medium hover:text-purple-300 transition-colors text-sm">{{ pmt.contact.name }}</a>
-                </td>
-                <td class="px-6 py-4">
-                    {% if doc %}
-                    <a href="{% url 'document_preview' doc.id %}" onclick="event.stopPropagation()" class="font-mono text-blue-400 hover:text-blue-300 text-xs transition-colors">{{ pmt.document_ref }}</a>
-                    {% elif pmt.document_ref %}
-                    <span class="font-mono text-gray-400 text-xs">{{ pmt.document_ref }}</span>
-                    {% else %}<span class="text-gray-600 text-xs">—</span>{% endif %}
-                </td>
-                <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 bg-slate-700 text-white text-xs rounded font-medium" style="color: #ffffff !important;">{{ pmt.payment_mode }}</span>
-                </td>
-                <td class="px-6 py-4 text-gray-400 text-xs font-mono">{{ pmt.reference_number|default:'—' }}</td>
-                <td class="px-6 py-4 text-right font-bold text-emerald-400">&#8377;{{ pmt.amount|floatformat:0 }}</td>
-                {% if request.user.role == 'Admin' %}
-                <td class="px-6 py-4 text-center">
-                    <form method="post" action="{% url 'payment_delete' pmt.id %}" onsubmit="return confirm('Delete this payment record?');" onclick="event.stopPropagation()">
-                        {% csrf_token %}
-                        <button type="submit" class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Delete">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                    </form>
-                </td>
-                {% endif %}
-            </tr>
-            {% endwith %}
-            {% empty %}
-            <tr>
-                <td colspan="7" class="px-6 py-16 text-center text-gray-600 text-sm">No payments recorded yet.</td>
-            </tr>
-            {% endfor %}
+        <tbody class="divide-y divide-white/5" id="payment-tbody">
+            {% include 'payments/partials/payment_rows.html' %}
         </tbody>
     </table>
 </div>
+<div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{{ next_page }}">
+    <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
+        <svg class="animate-spin w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        Loading more payments...
+    </div>
+    <div id="scroll-end-msg" class="hidden text-gray-600 text-xs italic">All payments loaded</div>
+</div>
+<script>
+(function() {
+    const sentinel = document.getElementById('scroll-sentinel');
+    const spinner = document.getElementById('scroll-spinner');
+    const endMsg = document.getElementById('scroll-end-msg');
+    const tbody = document.getElementById('payment-tbody');
+    let loading = false;
+    if (!sentinel) return;
+    async function loadMore() {
+        const nextPage = sentinel.dataset.nextPage || null;
+        if (!nextPage || loading) return;
+        loading = true; spinner.classList.remove('hidden');
+        try {
+            const res = await fetch(`?page=${nextPage}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            const tmp = document.createElement('tbody');
+            tmp.innerHTML = data.html;
+            while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
+            if (data.has_next) { sentinel.dataset.nextPage = data.next_page; }
+            else { observer.unobserve(sentinel); spinner.classList.add('hidden'); endMsg.classList.remove('hidden'); loading = false; return; }
+        } catch(e) { console.error(e); }
+        spinner.classList.add('hidden'); loading = false;
+    }
+    const observer = new IntersectionObserver((e) => { if (e[0].isIntersecting) loadMore(); }, { rootMargin: '200px' });
+    if (sentinel.dataset.nextPage) { observer.observe(sentinel); } else { endMsg.classList.remove('hidden'); }
+})();
+</script>
 {% endblock %}

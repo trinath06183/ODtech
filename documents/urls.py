@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     # List of all documents
     path('', views.document_list, name='document_list'),
+    path('export/', views.document_export_csv, name='document_export_csv'),
 
     # New document form
     path('new/', views.create_document, name='create_document'),

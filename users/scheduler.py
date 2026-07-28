@@ -32,6 +32,17 @@ def send_payment_reminders_job():
         logger.error(f"APScheduler: send_reminders failed: {exc}", exc_info=True)
 
 
+def backup_db_job():
+    """APScheduler wrapper for the backup_db management command."""
+    from django.core.management import call_command
+    try:
+        logger.info("APScheduler: Running backup_db...")
+        call_command('backup_db')
+        logger.info("APScheduler: backup_db complete.")
+    except Exception as exc:
+        logger.error(f"APScheduler: backup_db failed: {exc}", exc_info=True)
+
+
 def cleanup_expired_otps_job():
     """Remove expired/used OTP tokens to keep the table clean."""
     from django.utils import timezone
@@ -95,6 +106,16 @@ def start():
         trigger=CronTrigger(hour=0, minute=30),
         id="cleanup_old_executions",
         name="Cleanup old APScheduler executions",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Daily database backup (at 11:30 PM)
+    _scheduler.add_job(
+        backup_db_job,
+        trigger=CronTrigger(hour=23, minute=30),
+        id="backup_db_job",
+        name="Daily database backup to admin email",
         replace_existing=True,
         max_instances=1,
     )

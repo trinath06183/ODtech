@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
 from core.decorators import login_required, role_required
 from contacts.models import Contact
 from .models import Payment
@@ -11,11 +13,32 @@ from .models import Payment
 
 @login_required
 def payment_list(request):
+    page_num = request.GET.get('page', 1)
     payments = Payment.objects.select_related('contact').order_by('-date', '-id')
     total = payments.aggregate(t=Sum('amount'))['t'] or 0
+    total_count = payments.count()
+
+    paginator = Paginator(payments, 30)
+    page_obj = paginator.get_page(page_num)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        rows_html = render_to_string(
+            'payments/partials/payment_rows.html',
+            {'payments': page_obj, 'request': request},
+            request=request,
+        )
+        return JsonResponse({
+            'html': rows_html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
     return render(request, 'payments/payment_list.html', {
-        'payments': payments,
+        'payments': page_obj,
         'total': total,
+        'total_count': total_count,
+        'has_next': page_obj.has_next(),
+        'next_page': 2 if page_obj.has_next() else None,
     })
 
 
@@ -151,12 +174,32 @@ def expense_list(request):
     total_paid = calc_expenses.filter(is_paid=True).aggregate(total=Sum('amount'))['total'] or 0
     total_unpaid = calc_expenses.filter(is_paid=False).aggregate(total=Sum('amount'))['total'] or 0
 
+    page_num = request.GET.get('page', 1)
+    total_count = expenses.count()
+    paginator = Paginator(expenses, 30)
+    page_obj = paginator.get_page(page_num)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        rows_html = render_to_string(
+            'payments/partials/expense_rows.html',
+            {'expenses': page_obj, 'request': request},
+            request=request,
+        )
+        return JsonResponse({
+            'html': rows_html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
     return render(request, 'payments/expense_list.html', {
-        'expenses': expenses,
+        'expenses': page_obj,
         'expense_types': Expense.EXPENSE_TYPES,
         'total_expenses': total_expenses,
         'total_paid': total_paid,
-        'total_unpaid': total_unpaid
+        'total_unpaid': total_unpaid,
+        'total_count': total_count,
+        'has_next': page_obj.has_next(),
+        'next_page': 2 if page_obj.has_next() else None,
     })
 
 @login_required
@@ -296,3 +339,84 @@ def employee_code_autocomplete(request):
     else:
         results = []
     return JsonResponse(results, safe=False)
+
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def payment_export_csv(request):
+    """Export payments list to CSV."""
+    from payments.models import Payment
+    payment_type = request.GET.get('type', 'All')
+    q = request.GET.get('q', '').strip()
+    
+    payments = Payment.objects.select_related('contact').all().order_by('-date', '-created_at')
+    
+    if payment_type != 'All':
+        payments = payments.filter(payment_type=payment_type)
+    if q:
+        payments = payments.filter(
+            Q(receipt_number__icontains=q) |
+            Q(contact__name__icontains=q) |
+            Q(document_ref__icontains=q)
+        )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="payments_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Receipt No.', 'Type', 'Contact', 'Amount', 'Mode', 'Reference'])
+    
+    for p in payments:
+        writer.writerow([
+            p.date.strftime('%d-%b-%Y') if p.date else '',
+            p.receipt_number,
+            p.get_payment_type_display(),
+            p.contact.name if p.contact else '',
+            p.amount,
+            p.get_mode_display(),
+            p.document_ref or ''
+        ])
+        
+    return response
+
+@login_required
+def expense_export_csv(request):
+    """Export expenses list to CSV."""
+    from payments.models import Expense
+    category = request.GET.get('category', 'All')
+    status = request.GET.get('status', 'All')
+    q = request.GET.get('q', '').strip()
+    
+    expenses = Expense.objects.select_related('recorded_by').all().order_by('-date', '-created_at')
+    
+    if category != 'All':
+        expenses = expenses.filter(category=category)
+    if status != 'All':
+        expenses = expenses.filter(status=status)
+    if q:
+        expenses = expenses.filter(
+            Q(description__icontains=q) |
+            Q(vendor_name__icontains=q) |
+            Q(recorded_by__username__icontains=q)
+        )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="expenses_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Category', 'Description', 'Vendor/Employee', 'Amount', 'Status', 'Recorded By'])
+    
+    for e in expenses:
+        writer.writerow([
+            e.date.strftime('%d-%b-%Y') if e.date else '',
+            e.get_category_display(),
+            e.description,
+            e.vendor_name or '',
+            e.amount,
+            e.status,
+            e.recorded_by.username if e.recorded_by else ''
+        ])
+        
+    return response

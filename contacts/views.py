@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q, Sum
+from django.core.paginator import Paginator
 from core.decorators import login_required, role_required
 from .models import Contact, Address, VendorQuote
 from inventory.models import Product
@@ -35,8 +36,13 @@ def create_customer_api(request):
 def contact_list(request):
     contact_type = request.GET.get('type', '')
     query = request.GET.get('q', '').strip()
+    page_num = request.GET.get('page', 1)
 
-    contacts = Contact.objects.all().order_by('name')
+    from payments.models import Payment
+    contacts = Contact.objects.annotate(
+        payments_total=Sum('payments__amount')
+    ).order_by('name')
+
     if contact_type:
         contacts = contacts.filter(contact_type=contact_type)
     if query:
@@ -47,20 +53,30 @@ def contact_list(request):
             Q(gstin__icontains=query)
         )
 
-    # Payment totals per contact
-    from payments.models import Payment
-    contact_data = []
-    for c in contacts:
-        payments_total = c.payments.aggregate(t=Sum('amount'))['t'] or 0
-        contact_data.append({
-            'contact': c,
-            'outstanding': payments_total,
+    total_count = contacts.count()
+    paginator = Paginator(contacts, 30)
+    page_obj = paginator.get_page(page_num)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        from django.template.loader import render_to_string
+        rows_html = render_to_string(
+            'contacts/partials/contact_rows.html',
+            {'contact_data': page_obj, 'request': request},
+            request=request,
+        )
+        return JsonResponse({
+            'html': rows_html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         })
 
     return render(request, 'contacts/contact_list.html', {
-        'contact_data': contact_data,
+        'contact_data': page_obj,
         'contact_type': contact_type,
         'query': query,
+        'total_count': total_count,
+        'has_next': page_obj.has_next(),
+        'next_page': 2 if page_obj.has_next() else None,
     })
 
 
@@ -235,3 +251,45 @@ def vendor_quote_delete(request, quote_id):
         quote.delete()
         messages.success(request, 'Vendor quote deleted successfully.')
     return redirect('vendor_quotes')
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def contact_export_csv(request):
+    """Export contacts list to CSV."""
+    contact_type = request.GET.get('type', 'All')
+    query = request.GET.get('q', '').strip()
+    
+    contacts = Contact.objects.all().order_by('name')
+    if contact_type != 'All':
+        contacts = contacts.filter(contact_type=contact_type)
+    if query:
+        contacts = contacts.filter(
+            Q(name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(phone__icontains=query) |
+            Q(company_name__icontains=query)
+        )
+        
+    from django.db.models import Sum
+    contacts = contacts.annotate(payments_total=Sum('payments__amount'))
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="contacts_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Company', 'Type', 'Email', 'Phone', 'GSTIN', 'Total Received/Paid'])
+    
+    for c in contacts:
+        writer.writerow([
+            c.name,
+            c.company_name or '',
+            c.contact_type,
+            c.email or '',
+            c.phone or '',
+            c.gstin or '',
+            c.payments_total or 0
+        ])
+        
+    return response

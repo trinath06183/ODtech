@@ -125,6 +125,9 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_REFERRER_POLICY = 'same-origin'
 
+# Session Timeout (Auto Logout after 60 mins of inactivity)
+SESSION_COOKIE_AGE = 3600  # 60 minutes * 60 seconds
+SESSION_SAVE_EVERY_REQUEST = True
 # Axes Configuration
 AXES_FAILURE_LIMIT = 3
 AXES_COOLOFF_TIME = 24  # 24 hours

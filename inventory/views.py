@@ -2,8 +2,11 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
+from django.db.models import Q, Value, DecimalField
+from django.db.models.functions import Coalesce
+from django.db.models import Sum
 from core.decorators import login_required, role_required
 from .models import Product, StockTransaction
 
@@ -12,10 +15,19 @@ from .models import Product, StockTransaction
 @login_required
 def inventory_list(request):
     query = request.GET.get('q', '').strip()
-    products = Product.objects.all().order_by('name')
-    
+    page_num = request.GET.get('page', 1)
+
+    # Annotate stock in one query (avoids N+1)
+    products_qs = Product.objects.annotate(
+        annotated_stock=Coalesce(
+            Sum('stock_transactions__quantity'),
+            Value(0),
+            output_field=DecimalField()
+        )
+    ).order_by('name')
+
     if query:
-        products = products.filter(
+        products_qs = products_qs.filter(
             Q(name__icontains=query) |
             Q(sku__icontains=query) |
             Q(brand__icontains=query) |
@@ -29,13 +41,38 @@ def inventory_list(request):
     product_categories = list(Product.objects.exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).order_by('category')[:10])
     suggestions = sorted(list(set(product_names + product_skus + product_brands + product_categories)))
 
-    low_stock_count = sum(1 for p in Product.objects.all() if p.is_low_stock)
+    # Low stock count: items where stock < reorder_level (single query using F)
+    from django.db.models import F
+    low_stock_count = Product.objects.annotate(
+        s=Coalesce(Sum('stock_transactions__quantity'), Value(0), output_field=DecimalField())
+    ).filter(reorder_level__gt=0, s__lt=F('reorder_level')).count()
+
+    total_count = products_qs.count()
+
+    paginator = Paginator(products_qs, 30)
+    page_obj = paginator.get_page(page_num)
+
+    # AJAX request — return only rows HTML + pagination metadata
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        rows_html = render_to_string(
+            'inventory/partials/product_rows.html',
+            {'products': page_obj, 'request': request},
+            request=request,
+        )
+        return JsonResponse({
+            'html': rows_html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
 
     return render(request, 'inventory/inventory_list.html', {
-        'products': products,
+        'products': page_obj,
+        'total_count': total_count,
         'query': query,
         'suggestions': suggestions[:15],
         'low_stock_count': low_stock_count,
+        'has_next': page_obj.has_next(),
+        'next_page': 2 if page_obj.has_next() else None,
     })
 
 
@@ -710,3 +747,48 @@ def get_product_linked_bills_api(request, product_id):
         'unit': product.unit,
         'bills': linked_bills
     })
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def inventory_export_csv(request):
+    """Export inventory list to CSV."""
+    # Apply same filters as inventory_list
+    category = request.GET.get('category', 'All')
+    q = request.GET.get('q', '').strip()
+    
+    products = Product.objects.all().order_by('name')
+    if category != 'All':
+        products = products.filter(category=category)
+    if q:
+        products = products.filter(
+            Q(name__icontains=q) | 
+            Q(sku__icontains=q) | 
+            Q(category__icontains=q)
+        )
+        
+    products = products.annotate(
+        total_in=Coalesce(Sum('transactions__quantity', filter=Q(transactions__transaction_type='IN')), 0),
+        total_out=Coalesce(Sum('transactions__quantity', filter=Q(transactions__transaction_type='OUT')), 0)
+    )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="inventory_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['SKU', 'Name', 'Category', 'Unit Price', 'Selling Price', 'Stock Quantity', 'Status'])
+    
+    for p in products:
+        status = 'Out of Stock' if p.stock_quantity == 0 else ('Low Stock' if p.stock_quantity <= p.reorder_level else 'In Stock')
+        writer.writerow([
+            p.sku,
+            p.name,
+            p.category,
+            p.unit_price,
+            p.selling_price,
+            p.stock_quantity,
+            status
+        ])
+        
+    return response

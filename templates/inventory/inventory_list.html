@@ -12,13 +12,17 @@
         </div>
         <div>
             <h2 class="text-white font-bold text-lg">Products</h2>
-            <p class="text-gray-400 text-xs">{{ products|length }} product{{ products|length|pluralize }} in catalogue</p>
+            <p class="text-gray-400 text-xs"><span id="loaded-count">{{ products|length }}</span> of {{ total_count }} product{{ total_count|pluralize }} in catalogue</p>
         </div>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
         <a href="{% url 'create_document' %}"
            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
             📄 New Document
+        </a>
+        <a href="{% url 'inventory_export_csv' %}?{{ request.GET.urlencode }}"
+           class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-slate-900/20">
+            ⬇ Export CSV
         </a>
         {% if request.user.role == 'Admin' %}
         <a href="{% url 'product_create' %}"
@@ -104,102 +108,20 @@
             </tr>
         </thead>
         <tbody class="divide-y divide-white/5">
-            {% for product in products %}
-            <tr class="hover:bg-white/5 transition-colors {% if product.is_low_stock %}bg-amber-500/5{% endif %}">
-                <!-- Product Name / Category -->
-                <td class="px-6 py-4 whitespace-normal min-w-[250px] w-1/3">
-                    <a href="javascript:void(0)" onclick="openLinkedBillsModal('{{ product.id }}')" class="font-semibold text-white hover:text-cyan-400 text-sm transition-colors cursor-pointer flex items-center gap-1.5 group" title="Click to view linked bills">
-                        <span>{{ product.name }}</span>
-                        <span class="text-xs text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity">🧾</span>
-                    </a>
-                    {% if product.brand or product.category %}
-                    <div class="text-gray-500 text-xs mt-0.5">
-                        {% if product.brand %}{{ product.brand }}{% endif %}{% if product.brand and product.category %} · {% endif %}{% if product.category %}{{ product.category }}{% endif %}
-                    </div>
-                    {% endif %}
-                </td>
-
-                <!-- SKU / HSN -->
-                <td class="px-6 py-4">
-                    <span class="font-mono font-bold text-blue-400 text-sm">{{ product.sku }}</span>
-                    {% if product.hsn_code %}
-                    <div class="text-gray-500 text-xs mt-0.5">HSN: {{ product.hsn_code }}</div>
-                    {% endif %}
-                </td>
-
-                <!-- Unit -->
-                <td class="px-6 py-4 text-center text-gray-300 text-sm">{{ product.unit }}</td>
-
-                <!-- Price -->
-                <td class="px-6 py-4 text-right font-bold text-green-400">&#8377;{{ product.selling_price|floatformat:2 }}</td>
-
-                <!-- Tax -->
-                <td class="px-6 py-4 text-center">
-                    <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs font-bold rounded">{{ product.tax_rate|floatformat:0 }}%</span>
-                </td>
-
-                <!-- Stock -->
-                <td class="px-6 py-4 text-center">
-                    {% with stock=product.current_stock %}
-                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold
-                        {% if product.is_low_stock %}bg-amber-500/20 text-amber-300
-                        {% elif stock > 0 %}bg-emerald-500/20 text-emerald-300
-                        {% elif stock == 0 %}bg-yellow-500/20 text-yellow-300
-                        {% else %}bg-red-500/20 text-red-300{% endif %}">
-                        {{ stock|floatformat:0 }} {{ product.unit }}
-                    </span>
-                    {% if product.is_low_stock %}
-                    <span class="ml-1 text-amber-400 text-xs" title="Below reorder level ({{ product.reorder_level|floatformat:0 }})">⚠️</span>
-                    {% endif %}
-                    {% endwith %}
-                </td>
-
-                <!-- Actions -->
-                <td class="px-6 py-4">
-                    <div class="flex items-center justify-center space-x-2">
-                        <!-- Linked Bills -->
-                        <button type="button" onclick="openLinkedBillsModal('{{ product.id }}')"
-                           class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg transition-colors" title="View Linked Bills & Invoices">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        </button>
-                        {% if request.user.role == 'Admin' %}
-                        <!-- Adjust Stock -->
-                        <a href="{% url 'adjust_stock' product.id %}"
-                           class="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 rounded-lg transition-colors" title="Adjust Stock">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                        </a>
-                        <!-- Edit -->
-                        <a href="{% url 'product_edit' product.id %}"
-                           class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Edit Product">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        </a>
-                        <!-- Delete -->
-                        <form method="post" action="{% url 'product_delete' product.id %}"
-                              onsubmit="return confirm('Delete product \'{{ product.name }}\'? This cannot be undone.');">
-                            {% csrf_token %}
-                            <button type="submit"
-                                    class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Delete Product">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
-                        </form>
-                        {% else %}
-                        <span class="text-gray-600 text-xs italic">View only</span>
-                        {% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7" class="px-6 py-16 text-center">
-                    <div class="text-gray-500 text-lg mb-2">No products in inventory</div>
-                    {% if request.user.role == 'Admin' %}
-                    <a href="{% url 'product_create' %}" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm inline-block mt-2">Add First Product</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
+            {% include 'inventory/partials/product_rows.html' %}
         </tbody>
     </table>
+</div>
+<!-- Sentinel + Spinner for Infinite Scroll -->
+<div id="scroll-sentinel" class="flex justify-center items-center py-6" data-next-page="{{ next_page }}" data-query="{{ query|urlencode }}">
+    <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
+        <svg class="animate-spin w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Loading more products...
+    </div>
+    <div id="scroll-end-msg" class="hidden text-gray-600 text-xs italic">All products loaded</div>
 </div>
 
 <!-- Linked Bills Modal -->
@@ -320,5 +242,72 @@ function renderLinkedBillsTable(bills) {
         </tr>
     `).join('');
 }
+</script>
+
+<script>
+(function() {
+    const sentinel = document.getElementById('scroll-sentinel');
+    const spinner  = document.getElementById('scroll-spinner');
+    const endMsg   = document.getElementById('scroll-end-msg');
+    const tbody    = document.querySelector('tbody');
+    const countEl  = document.getElementById('loaded-count');
+    let loading    = false;
+
+    if (!sentinel) return;
+
+    function getNextPage() { return sentinel.dataset.nextPage || null; }
+    function getQuery()    { return sentinel.dataset.query || ''; }
+
+    async function loadMore() {
+        const nextPage = getNextPage();
+        if (!nextPage || loading) return;
+        loading = true;
+        spinner.classList.remove('hidden');
+
+        try {
+            const qParam = getQuery() ? `&q=${getQuery()}` : '';
+            const url = `?page=${nextPage}${qParam}`;
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) throw new Error('Network error');
+            const data = await res.json();
+
+            // Append new rows
+            const tmp = document.createElement('tbody');
+            tmp.innerHTML = data.html;
+            while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
+
+            // Update count
+            if (countEl) {
+                countEl.textContent = parseInt(countEl.textContent) + tmp.childElementCount || document.querySelectorAll('tbody tr').length;
+            }
+
+            if (data.has_next) {
+                sentinel.dataset.nextPage = data.next_page;
+            } else {
+                // All loaded
+                observer.unobserve(sentinel);
+                spinner.classList.add('hidden');
+                endMsg.classList.remove('hidden');
+                loading = false;
+                return;
+            }
+        } catch(e) {
+            console.error('Infinite scroll error:', e);
+        }
+
+        spinner.classList.add('hidden');
+        loading = false;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) loadMore();
+    }, { rootMargin: '200px' });
+
+    if (getNextPage()) {
+        observer.observe(sentinel);
+    } else {
+        endMsg.classList.remove('hidden');
+    }
+})();
 </script>
 {% endblock %}

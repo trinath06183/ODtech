@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     # Contact CRUD
     path('', views.contact_list, name='contact_list'),
+    path('export/', views.contact_export_csv, name='contact_export_csv'),
     path('new/', views.contact_create, name='contact_create'),
     path('<int:contact_id>/edit/', views.contact_edit, name='contact_edit'),
     path('<int:contact_id>/delete/', views.contact_delete, name='contact_delete'),

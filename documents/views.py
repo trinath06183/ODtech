@@ -2,6 +2,8 @@ from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
 from .models import Document, DocumentItem
 from .services import DocumentService, PDFService, NumberingService
 from core.decorators import login_required, role_required
@@ -78,9 +80,28 @@ def document_list(request):
     suggestions = sorted(list(set(recent_doc_numbers + recent_customer_names + recent_product_names)))
 
     company = CompanyProfile.objects.first()
+    page_num = request.GET.get('page', 1)
+    total_count = qs.count()
+
+    paginator = Paginator(qs, 30)
+    page_obj = paginator.get_page(page_num)
+
+    # AJAX request — return only rows HTML + pagination metadata
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        rows_html = render_to_string(
+            'documents/partials/document_rows.html',
+            {'documents': page_obj, 'company': company, 'request': request},
+            request=request,
+        )
+        return JsonResponse({
+            'html': rows_html,
+            'has_next': page_obj.has_next(),
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
 
     return render(request, 'documents/document_list.html', {
-        'documents': qs,
+        'documents': page_obj,
+        'total_count': total_count,
         'stats': stats,
         'filters': filters,
         'current_types': doc_types,
@@ -89,6 +110,8 @@ def document_list(request):
         'sort_by': sort_by,
         'suggestions': suggestions,
         'company': company,
+        'has_next': page_obj.has_next(),
+        'next_page': 2 if page_obj.has_next() else None,
     })
 
 
@@ -938,3 +961,46 @@ def send_to_tracker_api(request, document_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def document_export_csv(request):
+    """Export documents list to CSV."""
+    doc_type = request.GET.get('type', 'All')
+    status = request.GET.get('status', 'All')
+    q = request.GET.get('q', '').strip()
+    
+    docs = Document.objects.select_related('contact').all().order_by('-date', '-created_at')
+    
+    if doc_type != 'All':
+        docs = docs.filter(type=doc_type)
+    if status != 'All':
+        docs = docs.filter(status=status)
+    if q:
+        from django.db.models import Q
+        docs = docs.filter(
+            Q(number__icontains=q) | 
+            Q(contact__name__icontains=q)
+        )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="documents_export.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Number', 'Type', 'Contact', 'Status', 'Taxable Value', 'Total Tax', 'Grand Total'])
+    
+    for doc in docs:
+        writer.writerow([
+            doc.date.strftime('%d-%b-%Y') if doc.date else '',
+            doc.number,
+            doc.get_type_display(),
+            doc.contact.name if doc.contact else '',
+            doc.status,
+            doc.taxable_value,
+            doc.total_tax,
+            doc.grand_total
+        ])
+        
+    return response
