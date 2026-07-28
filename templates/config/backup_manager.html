@@ -6,12 +6,7 @@
 {% block content %}
 <div class="max-w-[1200px] mx-auto">
     <!-- Flash Messages -->
-    {% if messages %}
-    <div class="mb-6 space-y-2">
-        {% for msg in messages %}
-        <div class="px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-3
-            {% if msg.tags == 'error' %}bg-red-500/15 text-red-700 border border-red-500/30
-            {% else %}bg-emerald-500/15 text-emerald-700 border border-emerald-500/30{% endif %}">
+    ">
             {{ msg }}
         </div>
         {% endfor %}

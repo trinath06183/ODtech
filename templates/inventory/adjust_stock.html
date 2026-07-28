@@ -12,11 +12,7 @@
     </div>
 
     <!-- Flash -->
-    {% if messages %}
-    {% for msg in messages %}
-    <div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium
-        {% if msg.tags == 'error' %}bg-red-500/15 text-red-300 border border-red-500/25
-        {% else %}bg-emerald-500/15 text-emerald-300 border border-emerald-500/25{% endif %}">
+    ">
         {{ msg }}
     </div>
     {% endfor %}
