@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Verification OTP — ODtech ERP</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #EFF6FF;
+            padding: 40px 20px;
+            color: #1e293b;
+        }
+        .wrapper { max-width: 600px; margin: 0 auto; }
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(37, 99, 235, 0.10);
+        }
+        .header {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+            padding: 36px 40px;
+            text-align: center;
+        }
+        .header-logo {
+            font-size: 26px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+        .header-logo span { color: #bfdbfe; }
+        .header-sub {
+            font-size: 13px;
+            color: #bfdbfe;
+            margin-top: 4px;
+        }
+        .body { padding: 40px; }
+        .greeting {
+            font-size: 16px;
+            color: #334155;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .otp-label {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .otp-box {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #93c5fd;
+            border-radius: 12px;
+            text-align: center;
+            padding: 28px 20px;
+            margin: 0 auto 28px;
+        }
+        .otp-code {
+            font-size: 48px;
+            font-weight: 800;
+            color: #1d4ed8;
+            letter-spacing: 12px;
+            font-family: 'Courier New', monospace;
+            display: block;
+        }
+        .expiry-badge {
+            display: inline-block;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #92400e;
+            margin-top: 16px;
+        }
+        .info-text {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        .warning-box {
+            background: #fff1f2;
+            border-left: 4px solid #f43f5e;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 18px;
+            margin: 24px 0;
+        }
+        .warning-box p {
+            font-size: 13px;
+            color: #9f1239;
+            font-weight: 600;
+        }
+        .divider { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+        .footer {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 24px 40px;
+            text-align: center;
+        }
+        .footer p { font-size: 12px; color: #94a3b8; line-height: 1.8; }
+        .footer strong { color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="card">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-logo">OD<span>tech</span> ERP</div>
+                <div class="header-sub">Secure Login Verification</div>
+            </div>
+
+            <!-- Body -->
+            <div class="body">
+                <p class="greeting">
+                    Hello <strong>{{ user.username }}</strong>,<br><br>
+                    You are trying to log in to your ODtech ERP account.
+                    Use the one-time password (OTP) below to proceed.
+                </p>
+
+                <div class="otp-label">Your verification code</div>
+                <div class="otp-box">
+                    <span class="otp-code">{{ otp }}</span>
+                    <div>
+                        <span class="expiry-badge">Expires in 10 minutes</span>
+                    </div>
+                </div>
+
+                <p class="info-text">
+                    Enter this code on the login page. The code is valid for
+                    <strong>10 minutes</strong> from the time this email was sent.
+                    Once used, it cannot be reused.
+                </p>
+
+                <div class="warning-box">
+                    <p>Never share this code with anyone. ODtech ERP staff will never ask for your OTP.</p>
+                </div>
+
+                <hr class="divider">
+
+                <p class="info-text">
+                    If you did not attempt to log in, please reset your password immediately or contact your administrator, as someone might be trying to access your account.
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>
+                    <strong>ODtech ERP</strong><br>
+                    This is an automated security email. Please do not reply.<br>
+                    &copy; 2026 ODtech. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

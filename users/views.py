@@ -69,6 +69,26 @@ def send_otp_email(user, otp_token):
     email.send()
 
 
+def send_login_otp_email(user, otp_token):
+    """Sends a 6-digit OTP for 2FA login verification."""
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
+
+    context = {
+        'user': user,
+        'otp': otp_token.otp,
+    }
+    subject = "Login Verification OTP — ODtech ERP"
+    html_content = render_to_string('users/login_otp_email.html', context)
+    text_content = strip_tags(html_content)
+    email = EmailMultiAlternatives(
+        subject, text_content, from_email=None, to=[user.email]
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
+
+
 def send_password_changed_alert(user, request=None):
     """Sends a security alert email after a successful password change."""
     from django.utils import timezone
@@ -103,6 +123,16 @@ def login_view(request):
         password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            if user.role in ['Admin', 'Finance']:
+                request.session['login_2fa_uid'] = str(user.pk)
+                request.session['login_next_url'] = request.GET.get('next') or 'dashboard'
+                
+                otp_token = OTPToken.generate_for_user(user)
+                send_login_otp_email(user, otp_token)
+                
+                messages.info(request, f'A 6-digit login verification OTP has been sent to {user.email}.')
+                return redirect('login_verify_otp')
+
             login(request, user)
             next_url = request.GET.get('next') or 'dashboard'
             return redirect(next_url)
@@ -110,6 +140,64 @@ def login_view(request):
             messages.error(request, 'Invalid username or password. Please try again.')
 
     return render(request, 'users/login.html')
+
+@ensure_csrf_cookie
+def login_verify_otp(request):
+    """Step 2 of 2FA login: Verify OTP"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+        
+    uid = request.session.get('login_2fa_uid')
+    if not uid:
+        messages.error(request, 'Session expired. Please log in again.')
+        return redirect('login')
+        
+    try:
+        user = User.objects.get(pk=uid)
+    except User.DoesNotExist:
+        return redirect('login')
+
+    if request.method == 'POST':
+        otp_input = request.POST.get('otp', '').strip()
+        if not otp_input:
+            messages.error(request, 'Please enter the 6-digit OTP.')
+        else:
+            otp_token = OTPToken.objects.filter(user=user, used=False).order_by('-created_at').first()
+            if not otp_token or not otp_token.is_valid():
+                messages.error(request, 'OTP is invalid or has expired. Please request a new one.')
+            elif otp_token.otp != otp_input:
+                messages.error(request, 'Incorrect OTP. Please check and try again.')
+            else:
+                otp_token.used = True
+                otp_token.save()
+                
+                login(request, user)
+                
+                request.session.pop('login_2fa_uid', None)
+                next_url = request.session.pop('login_next_url', 'dashboard')
+                
+                messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+                return redirect(next_url)
+
+    return render(request, 'users/login_verify_otp.html', {'email': user.email})
+
+def login_resend_otp(request):
+    """Resend 2FA login OTP"""
+    if request.method == 'POST':
+        uid = request.session.get('login_2fa_uid')
+        if not uid:
+            messages.error(request, 'Session expired. Please start over.')
+            return redirect('login')
+            
+        try:
+            user = User.objects.get(pk=uid)
+            otp_token = OTPToken.generate_for_user(user)
+            send_login_otp_email(user, otp_token)
+            messages.success(request, f'A new OTP has been sent to {user.email}.')
+        except User.DoesNotExist:
+            pass
+            
+    return redirect('login_verify_otp')
 
 
 @login_required

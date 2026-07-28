@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     # Authentication
     path('login/',      views.login_view,      name='login'),
+    path('login/verify-otp/', views.login_verify_otp, name='login_verify_otp'),
+    path('login/resend-otp/', views.login_resend_otp, name='login_resend_otp'),
     path('logout/',     views.logout_view,     name='logout'),
     path('onboarding/', views.onboarding_view, name='onboarding'),
     path('verify-email/<uidb64>/<token>/', views.verify_email_view, name='verify_email'),
