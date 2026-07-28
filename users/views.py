@@ -171,7 +171,7 @@ def login_verify_otp(request):
                 otp_token.used = True
                 otp_token.save()
                 
-                login(request, user)
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 
                 request.session.pop('login_2fa_uid', None)
                 next_url = request.session.pop('login_next_url', 'dashboard')
