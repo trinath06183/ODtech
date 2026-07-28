@@ -94,7 +94,7 @@
     <table class="w-full text-left whitespace-nowrap">
         <thead class="bg-slate-800/80 border-b border-white/10">
             <tr class="text-gray-400 text-xs uppercase tracking-wider">
-                <th class="px-6 py-4 font-medium">Product</th>
+                <th class="px-6 py-4 font-medium min-w-[250px] w-1/3">Product</th>
                 <th class="px-6 py-4 font-medium">SKU / HSN</th>
                 <th class="px-6 py-4 font-medium text-center">Unit</th>
                 <th class="px-6 py-4 font-medium text-right">Price</th>
@@ -107,7 +107,7 @@
             {% for product in products %}
             <tr class="hover:bg-white/5 transition-colors {% if product.is_low_stock %}bg-amber-500/5{% endif %}">
                 <!-- Product Name / Category -->
-                <td class="px-6 py-4">
+                <td class="px-6 py-4 whitespace-normal min-w-[250px] w-1/3">
                     <a href="javascript:void(0)" onclick="openLinkedBillsModal('{{ product.id }}')" class="font-semibold text-white hover:text-cyan-400 text-sm transition-colors cursor-pointer flex items-center gap-1.5 group" title="Click to view linked bills">
                         <span>{{ product.name }}</span>
                         <span class="text-xs text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity">🧾</span>
