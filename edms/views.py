@@ -27,7 +27,6 @@ from edms.forms import (
     SearchForm, VendorForm, VersionUploadForm,
 )
 
-logger = logging.getLogger(__name__)
 from edms.mixins import (
     EDMSContextMixin, EDMSDocumentPermissionMixin,
     EDMSLoginRequiredMixin, EDMSPermissionMixin,
