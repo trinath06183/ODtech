@@ -63,7 +63,7 @@ class Expense(TimeStampedModel):
     
     title = models.CharField(max_length=255)
     employee_code = models.CharField(max_length=50, blank=True, null=True, help_text="Optional Employee Code for this expense")
-    expense_type = models.CharField(max_length=50, choices=EXPENSE_TYPES)
+    expense_type = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     gst_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     date = models.DateField()
