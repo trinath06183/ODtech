@@ -478,34 +478,11 @@
                     <button class="file-remove" id="file-remove" title="Remove">✕</button>
                 </div>
                 
-                <!-- Image specific controls -->
+                <!-- Image specific controls removed -->
                 <div id="image-controls" style="display:none; flex-direction:column; gap:12px; margin-top:10px; border-top:1px solid var(--border); padding-top:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <label style="font-size:0.9rem; font-weight:600; color:var(--text); display:flex; align-items:center; gap:6px; cursor:pointer;">
-                            <input type="checkbox" id="vibrant-filter" checked style="width:16px; height:16px; accent-color:var(--primary);">
-                            📄 Document Scan Filter
-                        </label>
-                        <button type="button" onclick="openCropEditor()" style="padding:6px 12px; font-size:0.85rem; border-radius:6px; border:1px solid #CBD5E1; background:#fff; color:#334155; font-weight:600; cursor:pointer;">
-                            ✂️ Crop
-                        </button>
-                    </div>
-                    
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--muted); font-weight:600;">
-                            <span>Compression</span>
-                            <span id="compression-val">30%</span>
-                        </div>
-                        <input type="range" id="compression-slider" min="0" max="95" value="30" style="width:100%; accent-color:var(--primary);">
-                    </div>
-                    
                     <div style="display:flex; gap:10px; margin-top:6px;">
                         <div style="flex:1; text-align:center;">
-                            <div style="font-size:0.75rem; color:var(--muted); margin-bottom:4px;">Original</div>
-                            <img id="preview-original" style="width:100%; border-radius:8px; border:1px solid var(--border); max-height:120px; object-fit:contain; background:#f8fafc;">
-                        </div>
-                        <div style="flex:1; text-align:center;">
-                            <div style="font-size:0.75rem; color:var(--muted); margin-bottom:4px;">Compressed (<span id="compressed-size">...</span>)</div>
-                            <img id="preview-compressed" style="width:100%; border-radius:8px; border:1px solid var(--border); max-height:120px; object-fit:contain; background:#f8fafc;">
+                            <img id="preview-original" style="width:100%; border-radius:8px; border:1px solid var(--border); max-height:250px; object-fit:contain; background:#f8fafc;">
                         </div>
                     </div>
                 </div>
@@ -531,23 +508,7 @@
     </div>
 </div>
 
-<!-- Crop Editor Modal -->
-<div id="crop-editor-modal">
-    <div class="crop-header">
-        <button onclick="closeCropEditor()">Cancel</button>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="modal-auto-crop" checked onchange="toggleModalAutoCrop(this.checked)" style="width:18px; height:18px; accent-color:#3B82F6; cursor:pointer;">
-            <label for="modal-auto-crop" style="font-size:0.9rem; color:#fff; font-weight:600; cursor:pointer; user-select:none;">✂️ Auto-Crop</label>
-        </div>
-        <button onclick="saveCrop()" style="background:#3B82F6; color:#fff; padding:6px 16px; border-radius:8px; font-weight:700;">Done</button>
-    </div>
-    <div class="crop-canvas-container">
-        <canvas id="crop-canvas"></canvas>
-    </div>
-    <div style="color:#cbd5e1; text-align:center; padding:12px; font-size:0.85rem; background:#111;">
-        Drag corners to manually adjust • Moving edges unchecks Auto-Crop
-    </div>
-</div>
+
 
 <script>
     const TOKEN        = "{{ token }}";
@@ -599,75 +560,9 @@
         return icons[ext] || '📎';
     }
 
-    let originalImageObj = null;
-    let compressedFile = null;
+    // Image processing removed; mobile now acts purely as a raw scanner/uploader
 
-    function applyDocumentFilter(ctx, width, height) {
-        const id = ctx.getImageData(0, 0, width, height);
-        const data = id.data;
-        // Document scanner effect: High contrast, brightness, and paper whitening
-        const contrast = 2.2;
-        const brightness = 40;
-        const intercept = 128 * (1 - contrast) + brightness;
-        
-        for(let i = 0; i < data.length; i += 4) {
-            // Apply contrast and brightness
-            let r = data[i] * contrast + intercept;
-            let g = data[i+1] * contrast + intercept;
-            let b = data[i+2] * contrast + intercept;
-            
-            // Convert to grayscale to evaluate lightness
-            let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            
-            // If the pixel is relatively light (likely paper background), push it to pure white
-            if (gray > 160) {
-                r = 255;
-                g = 255;
-                b = 255;
-            } else {
-                // For text (darker pixels), darken them further to make text pop
-                r -= 30;
-                g -= 30;
-                b -= 30;
-            }
-            
-            data[i] = Math.max(0, Math.min(255, r));
-            data[i+1] = Math.max(0, Math.min(255, g));
-            data[i+2] = Math.max(0, Math.min(255, b));
-        }
-        ctx.putImageData(id, 0, 0);
-    }
 
-    function processImage() {
-        if (!originalImageObj) return;
-        const useFilter = document.getElementById('vibrant-filter').checked;
-        const compVal = parseInt(document.getElementById('compression-slider').value, 10);
-        const quality = 1.0 - (compVal / 100);
-        document.getElementById('compression-val').textContent = compVal + '%';
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = originalImageObj.width;
-        canvas.height = originalImageObj.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(originalImageObj, 0, 0);
-        
-        if (useFilter) {
-            applyDocumentFilter(ctx, canvas.width, canvas.height);
-        }
-        
-        canvas.toBlob(blob => {
-            if (!blob) return;
-            compressedFile = new File([blob], selectedFile.name, { type: 'image/jpeg' });
-            
-            const url = URL.createObjectURL(blob);
-            document.getElementById('preview-compressed').src = url;
-            document.getElementById('compressed-size').textContent = formatBytes(blob.size);
-            document.getElementById('file-size-display').textContent = formatBytes(blob.size) + " (Compressed)";
-        }, 'image/jpeg', quality);
-    }
-
-    document.getElementById('compression-slider').addEventListener('input', processImage);
-    document.getElementById('vibrant-filter').addEventListener('change', processImage);
 
     function onFileSelected(file) {
         if (!file) return;
@@ -682,18 +577,11 @@
         document.getElementById('upload-btn').classList.add('show');
         
         if (file.type.startsWith('image/')) {
-            document.getElementById('image-controls').style.display = 'flex';
-            
+            // No compression/filters applied on mobile side anymore
             const objUrl = URL.createObjectURL(file);
+            document.getElementById('image-controls').style.display = 'flex';
             document.getElementById('preview-original').src = objUrl;
-            
-            originalImageObj = new Image();
-            originalImageObj.onload = () => {
-                processImage();
-                // Automatically open the perspective crop editor for uploaded images
-                openCropEditor();
-            };
-            originalImageObj.src = objUrl;
+            document.getElementById('preview-original').style.maxHeight = '250px'; // Give it more space since we removed compressed preview
         } else {
             document.getElementById('image-controls').style.display = 'none';
         }
@@ -706,174 +594,7 @@
     const camInputEl = document.getElementById('camera-input');
     if (camInputEl) camInputEl.addEventListener('change', e => onFileSelected(e.target.files[0]));
 
-    /* ── Crop Editor Logic ───────────────────────────────── */
-    const cropModal = document.getElementById('crop-editor-modal');
-    const canvas = document.getElementById('crop-canvas');
-    const ctx = canvas.getContext('2d');
-    let cropImage = new Image();
-    let renderW, renderH, renderX, renderY;
-    
-    // [tl, tr, br, bl] relative coordinates (0 to 1)
-    let pts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
-    let activePointIdx = -1;
-    const PIN_RADIUS = 20;
-
-    function openCropEditor() {
-        if (!selectedFile) return;
-        cropModal.classList.add('show');
-        document.body.style.overflow = 'hidden';
-
-        const objUrl = URL.createObjectURL(selectedFile);
-        cropImage = new Image();
-        cropImage.onload = () => {
-            requestAnimationFrame(() => {
-                setTimeout(initCanvas, 60);
-            });
-        };
-        cropImage.src = objUrl;
-    }
-
-    function closeCropEditor() {
-        cropModal.classList.remove('show');
-        document.body.style.overflow = '';
-    }
-
-    function saveCrop() {
-        manualCropPoints = JSON.parse(JSON.stringify(pts));
-        closeCropEditor();
-    }
-
-    function initCanvas() {
-        const container = canvas.parentElement;
-        if (!container || !cropImage.width || !cropImage.height) return;
-
-        const cW = container.clientWidth || window.innerWidth;
-        const cH = container.clientHeight || (window.innerHeight - 100);
-        canvas.width  = cW;
-        canvas.height = cH;
-        
-        // Calculate image rendering size
-        const ratio = Math.min(canvas.width / cropImage.width, canvas.height / cropImage.height);
-        renderW = cropImage.width * ratio;
-        renderH = cropImage.height * ratio;
-        renderX = (canvas.width - renderW) / 2;
-        renderY = (canvas.height - renderH) / 2;
-        
-        // If we previously saved points, use them, otherwise use defaults
-        if (manualCropPoints) {
-            pts = JSON.parse(JSON.stringify(manualCropPoints));
-        } else {
-            pts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
-        }
-        
-        drawCanvas();
-    }
-
-    function drawCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw image
-        ctx.drawImage(cropImage, renderX, renderY, renderW, renderH);
-        // Draw polygon outline
-        ctx.strokeStyle = '#3B82F6';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        pts.forEach((p, i) => {
-            const x = renderX + p[0] * renderW;
-            const y = renderY + p[1] * renderH;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        });
-        ctx.closePath();
-        ctx.stroke();
-        
-        // Draw corner pins
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = '#3B82F6';
-        ctx.lineWidth = 4;
-        pts.forEach((p, i) => {
-            const x = renderX + p[0] * renderW;
-            const y = renderY + p[1] * renderH;
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            
-            // Draw larger transparent hit area for easier touch
-            ctx.beginPath();
-            ctx.arc(x, y, PIN_RADIUS, 0, Math.PI * 2);
-            ctx.fillStyle = (activePointIdx === i) ? 'rgba(59, 130, 246, 0.3)' : 'transparent';
-            ctx.fill();
-        });
-    }
-
-    function getMousePos(evt) {
-        const rect = canvas.getBoundingClientRect();
-        let clientX = evt.clientX;
-        let clientY = evt.clientY;
-        if (evt.touches && evt.touches.length > 0) {
-            clientX = evt.touches[0].clientX;
-            clientY = evt.touches[0].clientY;
-        }
-        return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
-        };
-    }
-
-    function onPointerDown(e) {
-        const pos = getMousePos(e);
-        activePointIdx = -1;
-        // Find if we hit a pin
-        pts.forEach((p, i) => {
-            const px = renderX + p[0] * renderW;
-            const py = renderY + p[1] * renderH;
-            const dist = Math.sqrt(Math.pow(pos.x - px, 2) + Math.pow(pos.y - py, 2));
-            if (dist <= PIN_RADIUS * 1.5) {
-                activePointIdx = i;
-            }
-        });
-        if (activePointIdx !== -1) drawCanvas();
-    }
-
-    function onPointerMove(e) {
-        if (activePointIdx === -1) return;
-        e.preventDefault(); // Prevent scrolling
-        const pos = getMousePos(e);
-        
-        // Convert back to relative coords
-        let relX = (pos.x - renderX) / renderW;
-        let relY = (pos.y - renderY) / renderH;
-        
-        // Clamp to 0-1
-        relX = Math.max(0, Math.min(1, relX));
-        relY = Math.max(0, Math.min(1, relY));
-        
-        pts[activePointIdx] = [relX, relY];
-        
-        drawCanvas();
-    }
-
-    function onPointerUp(e) {
-        activePointIdx = -1;
-        drawCanvas();
-    }
-
-    canvas.addEventListener('mousedown', onPointerDown);
-    canvas.addEventListener('mousemove', onPointerMove);
-    canvas.addEventListener('mouseup', onPointerUp);
-    canvas.addEventListener('mouseleave', onPointerUp);
-    
-    canvas.addEventListener('touchstart', onPointerDown, {passive: false});
-    canvas.addEventListener('touchmove', onPointerMove, {passive: false});
-    canvas.addEventListener('touchend', onPointerUp);
-
-    // Re-draw canvas on resize
-    window.addEventListener('resize', () => {
-        if (cropModal.classList.contains('show')) {
-            initCanvas();
-        }
-    });
+    // Crop editor logic removed from mobile upload
 
     document.getElementById('file-remove').addEventListener('click', () => {
         selectedFile = null;
@@ -910,12 +631,7 @@
         progress.classList.add('show');
 
         const formData = new FormData();
-        formData.append('file', compressedFile || selectedFile);
-        formData.append('client_compressed', 'true');
-        
-        if (manualCropPoints) {
-            formData.append('crop_points', JSON.stringify(manualCropPoints));
-        }
+        formData.append('file', selectedFile);
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', SUBMIT_URL);

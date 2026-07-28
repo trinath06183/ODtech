@@ -174,6 +174,7 @@
 
             <form method="POST" enctype="multipart/form-data" id="upload-form" novalidate>
                 {% csrf_token %}
+                <input type="hidden" name="crop_points" id="crop_points_input" value="">
 
                 {% if meta_form.errors or file_form.errors %}
                 <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-4">
@@ -420,6 +421,12 @@
                         <button class="zoom-btn" onclick="changeZoom(+25)" title="Zoom in">+</button>
                         <button class="zoom-btn" onclick="resetZoom()" title="Fit / Reset" style="font-size:12px; width:36px;">Fit</button>
                     </div>
+                    <!-- Edit Image toolbar (hidden until an image is loaded) -->
+                    <div id="image-edit-toolbar" style="display:none; align-items:center; margin-left:12px;">
+                        <button class="zoom-btn" onclick="openDesktopEditor()" title="Edit Image" style="font-size:12px; padding: 4px 12px; background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; font-weight: 600; width: auto;">
+                            ✏️ Edit Image
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Scrollable zoom viewport -->
@@ -557,6 +564,7 @@
             iframe.src = url;
             iframe.style.display      = 'block';
             zoomToolbar.style.display = 'flex';
+            document.getElementById('image-edit-toolbar').style.display = 'none';
 
         } else if (type.startsWith('image/')) {
             const reader = new FileReader();
@@ -564,6 +572,7 @@
             reader.readAsDataURL(file);
             img.style.display         = 'block';
             zoomToolbar.style.display = 'flex';
+            document.getElementById('image-edit-toolbar').style.display = 'flex';
 
         } else {
             const iconMap = {
@@ -597,6 +606,7 @@
         document.getElementById('doc-preview-iframe').src                = '';
         document.getElementById('preview-filename-label').textContent    = '';
         zoomToolbar.style.display                                        = 'none';
+        document.getElementById('image-edit-toolbar').style.display      = 'none';
         resetZoom();
     }
 
@@ -632,6 +642,293 @@
         document.getElementById('step-divider').className           = "flex-1 h-0.5 bg-slate-200 mx-2";
         document.getElementById('step2-indicator').className        = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-slate-200 text-slate-400";
         document.getElementById('step2-indicator-text').className   = "text-sm font-medium text-slate-400";
+    }
+</script>
+
+<!-- Desktop Edit Modal -->
+<style>
+#desktop-edit-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px);
+    z-index: 100000; display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+#desktop-edit-modal.show { opacity: 1; pointer-events: auto; }
+.desktop-edit-header {
+    padding: 16px 24px; background: #1e293b; display: flex;
+    justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;
+}
+.desktop-edit-header button {
+    padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: none;
+}
+.btn-cancel { background: transparent; color: #cbd5e1; border: 1px solid #475569 !important; }
+.btn-save { background: #6366f1; color: white; }
+.desktop-edit-body {
+    flex: 1; display: flex; overflow: hidden;
+}
+.desktop-edit-sidebar {
+    width: 320px; background: #1e293b; border-left: 1px solid #334155;
+    padding: 24px; display: flex; flex-direction: column; gap: 24px; color: #f8fafc;
+}
+.desktop-edit-canvas-container {
+    flex: 1; position: relative; overflow: hidden; display: flex;
+    align-items: center; justify-content: center; padding: 24px;
+}
+#desktop-crop-canvas {
+    max-width: 100%; max-height: 100%; cursor: crosshair; touch-action: none;
+}
+</style>
+
+<div id="desktop-edit-modal">
+    <div class="desktop-edit-header">
+        <button class="btn-cancel" onclick="closeDesktopEditor()">Cancel</button>
+        <div style="font-weight: 600; color: white; display:flex; gap:16px; align-items:center;">
+            <span>Image Editor</span>
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer;">
+                <input type="checkbox" id="desktop-auto-crop" checked onchange="toggleDesktopAutoCrop(this.checked)" style="width:16px; height:16px;">
+                Auto-Crop Corners
+            </label>
+        </div>
+        <button class="btn-save" onclick="saveDesktopEdits()">Save Edits</button>
+    </div>
+    <div class="desktop-edit-body">
+        <div class="desktop-edit-canvas-container">
+            <canvas id="desktop-crop-canvas"></canvas>
+            <div style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:#cbd5e1; padding:8px 16px; border-radius:20px; font-size:0.85rem; pointer-events:none;">
+                Drag corner pins to map document edges
+            </div>
+        </div>
+        <div class="desktop-edit-sidebar">
+            <div>
+                <label style="font-size:0.9rem; font-weight:600; color:#fff; display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom: 8px;">
+                    <input type="checkbox" id="desktop-vibrant-filter" checked style="width:16px; height:16px; accent-color:#6366f1;">
+                    📄 Apply Scanner Filter
+                </label>
+                <p style="font-size:0.75rem; color:#94a3b8; line-height: 1.4;">Whitens paper background and darkens text for better readability.</p>
+            </div>
+            
+            <hr style="border-color:#334155; margin: 0;">
+            
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:600; margin-bottom: 8px;">
+                    <span>Compression Level</span>
+                    <span id="desktop-compression-val" style="color:#818cf8;">30%</span>
+                </div>
+                <input type="range" id="desktop-compression-slider" min="0" max="95" value="30" style="width:100%; accent-color:#6366f1;" oninput="document.getElementById('desktop-compression-val').textContent = this.value + '%'">
+                <p style="font-size:0.75rem; color:#94a3b8; line-height: 1.4; margin-top: 8px;">Lower values preserve quality, higher values reduce file size.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const deskModal = document.getElementById('desktop-edit-modal');
+    const deskCanvas = document.getElementById('desktop-crop-canvas');
+    const deskCtx = deskCanvas.getContext('2d');
+    let deskCropImage = new Image();
+    let deskRenderW, deskRenderH, deskRenderX, deskRenderY;
+    let deskPts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
+    let deskActivePointIdx = -1;
+    const DESK_PIN_RADIUS = 15;
+    let deskOriginalFile = null;
+
+    function openDesktopEditor() {
+        if (!fileInput.files || !fileInput.files.length) return;
+        deskOriginalFile = fileInput.files[0];
+        
+        deskModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        const objUrl = URL.createObjectURL(deskOriginalFile);
+        deskCropImage = new Image();
+        deskCropImage.onload = () => {
+            requestAnimationFrame(() => {
+                setTimeout(initDesktopCanvas, 60);
+            });
+        };
+        deskCropImage.src = objUrl;
+    }
+
+    function closeDesktopEditor() {
+        deskModal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    function toggleDesktopAutoCrop(checked) {
+        if (checked) {
+            deskPts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
+            drawDesktopCanvas();
+        }
+    }
+
+    function initDesktopCanvas() {
+        const container = deskCanvas.parentElement;
+        if (!container || !deskCropImage.width || !deskCropImage.height) return;
+
+        const cW = container.clientWidth;
+        const cH = container.clientHeight;
+        deskCanvas.width  = cW;
+        deskCanvas.height = cH;
+        
+        const ratio = Math.min(deskCanvas.width / deskCropImage.width, deskCanvas.height / deskCropImage.height);
+        deskRenderW = deskCropImage.width * ratio;
+        deskRenderH = deskCropImage.height * ratio;
+        deskRenderX = (deskCanvas.width - deskRenderW) / 2;
+        deskRenderY = (deskCanvas.height - deskRenderH) / 2;
+        
+        // Reset points when opened
+        deskPts = [[0.1, 0.1], [0.9, 0.1], [0.9, 0.9], [0.1, 0.9]];
+        drawDesktopCanvas();
+    }
+
+    function drawDesktopCanvas() {
+        deskCtx.clearRect(0, 0, deskCanvas.width, deskCanvas.height);
+        deskCtx.drawImage(deskCropImage, deskRenderX, deskRenderY, deskRenderW, deskRenderH);
+        
+        deskCtx.strokeStyle = '#6366f1';
+        deskCtx.lineWidth = 2;
+        deskCtx.beginPath();
+        deskPts.forEach((p, i) => {
+            const x = deskRenderX + p[0] * deskRenderW;
+            const y = deskRenderY + p[1] * deskRenderH;
+            if (i === 0) deskCtx.moveTo(x, y);
+            else deskCtx.lineTo(x, y);
+        });
+        deskCtx.closePath();
+        deskCtx.stroke();
+        
+        deskCtx.fillStyle = '#fff';
+        deskCtx.strokeStyle = '#6366f1';
+        deskCtx.lineWidth = 4;
+        deskPts.forEach((p, i) => {
+            const x = deskRenderX + p[0] * deskRenderW;
+            const y = deskRenderY + p[1] * deskRenderH;
+            deskCtx.beginPath();
+            deskCtx.arc(x, y, 8, 0, Math.PI * 2);
+            deskCtx.fill();
+            deskCtx.stroke();
+            
+            deskCtx.beginPath();
+            deskCtx.arc(x, y, DESK_PIN_RADIUS, 0, Math.PI * 2);
+            deskCtx.fillStyle = (deskActivePointIdx === i) ? 'rgba(99, 102, 241, 0.3)' : 'transparent';
+            deskCtx.fill();
+        });
+    }
+
+    function getDeskMousePos(evt) {
+        const rect = deskCanvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+    deskCanvas.addEventListener('mousedown', (e) => {
+        const pos = getDeskMousePos(e);
+        deskActivePointIdx = -1;
+        deskPts.forEach((p, i) => {
+            const px = deskRenderX + p[0] * deskRenderW;
+            const py = deskRenderY + p[1] * deskRenderH;
+            const dist = Math.sqrt(Math.pow(pos.x - px, 2) + Math.pow(pos.y - py, 2));
+            if (dist <= DESK_PIN_RADIUS * 2) {
+                deskActivePointIdx = i;
+                document.getElementById('desktop-auto-crop').checked = false;
+            }
+        });
+        if (deskActivePointIdx !== -1) drawDesktopCanvas();
+    });
+
+    deskCanvas.addEventListener('mousemove', (e) => {
+        if (deskActivePointIdx === -1) return;
+        e.preventDefault();
+        const pos = getDeskMousePos(e);
+        let relX = (pos.x - deskRenderX) / deskRenderW;
+        let relY = (pos.y - deskRenderY) / deskRenderH;
+        relX = Math.max(0, Math.min(1, relX));
+        relY = Math.max(0, Math.min(1, relY));
+        deskPts[deskActivePointIdx] = [relX, relY];
+        drawDesktopCanvas();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (deskActivePointIdx !== -1) {
+            deskActivePointIdx = -1;
+            drawDesktopCanvas();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (deskModal.classList.contains('show')) initDesktopCanvas();
+    });
+
+    function applyDeskFilter(ctx, width, height) {
+        const id = ctx.getImageData(0, 0, width, height);
+        const data = id.data;
+        const contrast = 2.2;
+        const brightness = 40;
+        const intercept = 128 * (1 - contrast) + brightness;
+        
+        for(let i = 0; i < data.length; i += 4) {
+            let r = data[i] * contrast + intercept;
+            let g = data[i+1] * contrast + intercept;
+            let b = data[i+2] * contrast + intercept;
+            let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            
+            if (gray > 160) {
+                r = 255; g = 255; b = 255;
+            } else {
+                r -= 30; g -= 30; b -= 30;
+            }
+            data[i] = Math.max(0, Math.min(255, r));
+            data[i+1] = Math.max(0, Math.min(255, g));
+            data[i+2] = Math.max(0, Math.min(255, b));
+        }
+        ctx.putImageData(id, 0, 0);
+    }
+
+    function saveDesktopEdits() {
+        const btn = document.querySelector('.btn-save');
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        const useFilter = document.getElementById('desktop-vibrant-filter').checked;
+        const compVal = parseInt(document.getElementById('desktop-compression-slider').value, 10);
+        const quality = 1.0 - (compVal / 100);
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = deskCropImage.width;
+        tempCanvas.height = deskCropImage.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(deskCropImage, 0, 0);
+
+        if (useFilter) {
+            applyDeskFilter(tCtx, tempCanvas.width, tempCanvas.height);
+        }
+
+        tempCanvas.toBlob(blob => {
+            if (!blob) return;
+            // Create new File from blob
+            const newFile = new File([blob], deskOriginalFile.name, { type: 'image/jpeg' });
+            
+            // Replace in fileInput
+            const dt = new DataTransfer();
+            dt.items.add(newFile);
+            fileInput.files = dt.files;
+
+            // Save crop points
+            const isAutoCrop = document.getElementById('desktop-auto-crop').checked;
+            if (!isAutoCrop) {
+                document.getElementById('crop_points_input').value = JSON.stringify(deskPts);
+            } else {
+                document.getElementById('crop_points_input').value = ""; // Clear if auto-crop
+            }
+
+            closeDesktopEditor();
+            showFilePreview(newFile); // Refresh preview
+            
+            btn.textContent = 'Save Edits';
+            btn.disabled = false;
+        }, 'image/jpeg', quality);
     }
 </script>
 {% endblock %}

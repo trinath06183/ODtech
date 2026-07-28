@@ -165,6 +165,25 @@ class DocumentUploadView(EDMSPermissionMixin, EDMSContextMixin, TemplateView):
         if file_form.is_valid() and meta_form.is_valid():
             try:
                 uploaded = file_form.cleaned_data['file']
+
+                crop_points_str = request.POST.get('crop_points')
+                if crop_points_str and uploaded.content_type and uploaded.content_type.startswith('image/'):
+                    import json
+                    try:
+                        crop_points = json.loads(crop_points_str)
+                        if isinstance(crop_points, list) and len(crop_points) == 4:
+                            from mobile_upload.utils import manual_crop_document
+                            from django.core.files.uploadedfile import InMemoryUploadedFile
+                            from io import BytesIO
+                            
+                            # Apply OpenCV perspective warp
+                            cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
+                            buffer = BytesIO(cropped_bytes)
+                            uploaded = InMemoryUploadedFile(
+                                buffer, 'file', uploaded.name, uploaded.content_type, len(cropped_bytes), None
+                            )
+                    except Exception as e:
+                        pass
                 validated = meta_form.cleaned_data.copy()
                 # Remove the tags field — handled separately in create_document
                 tags = validated.pop('tags', [])
