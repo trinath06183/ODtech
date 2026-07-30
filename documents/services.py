@@ -218,9 +218,12 @@ class PDFService:
 
     @classmethod
     def render_html(cls, document, request=None, for_pdf=False):
+        from config.models import CompanyProfile
+        company = CompanyProfile.objects.first()
         context = {
             "doc": document,
             "is_pdf": for_pdf,
+            "header_address": getattr(company, 'header_address', '') or '',
             **cls.asset_context(for_pdf=for_pdf)
         }
         return render_to_string(cls.template_for(document.type), context, request=request)

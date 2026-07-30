@@ -43,6 +43,13 @@ class CompanyProfile(TimeStampedModel):
         help_text="If disabled, the delete option for documents will be hidden and blocked."
     )
     
+    # Document Header Address Panel
+    header_address = models.TextField(
+        blank=True, null=True,
+        verbose_name="Document Header Address",
+        help_text="Address text shown in the top-right panel of all printed documents. Use plain text with newlines."
+    )
+
     # System Settings
     admin_backup_email = models.EmailField(
         blank=True, null=True,

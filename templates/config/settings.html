@@ -56,6 +56,26 @@
                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
                     <p class="mt-1 text-xs text-gray-500">Email address to receive daily database backups.</p>
                 </div>
+
+                <!-- Document Header Address Panel -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Document Header Address
+                    </label>
+                    <textarea name="header_address" rows="8"
+                              class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 shadow-sm transition font-mono resize-y">{% if company.header_address %}{{ company.header_address }}{% else %}Corporate Office: G-305, GK Palacio, Boradewadi, Moshi, Pune, Maharashtra - 412105
+
+HO(Head Office): Plot No. - 478, At-Jaripada, Po-Urali, Bhubaneswar- 754020
+
+Reg. Ofc: Plot No. 3551, At-Talua, Po-Saudia, Dist- Jajpur, Odisha, India -754292{% endif %}</textarea>
+                    <p class="mt-1 text-xs text-gray-500">
+                        This text appears in the <strong>top-right address panel</strong> of all printed documents. Edit freely — each new line becomes a new line in the header. To restore defaults, clear this field and save.
+                    </p>
+                </div>
             </div>
         </div>
 

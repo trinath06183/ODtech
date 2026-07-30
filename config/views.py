@@ -20,6 +20,8 @@ def settings_view(request):
         terms_conditions  = request.POST.get('terms_conditions', '').strip()
         doc_number_format = request.POST.get('doc_number_format', 'OD-{FY}-{MM}-{N}').strip()
         allow_document_deletion = request.POST.get('allow_document_deletion') == 'on'
+        header_address    = request.POST.get('header_address', '').strip()
+        admin_backup_email = request.POST.get('admin_backup_email', '').strip()
 
         seq_qtn = request.POST.get('seq_qtn')
         seq_inv = request.POST.get('seq_inv')
@@ -43,6 +45,12 @@ def settings_view(request):
             company.challan_prefix   = challan_prefix or 'CHL-'
             company.terms_conditions = terms_conditions or None
             company.allow_document_deletion = allow_document_deletion
+            company.header_address = header_address if header_address else getattr(company, 'header_address', None)
+            if admin_backup_email:
+                company.admin_backup_email = admin_backup_email
+            elif 'admin_backup_email' in request.POST and request.POST['admin_backup_email'].strip() == '':
+                # User explicitly cleared the field
+                company.admin_backup_email = None
             # Validate format value against allowed choices
             valid_formats = [c[0] for c in CompanyProfile.DOC_NUMBER_FORMAT_CHOICES]
             if doc_number_format in valid_formats:
