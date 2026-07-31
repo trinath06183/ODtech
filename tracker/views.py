@@ -2795,73 +2795,111 @@ def bulk_update_stages_api(request):
         with transaction.atomic():
             updated_count = products_qs.update(**update_fields)
 
-            audit_entries = []
-            for row in snapshots:
-                changes = {}
-                if customer_stage is not None:
-                    changes['customer_stage'] = {
-                        'old': row.get('customer_stage') or '',
-                        'new': customer_stage,
-                    }
-                if supplier_stage is not None:
-                    changes['supplier_stage'] = {
-                        'old': row.get('supplier_stage') or '',
-                        'new': supplier_stage,
-                    }
-                changes['action'] = 'bulk_update_stages'
-                audit_entries.append(AuditLog(
-                    user=request.user,
-                    action='UPDATE',
-                    model_name='Product',
-                    object_id=str(row['id']),
-                    object_repr=row['item_name'],
-                    changes=json.dumps(changes),
-                ))
-            AuditLog.objects.bulk_create(audit_entries)
+              "selling_price_inc_gst": 1770.00,
+              "gst_percentage": 18.0 }
 
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': f'Database error: {str(e)}'}, status=500)
+        Mode B — margin percentage (calculated per-product from its buying_price_ex_gst):
+            { "product_ids": [...], "mode": "margin",
+              "margin_percent": 25.0,
+              "gst_percentage": 18.0 }
 
-    return JsonResponse({'success': True, 'updated_count': updated_count})
+    Returns:
+        { "success": true, "updated_count": N, "skipped_no_price": K }
+    """
+    from django.db import transaction
+    from decimal import Decimal, ROUND_HALF_UP
 
-
-@require_POST
-@login_required
-def add_order_expense_api(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
     try:
         data = json.loads(request.body)
-        expense = OrderExpense.objects.create(
-            order=order,
-            expense_name=data.get('expense_name', ''),
-            amount_ex_gst=data.get('amount_ex_gst', 0),
-            gst_percentage=data.get('gst_percentage', 18),
-            amount_inc_gst=data.get('amount_inc_gst', 0),
-            remark=data.get('remark', ''),
-            created_by=request.user
-        )
-        return JsonResponse({'success': True, 'expense_id': str(expense.id)})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON body.'}, status=400)
 
-@require_POST
-@login_required
-def edit_order_expense_api(request, expense_id):
-    expense = get_object_or_404(OrderExpense, id=expense_id)
+    product_ids = data.get('product_ids', [])
+    mode        = (data.get('mode') or '').strip().lower()
+
+    if not product_ids:
+        return JsonResponse({'success': False, 'error': 'No product IDs supplied.'}, status=400)
+    if mode not in ('flat', 'margin'):
+        return JsonResponse({'success': False, 'error': 'mode must be "flat" or "margin".'}, status=400)
+
     try:
-        data = json.loads(request.body)
-        expense.expense_name = data.get('expense_name', expense.expense_name)
-        expense.amount_ex_gst = data.get('amount_ex_gst', expense.amount_ex_gst)
-        expense.gst_percentage = data.get('gst_percentage', expense.gst_percentage)
-        expense.amount_inc_gst = data.get('amount_inc_gst', expense.amount_inc_gst)
-        expense.remark = data.get('remark', expense.remark)
-        expense.save()
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        gst_pct = Decimal(str(data.get('gst_percentage') or 18))
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'gst_percentage must be numeric.'}, status=400)
 
-@require_POST
-@login_required
+    products = list(Product.objects.filter(id__in=product_ids))
+    if not products:
+        return JsonResponse({'success': False, 'error': 'No matching products found.'}, status=404)
+
+    updated_count   = 0
+    skipped_no_price = 0
+    audit_entries   = []
+
+    try:
+        with transaction.atomic():
+            for product in products:
+                if mode == 'flat':
+                    try:
+                        sp_ex  = Decimal(str(data.get('selling_price_ex_gst') or 0))
+                        sp_inc = Decimal(str(data.get('selling_price_inc_gst') or 0))
+                    except Exception:
+                        return JsonResponse({'success': False, 'error': 'Selling prices must be numeric.'}, status=400)
+
+                    old_ex  = product.selling_price_ex_gst
+                    old_inc = product.selling_price_inc_gst
+                    product.selling_price_ex_gst  = sp_ex
+                    product.selling_price_inc_gst = sp_inc
+                    product.gst_percentage        = gst_pct
+                    product.updated_by            = request.user
+                    product.save(update_fields=[
+                        'selling_price_ex_gst', 'selling_price_inc_gst',
+                        'gst_percentage', 'updated_by', 'updated_at'
+                    ])
+                    audit_entries.append(AuditLog(
+                        user=request.user,
+                        action='UPDATE',
+                        model_name='Product',
+                        object_id=str(product.id),
+                        object_repr=product.item_name,
+                        changes=json.dumps({
+                            'selling_price_ex_gst': {'old': str(old_ex), 'new': str(sp_ex)},
+                            'selling_price_inc_gst': {'old': str(old_inc), 'new': str(sp_inc)},
+                            'action': 'bulk_flat_price',
+                        }),
+                    ))
+                    updated_count += 1
+
+                else:  # margin mode
+                    try:
+                        margin_pct = Decimal(str(data.get('margin_percent') or 0))
+                    except Exception:
+                        return JsonResponse({'success': False, 'error': 'margin_percent must be numeric.'}, status=400)
+
+                    buy_ex = product.buying_price_ex_gst
+                    if not buy_ex or buy_ex <= 0:
+                        skipped_no_price += 1
+                        continue
+
+                    sp_ex  = (buy_ex * (1 + margin_pct / 100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    sp_inc = (sp_ex * (1 + gst_pct / 100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+                    old_ex  = product.selling_price_ex_gst
+                    old_inc = product.selling_price_inc_gst
+                    product.selling_price_ex_gst  = sp_ex
+                    product.selling_price_inc_gst = sp_inc
+                    product.gst_percentage        = gst_pct
+                    product.updated_by            = request.user
+                    product.save(update_fields=[
+                        'selling_price_ex_gst', 'selling_price_inc_gst',
+                        'gst_percentage', 'updated_by', 'updated_at'
+                    ])
+                    audit_entries.append(AuditLog(
+                        user=request.user,
+                        action='UPDATE',
+                        model_name='Product',
+                        object_id=str(product.id),
+                        object_repr=product.item_name,
+                        changes=json.dumps({
                             'selling_price_ex_gst': {'old': str(old_ex), 'new': str(sp_ex)},
                             'selling_price_inc_gst': {'old': str(old_inc), 'new': str(sp_inc)},
                             'margin_percent': str(margin_pct),
