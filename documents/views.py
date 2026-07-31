@@ -405,6 +405,7 @@ def document_form(request, doc=None, default_type='QTN'):
         place_of_supply = request.POST.get('place_of_supply', '21-Odisha').strip()
         enable_warranty = request.POST.get('enable_warranty') in ('on', 'true', True)
         shipping_address = request.POST.get('shipping_address', '').strip()
+        shipping_name = request.POST.get('shipping_name', '').strip()
         repeat_header = request.POST.get('repeat_header') in ('on', 'true', True)
         
         # Transporter Details POST parameters (For Delivery Challans)
@@ -493,6 +494,7 @@ def document_form(request, doc=None, default_type='QTN'):
                     self.place_of_supply = place_of_supply
                     self.enable_warranty = enable_warranty
                     self.shipping_address = shipping_address
+                    self.shipping_name = shipping_name
                     self.repeat_header = repeat_header
                     self.transporter_details = transporter_details
                     self.vehicle_number = vehicle_number
@@ -544,6 +546,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 place_of_supply=place_of_supply,
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
+                shipping_name=shipping_name,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
                 transporter_details=transporter_details,
@@ -580,6 +583,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 place_of_supply=place_of_supply,
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
+                shipping_name=shipping_name,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
                 transporter_details=transporter_details,

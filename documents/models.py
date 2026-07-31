@@ -58,6 +58,7 @@ class Document(TimeStampedModel):
     table_columns = models.JSONField(blank=True, null=True)
     enable_warranty = models.BooleanField(default=False)
     shipping_address = models.TextField(blank=True, null=True)
+    shipping_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Shipping Name")
     repeat_header = models.BooleanField(default=False)
     
     DISCOUNT_TYPES = (

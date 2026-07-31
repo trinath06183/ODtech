@@ -33,7 +33,7 @@
 
     <div class="info-col" style="width: 35%; padding-left: 15px; border-left: 1px solid #ddd;">
         <div class="text-red mb-1" style="font-size: 11px;">Ship To:</div>
-        <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.contact.name }}</div>
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.shipping_name|default:doc.contact.name }}</div>
         <div style="font-size: 9.5px; margin-bottom: 4px; max-width: 95%;">
             {{ doc.shipping_address|linebreaksbr }}
         </div>

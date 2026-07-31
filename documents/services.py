@@ -356,6 +356,7 @@ class DocumentService:
             table_columns=kwargs.get("table_columns") or None,
             enable_warranty=kwargs.get("enable_warranty", False),
             shipping_address=kwargs.get("shipping_address") or None,
+            shipping_name=kwargs.get("shipping_name") or None,
             repeat_header=kwargs.get("repeat_header", False),
             source_document=kwargs.get("source_document"),
         )
@@ -425,6 +426,8 @@ class DocumentService:
             document.enable_warranty = kwargs.get("enable_warranty")
         if "shipping_address" in kwargs:
             document.shipping_address = kwargs.get("shipping_address") or None
+        if "shipping_name" in kwargs:
+            document.shipping_name = kwargs.get("shipping_name") or None
         if "repeat_header" in kwargs:
             document.repeat_header = kwargs.get("repeat_header")
         document.save()

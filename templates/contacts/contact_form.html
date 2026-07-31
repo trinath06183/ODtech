@@ -2,16 +2,30 @@
 {% block header %}{{ form_title }}{% endblock %}
 {% block content %}
 
-<div class="max-w-2xl mx-auto">
-    <div class="mb-6">
+<div class="max-w-2xl mx-auto" x-data="contactForm()">
+    <div class="mb-6 flex items-center justify-between">
         <a href="{% url 'contact_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm w-fit">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             Back to Parties
         </a>
     </div>
 
-    ">{{ msg }}</div>
-    {% endfor %}{% endif %}
+    <!-- Success / Error Toast Notification -->
+    <div x-show="toast.show" x-transition.opacity
+         class="mb-6 p-4 rounded-xl text-sm font-medium flex items-center justify-between border"
+         :class="toast.type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30'"
+         style="display:none;">
+        <span x-text="toast.message"></span>
+        <button type="button" @click="toast.show = false" class="text-gray-400 hover:text-white text-lg font-bold ml-4">&times;</button>
+    </div>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="mb-6 p-4 rounded-xl text-sm font-medium flex items-center gap-2 {% if msg.tags == 'error' %}bg-red-500/20 text-red-200 border border-red-500/30{% else %}bg-emerald-500/20 text-emerald-200 border border-emerald-500/30{% endif %}">
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
 
     <div class="glass rounded-2xl p-8">
         <div class="flex items-center space-x-3 mb-8">
@@ -30,53 +44,68 @@
                 <!-- Name -->
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Party Name <span class="text-red-400">*</span></label>
-                    <input type="text" name="name" value="{{ contact.name|default:'' }}" required placeholder="e.g. Acme Industries"
+                    <input type="text" name="name" x-model="form.name" required placeholder="e.g. Acme Industries"
                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
                 </div>
 
                 <!-- Type -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Type <span class="text-red-400">*</span></label>
-                    <select name="contact_type" class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 appearance-none transition">
-                        <option value="Customer" {% if contact.contact_type == 'Customer' %}selected{% endif %}>Customer</option>
-                        <option value="Vendor"   {% if contact.contact_type == 'Vendor'   %}selected{% endif %}>Vendor</option>
-                        <option value="Both"     {% if contact.contact_type == 'Both'     %}selected{% endif %}>Both (Customer & Vendor)</option>
+                    <select name="contact_type" x-model="form.contact_type" class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 appearance-none transition">
+                        <option value="Customer">Customer</option>
+                        <option value="Vendor">Vendor</option>
+                        <option value="Both">Both (Customer & Vendor)</option>
                     </select>
                 </div>
 
                 <!-- Phone -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Phone</label>
-                    <input type="text" name="phone" value="{{ contact.phone|default:'' }}" placeholder="+91 98765 43210"
+                    <input type="text" name="phone" x-model="form.phone" placeholder="+91 98765 43210"
                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
                 </div>
 
                 <!-- Email -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <input type="email" name="email" value="{{ contact.email|default:'' }}" placeholder="accounts@company.com"
+                    <input type="email" name="email" x-model="form.email" placeholder="accounts@company.com"
                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
                 </div>
 
                 <!-- GSTIN -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">GSTIN</label>
-                    <input type="text" name="gstin" value="{{ contact.gstin|default:'' }}" placeholder="e.g. 21AAHFO5846M1ZY" maxlength="15"
-                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-300">GSTIN</label>
+                        <button type="button" @click="fetchGstinDetails()"
+                            :disabled="fetchingGstin || !form.gstin || form.gstin.trim().length !== 15"
+                            class="text-xs font-bold text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-lg border border-purple-500/30 transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                            <template x-if="!fetchingGstin">
+                                <span>⚡ Fetch Details</span>
+                            </template>
+                            <template x-if="fetchingGstin">
+                                <span class="flex items-center gap-1">
+                                    <svg class="animate-spin h-3 w-3 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Fetching...
+                                </span>
+                            </template>
+                        </button>
+                    </div>
+                    <input type="text" name="gstin" x-model="form.gstin" @input="form.gstin = form.gstin.toUpperCase(); autoExtractPan()" placeholder="e.g. 21AAHFO5846M1ZY" maxlength="15"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition uppercase">
                 </div>
 
                 <!-- PAN -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">PAN</label>
-                    <input type="text" name="pan" value="{{ contact.pan|default:'' }}" placeholder="e.g. AAHFO5846M" maxlength="10"
-                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition">
+                    <input type="text" name="pan" x-model="form.pan" placeholder="e.g. AAHFO5846M" maxlength="10"
+                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition uppercase">
                 </div>
 
                 <!-- Address -->
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Billing Address</label>
-                    <textarea name="address" rows="3" placeholder="Street, City, State, PIN"
-                              class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition resize-none">{{ contact.address|default:'' }}</textarea>
+                    <textarea name="address" x-model="form.address" rows="3" placeholder="Street, City, State, PIN"
+                              class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition resize-none"></textarea>
                 </div>
             </div>
 
@@ -88,5 +117,153 @@
             </div>
         </form>
     </div>
+
+    <!-- GSTIN Confirmation Modal -->
+    <div x-show="showGstinModal" x-transition.opacity
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        style="display: none;">
+        <div @click.away="showGstinModal = false"
+            class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative space-y-5 text-left">
+            
+            <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold">
+                        🏛️
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">GSTIN Details Found</h3>
+                        <p class="text-xs text-gray-400">Review details before applying to form</p>
+                    </div>
+                </div>
+                <button type="button" @click="showGstinModal = false" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+
+            <div class="space-y-3 bg-slate-800/60 p-4 rounded-2xl border border-white/5 text-sm">
+                <div class="flex justify-between items-center pb-2 border-b border-white/5">
+                    <span class="text-gray-400 text-xs">GSTIN Status & Entity</span>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                              x-text="gstinData.taxpayer_type || 'Regular Taxpayer'"></span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                              :class="gstinData.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'"
+                              x-text="gstinData.status || 'Active'"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Party / Business Name <span class="text-purple-400 text-[11px] font-normal">(Confirm / Edit below)</span></label>
+                    <input type="text" x-model="gstinData.name" placeholder="Type or enter Party Name..."
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm font-bold focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30">
+                </div>
+
+                <div x-show="gstinData.legal_name && gstinData.legal_name !== gstinData.trade_name" class="text-xs text-gray-400 italic">
+                    Legal Registered Name: <span class="text-gray-300 font-medium" x-text="gstinData.legal_name"></span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                    <div>
+                        <div class="text-xs text-gray-400">GSTIN</div>
+                        <div class="text-purple-300 font-mono font-semibold" x-text="gstinData.gstin"></div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400">PAN Number</div>
+                        <div class="text-gray-200 font-mono font-semibold" x-text="gstinData.pan"></div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-white/5">
+                    <div class="text-xs text-gray-400">Place of Supply / State</div>
+                    <div class="text-gray-200 font-medium" x-text="gstinData.place_of_supply"></div>
+                </div>
+
+                <div class="pt-2 border-t border-white/5">
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Registered Address <span class="text-purple-400 text-[11px] font-normal">(Confirm / Edit below)</span></label>
+                    <textarea x-model="gstinData.address" rows="2" placeholder="Street, City, State, PIN"
+                        class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-xl text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500 resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" @click="showGstinModal = false"
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 text-sm font-semibold rounded-xl transition">
+                    Cancel
+                </button>
+                <button type="button" @click="applyGstinDetails()"
+                    class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-purple-500/20 transition flex items-center gap-1.5">
+                    <span>✓ Apply to Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+function contactForm() {
+    return {
+        form: {
+            name: '{{ contact.name|default:""|escapejs }}',
+            contact_type: '{{ contact.contact_type|default:"Customer"|escapejs }}',
+            email: '{{ contact.email|default:""|escapejs }}',
+            phone: '{{ contact.phone|default:""|escapejs }}',
+            gstin: '{{ contact.gstin|default:""|escapejs }}',
+            pan: '{{ contact.pan|default:""|escapejs }}',
+            address: '{{ contact.address|default:""|escapejs }}',
+        },
+        fetchingGstin: false,
+        showGstinModal: false,
+        gstinData: {},
+        toast: { show: false, message: '', type: 'success' },
+
+        showToast(msg, type = 'success') {
+            this.toast.message = msg;
+            this.toast.type = type;
+            this.toast.show = true;
+            setTimeout(() => { this.toast.show = false; }, 5000);
+        },
+
+        autoExtractPan() {
+            const g = (this.form.gstin || '').trim();
+            if (g.length >= 12) {
+                const p = g.substring(2, 12);
+                if (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(p)) {
+                    this.form.pan = p;
+                }
+            }
+        },
+
+        async fetchGstinDetails() {
+            const g = (this.form.gstin || '').trim();
+            if (g.length !== 15) {
+                this.showToast('Please enter a valid 15-character GSTIN.', 'error');
+                return;
+            }
+            this.fetchingGstin = true;
+            try {
+                const res = await fetch(`/contacts/api/gstin-lookup/?gstin=${encodeURIComponent(g)}`);
+                const data = await res.json();
+                this.fetchingGstin = false;
+
+                if (!data.success) {
+                    this.showToast(data.error || 'Could not fetch GSTIN details.', 'error');
+                    return;
+                }
+
+                this.gstinData = data;
+                this.showGstinModal = true;
+            } catch (e) {
+                this.fetchingGstin = false;
+                this.showToast('Failed to connect to GST lookup service.', 'error');
+            }
+        },
+
+        applyGstinDetails() {
+            if (this.gstinData.name) this.form.name = this.gstinData.name;
+            if (this.gstinData.pan) this.form.pan = this.gstinData.pan;
+            if (this.gstinData.address) this.form.address = this.gstinData.address;
+            this.showGstinModal = false;
+            this.showToast('GSTIN details applied successfully! Please confirm details and save.');
+        }
+    }
+}
+</script>
 {% endblock %}

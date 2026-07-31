@@ -31,6 +31,214 @@ def create_customer_api(request):
     return JsonResponse({'error': 'Invalid method'}, status=405)
 
 
+# ── GSTIN Auto-Fetch API ────────────────────────────────────────────────────────
+STATE_CODES = {
+    '01': '01-Jammu & Kashmir', '02': '02-Himachal Pradesh', '03': '03-Punjab', '04': '04-Chandigarh',
+    '05': '05-Uttarakhand', '06': '06-Haryana', '07': '07-Delhi', '08': '08-Rajasthan', '09': '09-Uttar Pradesh',
+    '10': '10-Bihar', '11': '11-Sikkim', '12': '12-Arunachal Pradesh', '13': '13-Nagaland', '14': '14-Manipur',
+    '15': '15-Mizoram', '16': '16-Tripura', '17': '17-Meghalaya', '18': '18-Assam', '19': '19-West Bengal',
+    '20': '20-Jharkhand', '21': '21-Odisha', '22': '22-Chhattisgarh', '23': '23-Madhya Pradesh', '24': '24-Gujarat',
+    '26': '26-Dadra & Nagar Haveli and Daman & Diu', '27': '27-Maharashtra', '29': '29-Karnataka', '30': '30-Goa',
+    '31': '31-Lakshadweep', '32': '32-Kerala', '33': '33-Tamil Nadu', '34': '34-Puducherry', '35': '35-Andaman & Nicobar Islands',
+    '36': '36-Telangana', '37': '37-Andhra Pradesh', '38': '38-Ladakh'
+}
+
+def gstin_lookup_api(request):
+    import os
+    import urllib.request
+    import urllib.parse
+    import ssl
+
+    gstin = request.GET.get('gstin', '').strip().upper()
+    if not gstin or len(gstin) != 15:
+        return JsonResponse({'success': False, 'error': 'GSTIN must be exactly 15 characters long.'})
+
+    from core.validators import GSTIN_PATTERN
+    if not GSTIN_PATTERN.match(gstin):
+        return JsonResponse({'success': False, 'error': 'Invalid GSTIN format. Example: 21AAAC0000A1Z5'})
+
+    state_code = gstin[:2]
+    place_of_supply = STATE_CODES.get(state_code, f'{state_code}-Other')
+    pan = gstin[2:12]
+
+    # PAN Entity Type Mapping (4th char)
+    pan_type_char = pan[3:4] if len(pan) >= 4 else ''
+    pan_entity_map = {
+        'C': 'Company / Pvt Ltd',
+        'P': 'Individual / Proprietorship',
+        'F': 'Partnership Firm',
+        'H': 'HUF',
+        'A': 'Association of Persons',
+        'T': 'Trust',
+        'G': 'Government Body',
+        'L': 'Local Authority'
+    }
+    taxpayer_type = pan_entity_map.get(pan_type_char, 'Regular Taxpayer')
+
+    legal_name = ''
+    trade_name = ''
+    address = ''
+    status = 'Active'
+    pincode = ''
+    state_name = place_of_supply.split('-', 1)[-1] if '-' in place_of_supply else ''
+    fetched = False
+
+    # Create SSL context
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    # Read API Key from .env
+    import http.client as _http_client
+
+    gst_api_key = os.environ.get('GST_API_KEY', '').strip(' "\'')
+
+    # ── Primary: GST Insights API (gst-insights-api.p.rapidapi.com) ──────────
+    if gst_api_key and not fetched:
+        try:
+            conn = _http_client.HTTPSConnection("gst-insights-api.p.rapidapi.com", timeout=6)
+            conn.request("GET", f"/getGSTDetailsUsingGST/{gstin}", headers={
+                'x-rapidapi-key': gst_api_key,
+                'x-rapidapi-host': 'gst-insights-api.p.rapidapi.com',
+                'Content-Type': 'application/json'
+            })
+            res = conn.getresponse()
+            raw = res.read().decode('utf-8')
+            print(f"[GST Insights] Status={res.status}, Body={raw[:500]}")
+            if res.status == 200:
+                payload = json.loads(raw)
+
+                # data field is a LIST — take first element
+                d = payload
+                if isinstance(payload, dict) and 'data' in payload:
+                    inner = payload['data']
+                    if isinstance(inner, list) and len(inner) > 0:
+                        d = inner[0]       # first record
+                    elif isinstance(inner, dict):
+                        d = inner
+
+                if isinstance(d, dict):
+                    # Legal / Trade name
+                    t_name = (d.get('tradeName') or d.get('tradeNam') or d.get('trade_name')
+                              or d.get('businessName') or d.get('BusinessName') or '')
+                    l_name = (d.get('legalName') or d.get('lgnm') or d.get('legal_name')
+                              or d.get('LegalName') or d.get('name') or '')
+                    st     = (d.get('status') or d.get('sts') or d.get('taxType') or 'Active')
+                    ctb    = (d.get('taxType') or d.get('ctb') or d.get('taxpayer_type') or taxpayer_type)
+
+                    # ── Address: GST Insights uses additionalAddress list OR pradr.addr ──
+                    addr_str = ''
+                    # Try additionalAddress first (richer data)
+                    add_list = d.get('additionalAddress', [])
+                    if isinstance(add_list, list) and len(add_list) > 0:
+                        aobj = add_list[0]
+                        if isinstance(aobj, dict):
+                            a = aobj.get('address', aobj)
+                        else:
+                            a = {}
+                    else:
+                        # Fallback to pradr.addr or pradr
+                        pradr = d.get('pradr', {})
+                        a = pradr.get('addr', pradr) if isinstance(pradr, dict) else {}
+                        if not a:
+                            a = d.get('address', {})
+
+                    if isinstance(a, str):
+                        addr_str = a
+                    elif isinstance(a, dict):
+                        bno  = a.get('buildingNumber','') or a.get('bno','') or a.get('bnm','')
+                        bnm  = a.get('buildingName','') or a.get('flno','')
+                        st_v = a.get('street','') or a.get('st','')
+                        loc  = a.get('location','') or a.get('locality','') or a.get('loc','')
+                        lm   = a.get('landMark','') or a.get('landmark','')
+                        dst  = a.get('district','') or a.get('dst','') or a.get('city','')
+                        stcd = a.get('stateCode','') or a.get('state','') or a.get('stcd','') or state_name
+                        pncd = a.get('pincode','') or a.get('pncd','') or a.get('pin','')
+                        if pncd:
+                            pincode = str(pncd)
+                        parts = [p for p in [bno, bnm, st_v, loc, lm, dst, stcd,
+                                             (f"PIN: {pncd}" if pncd else '')] if p]
+                        addr_str = ', '.join(parts)
+
+                    if l_name or t_name or addr_str:
+                        legal_name    = str(l_name).strip()
+                        trade_name    = str(t_name).strip()
+                        status        = str(st).strip() or 'Active'
+                        taxpayer_type = str(ctb).strip() or taxpayer_type
+                        if addr_str:
+                            address = str(addr_str).strip()
+                        fetched = True
+                        print(f"[GST Insights SUCCESS] Legal={legal_name}, Trade={trade_name}, Addr={address}")
+            conn.close()
+        except Exception as e:
+            print(f"[GST Insights ERROR] {e}")
+
+    # ── Fallback: gst-api2.p.rapidapi.com ────────────────────────────────────
+    if gst_api_key and not fetched:
+        try:
+            conn2 = _http_client.HTTPSConnection("gst-api2.p.rapidapi.com", timeout=6)
+            conn2.request("GET", f"/api/gst/{gstin}", headers={
+                'x-rapidapi-key': gst_api_key,
+                'x-rapidapi-host': 'gst-api2.p.rapidapi.com',
+                'Content-Type': 'application/json'
+            })
+            res2 = conn2.getresponse()
+            raw2 = res2.read().decode('utf-8')
+            print(f"[GST API2] Status={res2.status}, Body={raw2[:300]}")
+            if res2.status == 200:
+                d2 = json.loads(raw2)
+                for key in ('data', 'result', 'details'):
+                    if isinstance(d2, dict) and key in d2 and isinstance(d2[key], dict):
+                        d2 = d2[key]
+                if isinstance(d2, dict):
+                    t2 = d2.get('tradeNam') or d2.get('trade_name') or d2.get('tradeName') or ''
+                    l2 = d2.get('lgnm') or d2.get('legal_name') or d2.get('legalName') or d2.get('name') or ''
+                    a2_data = d2.get('pradr', {}).get('addr', {}) or d2.get('pradr', {}) or d2.get('address', '')
+                    a2 = ''
+                    if isinstance(a2_data, str):
+                        a2 = a2_data
+                    elif isinstance(a2_data, dict):
+                        parts2 = [p for p in [
+                            a2_data.get('bno',''), a2_data.get('st',''),
+                            a2_data.get('loc',''), a2_data.get('dst',''),
+                            a2_data.get('stcd', state_name),
+                            f"PIN: {a2_data.get('pncd','')}" if a2_data.get('pncd') else ''
+                        ] if p]
+                        a2 = ', '.join(parts2)
+                        if a2_data.get('pncd'):
+                            pincode = str(a2_data['pncd'])
+                    if t2 or l2 or a2:
+                        trade_name = str(t2).strip()
+                        legal_name = str(l2).strip()
+                        if a2:
+                            address = str(a2).strip()
+                        fetched = True
+            conn2.close()
+        except Exception as e:
+            print(f"[GST API2 ERROR] {e}")
+
+    last_error_msg = '' if fetched else 'No data found from any provider.'
+
+    display_name = trade_name or legal_name
+
+    return JsonResponse({
+        'success': True,
+        'gstin': gstin,
+        'pan': pan,
+        'legal_name': legal_name,
+        'trade_name': trade_name,
+        'name': display_name,
+        'status': status,
+        'taxpayer_type': taxpayer_type,
+        'address': address,
+        'place_of_supply': place_of_supply,
+        'state_name': state_name,
+        'pincode': pincode,
+        'fetched': fetched,
+        'debug_error': last_error_msg
+    })
+
+
 # ── Contact List ────────────────────────────────────────────────────────────────
 @login_required
 def contact_list(request):

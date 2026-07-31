@@ -334,6 +334,7 @@
                 <input type="hidden" name="table_columns" :value="JSON.stringify(columns)">
                 <input type="hidden" name="enable_warranty" :value="enableWarranty ? 'true' : 'false'">
                 <input type="hidden" name="shipping_address" :value="enableShippingAddress ? shippingAddress : ''">
+                <input type="hidden" name="shipping_name" :value="enableShippingAddress ? shippingName : ''">
                 <input type="hidden" name="repeat_header" :value="repeatHeader ? 'true' : 'false'">
             </form>
 
@@ -517,6 +518,10 @@
                             </label>
                         </div>
                         <div x-show="enableShippingAddress" x-transition class="pt-2">
+                            <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Ship To Name</label>
+                            <input type="text" x-model="shippingName"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500 mb-2"
+                                placeholder="e.g. ODtech Solutions (leave empty to use Customer Name)">
                             <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Ship To Address</label>
                             <textarea x-model="shippingAddress" rows="3"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
@@ -1377,6 +1382,7 @@ function documentForm() {
         enableShippingAddress: {% if doc and doc.shipping_address %}true{% else %}false{% endif %},
         repeatHeader: {% if doc %}{{ doc.repeat_header|yesno:"true,false" }}{% else %}(lastSettings && lastSettings.repeat_header !== undefined ? lastSettings.repeat_header : true){% endif %},
         shippingAddress: '{{ doc.shipping_address|default_if_none:""|escapejs }}',
+        shippingName: '{{ doc.shipping_name|default_if_none:""|escapejs }}',
         transporterDetails: '{{ doc.transporter_details|default:"Local Transportation"|escapejs }}',
         vehicleNumber: '{{ doc.vehicle_number|default_if_none:""|escapejs }}',
         transportDocNo: '{{ doc.transport_doc_no|default_if_none:""|escapejs }}',

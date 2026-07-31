@@ -18,4 +18,5 @@ urlpatterns = [
 
     # API
     path('api/create-customer/', views.create_customer_api, name='create_customer_api'),
+    path('api/gstin-lookup/', views.gstin_lookup_api, name='gstin_lookup_api'),
 ]
