@@ -1555,33 +1555,43 @@ function documentForm() {
             const existingTerms = `{% if doc %}{{ doc.terms_and_conditions|default_if_none:"__NONE__"|escapejs }}{% endif %}`;
             const companyDefaultTerms = `{{ company.terms_conditions|default:''|escapejs }}`;
             
-            if (isEditMode || isConversion) {
-                if (existingTerms !== "__NONE__") {
+            if (isEditMode) {
+                // Edit mode: always load the document's own saved terms
+                if (existingTerms && existingTerms !== "__NONE__") {
                     this.terms = existingTerms;
                     this.parseExistingTerms(existingTerms);
+                } else if (existingTerms === "__NONE__" || existingTerms === '') {
+                    // Document had no terms saved - load blank
+                    this.terms = '';
+                    this.termsList.forEach(t => { t.selected = false; t.value = ''; });
                 } else if (companyDefaultTerms) {
                     this.terms = companyDefaultTerms;
                     this.parseExistingTerms(companyDefaultTerms);
                 } else {
                     this.loadDefaultTerms();
                 }
-            } else if (lastSettings && lastSettings.terms_and_conditions !== undefined) {
-                this.terms = lastSettings.terms_and_conditions;
-                this.parseExistingTerms(lastSettings.terms_and_conditions);
-            } else if (companyDefaultTerms) {
-                this.terms = companyDefaultTerms;
-                this.parseExistingTerms(companyDefaultTerms);
+            } else if (isConversion) {
+                // Conversion mode: load source doc's terms as starting point
+                if (existingTerms && existingTerms !== "__NONE__") {
+                    this.terms = existingTerms;
+                    this.parseExistingTerms(existingTerms);
+                } else {
+                    this.loadDefaultTerms();
+                }
+                // Specifically when converting to INV, clear all terms for a clean slate
+                if (this.docType === 'INV') {
+                    this.terms = '';
+                    this.termsList.forEach(t => { t.selected = false; t.value = ''; });
+                    this.updateTermsString();
+                }
             } else {
-                this.loadDefaultTerms();
-            }
-
-            if (isConversion && this.docType === 'INV') {
-                this.terms = '';
-                this.termsList.forEach(t => { t.selected = false; t.value = ''; });
-                this.updateTermsString();
-            } else if (!isEditMode && this.docType === 'INV') {
-                this.termsList.forEach(t => t.selected = false);
-                this.updateTermsString();
+                // New document: load company defaults or built-in defaults (do NOT bleed in lastSettings terms)
+                if (companyDefaultTerms) {
+                    this.terms = companyDefaultTerms;
+                    this.parseExistingTerms(companyDefaultTerms);
+                } else {
+                    this.loadDefaultTerms();
+                }
             }
 
             {% if doc %}
@@ -1593,7 +1603,10 @@ function documentForm() {
             {% endif %}
 
             this.$watch('docType', (newVal, oldVal) => {
-                this.loadDefaultTerms();
+                // Only auto-load default terms when changing doc type on a new (non-edit, non-conversion) document
+                if (!isEditMode && !isConversion) {
+                    this.loadDefaultTerms();
+                }
                 this.calculateTotals();
                 if (newVal === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
                 
@@ -1784,8 +1797,9 @@ function documentForm() {
                         }
                     }
                 } else {
-                    if (warrantyTerm.selected) {
-                        warrantyTerm.selected = false;
+                    // When warranty is disabled, clear warranty value but do NOT force-uncheck the row
+                    // (user may want the checkbox state preserved)
+                    if (warrantyTerm.value) {
                         warrantyTerm.value = '';
                         termsChanged = true;
                     }
