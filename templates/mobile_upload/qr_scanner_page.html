@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -269,7 +270,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"
+<script src="{% static 'vendor/js/jsQR.min.js' %}"
         onerror="console.warn('jsQR CDN failed')"></script>
 
 <script>

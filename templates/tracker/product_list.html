@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Products - {% if lot %}{{ lot.lot_name }}{% else %}{{ order.order_number }}{% endif %}{% endblock %}
 
 {% block content %}
@@ -3719,7 +3720,7 @@
 
         showExportOverlay('Loading Excel library...');
         try {
-            await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+            await loadScript('{% static 'vendor/js/xlsx.full.min.js' %}');
             showExportOverlay('Generating Excel file...');
 
             const combinedData = [];
@@ -3768,8 +3769,8 @@
 
         showExportOverlay('Loading PDF library...');
         try {
-            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js');
+            await loadScript('{% static 'vendor/js/jspdf.umd.min.js' %}');
+            await loadScript('{% static 'vendor/js/jspdf.plugin.autotable.min.js' %}');
             showExportOverlay('Generating PDF...');
 
             const { jsPDF } = window.jspdf;
@@ -4166,7 +4167,7 @@
             showExportOverlay('Loading Excel library…', 'excel');
             let success = false;
             try {
-                await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+                await loadScript('{% static 'vendor/js/xlsx.full.min.js' %}');
                 advanceExportStep('Building rows…');
 
                 const ws = XLSX.utils.json_to_sheet(rows);
@@ -4206,8 +4207,8 @@
             showExportOverlay('Loading PDF library…', 'pdf');
             let success = false;
             try {
-                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js');
+                await loadScript('{% static 'vendor/js/jspdf.umd.min.js' %}');
+                await loadScript('{% static 'vendor/js/jspdf.plugin.autotable.min.js' %}');
                 advanceExportStep('Composing header…');
 
                 const { jsPDF } = window.jspdf;
@@ -4282,7 +4283,7 @@
             showExportOverlay('Loading renderer…', 'image');
             let success = false;
             try {
-                await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+                await loadScript('{% static 'vendor/js/html2canvas.min.js' %}');
                 advanceExportStep('Styling layout…');
 
                 const dateStr = new Date().toLocaleString();
@@ -4588,6 +4589,6 @@ function qrUploadWidget(widgetId) {
 </script>
 
 <!-- qrcodejs library for QR generation -->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="{% static 'vendor/js/qrcode.min.js' %}"></script>
 
 {% endblock %}

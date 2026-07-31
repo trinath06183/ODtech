@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Company Overview Dashboard — ODtech ERP{% endblock %}
 {% block header %}Company Overview Dashboard{% endblock %}
 
@@ -370,7 +371,7 @@
 </div>
 
 {# ApexCharts Library for Visualizations #}
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="{% static 'vendor/js/apexcharts.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 

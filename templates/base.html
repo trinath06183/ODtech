@@ -6,8 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ODtech ERP{% endblock %}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="{% static 'vendor/css/fonts.css' %}" rel="stylesheet">
+    <script src="{% static 'vendor/js/tailwindcss.js' %}"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -33,10 +33,10 @@
         }
         }
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="{% static 'vendor/js/alpine-collapse.min.js' %}"></script>
+    <script defer src="{% static 'vendor/js/alpine.min.js' %}"></script>
+    <script src="{% static 'vendor/js/Sortable.min.js' %}"></script>
+    <script src="{% static 'vendor/js/htmx.min.js' %}"></script>
     <style>
         .glass {
             background-color: #ffffff;
