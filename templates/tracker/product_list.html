@@ -789,17 +789,17 @@
                                                @keydown.escape.stop="editingLotId = null"
                                                class="border-cyan-300 rounded text-xs px-2 py-1 text-cyan-900 uppercase focus:ring-cyan-500 focus:border-cyan-500 w-48 shadow-sm">
                                         
-                                        <button @click.stop="startEditLot('{{ lot_group.grouper.id|default:'unassigned' }}', '{% if lot_group.grouper %}{{ lot_group.grouper.lot_name|escapejs }}{% else %}Unassigned Products{% endif %}')"
+                                        <button type="button" @click.stop="startEditLot('{{ lot_group.grouper.id|default:'unassigned' }}', '{% if lot_group.grouper %}{{ lot_group.grouper.lot_name|escapejs }}{% else %}Unassigned Products{% endif %}')"
                                                 x-show="editingLotId !== '{{ lot_group.grouper.id|default:'unassigned' }}'"
                                                 class="text-cyan-600 hover:text-cyan-800 transition-colors p-1" title="Rename Lot">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </button>
-                                        <button @click.stop="saveLotName('{{ lot_group.grouper.id|default:'unassigned' }}')"
+                                        <button type="button" @click.stop="saveLotName('{{ lot_group.grouper.id|default:'unassigned' }}')"
                                                 x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
                                                 class="text-emerald-600 hover:text-emerald-800 transition-colors p-1" title="Save Name">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                         </button>
-                                        <button @click.stop="editingLotId = null"
+                                        <button type="button" @click.stop="editingLotId = null"
                                                 x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
                                                 class="text-red-500 hover:text-red-700 transition-colors p-1" title="Cancel">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
