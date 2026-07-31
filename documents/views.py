@@ -114,7 +114,7 @@ def document_list(request):
         'suggestions': suggestions,
         'company': company,
         'has_next': page_obj.has_next(),
-        'next_page': 2 if page_obj.has_next() else None,
+        'next_page': 2 if page_obj.has_next() else '',
     })
 
 
