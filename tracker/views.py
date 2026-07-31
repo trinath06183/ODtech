@@ -2862,6 +2862,163 @@ def edit_order_expense_api(request, expense_id):
 
 @require_POST
 @login_required
+                            'selling_price_ex_gst': {'old': str(old_ex), 'new': str(sp_ex)},
+                            'selling_price_inc_gst': {'old': str(old_inc), 'new': str(sp_inc)},
+                            'margin_percent': str(margin_pct),
+                            'action': 'bulk_margin_price',
+                        }),
+                    ))
+                    updated_count += 1
+
+            AuditLog.objects.bulk_create(audit_entries)
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Database error: {str(e)}'}, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'updated_count': updated_count,
+        'skipped_no_price': skipped_no_price,
+    })
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Bulk Action: Update Customer Stage and/or Supplier Stage on selected products
+# ──────────────────────────────────────────────────────────────────────────────
+@login_required
+@require_POST
+def bulk_update_stages_api(request):
+    """
+    Set customer_stage and/or supplier_stage on multiple products at once.
+    Passing an empty string clears the stage for that side.
+
+    Request body (JSON):
+        {
+            "product_ids":     ["uuid1", "uuid2", ...],
+            "customer_stage":  "PO_RECEIVED",   // optional, pass "" to clear
+            "supplier_stage":  "QUOT_RECEIVED"  // optional, pass "" to clear
+        }
+
+    Returns:
+        { "success": true, "updated_count": N }
+    """
+    from django.db import transaction
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON body.'}, status=400)
+
+    product_ids     = data.get('product_ids', [])
+    customer_stage  = data.get('customer_stage')   # None means "not supplied"
+    supplier_stage  = data.get('supplier_stage')   # None means "not supplied"
+
+    if not product_ids:
+        return JsonResponse({'success': False, 'error': 'No product IDs supplied.'}, status=400)
+
+    # At least one stage must be provided
+    if customer_stage is None and supplier_stage is None:
+        return JsonResponse({'success': False, 'error': 'Supply at least one of customer_stage or supplier_stage.'}, status=400)
+
+    # Validate choices
+    valid_customer = {k for k, _ in Product.CUSTOMER_STAGE_CHOICES} | {''}
+    valid_supplier = {k for k, _ in Product.SUPPLIER_STAGE_CHOICES} | {''}
+
+    if customer_stage is not None and customer_stage not in valid_customer:
+        return JsonResponse({'success': False, 'error': f'Invalid customer_stage: {customer_stage}'}, status=400)
+    if supplier_stage is not None and supplier_stage not in valid_supplier:
+        return JsonResponse({'success': False, 'error': f'Invalid supplier_stage: {supplier_stage}'}, status=400)
+
+    products_qs = Product.objects.filter(id__in=product_ids)
+    if not products_qs.exists():
+        return JsonResponse({'success': False, 'error': 'No matching products found.'}, status=404)
+
+    update_fields = {'updated_by': request.user}
+    if customer_stage is not None:
+        update_fields['customer_stage'] = customer_stage or None
+    if supplier_stage is not None:
+        update_fields['supplier_stage'] = supplier_stage or None
+
+    # Snapshot for audit
+    audit_field_names = []
+    if customer_stage is not None:
+        audit_field_names.append('customer_stage')
+    if supplier_stage is not None:
+        audit_field_names.append('supplier_stage')
+
+    snapshots = list(products_qs.values('id', 'item_name', *audit_field_names))
+
+    try:
+        with transaction.atomic():
+            updated_count = products_qs.update(**update_fields)
+
+            audit_entries = []
+            for row in snapshots:
+                changes = {}
+                if customer_stage is not None:
+                    changes['customer_stage'] = {
+                        'old': row.get('customer_stage') or '',
+                        'new': customer_stage,
+                    }
+                if supplier_stage is not None:
+                    changes['supplier_stage'] = {
+                        'old': row.get('supplier_stage') or '',
+                        'new': supplier_stage,
+                    }
+                changes['action'] = 'bulk_update_stages'
+                audit_entries.append(AuditLog(
+                    user=request.user,
+                    action='UPDATE',
+                    model_name='Product',
+                    object_id=str(row['id']),
+                    object_repr=row['item_name'],
+                    changes=json.dumps(changes),
+                ))
+            AuditLog.objects.bulk_create(audit_entries)
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Database error: {str(e)}'}, status=500)
+
+    return JsonResponse({'success': True, 'updated_count': updated_count})
+
+
+@require_POST
+@login_required
+def add_order_expense_api(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+        expense = OrderExpense.objects.create(
+            order=order,
+            expense_name=data.get('expense_name', ''),
+            amount_ex_gst=data.get('amount_ex_gst', 0),
+            gst_percentage=data.get('gst_percentage', 18),
+            amount_inc_gst=data.get('amount_inc_gst', 0),
+            remark=data.get('remark', ''),
+            created_by=request.user
+        )
+        return JsonResponse({'success': True, 'expense_id': str(expense.id)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_POST
+@login_required
+def edit_order_expense_api(request, expense_id):
+    expense = get_object_or_404(OrderExpense, id=expense_id)
+    try:
+        data = json.loads(request.body)
+        expense.expense_name = data.get('expense_name', expense.expense_name)
+        expense.amount_ex_gst = data.get('amount_ex_gst', expense.amount_ex_gst)
+        expense.gst_percentage = data.get('gst_percentage', expense.gst_percentage)
+        expense.amount_inc_gst = data.get('amount_inc_gst', expense.amount_inc_gst)
+        expense.remark = data.get('remark', expense.remark)
+        expense.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_POST
+@login_required
 def delete_order_expense_api(request, expense_id):
     expense = get_object_or_404(OrderExpense, id=expense_id)
     try:
@@ -2869,3 +3026,35 @@ def delete_order_expense_api(request, expense_id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@require_POST
+@login_required
+def api_rename_lot(request, order_id):
+    try:
+        data = json.loads(request.body)
+        lot_id = data.get('lot_id')
+        new_name = data.get('new_name', '').strip()
+        
+        if not new_name:
+            return JsonResponse({'success': False, 'error': 'Lot name cannot be empty.'})
+            
+        order = get_object_or_404(Order, id=order_id)
+        
+        if lot_id == 'unassigned':
+            # Create a new lot and assign all unassigned products in this order to it
+            new_lot = Lot.objects.create(
+                order=order,
+                lot_name=new_name,
+                created_by=request.user
+            )
+            Product.objects.filter(order=order, lot__isnull=True).update(lot=new_lot)
+        else:
+            # Rename existing lot
+            lot = get_object_or_404(Lot, id=lot_id, order=order)
+            lot.lot_name = new_name
+            lot.save()
+            
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
