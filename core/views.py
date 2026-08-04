@@ -58,14 +58,18 @@ def _doc_kpis(month_start, fy_start):
     return (month_cnt, month_val), (fy_cnt, fy_val)
 
 
-def _legacy_kpis():
+def _legacy_kpis(precomputed_sales_fy=None):
     """Existing Total Sales / Purchases / Net P&L / Receivables for the lower cards."""
     from documents.models import Document
     from payments.models import Payment
 
-    total_sales = Document.objects.filter(
-        type='INV', status='Approved'
-    ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    # Reuse already-computed FY sales total if provided to avoid a duplicate query
+    if precomputed_sales_fy is not None:
+        total_sales = precomputed_sales_fy
+    else:
+        total_sales = Document.objects.filter(
+            type='INV', status='Approved'
+        ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
     total_purchases = Document.objects.filter(
         type='PO', status='Approved'
@@ -104,14 +108,24 @@ def dashboard(request):
     recent_todos = UserTodo.objects.filter(user=request.user).order_by('is_completed', '-created_at')[:5]
     recent_notes = UserNote.objects.filter(user=request.user).order_by('-created_at')[:5]
 
-    # ── Inventory value ──────────────────────────────────────────────────────
-    products = Product.objects.all()
-    total_inventory_value = Decimal('0.00')
-    for p in products:
-        stock = p.current_stock or Decimal('0')
-        total_inventory_value += Decimal(str(stock)) * p.selling_price
+    # ── Inventory: single aggregated stock query (avoids N+1) ────────────────
+    # Get stock total per product in ONE query instead of one query per product
+    from django.db.models import Sum as DbSum
+    stock_map = {
+        row['product_id']: row['total'] or Decimal('0')
+        for row in StockTransaction.objects.values('product_id').annotate(total=DbSum('quantity'))
+    }
 
-    total_products = products.count()
+    products = Product.objects.only('id', 'selling_price', 'reorder_level')
+    total_inventory_value = Decimal('0.00')
+    total_products = 0
+    low_stock_count = 0
+    for p in products:
+        stock = Decimal(str(stock_map.get(p.id, 0) or 0))
+        total_inventory_value += stock * p.selling_price
+        total_products += 1
+        if p.reorder_level > 0 and stock < p.reorder_level:
+            low_stock_count += 1
 
     # ── Recent stock movements ───────────────────────────────────────────────
     recent_stock = (
@@ -135,8 +149,6 @@ def dashboard(request):
     except Exception:
         pass
 
-    low_stock_count = sum(1 for p in products if p.is_low_stock)
-
     # ── New KPI Metrics (Month + FY) ─────────────────────────────────────────
     month_start, fy_start = _get_period_boundaries()
     today = timezone.localdate()
@@ -147,9 +159,9 @@ def dashboard(request):
     orders_done_m,  orders_done_fy  = _orders_completed_kpis(month_start, fy_start)
     (doc_cnt_m, doc_val_m), (doc_cnt_fy, doc_val_fy) = _doc_kpis(month_start, fy_start)
 
-    # ── Legacy KPIs (for the existing cards below) ───────────────────────────
+    # ── Legacy KPIs — reuse sales_fy to skip duplicate DB query ─────────────
     try:
-        total_sales, total_purchases, net_pl, receivables = _legacy_kpis()
+        total_sales, total_purchases, net_pl, receivables = _legacy_kpis(precomputed_sales_fy=sales_fy)
     except Exception:
         total_sales = total_purchases = net_pl = Decimal('0')
         receivables = {'total': Decimal('0'), 'overdue_30': Decimal('0'), 'overdue_60': Decimal('0'), 'overdue_90': Decimal('0')}
