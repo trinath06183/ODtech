@@ -30,6 +30,50 @@ class User(AbstractUser, TimeStampedModel):
     is_email_verified = models.BooleanField(default=False)
     is_onboarded = models.BooleanField(default=True)
 
+    def has_section_perm(self, section, access_type='read'):
+        """
+        Check if user has permission for a specific section.
+        Admins and Managing Directors bypass all checks.
+        access_type can be 'read' or 'write'.
+        """
+        if self.role in ['Admin', 'Managing Director']:
+            return True
+            
+        perm = self.section_permissions.filter(section=section).first()
+        if not perm:
+            return False
+            
+        if access_type == 'write':
+            return perm.can_write
+        return perm.can_read
+
+
+class AppSection(models.TextChoices):
+    DASHBOARD = 'DASHBOARD', 'Dashboard'
+    USERS = 'USERS', 'User Management'
+    CONTACTS = 'CONTACTS', 'Contacts (Clients/Vendors)'
+    INVENTORY = 'INVENTORY', 'Inventory & Warranty'
+    EDMS = 'EDMS', 'Document Management (EDMS)'
+    PAYMENTS = 'PAYMENTS', 'Payments & Expenses'
+    REPORTING = 'REPORTING', 'Reporting'
+    TRACKER = 'TRACKER', 'Manufacturing Tracker'
+    DOCUMENTS = 'DOCUMENTS', 'Invoices & Estimates'
+
+
+class UserSectionPermission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='section_permissions')
+    section = models.CharField(max_length=50, choices=AppSection.choices)
+    can_read = models.BooleanField(default=False)
+    can_write = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('user', 'section')
+        verbose_name = 'Section Permission'
+        verbose_name_plural = 'Section Permissions'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_section_display()}"
+
 
 class OTPToken(models.Model):
     """Stores a short-lived 6-digit OTP for password reset verification."""
