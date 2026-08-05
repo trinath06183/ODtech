@@ -37,3 +37,26 @@ def role_required(*allowed_roles):
             return view_func(request, *args, **kwargs)
         return wrapper
     return decorator
+
+def require_permission(section, access_type='read'):
+    """
+    Allow only users with explicit read or write access to a section.
+    Admins and Managing Directors bypass this check automatically via model.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                path = quote(request.get_full_path())
+                return redirect(f"{reverse('login')}?next={path}")
+                
+            if request.user.has_section_perm(section, access_type):
+                return view_func(request, *args, **kwargs)
+                
+            messages.error(
+                request,
+                f"Access denied. You do not have '{access_type}' permission for the {section} section."
+            )
+            return redirect('dashboard')
+        return wrapper
+    return decorator

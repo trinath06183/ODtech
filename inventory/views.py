@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -7,12 +8,12 @@ from django.template.loader import render_to_string
 from django.db.models import Q, Value, DecimalField
 from django.db.models.functions import Coalesce
 from django.db.models import Sum
-from core.decorators import login_required, role_required
+from core.decorators import login_required, role_required, require_permission
 from .models import Product, StockTransaction
 
 
 # ─── Product List ─────────────────────────────────────────────────────────────
-@login_required
+@require_permission('INVENTORY', 'read')
 def inventory_list(request):
     query = request.GET.get('q', '').strip()
     page_num = request.GET.get('page', 1)
@@ -77,7 +78,7 @@ def inventory_list(request):
 
 
 # ─── Product Create (Admin only) ──────────────────────────────────────────────
-@role_required('Admin')
+@require_permission('INVENTORY', 'write')
 def product_create(request):
     next_url = request.POST.get('next') or request.GET.get('next', '').strip()
     if request.method == 'POST':
@@ -141,7 +142,7 @@ def product_create(request):
 
 
 # ─── Product Edit (Admin only) ────────────────────────────────────────────────
-@role_required('Admin')
+@require_permission('INVENTORY', 'write')
 def product_edit(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -218,7 +219,7 @@ def product_edit(request, product_id):
 
 
 # ─── Product Delete (Admin only) ──────────────────────────────────────────────
-@role_required('Admin')
+@require_permission('INVENTORY', 'write')
 def product_delete(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -234,7 +235,7 @@ def product_delete(request, product_id):
 
 
 # ─── Stock Adjustment (Admin only) ────────────────────────────────────────────
-@role_required('Admin')
+@require_permission('INVENTORY', 'write')
 def adjust_stock(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'POST':
@@ -284,7 +285,7 @@ def adjust_stock(request, product_id):
 
 
 # ─── Warranty Tracker ─────────────────────────────────────────────────────────
-@login_required
+@require_permission('INVENTORY', 'write')
 def warranty_tracker(request):
     from documents.models import DocumentItem
     from django.db.models import Q
@@ -659,7 +660,7 @@ def warranty_claim_recover(request):
     })
 
 # --- Warranty Admin -----------------------------------------------------------
-@role_required('Admin', 'Accountant')
+@require_permission('INVENTORY', 'read')
 def warranty_admin_list(request):
     """Internal: list all registrations and claims for Admin/Accountant."""
     from .models import WarrantyRegistration, WarrantyClaim
@@ -681,7 +682,7 @@ def warranty_admin_list(request):
     })
 
 
-@role_required('Admin', 'Accountant')
+@require_permission('INVENTORY', 'read')
 def warranty_admin_update_status(request, claim_id):
     """Internal: update the status of a warranty claim."""
     from .models import WarrantyClaim
@@ -701,7 +702,7 @@ def warranty_admin_update_status(request, claim_id):
     return redirect(reverse("warranty_admin_list") + "?tab=claims")
 
 # --- Warranty Registration Edit (Admin/Accountant) ----------------------------
-@role_required('Admin', 'Accountant')
+@require_permission('INVENTORY', 'write')
 def warranty_admin_edit_registration(request, reg_id):
     """Internal: edit invoice date (and other fields) of a WarrantyRegistration."""
     from .models import WarrantyRegistration
@@ -715,7 +716,7 @@ def warranty_admin_edit_registration(request, reg_id):
     return render(request, 'inventory/warranty_admin_edit_registration.html', {'reg': reg})
 
 
-@login_required
+@require_permission('INVENTORY', 'read')
 def get_product_linked_bills_api(request, product_id):
     """Returns linked commercial bills/documents for an inventory product."""
     product = get_object_or_404(Product, id=product_id)
@@ -751,7 +752,7 @@ def get_product_linked_bills_api(request, product_id):
 import csv
 from django.http import HttpResponse
 
-@login_required
+@require_permission('INVENTORY', 'read')
 def inventory_export_csv(request):
     """Export inventory list to CSV."""
     # Apply same filters as inventory_list

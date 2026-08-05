@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
@@ -6,7 +7,7 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from .models import Document, DocumentItem
 from .services import DocumentService, PDFService, NumberingService
-from core.decorators import login_required, role_required
+from core.decorators import login_required, role_required, require_permission
 from inventory.models import Product
 from contacts.models import Contact
 from config.models import CompanyProfile
@@ -14,7 +15,7 @@ import json
 from django.views.decorators.http import require_POST
 
 # ─── Document List ────────────────────────────────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def document_list(request):
     doc_types = request.GET.getlist('type')
     doc_types = [t for t in doc_types if t]
@@ -119,7 +120,7 @@ def document_list(request):
 
 
 # ─── Preview (wrapper UI page) ────────────────────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def document_preview(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     full_html = PDFService.render_html(doc, request=request)
@@ -153,14 +154,14 @@ def document_preview(request, document_id):
 
 
 # ─── HTML Preview (raw doc HTML inside iframe) ────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def document_html_preview(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     return HttpResponse(PDFService.render_html(doc, request=request))
 
 
 # ─── Document Preview Data (JSON for sidebar preview card) ────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def document_preview_data(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     items = []
@@ -193,7 +194,7 @@ def document_preview_data(request, document_id):
 
 
 # ─── PDF Generation ───────────────────────────────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def generate_pdf(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     try:
@@ -222,7 +223,7 @@ def generate_pdf(request, document_id):
 
 
 # ─── Delete Document ─────────────────────────────────────────────────────────
-@role_required('Admin', 'Accountant')
+@require_permission('DOCUMENTS', 'write')
 def delete_document(request, document_id):
     company = CompanyProfile.objects.first()
     if company and not company.allow_document_deletion:
@@ -240,7 +241,7 @@ def delete_document(request, document_id):
 
 
 # ─── Change Document Status (Admin / Accountant only) ─────────────────────────
-@role_required('Admin', 'Accountant')
+@require_permission('DOCUMENTS', 'read')
 def change_document_status(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     if request.method == 'POST':
@@ -260,7 +261,7 @@ def change_document_status(request, document_id):
     return redirect('document_list')
 
 
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def get_next_number_api(request):
     """Returns the next available n+1 document number for a given document type."""
     doc_type = request.GET.get('type', 'QTN')
@@ -270,7 +271,7 @@ def get_next_number_api(request):
     return JsonResponse({'success': True, 'type': doc_type, 'next_number': next_num})
 
 
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def get_po_items_api(request, document_id):
     """Returns PO items for stock receiving modal with already received & remaining quantities."""
     doc = get_object_or_404(Document, id=document_id)
@@ -311,7 +312,7 @@ def get_po_items_api(request, document_id):
     })
 
 
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def receive_po_items_api(request, document_id):
     """Receives selected items from a PO and increases inventory stock."""
     if request.method != 'POST':
@@ -358,7 +359,7 @@ def receive_po_items_api(request, document_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 # ─── Product Search API ───────────────────────────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def search_products(request):
     query = request.GET.get('q', '')
     if len(query) < 2:
@@ -770,26 +771,25 @@ def document_form(request, doc=None, default_type='QTN'):
         'next_number': next_number,
     })
 
-@login_required
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def create_document(request):
     return document_form(request, default_type='QTN')
 
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def create_quotation(request):
     return document_form(request, default_type='QTN')
 
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def create_invoice(request):
     return document_form(request, default_type='INV')
 
-@role_required('Admin', 'Accountant', 'Staff')
+@require_permission('DOCUMENTS', 'write')
 def edit_document(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     return document_form(request, doc)
 
 # ─── Product Create API ───────────────────────────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def create_product_api(request):
     if request.method == 'POST':
         try:
@@ -847,7 +847,7 @@ def create_product_api(request):
 
 
 # ─── All Products API (for Browse Modal) ─────────────────────────────────────
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def all_products_api(request):
     query = request.GET.get('q', '').strip()
     products = Product.objects.all().order_by('name')
@@ -875,7 +875,7 @@ def all_products_api(request):
     return JsonResponse(data, safe=False)
 
 
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def cost_sheet(request):
     if request.method == 'POST':
         items_data = request.POST.get('items_json')
@@ -918,7 +918,7 @@ def cost_sheet(request):
     })
 
 @require_POST
-@login_required
+@require_permission('DOCUMENTS', 'write')
 def send_to_tracker_api(request, document_id):
     try:
         from tracker.models import Order as TrackerOrder, Product as TrackerProduct
@@ -972,7 +972,7 @@ def send_to_tracker_api(request, document_id):
 import csv
 from django.http import HttpResponse
 
-@login_required
+@require_permission('DOCUMENTS', 'read')
 def document_export_csv(request):
     """Export documents list to CSV."""
     doc_type = request.GET.get('type', 'All')

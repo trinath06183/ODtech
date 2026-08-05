@@ -1,10 +1,11 @@
+from core.decorators import require_permission
 import json
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q, Sum
 from django.core.paginator import Paginator
-from core.decorators import login_required, role_required
+from core.decorators import login_required, role_required, require_permission
 from .models import Contact, Address, VendorQuote
 from inventory.models import Product
 
@@ -240,7 +241,7 @@ def gstin_lookup_api(request):
 
 
 # ── Contact List ────────────────────────────────────────────────────────────────
-@login_required
+@require_permission('CONTACTS', 'read')
 def contact_list(request):
     contact_type = request.GET.get('type', '')
     query = request.GET.get('q', '').strip()
@@ -289,13 +290,13 @@ def contact_list(request):
 
 
 # ── Contact Create ──────────────────────────────────────────────────────────────
-@role_required('Admin', 'Accountant')
+@require_permission('CONTACTS', 'write')
 def contact_create(request):
     return _contact_form(request)
 
 
 # ── Contact Edit ────────────────────────────────────────────────────────────────
-@role_required('Admin', 'Accountant')
+@require_permission('CONTACTS', 'write')
 def contact_edit(request, contact_id):
     contact = get_object_or_404(Contact, id=contact_id)
     return _contact_form(request, contact)
@@ -340,7 +341,7 @@ def _contact_form(request, contact=None):
 
 
 # ── Contact Delete ──────────────────────────────────────────────────────────────
-@role_required('Admin')
+@require_permission('CONTACTS', 'write')
 def contact_delete(request, contact_id):
     contact = get_object_or_404(Contact, id=contact_id)
     if request.method == 'POST':
@@ -351,7 +352,7 @@ def contact_delete(request, contact_id):
 
 
 # ── Contact Detail / Ledger ─────────────────────────────────────────────────────
-@login_required
+@require_permission('CONTACTS', 'read')
 def contact_detail(request, contact_id):
     contact = get_object_or_404(Contact, id=contact_id)
     documents = contact.documents.all().order_by('-date')
@@ -373,7 +374,7 @@ def contact_detail(request, contact_id):
 
 
 # ── Vendor Quotes ───────────────────────────────────────────────────────────────
-@login_required
+@require_permission('CONTACTS', 'write')
 def vendor_quotes(request):
     product_id = request.GET.get('product', '')
     quotes = VendorQuote.objects.select_related('vendor', 'product').all()
@@ -394,12 +395,12 @@ def vendor_quotes(request):
     })
 
 
-@role_required('Admin', 'Accountant')
+@require_permission('CONTACTS', 'write')
 def vendor_quote_create(request):
     return _vendor_quote_form(request)
 
 
-@role_required('Admin', 'Accountant')
+@require_permission('CONTACTS', 'write')
 def vendor_quote_edit(request, quote_id):
     quote = get_object_or_404(VendorQuote, id=quote_id)
     return _vendor_quote_form(request, quote)
@@ -452,7 +453,7 @@ def _vendor_quote_form(request, quote=None):
     })
 
 
-@role_required('Admin')
+@require_permission('CONTACTS', 'write')
 def vendor_quote_delete(request, quote_id):
     quote = get_object_or_404(VendorQuote, id=quote_id)
     if request.method == 'POST':
@@ -463,7 +464,7 @@ def vendor_quote_delete(request, quote_id):
 import csv
 from django.http import HttpResponse
 
-@login_required
+@require_permission('CONTACTS', 'read')
 def contact_export_csv(request):
     """Export contacts list to CSV."""
     contact_type = request.GET.get('type', 'All')

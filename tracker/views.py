@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 import csv
 import io
 import re
@@ -167,7 +168,7 @@ def _build_product_list_context(request, products_qs, order, lot=None):
 
 
 # --- Original Function Based Views for Reading ---
-@login_required
+@require_permission('TRACKER', 'read')
 def dashboard_view(request):
     base_qs = Order.objects.select_related('created_by', 'updated_by').prefetch_related('products', 'tasks').order_by('-order_date')
     # Completed: CLOSED status + PAID payment — shown in a separate archived section
@@ -206,7 +207,7 @@ def dashboard_view(request):
     })
 
 
-@login_required
+@require_permission('TRACKER', 'read')
 def individual_products_view(request):
     """
     Flattened view of ALL products across all orders.
@@ -257,20 +258,20 @@ def individual_products_view(request):
         'f_search':          search_query,
     })
 
-@login_required
+@require_permission('TRACKER', 'read')
 def order_detail_view(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     context = _build_product_list_context(request, order.products.all(), order)
     return render(request, 'tracker/product_list.html', context)
 
-@login_required
+@require_permission('TRACKER', 'read')
 def lot_detail_view(request, lot_id):
     lot = get_object_or_404(Lot.objects.select_related('order'), id=lot_id)
     context = _build_product_list_context(request, lot.products.all(), lot.order, lot=lot)
     return render(request, 'tracker/product_list.html', context)
 
 
-@login_required
+@require_permission('TRACKER', 'read')
 def product_detail_view(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     supplier_options = product.supplier_options.all()
@@ -482,7 +483,7 @@ def product_detail_view(request, product_id):
     }
     return render(request, 'tracker/product_detail.html', context)
 
-@login_required
+@require_permission('TRACKER', 'read')
 def product_modal_detail_view(request, product_id):
     product = get_object_or_404(Product.objects.select_related('lot').prefetch_related('supplier_options', 'expenses'), id=product_id)
     
@@ -896,7 +897,7 @@ class SupplierOptionDeleteView(LoginRequiredMixin, DeleteView):
 # --- CSV Bulk Product Upload ---
 CSV_COLUMNS = ['sl_no', 'item_name', 'make_or_model', 'description', 'quantity', 'uom', 'status', 'Additional Remarks']
 
-@login_required
+@require_permission('TRACKER', 'read')
 def product_csv_upload_view(request, order_id=None, lot_id=None):
     """Upload multiple products from a CSV file into an order or lot."""
     if lot_id:
@@ -980,7 +981,7 @@ def product_csv_upload_view(request, order_id=None, lot_id=None):
     return render(request, 'tracker/csv_upload.html', context)
 
 
-@login_required
+@require_permission('TRACKER', 'write')
 def download_sample_csv(request):
     """Serve a pre-filled sample CSV for users to use as a template."""
     response = HttpResponse(content_type='text/csv')
@@ -994,7 +995,7 @@ def download_sample_csv(request):
     writer.writerow(['5', 'Sample Item E', '', 'Optional info', '20', 'Mtr', 'OPEN', ''])
     return response
 
-@login_required
+@require_permission('TRACKER', 'write')
 def bulk_move_products(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     if request.method == 'POST':
@@ -1022,7 +1023,7 @@ def bulk_move_products(request, order_id):
 
     return redirect('tracker:order_detail', order_id=order.id)
 
-@login_required
+@require_permission('TRACKER', 'write')
 def bulk_delete_products(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     if request.method == 'POST':
@@ -1043,7 +1044,7 @@ def bulk_delete_products(request, order_id):
     return redirect('tracker:order_detail', order_id=order.id)
 
 
-@login_required
+@require_permission('TRACKER', 'write')
 def toggle_bookmark(request, product_id):
     """Toggle bookmark on a product. POST to add/update, DELETE to remove."""
     product = get_object_or_404(Product, id=product_id)
@@ -1075,7 +1076,7 @@ def toggle_bookmark(request, product_id):
 
 
 
-@login_required
+@require_permission('TRACKER', 'read')
 def toggle_purchase_view(request, product_id):
     """Toggle a product's purchased field."""
     if request.method != 'POST':
@@ -1094,7 +1095,7 @@ def toggle_purchase_view(request, product_id):
 # Master Search & Intelligence Views
 # ==============================================================================
 
-@login_required
+@require_permission('TRACKER', 'read')
 def master_search_api(request):
     """AJAX endpoint for the Master Search feature."""
     query = request.GET.get('q', '').strip()
@@ -1131,7 +1132,7 @@ def master_search_api(request):
         'locations': list(locations_qs),
     })
 
-@login_required
+@require_permission('TRACKER', 'read')
 def product_intelligence_view(request):
     """Aggregate product data across all orders."""
     product_name = request.GET.get('name', '')
@@ -1156,7 +1157,7 @@ def product_intelligence_view(request):
     }
     return render(request, 'tracker/intelligence/product_intelligence.html', context)
 
-@login_required
+@require_permission('TRACKER', 'read')
 def buyer_profile_view(request):
     """Aggregate order history for a specific customer."""
     buyer_name = request.GET.get('name', '')
@@ -1174,7 +1175,7 @@ def buyer_profile_view(request):
     }
     return render(request, 'tracker/intelligence/buyer_profile.html', context)
 
-@login_required
+@require_permission('TRACKER', 'read')
 def seller_profile_view(request):
     """Aggregate supplier catalog and pricing across the platform."""
     seller_name = request.GET.get('name', '')
@@ -1186,7 +1187,7 @@ def seller_profile_view(request):
     }
     return render(request, 'tracker/intelligence/seller_profile.html', context)
 
-@login_required
+@require_permission('TRACKER', 'read')
 @require_POST
 def update_order_status_api(request, order_id):
     order = get_object_or_404(Order, id=order_id)
@@ -1214,7 +1215,7 @@ def update_order_status_api(request, order_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def mark_notification_read_api(request, notification_id):
     notif = get_object_or_404(Notification, id=notification_id, user=request.user)
@@ -1222,7 +1223,7 @@ def mark_notification_read_api(request, notification_id):
     notif.save()
     return JsonResponse({'success': True})
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def add_order_expense_api(request, order_id):
     order = get_object_or_404(Order, id=order_id)
@@ -1251,7 +1252,7 @@ def add_order_expense_api(request, order_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def delete_order_expense_api(request, expense_id):
     from .models import OrderExpense
@@ -1263,7 +1264,7 @@ def delete_order_expense_api(request, expense_id):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def inline_update_product_api(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -1298,7 +1299,7 @@ def inline_update_product_api(request, product_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@require_permission('TRACKER', 'read')
 @require_POST
 def bulk_update_product_status_api(request):
     try:
@@ -1317,7 +1318,7 @@ def bulk_update_product_status_api(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def api_update_product_stage(request, product_id):
     """Update a product's Customer-side or Supplier-side stage independently.
@@ -1365,7 +1366,7 @@ def api_update_product_stage(request, product_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def bulk_attribute_edit_api(request):
     """
@@ -1465,7 +1466,7 @@ def bulk_attribute_edit_api(request):
         'patch': patch,
     })
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def add_internal_note_api(request):
     try:
@@ -1540,7 +1541,7 @@ def add_internal_note_api(request):
     })
 
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def bulk_add_internal_note_api(request):
     """
@@ -1610,7 +1611,7 @@ def bulk_add_internal_note_api(request):
 
     return JsonResponse({'success': True, 'created_count': len(notes)})
 
-@login_required
+@require_permission('TRACKER', 'write')
 def mark_notification_read_api(request, notification_id):
     notif = get_object_or_404(Notification, id=notification_id, user=request.user)
     notif.is_read = True
@@ -1620,7 +1621,7 @@ def mark_notification_read_api(request, notification_id):
         return redirect(notif.link)
     return redirect(reverse('tracker:dashboard'))
 
-@login_required
+@require_permission('TRACKER', 'write')
 def mark_all_notifications_read_api(request):
     request.user.notifications.filter(is_read=False).update(is_read=True)
     referer = request.META.get('HTTP_REFERER')
@@ -1628,7 +1629,7 @@ def mark_all_notifications_read_api(request):
         return redirect(referer)
     return redirect(reverse('tracker:dashboard'))
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def edit_internal_note_api(request, note_id):
     note = get_object_or_404(InternalNote, id=note_id)
@@ -1649,7 +1650,7 @@ def edit_internal_note_api(request, note_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def delete_internal_note_api(request, note_id):
     note = get_object_or_404(InternalNote, id=note_id)
@@ -1678,7 +1679,7 @@ from .forms import AdminUserCreationForm, AdminUserChangeForm, AdminPasswordRese
 def is_admin(user):
     return user.is_staff or user.is_superuser
 
-@login_required
+@require_permission('TRACKER', 'read')
 def user_activity_view(request):
     """User-specific activity panel showing their own immutable audit log."""
     user_logs = AuditLog.objects.select_related('user').filter(user=request.user).order_by('-timestamp')
@@ -1688,7 +1689,7 @@ def user_activity_view(request):
         'page_title': 'My Activity',
     })
 
-@login_required
+@require_permission('TRACKER', 'read')
 @user_passes_test(is_admin)
 def audit_log_list(request):
     logs = AuditLog.objects.select_related('user').all()
@@ -1732,7 +1733,7 @@ def audit_log_list(request):
         'end_date': end_date,
     })
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 @user_passes_test(is_admin)
 def delete_audit_log(request, log_id):
@@ -1742,7 +1743,7 @@ def delete_audit_log(request, log_id):
     messages.success(request, "Audit log entry deleted.")
     return redirect('tracker:audit_log_list')
 
-@login_required
+@require_permission('TRACKER', 'write')
 @user_passes_test(is_admin)
 def user_management_create(request):
     if request.method == 'POST':
@@ -1755,7 +1756,7 @@ def user_management_create(request):
         form = AdminUserCreationForm()
     return render(request, 'tracker/user_form.html', {'form': form, 'title': 'Create New User'})
 
-@login_required
+@require_permission('TRACKER', 'write')
 @user_passes_test(is_admin)
 def user_management_edit(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
@@ -1769,7 +1770,7 @@ def user_management_edit(request, user_id):
         form = AdminUserChangeForm(instance=user_obj)
     return render(request, 'tracker/user_form.html', {'form': form, 'title': f'Edit User: {user_obj.username}', 'user_obj': user_obj})
 
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 @user_passes_test(is_admin)
 def user_management_delete(request, user_id):
@@ -1782,7 +1783,7 @@ def user_management_delete(request, user_id):
         messages.success(request, f"User '{username}' was deleted.")
     return redirect('tracker:user_management_list')
 
-@login_required
+@require_permission('TRACKER', 'write')
 @user_passes_test(is_admin)
 def user_management_reset_password(request, user_id):
     user_obj = get_object_or_404(User, id=user_id)
@@ -1796,13 +1797,13 @@ def user_management_reset_password(request, user_id):
         form = AdminPasswordResetForm(user_obj)
     return render(request, 'tracker/user_reset_password.html', {'form': form, 'user_obj': user_obj})
 
-@login_required
+@require_permission('TRACKER', 'read')
 @user_passes_test(is_admin)
 def user_management_list(request):
     users = User.objects.all().order_by('username')
     return render(request, 'tracker/user_list.html', {'users': users})
 
-@login_required
+@require_permission('TRACKER', 'write')
 def user_profile(request):
     from .forms import UserProfileForm
     if request.method == 'POST':
@@ -1875,7 +1876,7 @@ def _process_price_update(request, product, new_buying_ex, new_buying_inc, new_s
         product.save()
         return {'requires_approval': False}
 
-@login_required
+@require_permission('TRACKER', 'write')
 def approve_price_request(request, request_id):
     from .models import PriceApprovalRequest, Notification
     from django.utils import timezone
@@ -1921,7 +1922,7 @@ def approve_price_request(request, request_id):
     lot_id = req.product.lot.id if req.product.lot else 'unassigned'
     return redirect(f"{redirect_url}?selected_product_id={req.product.id}&open_lot_id={lot_id}")
 
-@login_required
+@require_permission('TRACKER', 'write')
 def reject_price_request(request, request_id):
     from .models import PriceApprovalRequest, Notification
     if not request.user.is_superuser:
@@ -1958,7 +1959,7 @@ def reject_price_request(request, request_id):
     return redirect(f"{redirect_url}?selected_product_id={req.product.id}&open_lot_id={lot_id}")
 
 @require_POST
-@login_required
+@require_permission('TRACKER', 'write')
 def api_create_lot(request, order_id):
     import json
     order = get_object_or_404(Order, id=order_id)
@@ -1981,7 +1982,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 
-@login_required
+@require_permission('TRACKER', 'read')
 def api_notes_list_create(request):
     """GET → list user's notes; POST → create a note."""
     if request.method == 'GET':
@@ -2042,7 +2043,7 @@ def api_notes_list_create(request):
     })
 
 
-@login_required
+@require_permission('TRACKER', 'read')
 def api_note_detail(request, note_id):
     """POST/PUT/PATCH → update; DELETE → delete. User can only touch their own notes."""
     note = get_object_or_404(UserNote, id=note_id, user=request.user)
@@ -2096,7 +2097,7 @@ def api_note_detail(request, note_id):
 #  Personal To-Do API  (private — only the owning user can access)
 # ──────────────────────────────────────────────────────────────
 
-@login_required
+@require_permission('TRACKER', 'read')
 def api_todos_list_create(request):
     """GET → list user's todos; POST → create a todo."""
     if request.method == 'GET':
@@ -2159,7 +2160,7 @@ def api_todos_list_create(request):
     })
 
 
-@login_required
+@require_permission('TRACKER', 'read')
 def api_todo_detail(request, todo_id):
     """POST/PUT/PATCH → toggle or update; DELETE → delete. User can only touch their own todos."""
     todo = get_object_or_404(UserTodo, id=todo_id, user=request.user)
@@ -2216,7 +2217,7 @@ def api_todo_detail(request, todo_id):
 
     return JsonResponse({'success': False, 'error': 'Method not allowed.'}, status=405)
 
-@login_required
+@require_permission('TRACKER', 'write')
 def api_delete_reference_document(request, doc_id):
     doc = get_object_or_404(UserReferenceDocument, id=doc_id, user=request.user)
     if request.method == 'DELETE':
@@ -2229,7 +2230,7 @@ def api_delete_reference_document(request, doc_id):
 #  Drag-and-Drop Reorder API
 # ──────────────────────────────────────────────────────────────
 
-@login_required
+@require_permission('TRACKER', 'write')
 def api_reorder_products(request, order_id):
     """
     PATCH /api/order/<id>/reorder-products/
@@ -2288,7 +2289,7 @@ def api_reorder_products(request, order_id):
 #  Per-Product Audit Trail API (for History tab in modal)
 # ──────────────────────────────────────────────────────────────
 
-@login_required
+@require_permission('TRACKER', 'write')
 def api_product_audit_log(request, product_id):
     """
     GET /api/product/<id>/audit-log/
@@ -2451,7 +2452,7 @@ def system_admin_backup_view(request):
 # ──────────────────────────────────────────────────────────────────────────────
 #  Bulk Action: Add Supplier to selected products (ADDITIVE — never overwrites)
 # ──────────────────────────────────────────────────────────────────────────────
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def bulk_add_supplier_api(request):
     """
@@ -2590,7 +2591,7 @@ def bulk_add_supplier_api(request):
 # ──────────────────────────────────────────────────────────────────────────────
 #  Bulk Action: Update Selling Price / Profit Margin on selected products
 # ──────────────────────────────────────────────────────────────────────────────
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def bulk_update_selling_price_api(request):
     """
@@ -2728,7 +2729,7 @@ def bulk_update_selling_price_api(request):
 # ──────────────────────────────────────────────────────────────────────────────
 #  Bulk Action: Update Customer Stage and/or Supplier Stage on selected products
 # ──────────────────────────────────────────────────────────────────────────────
-@login_required
+@require_permission('TRACKER', 'write')
 @require_POST
 def bulk_update_stages_api(request):
     """
@@ -2826,7 +2827,7 @@ def bulk_update_stages_api(request):
 
 
 @require_POST
-@login_required
+@require_permission('TRACKER', 'write')
 def add_order_expense_api(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     try:
@@ -2845,7 +2846,7 @@ def add_order_expense_api(request, order_id):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @require_POST
-@login_required
+@require_permission('TRACKER', 'write')
 def edit_order_expense_api(request, expense_id):
     expense = get_object_or_404(OrderExpense, id=expense_id)
     try:
@@ -2861,7 +2862,7 @@ def edit_order_expense_api(request, expense_id):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @require_POST
-@login_required
+@require_permission('TRACKER', 'write')
 def delete_order_expense_api(request, expense_id):
     expense = get_object_or_404(OrderExpense, id=expense_id)
     try:
@@ -2870,7 +2871,7 @@ def delete_order_expense_api(request, expense_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 @require_POST
-@login_required
+@require_permission('TRACKER', 'write')
 def api_rename_lot(request, order_id):
     try:
         data = json.loads(request.body)

@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,8 +12,8 @@ from django.utils.html import strip_tags
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-from core.decorators import login_required, role_required
-from .models import User, OTPToken
+from core.decorators import login_required, role_required, require_permission
+from .models import User, OTPToken, AppSection, UserSectionPermission
 
 
 # ─── Email Helper Functions ───────────────────────────────────────────────────
@@ -190,7 +191,7 @@ def login_resend_otp(request):
     return redirect('login_verify_otp')
 
 
-@login_required
+@require_permission('USERS', 'read')
 def onboarding_view(request):
     """View for first-time login onboarding to complete user profile."""
     if request.user.is_onboarded:
@@ -248,7 +249,7 @@ def verify_email_view(request, uidb64, token):
         return render(request, 'users/verify_email_failed.html')
 
 
-@login_required
+@require_permission('USERS', 'read')
 def logout_view(request):
     """POST-only logout for CSRF safety; GET redirects to login."""
     if request.method == 'POST':
@@ -436,13 +437,13 @@ def password_reset_complete(request):
 
 # ─── User Management (Admin only) ────────────────────────────────────────────
 
-@role_required('Admin')
+@require_permission('USERS', 'read')
 def user_list(request):
     users = User.objects.all().order_by('username')
     return render(request, 'users/user_list.html', {'users': users})
 
 
-@role_required('Admin')
+@require_permission('USERS', 'write')
 def user_create(request):
     if request.method == 'POST':
         empid      = request.POST.get('empid', '').strip()
@@ -478,21 +479,34 @@ def user_create(request):
             # Send verification email
             send_verification_email(request, user)
 
+            # Save section permissions
+            for section, label in AppSection.choices:
+                can_read = request.POST.get(f'perm_{section}_read') == 'on'
+                can_write = request.POST.get(f'perm_{section}_write') == 'on'
+                if can_read or can_write:
+                    UserSectionPermission.objects.create(
+                        user=user, section=section, can_read=can_read, can_write=can_write
+                    )
+
             messages.success(request, f'User with Employee Code "{empid}" created successfully. Verification email sent.')
             return redirect('user_list')
+
+    permissions_data = [{'code': s, 'label': l, 'read': False, 'write': False} for s, l in AppSection.choices]
 
     return render(request, 'users/user_form.html', {
         'form_title': 'Create User',
         'submit_label': 'Create User',
         'role_choices': User.ROLE_CHOICES,
+        'permissions_data': permissions_data,
     })
 
 
-@role_required('Admin')
+@require_permission('USERS', 'write')
 def user_edit(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
 
     if request.method == 'POST':
+        empid                  = request.POST.get('empid', '').strip()
         target_user.email      = request.POST.get('email', '').strip()
         target_user.first_name = request.POST.get('first_name', '').strip()
         target_user.last_name  = request.POST.get('last_name', '').strip()
@@ -502,23 +516,50 @@ def user_edit(request, user_id):
 
         if role not in [r[0] for r in User.ROLE_CHOICES]:
             messages.error(request, 'Invalid role selected.')
+        elif empid and empid != target_user.empid and User.objects.filter(empid=empid).exists():
+            messages.error(request, f'Employee Code "{empid}" is already taken.')
         else:
+            if empid:
+                target_user.empid = empid
+                target_user.username = empid
             target_user.role = role
             if new_password:
                 target_user.set_password(new_password)
             target_user.save()
+
+            # Save section permissions
+            for section, label in AppSection.choices:
+                can_read = request.POST.get(f'perm_{section}_read') == 'on'
+                can_write = request.POST.get(f'perm_{section}_write') == 'on'
+                
+                perm, created = UserSectionPermission.objects.get_or_create(user=target_user, section=section)
+                perm.can_read = can_read
+                perm.can_write = can_write
+                perm.save()
+
             messages.success(request, f'User "{target_user.username}" updated successfully.')
             return redirect('user_list')
+
+    permissions_data = []
+    for section, label in AppSection.choices:
+        perm = target_user.section_permissions.filter(section=section).first()
+        permissions_data.append({
+            'code': section,
+            'label': label,
+            'read': perm.can_read if perm else False,
+            'write': perm.can_write if perm else False,
+        })
 
     return render(request, 'users/user_form.html', {
         'form_title':   f'Edit User — {target_user.username}',
         'submit_label': 'Save Changes',
         'role_choices': User.ROLE_CHOICES,
+        'permissions_data': permissions_data,
         'target_user':  target_user,
     })
 
 
-@role_required('Admin')
+@require_permission('USERS', 'write')
 def user_delete(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
 

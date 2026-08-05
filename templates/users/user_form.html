@@ -35,16 +35,11 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
-                <!-- Employee Code (read-only on edit) -->
+                <!-- Employee Code -->
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Employee Code <span class="text-red-400">*</span></label>
-                    {% if target_user %}
-                    <input type="text" value="{{ target_user.empid }}" disabled
-                           class="w-full px-4 py-3 bg-slate-800/50 border border-white/10 rounded-xl text-gray-400 text-sm cursor-not-allowed">
-                    {% else %}
-                    <input type="text" name="empid" required placeholder="e.g. EMP001"
+                    <input type="text" name="empid" required value="{{ target_user.empid|default:'' }}" placeholder="e.g. EMP001"
                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
-                    {% endif %}
                 </div>
 
                 <!-- First Name -->
@@ -97,6 +92,41 @@
                     <input type="password" name="password" {% if not target_user %}required{% endif %} placeholder="Enter password"
                            autocomplete="new-password"
                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
+                </div>
+            </div>
+
+            <!-- Permissions -->
+            <div class="mt-8 pt-6 border-t border-white/10">
+                <h3 class="text-lg font-semibold text-white mb-4">Section Access Permissions</h3>
+                <p class="text-sm text-gray-400 mb-4">
+                    Configure which sections this user can access and what actions they can perform. <br/>
+                    <span class="text-indigo-400 italic">Note: Users with the 'Admin' or 'Managing Director' role bypass these restrictions automatically.</span>
+                </p>
+                <div class="bg-slate-900/60 border border-white/10 rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-slate-800/50 border-b border-white/10 text-gray-400">
+                            <tr>
+                                <th class="px-4 py-3 font-medium">App Section</th>
+                                <th class="px-4 py-3 font-medium text-center">Read (View Only)</th>
+                                <th class="px-4 py-3 font-medium text-center">Write (Create/Edit)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            {% for perm in permissions_data %}
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="px-4 py-3 font-medium">{{ perm.label }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <input type="checkbox" name="perm_{{ perm.code }}_read" class="w-4 h-4 rounded bg-slate-900 border-white/20 text-indigo-500 focus:ring-indigo-500/30"
+                                           {% if perm.read %}checked{% endif %}>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <input type="checkbox" name="perm_{{ perm.code }}_write" class="w-4 h-4 rounded bg-slate-900 border-white/20 text-indigo-500 focus:ring-indigo-500/30"
+                                           {% if perm.write %}checked{% endif %}>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 """
 EDMS Views
 ==========

@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 import json
 
 from django.shortcuts import render
@@ -7,13 +8,13 @@ from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
 
-from core.decorators import login_required
+from core.decorators import login_required, role_required, require_permission
 from inventory.models import Product
 from documents.models import Document
 from payments.models import Payment, Expense
 
 
-@login_required
+@require_permission('REPORTING', 'write')
 def gst_report(request):
     """GST Report — billing module has been migrated to EDMS."""
     return render(request, 'reporting/gst_report.html', {
@@ -30,7 +31,7 @@ def gst_report(request):
     })
 
 
-@login_required
+@require_permission('REPORTING', 'read')
 def stock_summary(request):
     products = Product.objects.annotate(
         annotated_stock=Coalesce(
@@ -58,8 +59,7 @@ def stock_summary(request):
     })
 
 
-@login_required
-@login_required
+@require_permission('REPORTING', 'read')
 def financial_dashboard(request):
     """Financial & Operational Summary Dashboard with P&L, sales, purchases, expenses, orders & reminders."""
     today = date.today()
@@ -402,7 +402,7 @@ def financial_dashboard(request):
     return render(request, 'reporting/financial_dashboard.html', context)
 
 
-@login_required
+@require_permission('REPORTING', 'read')
 def business_planning_dashboard(request):
 
     from .models import PlannedOrder, PlannedPurchase

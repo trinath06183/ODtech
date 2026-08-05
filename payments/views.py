@@ -1,3 +1,4 @@
+from core.decorators import require_permission
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -6,12 +7,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
-from core.decorators import login_required, role_required
+from core.decorators import login_required, role_required, require_permission
 from contacts.models import Contact
 from .models import Payment
 
 
-@login_required
+@require_permission('PAYMENTS', 'read')
 def payment_list(request):
     page_num = request.GET.get('page', 1)
     payments = Payment.objects.select_related('contact').order_by('-date', '-id')
@@ -42,7 +43,7 @@ def payment_list(request):
     })
 
 
-@role_required('Admin', 'Accountant', 'Accounts', 'Managing Director', 'Director')
+@require_permission('PAYMENTS', 'write')
 def payment_create(request):
     contacts  = Contact.objects.all().order_by('name')
     from documents.models import Document
@@ -90,7 +91,7 @@ def payment_create(request):
     })
 
 
-@role_required('Admin')
+@require_permission('PAYMENTS', 'write')
 def payment_delete(request, payment_id):
     payment = get_object_or_404(Payment, id=payment_id)
     if request.method == 'POST':
@@ -110,7 +111,7 @@ from .forms import ExpenseForm
 
 from django.db.models import Q, Sum
 
-@login_required
+@require_permission('PAYMENTS', 'read')
 def expense_list(request):
     expenses = Expense.objects.all()
 
@@ -202,7 +203,7 @@ def expense_list(request):
         'next_page': 2 if page_obj.has_next() else None,
     })
 
-@login_required
+@require_permission('PAYMENTS', 'write')
 def expense_create(request):
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES)
@@ -234,7 +235,7 @@ def expense_create(request):
         form = ExpenseForm()
     return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Submit New Expense'})
 
-@login_required
+@require_permission('PAYMENTS', 'write')
 def expense_edit(request, pk):
     if request.user.is_superuser:
         expense = get_object_or_404(Expense, pk=pk)
@@ -274,13 +275,13 @@ def expense_edit(request, pk):
         form = ExpenseForm(instance=expense)
     return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Edit Expense', 'expense': expense})
 
-@login_required
+@require_permission('PAYMENTS', 'read')
 def expense_detail(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
         
     return render(request, 'payments/expense_detail.html', {'title': 'View Expense', 'expense': expense})
 
-@login_required
+@require_permission('PAYMENTS', 'write')
 def expense_delete(request, pk):
     if request.user.is_superuser:
         expense = get_object_or_404(Expense, pk=pk)
@@ -296,7 +297,7 @@ def expense_delete(request, pk):
         messages.success(request, 'Expense deleted.')
     return redirect('expense_list')
 
-@login_required
+@require_permission('PAYMENTS', 'write')
 def expense_mark_paid(request, pk):
     expense = get_object_or_404(Expense, pk=pk, status='Approved', is_paid=False)
     # Only submitter or admin can mark as paid
@@ -311,7 +312,7 @@ def expense_mark_paid(request, pk):
         messages.success(request, 'Expense marked as Paid.')
     return redirect('expense_list')
 
-@login_required
+@require_permission('PAYMENTS', 'write')
 @user_passes_test(lambda u: u.is_superuser)
 def expense_approve(request, pk, status):
     expense = get_object_or_404(Expense, pk=pk)
@@ -323,7 +324,7 @@ def expense_approve(request, pk, status):
         messages.success(request, f'Expense {status.lower()} successfully.')
     return redirect('expense_list')
 
-@login_required
+@require_permission('PAYMENTS', 'read')
 def employee_code_autocomplete(request):
     query = request.GET.get('q', '').strip()
     User = get_user_model()
@@ -344,7 +345,7 @@ def employee_code_autocomplete(request):
 import csv
 from django.http import HttpResponse
 
-@login_required
+@require_permission('PAYMENTS', 'read')
 def payment_export_csv(request):
     """Export payments list to CSV."""
     from payments.models import Payment
@@ -381,7 +382,7 @@ def payment_export_csv(request):
         
     return response
 
-@login_required
+@require_permission('PAYMENTS', 'read')
 def expense_export_csv(request):
     """Export expenses list to CSV."""
     from payments.models import Expense
