@@ -56,7 +56,7 @@
                         <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     {% if query %}
-                    <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}{% if date_filter %}&date_filter={{ date_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
+                    <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                     {% endif %}
@@ -64,11 +64,14 @@
 
                 <!-- Middle & Right: Date & Sort Filters -->
                 <div class="flex flex-wrap items-center gap-4">
-                    <!-- Select Particular Date -->
+                    <!-- Select Date Range -->
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400 font-medium">Date:</span>
-                        <input type="date" name="date_filter" value="{{ date_filter|default:'' }}"
-                               class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
+                        <input type="date" name="date_from" value="{{ date_from|default:'' }}"
+                               class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-32 md:w-auto" title="From Date">
+                        <span class="text-xs text-gray-500">to</span>
+                        <input type="date" name="date_to" value="{{ date_to|default:'' }}"
+                               class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-32 md:w-auto" title="To Date">
                     </div>
 
                     <!-- Sort Option -->
@@ -89,7 +92,7 @@
                         <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20">
                             Apply
                         </button>
-                        {% if query or date_filter or sort_by != '-id' %}
+                        {% if query or date_from or date_to or sort_by != '-id' %}
                         <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
                             Reset
                         </a>
@@ -146,7 +149,8 @@
              data-next-page="{{ next_page }}"
              data-query="{{ query|urlencode }}"
              data-sort="{{ sort_by|urlencode }}"
-             data-date="{{ date_filter|urlencode }}"
+             data-date-from="{{ date_from|urlencode }}"
+             data-date-to="{{ date_to|urlencode }}"
              data-types="{% for t in current_types %}{{ t }},{% endfor %}">
             <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
                 <svg class="animate-spin w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24">
@@ -470,7 +474,8 @@ function applySort(column) {
         types.forEach(t => params.append('type', t));
         if (sentinel.dataset.query)  params.set('q', sentinel.dataset.query);
         if (sentinel.dataset.sort)   params.set('sort_by', sentinel.dataset.sort);
-        if (sentinel.dataset.date)   params.set('date_filter', sentinel.dataset.date);
+        if (sentinel.dataset.dateFrom) params.set('date_from', sentinel.dataset.dateFrom);
+        if (sentinel.dataset.dateTo) params.set('date_to', sentinel.dataset.dateTo);
         params.set('page', page);
         return '?' + params.toString();
     }

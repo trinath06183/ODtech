@@ -20,7 +20,8 @@ def document_list(request):
     doc_types = request.GET.getlist('type')
     doc_types = [t for t in doc_types if t]
     query = request.GET.get('q', '').strip()
-    date_filter = request.GET.get('date_filter', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     sort_by = request.GET.get('sort_by', '-id')
 
     qs = Document.objects.select_related('contact')
@@ -47,8 +48,10 @@ def document_list(request):
             Q(items__product__category__icontains=query)
         ).distinct()
 
-    if date_filter:
-        qs = qs.filter(date=date_filter)
+    if date_from:
+        qs = qs.filter(date__gte=date_from)
+    if date_to:
+        qs = qs.filter(date__lte=date_to)
 
     allowed_sorts = ['date', '-date', 'grand_total', '-grand_total', '-id', 'type', '-type', 'contact__name', '-contact__name', 'status', '-status']
     if sort_by not in allowed_sorts:
@@ -110,7 +113,8 @@ def document_list(request):
         'filters': filters,
         'current_types': doc_types,
         'query': query,
-        'date_filter': date_filter,
+        'date_from': date_from,
+        'date_to': date_to,
         'sort_by': sort_by,
         'suggestions': suggestions,
         'company': company,
