@@ -2,7 +2,7 @@
 {% block header %}Record Payment{% endblock %}
 {% block content %}
 
-<div class="max-w-2xl mx-auto">
+<div class="max-w-5xl mx-auto" x-data="paymentForm()">
     <div class="mb-6">
         <a href="{% url 'payment_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm w-fit">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -18,84 +18,146 @@
     {% endfor %}
     {% endif %}
 
-    <div class="glass rounded-2xl p-8">
-        <div class="flex items-center space-x-3 mb-8">
-            <div class="w-10 h-10 rounded-xl bg-emerald-600/30 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-2xl p-8">
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-white">Record Payment</h2>
             </div>
-            <h2 class="text-xl font-bold text-white">Record Payment</h2>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                    <!-- Party -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Party <span class="text-red-400">*</span></label>
+                        <select name="contact" id="contact-select" required
+                                class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition appearance-none">
+                            <option value="">— Select party —</option>
+                            {% for c in contacts %}
+                            <option value="{{ c.id }}" {% if preselect_contact == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }} ({{ c.contact_type }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Against Document (optional) -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Against Invoice <span class="text-gray-500 text-xs">(optional)</span></label>
+                        <select name="document_ref" x-ref="docSelect" @change="updateDetails($event.target)"
+                                class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition appearance-none">
+                            <option value="" data-total="0" data-paid="0" data-balance="0">— Not linked to specific invoice —</option>
+                            {% for doc in documents %}
+                            <option value="{{ doc.number }}" data-total="{{ doc.grand_total }}" data-paid="{{ doc.amount_paid }}" data-balance="{{ doc.balance_due }}" {% if preselect_document == doc.id|stringformat:"s" %}selected{% endif %}>{{ doc.number }} — {{ doc.contact.name }} — &#8377;{{ doc.grand_total|floatformat:0 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Amount (&#8377;) <span class="text-red-400">*</span></label>
+                        <input type="number" name="amount" step="0.01" min="0.01" required placeholder="e.g. 50000"
+                               class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition">
+                    </div>
+
+                    <!-- Payment Mode -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Payment Mode</label>
+                        <select name="payment_mode"
+                                class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition appearance-none">
+                            {% for mode_code, mode_label in payment_modes %}
+                            <option value="{{ mode_code }}">{{ mode_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Reference Number -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Reference / Cheque No.</label>
+                        <input type="text" name="reference_number" placeholder="e.g. CHQ-2026-123"
+                               class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition">
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Notes</label>
+                        <textarea name="notes" rows="3" placeholder="Internal notes about this payment..."
+                                  class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+                    <a href="{% url 'payment_list' %}" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl text-sm transition-colors" style="color: #ffffff !important;">Cancel</a>
+                    <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5" style="color: #ffffff !important;">
+                        Save Payment
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <form method="post">
-            {% csrf_token %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-                <!-- Party -->
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Party <span class="text-red-400">*</span></label>
-                    <select name="contact" id="contact-select" required
-                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition appearance-none">
-                        <option value="">— Select party —</option>
-                        {% for c in contacts %}
-                        <option value="{{ c.id }}" {% if preselect_contact == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }} ({{ c.contact_type }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Against Document (optional) -->
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Against Invoice <span class="text-gray-500 text-xs">(optional)</span></label>
-                    <select name="document_ref"
-                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition appearance-none">
-                        <option value="">— Not linked to specific invoice —</option>
-                        {% for doc in documents %}
-                        <option value="{{ doc.number }}" {% if preselect_document == doc.id|stringformat:"s" %}selected{% endif %}>{{ doc.number }} — {{ doc.contact.name }} — &#8377;{{ doc.grand_total|floatformat:0 }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Amount -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Amount (&#8377;) <span class="text-red-400">*</span></label>
-                    <input type="number" name="amount" step="0.01" min="0.01" required placeholder="e.g. 50000"
-                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition">
-                </div>
-
-                <!-- Payment Mode -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Payment Mode</label>
-                    <select name="payment_mode"
-                            class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition appearance-none">
-                        {% for mode_code, mode_label in payment_modes %}
-                        <option value="{{ mode_code }}">{{ mode_label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Reference Number -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Reference / Cheque No.</label>
-                    <input type="text" name="reference_number" placeholder="e.g. CHQ-2026-123"
-                           class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition">
-                </div>
-
-                <!-- Notes -->
-                <div class="sm:col-span-2">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Notes</label>
-                    <textarea name="notes" rows="3" placeholder="Internal notes about this payment..."
-                              class="w-full px-4 py-3 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition resize-none"></textarea>
+        <!-- Side Panel for Document Details -->
+        <div class="lg:col-span-1">
+            <div x-show="docData.total > 0" x-cloak style="display: none;" x-transition class="glass rounded-2xl p-6 sticky top-6">
+                <h3 class="text-lg font-semibold text-white mb-4 border-b border-white/10 pb-3">Document Details</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-400">Total Amount</p>
+                        <p class="text-lg font-bold text-white">&#8377;<span x-text="parseFloat(docData.total).toFixed(2)"></span></p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm text-gray-400">Amount Paid</p>
+                        <p class="text-lg font-bold text-emerald-400">&#8377;<span x-text="parseFloat(docData.paid).toFixed(2)"></span></p>
+                    </div>
+                    
+                    <div class="pt-3 border-t border-white/10">
+                        <p class="text-sm text-gray-400">Remaining Amount</p>
+                        <p class="text-xl font-bold text-rose-400">&#8377;<span x-text="parseFloat(docData.balance).toFixed(2)"></span></p>
+                    </div>
                 </div>
             </div>
-
-            <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
-                <a href="{% url 'payment_list' %}" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl text-sm transition-colors" style="color: #ffffff !important;">Cancel</a>
-                <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5" style="color: #ffffff !important;">
-                    Save Payment
-                </button>
+            
+            <div x-show="!docData.total || docData.total <= 0" class="glass rounded-2xl p-6 text-center opacity-70">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <p class="text-sm text-gray-400">Select an invoice to see payment details.</p>
             </div>
-        </form>
+        </div>
     </div>
 </div>
+
+<script>
+function paymentForm() {
+    return {
+        docData: {
+            total: 0,
+            paid: 0,
+            balance: 0
+        },
+        init() {
+            this.$nextTick(() => {
+                if (this.$refs.docSelect) {
+                    this.updateDetails(this.$refs.docSelect);
+                }
+            });
+        },
+        updateDetails(select) {
+            const option = select.options[select.selectedIndex];
+            if (option && option.value) {
+                this.docData = {
+                    total: parseFloat(option.dataset.total) || 0,
+                    paid: parseFloat(option.dataset.paid) || 0,
+                    balance: parseFloat(option.dataset.balance) || 0
+                };
+            } else {
+                this.docData = { total: 0, paid: 0, balance: 0 };
+            }
+        }
+    }
+}
+</script>
 {% endblock %}

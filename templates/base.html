@@ -7,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ODtech ERP{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
     <link href="{% static 'vendor/css/fonts.css' %}" rel="stylesheet">
     <script src="{% static 'vendor/js/tailwindcss.js' %}"></script>
     <script>
@@ -308,11 +309,7 @@
                 </svg>
             </button>
 
-            <a href="{% url 'dashboard' %}" class="ml-3 flex items-center" x-show="sidebarOpen"
-                x-transition.opacity.duration.300ms style="display: none;">
-                <!-- Try to use text if logo is white -->
-                <span class="text-xl font-bold text-indigo-700 tracking-tight font-heading">ODtech ERP</span>
-            </a>
+
         </div>
 
         <div class="w-full pt-4 pb-6 flex-1 flex flex-col">
@@ -332,7 +329,7 @@
 
                 <!-- Financial / Company Dashboard -->
                 {% if request.user|has_read_perm:'REPORTING' %}
-                <a href="{% url 'dashboard' %}"
+                <a href="{% url 'financial_dashboard' %}"
                     class="nav-link group relative rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors mb-1"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Company Overview Dashboard">
                     <svg class="w-6 h-6 flex-shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
