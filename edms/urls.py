@@ -106,4 +106,5 @@ urlpatterns = [
         views.MarkNotificationReadView.as_view(),
         name='api_notification_read',
     ),
+    path('api/check-invoice/', views.CheckInvoiceNumberView.as_view(), name='api_check_invoice'),
 ]

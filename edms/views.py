@@ -836,6 +836,14 @@ class MarkNotificationReadView(EDMSLoginRequiredMixin, View):
         notif.mark_read()
         return JsonResponse({'status': 'ok'})
 
+class CheckInvoiceNumberView(EDMSLoginRequiredMixin, View):
+    """API endpoint to check if an invoice number already exists."""
+    def get(self, request, *args, **kwargs):
+        invoice_number = request.GET.get('invoice_number', '').strip()
+        if invoice_number and EDMSDocument.objects.filter(invoice_number__iexact=invoice_number).exists():
+            return JsonResponse({'exists': True})
+        return JsonResponse({'exists': False})
+
 
 # ─── Download Center ──────────────────────────────────────────────────────────
 

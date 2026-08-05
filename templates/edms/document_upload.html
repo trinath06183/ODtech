@@ -364,9 +364,10 @@
                             {{ meta_form.po_number }}
                         </div>
                         <!-- Invoice Number -->
-                        <div>
+                        <div class="relative">
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Invoice Number</label>
                             {{ meta_form.invoice_number }}
+                            <p id="invoice-duplicate-warning" class="text-rose-500 text-xs mt-1.5 hidden font-bold">⚠️ A document with this invoice number already exists.</p>
                         </div>
                         <!-- Amount -->
                         <div>
@@ -644,6 +645,35 @@
         document.getElementById('step2-indicator').className        = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-slate-200 text-slate-400";
         document.getElementById('step2-indicator-text').className   = "text-sm font-medium text-slate-400";
     }
+
+    // Check for duplicate invoice number
+    document.addEventListener('DOMContentLoaded', () => {
+        const invoiceInput = document.getElementById('id_invoice_number');
+        const warning = document.getElementById('invoice-duplicate-warning');
+        
+        if (invoiceInput) {
+            invoiceInput.addEventListener('blur', async (e) => {
+                const val = e.target.value.trim();
+                if (!val) {
+                    warning.classList.add('hidden');
+                    return;
+                }
+                try {
+                    const response = await fetch(`{% url 'edms:api_check_invoice' %}?invoice_number=${encodeURIComponent(val)}`);
+                    const data = await response.json();
+                    if (data.exists) {
+                        warning.classList.remove('hidden');
+                        invoiceInput.classList.add('border-rose-500', 'ring-rose-500');
+                    } else {
+                        warning.classList.add('hidden');
+                        invoiceInput.classList.remove('border-rose-500', 'ring-rose-500');
+                    }
+                } catch(err) {
+                    console.error("Failed to check invoice number", err);
+                }
+            });
+        }
+    });
 </script>
 
 <!-- Desktop Edit Modal -->
