@@ -845,6 +845,22 @@ class CheckInvoiceNumberView(EDMSLoginRequiredMixin, View):
         return JsonResponse({'exists': False})
 
 
+class ExtractInvoicePDFView(EDMSLoginRequiredMixin, View):
+    """API endpoint to handle OCR text extraction from uploaded PDF."""
+    def post(self, request, *args, **kwargs):
+        if 'file' not in request.FILES:
+            return JsonResponse({'error': 'No file uploaded.'}, status=400)
+        
+        uploaded_file = request.FILES['file']
+        from edms.services.ocr_service import OCRService
+        
+        result = OCRService.extract_invoice_data(uploaded_file)
+        if 'error' in result:
+            return JsonResponse(result, status=400)
+            
+        return JsonResponse(result)
+
+
 # ─── Download Center ──────────────────────────────────────────────────────────
 
 class DownloadCenterView(EDMSLoginRequiredMixin, EDMSContextMixin, ListView):

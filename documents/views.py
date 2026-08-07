@@ -979,22 +979,46 @@ from django.http import HttpResponse
 @require_permission('DOCUMENTS', 'read')
 def document_export_csv(request):
     """Export documents list to CSV."""
-    doc_type = request.GET.get('type', 'All')
-    status = request.GET.get('status', 'All')
-    q = request.GET.get('q', '').strip()
+    doc_types = request.GET.getlist('type')
+    doc_types = [t for t in doc_types if t]
+    query = request.GET.get('q', '').strip()
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    sort_by = request.GET.get('sort_by', '-id')
     
-    docs = Document.objects.select_related('contact').all().order_by('-date', '-created_at')
+    docs = Document.objects.select_related('contact')
     
-    if doc_type != 'All':
-        docs = docs.filter(type=doc_type)
-    if status != 'All':
-        docs = docs.filter(status=status)
-    if q:
+    if doc_types:
+        docs = docs.filter(type__in=doc_types)
+
+    if query:
         from django.db.models import Q
+        
+        matching_categories = list(Product.objects.filter(
+            Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
+        ).exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).distinct())
+
         docs = docs.filter(
-            Q(number__icontains=q) | 
-            Q(contact__name__icontains=q)
-        )
+            Q(number__icontains=query) |
+            Q(contact__name__icontains=query) |
+            Q(items__product__name__icontains=query) |
+            Q(items__product__sku__icontains=query) |
+            Q(items__product__description__icontains=query) |
+            Q(items__name__icontains=query) |
+            Q(items__description__icontains=query) |
+            Q(items__product__category__in=matching_categories) |
+            Q(items__product__category__icontains=query)
+        ).distinct()
+
+    if date_from:
+        docs = docs.filter(date__gte=date_from)
+    if date_to:
+        docs = docs.filter(date__lte=date_to)
+
+    allowed_sorts = ['date', '-date', 'grand_total', '-grand_total', '-id', 'type', '-type', 'contact__name', '-contact__name', 'status', '-status']
+    if sort_by not in allowed_sorts:
+        sort_by = '-id'
+    docs = docs.order_by(sort_by)
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="documents_export.csv"'

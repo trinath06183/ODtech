@@ -151,6 +151,8 @@ def expense_list(request):
             Q(employee_code__in=matching_users)
         )
         
+    expenses = expenses.distinct()
+        
     if sort == 'amount_asc':
         expenses = expenses.order_by('amount')
     elif sort == 'amount_desc':
@@ -386,38 +388,70 @@ def payment_export_csv(request):
 def expense_export_csv(request):
     """Export expenses list to CSV."""
     from payments.models import Expense
+    from django.urls import reverse
+    import csv
     category = request.GET.get('category', 'All')
     status = request.GET.get('status', 'All')
     q = request.GET.get('q', '').strip()
     
-    expenses = Expense.objects.select_related('recorded_by').all().order_by('-date', '-created_at')
+    expenses = Expense.objects.select_related('submitted_by').all().order_by('-date', '-created_at')
     
     if category != 'All':
-        expenses = expenses.filter(category=category)
+        expenses = expenses.filter(expense_type=category)
     if status != 'All':
         expenses = expenses.filter(status=status)
     if q:
         expenses = expenses.filter(
-            Q(description__icontains=q) |
-            Q(vendor_name__icontains=q) |
-            Q(recorded_by__username__icontains=q)
+            Q(title__icontains=q) |
+            Q(employee_code__icontains=q) |
+            Q(submitted_by__username__icontains=q)
         )
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="expenses_export.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Category', 'Description', 'Vendor/Employee', 'Amount', 'Status', 'Recorded By'])
+    writer.writerow(['Date', 'Category', 'Description', 'Vendor/Employee', 'Amount', 'Status', 'Recorded By', 'Paid Status', 'Product Link', 'Product Details', 'Order Details'])
     
+    product_ids = [e.payload.get('product_id') for e in expenses if e.payload and e.payload.get('product_id')]
+    order_ids = [e.payload.get('order_id') for e in expenses if e.payload and e.payload.get('order_id')]
+    
+    from tracker.models import Product, Order
+    products = {str(p.id): p for p in Product.objects.filter(id__in=product_ids)}
+    orders = {str(o.id): o for o in Order.objects.filter(id__in=order_ids)}
+
     for e in expenses:
+        product_link = ''
+        product_detail = ''
+        order_detail = ''
+        
+        if e.payload:
+            prod_id = e.payload.get('product_id')
+            if prod_id:
+                try:
+                    path = reverse('tracker:product_detail', args=[prod_id])
+                    product_link = request.build_absolute_uri(path)
+                except Exception:
+                    pass
+                if prod_id in products:
+                    product_detail = products[prod_id].item_name
+                    
+            ord_id = e.payload.get('order_id')
+            if ord_id and ord_id in orders:
+                order_detail = f"{orders[ord_id].order_number} ({orders[ord_id].customer_name})"
+
         writer.writerow([
             e.date.strftime('%d-%b-%Y') if e.date else '',
-            e.get_category_display(),
-            e.description,
-            e.vendor_name or '',
+            e.expense_type,
+            e.title,
+            e.employee_code or '',
             e.amount,
             e.status,
-            e.recorded_by.username if e.recorded_by else ''
+            e.submitted_by.username if e.submitted_by else '',
+            'Paid' if e.is_paid else 'Unpaid',
+            product_link,
+            product_detail,
+            order_detail
         ])
         
     return response

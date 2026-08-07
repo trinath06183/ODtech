@@ -107,4 +107,5 @@ urlpatterns = [
         name='api_notification_read',
     ),
     path('api/check-invoice/', views.CheckInvoiceNumberView.as_view(), name='api_check_invoice'),
+    path('api/extract-invoice-pdf/', views.ExtractInvoicePDFView.as_view(), name='api_extract_invoice_pdf'),
 ]
