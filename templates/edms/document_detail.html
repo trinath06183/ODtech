@@ -136,7 +136,7 @@
             </div>
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Uploaded By</p>
-                <p class="font-medium text-slate-700">{{ document.uploaded_by.username}}</p>
+                <p class="font-medium text-slate-700">{{ document.uploaded_by.empid|default:document.uploaded_by.username }}</p>
             </div>
         </div>
 
@@ -282,7 +282,7 @@
             {% for log in audit_logs %}
             <tr class="hover:bg-slate-50/40">
                 <td class="px-6 py-2.5 text-xs text-slate-400">{{ log.timestamp|date:"d M Y H:i" }}</td>
-                <td class="px-6 py-2.5 font-medium text-slate-700">{{ log.username_cached }}</td>
+                <td class="px-6 py-2.5 font-medium text-slate-700">{{ log.user.empid|default:log.username_cached }}</td>
                 <td class="px-6 py-2.5">
                     <span class="text-xs px-2 py-0.5 rounded-full bg-violet-50 text-violet-700">{{ log.get_action_display }}</span>
                 </td>

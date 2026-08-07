@@ -103,7 +103,7 @@ class AuditService:
             user_role       = ''
             department_name = ''
             if user:
-                username_cached = user.get_full_name() or user.username
+                username_cached = user.empid or user.get_full_name() or user.username
                 user_role       = getattr(user, 'role', '')
                 # Try to find department from EDMS profile
                 try:

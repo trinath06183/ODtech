@@ -147,7 +147,7 @@
                 {% for log in recent_activities %}
                 <tr class="hover:bg-slate-50/40">
                     <td class="px-6 py-3 text-xs text-slate-400 whitespace-nowrap">{{ log.timestamp|date:"d M H:i" }}</td>
-                    <td class="px-6 py-3 font-medium text-slate-700">{{ log.username_cached|default:"—" }}</td>
+                    <td class="px-6 py-3 font-medium text-slate-700">{{ log.user.empid|default:log.username_cached|default:"—" }}</td>
                     <td class="px-6 py-3">
                         <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
                             {% if log.action == 'upload' %}bg-green-100 text-green-700

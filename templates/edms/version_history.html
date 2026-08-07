@@ -65,7 +65,7 @@
                 <td class="px-6 py-3 text-xs text-slate-400">{{ v.file_size|file_size }}</td>
                 <td class="px-6 py-3 text-xs text-slate-300 font-mono" title="{{ v.file_hash }}">{{ v.file_hash|slice:":16" }}…</td>
                 <td class="px-6 py-3 text-xs text-slate-500">{{ v.change_note|default:"—" }}</td>
-                <td class="px-6 py-3 text-slate-600">{{ v.uploaded_by.username}}</td>
+                <td class="px-6 py-3 text-slate-600">{{ v.uploaded_by.empid|default:v.uploaded_by.username }}</td>
                 <td class="px-6 py-3 text-xs text-slate-400">{{ v.created_at|date:"d M Y H:i" }}</td>
                 <td class="px-6 py-3">
                     <div class="flex items-center gap-2">

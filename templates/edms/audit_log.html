@@ -55,8 +55,8 @@
             {% for log in logs %}
             <tr class="hover:bg-slate-50/50 transition-colors {% if not log.success %}bg-red-50/30{% endif %}">
                 <td class="px-6 py-3 text-xs text-slate-500 whitespace-nowrap">{{ log.timestamp|date:"d M Y H:i:s" }}</td>
-                <td class="px-6 py-3">
-                    <span class="font-medium text-slate-700 block">{{ log.username_cached|default:"System" }}</span>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="font-medium text-slate-700 block">{{ log.user.empid|default:log.username_cached|default:"System" }}</span>
                     {% if log.user_role %}
                     <span class="text-[10px] uppercase text-slate-400">{{ log.user_role }}</span>
                     {% endif %}
