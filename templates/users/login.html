@@ -64,7 +64,7 @@
             <!-- Flash messages -->
             {% if messages %}
             {% for msg in messages %}
-            <div class="mb-4 p-3 rounded-xl text-sm font-medium text-center {% if msg.tags == 'error' %}bg-red-500/20 text-red-200 border border-red-500/30{% else %}bg-emerald-500/20 text-emerald-200 border border-emerald-500/30{% endif %}">
+            <div class="mb-4 p-3 rounded-xl text-sm font-medium text-center {% if msg.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-emerald-50 text-emerald-600 border border-emerald-200{% endif %}">
                 {{ msg }}
             </div>
             {% endfor %}
