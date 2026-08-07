@@ -2,14 +2,23 @@
 {% load edms_tags %}
 
 {% block edms_content %}
-<!-- Breadcrumb -->
-<nav class="text-sm text-slate-400 flex items-center gap-1">
-    <a href="{% url 'edms:dashboard' %}" class="hover:text-violet-600">EDMS</a>
-    <span>›</span>
-    <a href="{% url 'edms:document_list' %}" class="hover:text-violet-600">Documents</a>
-    <span>›</span>
-    <span class="text-slate-600 truncate max-w-xs">{{ document.title }}</span>
-</nav>
+<!-- Header Area (Breadcrumb + Actions) -->
+<div class="flex items-center justify-between mb-4">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-slate-400 flex items-center gap-1">
+        <a href="{% url 'edms:dashboard' %}" class="hover:text-violet-600">EDMS</a>
+        <span>›</span>
+        <a href="{% url 'edms:document_list' %}" class="hover:text-violet-600">Documents</a>
+        <span>›</span>
+        <span class="text-slate-600 truncate max-w-xs">{{ document.title }}</span>
+    </nav>
+    
+    <!-- Upload New Button -->
+    <a href="{% url 'edms:document_upload' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-sm transition-colors shadow-md flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Upload New
+    </a>
+</div>
 
 {% if document.source_type == 'commercial' and document.commercial_doc_id %}
 <!-- Commercial Document Banner -->
