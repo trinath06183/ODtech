@@ -15,7 +15,16 @@ from .models import Payment
 @require_permission('PAYMENTS', 'read')
 def payment_list(request):
     page_num = request.GET.get('page', 1)
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    
     payments = Payment.objects.select_related('contact').order_by('-date', '-id')
+    
+    if start_date:
+        payments = payments.filter(date__gte=start_date)
+    if end_date:
+        payments = payments.filter(date__lte=end_date)
+        
     total = payments.aggregate(t=Sum('amount'))['t'] or 0
     total_count = payments.count()
 

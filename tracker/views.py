@@ -227,6 +227,8 @@ def individual_products_view(request):
     supplier_stage_filter = request.GET.get('supplier_stage', '').strip()
     order_status_filter   = request.GET.get('order_status', '').strip()
     search_query          = request.GET.get('q', '').strip()
+    start_date            = request.GET.get('start_date', '').strip()
+    end_date              = request.GET.get('end_date', '').strip()
 
     if customer_stage_filter:
         products_qs = products_qs.filter(customer_stage=customer_stage_filter)
@@ -241,6 +243,17 @@ def individual_products_view(request):
             Q(order__order_number__icontains=search_query) |
             Q(description__icontains=search_query)
         )
+    if start_date:
+        products_qs = products_qs.filter(order__created_at__gte=start_date)
+    if end_date:
+        # Include the entire end date by adding 1 day, or assuming order__created_at is datetime
+        from django.utils import timezone
+        import datetime
+        try:
+            end_dt = datetime.datetime.strptime(end_date, '%Y-%m-%d').date() + datetime.timedelta(days=1)
+            products_qs = products_qs.filter(order__created_at__lt=end_dt)
+        except ValueError:
+            products_qs = products_qs.filter(order__created_at__lte=end_date)
 
     total_count    = products_qs.count()
     filtered_count = total_count  # same since filtering is already applied

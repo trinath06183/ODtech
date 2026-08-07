@@ -79,7 +79,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 
         {# 1. Total Sales #}
-        <a href="{% url 'document_list' %}?type=INV" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <a href="{% url 'document_list' %}?type=INV{% if start_date %}&date_from={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&date_to={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
@@ -99,7 +99,7 @@
         </a>
 
         {# 2. Total Purchases #}
-        <a href="{% url 'document_list' %}?type=PO" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <a href="{% url 'document_list' %}?type=PO{% if start_date %}&date_from={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&date_to={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
@@ -141,7 +141,7 @@
         </div>
 
         {# 4. Total Orders #}
-        <a href="{% url 'tracker:individual_products' %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <a href="{% url 'tracker:individual_products' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
@@ -161,7 +161,7 @@
         </a>
 
         {# 5. Total Payments Received #}
-        <a href="{% url 'payment_list' %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <a href="{% url 'payment_list' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
@@ -181,7 +181,7 @@
         </a>
 
         {# 6. Total Payments Given #}
-        <a href="{% url 'expense_list' %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <a href="{% url 'expense_list' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
@@ -201,7 +201,7 @@
         </a>
 
         {# 7. Amount Needed to Pay (Outstanding Payables) #}
-        <a href="{% url 'expense_list' %}?status=Pending" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-red-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between col-span-1 sm:col-span-2 md:col-span-1">
+        <a href="{% url 'expense_list' %}?status=Pending{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-red-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between col-span-1 sm:col-span-2 md:col-span-1">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold">
