@@ -17,19 +17,19 @@
 {% endif %}
 
 <!-- Stats Row -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
     {% for stat in stats %}
-    <label for="filter-type-{{ stat.type }}" id="tile-{{ stat.type }}" class="glass p-5 rounded-2xl flex items-center space-x-4 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
-        <div class="text-3xl">{{ stat.icon }}</div>
-        <div>
-            <div class="text-2xl font-bold text-white">{{ stat.count }}</div>
-            <div class="text-xs text-gray-400">{{ stat.label }}</div>
+    <label for="filter-type-{{ stat.type }}" id="tile-{{ stat.type }}" class="glass p-3 rounded-xl flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
+        <div class="text-xl">{{ stat.icon }}</div>
+        <div class="min-w-0">
+            <div class="text-lg font-bold text-white leading-none mb-0.5">{{ stat.count }}</div>
+            <div class="text-[10px] text-gray-400 truncate">{{ stat.label }}</div>
         </div>
     </label>
     {% endfor %}
-    <a href="{% url 'create_document' %}" class="glass p-5 rounded-2xl flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer border border-blue-500/30 hover:border-blue-500 bg-blue-600/10 hover:bg-blue-600/20 group">
-        <svg class="w-8 h-8 text-blue-400 group-hover:text-blue-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        <div class="text-lg font-bold text-blue-400 group-hover:text-blue-300">New Document</div>
+    <a href="{% url 'create_document' %}" class="glass p-3 rounded-xl flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer border border-blue-500/30 hover:border-blue-500 bg-blue-600/10 hover:bg-blue-600/20 group">
+        <svg class="w-5 h-5 text-blue-400 group-hover:text-blue-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <div class="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 text-center leading-tight">New Doc</div>
     </a>
 </div>
 
