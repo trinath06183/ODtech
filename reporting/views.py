@@ -128,7 +128,7 @@ def financial_dashboard(request):
     sales_count = sales_qs.count()
     # Invoice detail list for collapsible
     sales_invoice_list = list(sales_qs.values(
-        'number', 'grand_total', 'date', 'contact__name'
+        'id', 'number', 'grand_total', 'date', 'contact__name'
     )[:100])
 
     # Quotations (separate — not part of sales)
@@ -171,7 +171,7 @@ def financial_dashboard(request):
         total_purchases = edms_all_invoices.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         purchases_count = edms_all_invoices.count()
         purchase_invoice_list = list(edms_all_invoices.values(
-            'invoice_number', 'title', 'amount', 'issue_date', 'invoice_date', 'vendor__name'
+            'id', 'invoice_number', 'title', 'amount', 'issue_date', 'invoice_date', 'vendor__name'
         ).order_by('-issue_date')[:100])
     except Exception:
         pass
@@ -209,7 +209,7 @@ def financial_dashboard(request):
 
         # Expense detail list for collapsible
         expense_detail_list = list(expenses_qs.values(
-            'title', 'expense_type', 'amount', 'date', 'status', 'employee_code'
+            'id', 'title', 'expense_type', 'amount', 'date', 'status', 'employee_code'
         )[:100])
 
         pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')

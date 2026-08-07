@@ -520,7 +520,7 @@ document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
                     📊
                 </div>
                 <div>
-                    <h2 class="font-black text-lg text-white tracking-wide">Profit &amp; Loss (P&amp;L) Statement</h2>
+                    <h2 class="font-black text-lg !text-white tracking-wide">Profit &amp; Loss (P&amp;L) Statement</h2>
                     <p class="text-xs text-indigo-200 font-medium">Period: <span class="font-bold text-white">{{ label }}</span> ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</p>
                 </div>
             </div>
@@ -576,7 +576,9 @@ document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
                                 <tbody class="divide-y divide-indigo-50">
                                     {% for inv in sales_invoice_list %}
                                     <tr class="hover:bg-indigo-50/50">
-                                        <td class="px-3 py-1.5 font-medium text-slate-700">{{ inv.number|default:"-" }}</td>
+                                        <td class="px-3 py-1.5 font-medium">
+                                            <a href="/documents/{{ inv.id }}/preview/" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ inv.number|default:"-" }}</a>
+                                        </td>
                                         <td class="px-3 py-1.5 text-slate-500">{{ inv.contact__name|default:"—" }}</td>
                                         <td class="px-3 py-1.5 text-slate-400">{{ inv.date }}</td>
                                         <td class="px-3 py-1.5 text-right font-semibold text-indigo-700">₹{{ inv.grand_total|floatformat:2 }}</td>
@@ -621,7 +623,9 @@ document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
                                 <tbody class="divide-y divide-rose-50">
                                     {% for inv in purchase_invoice_list %}
                                     <tr class="hover:bg-rose-50/50">
-                                        <td class="px-3 py-1.5 font-medium text-slate-700">{{ inv.invoice_number|default:"-" }}</td>
+                                        <td class="px-3 py-1.5 font-medium">
+                                            <a href="/edms/documents/{{ inv.id }}/" target="_blank" class="text-rose-600 hover:text-rose-800 hover:underline">{{ inv.invoice_number|default:"-" }}</a>
+                                        </td>
                                         <td class="px-3 py-1.5 text-slate-500">{{ inv.vendor__name|default:"—" }}</td>
                                         <td class="px-3 py-1.5 text-slate-400">{{ inv.issue_date|default:inv.invoice_date }}</td>
                                         <td class="px-3 py-1.5 text-right font-semibold text-red-600">₹{{ inv.amount|floatformat:2 }}</td>
