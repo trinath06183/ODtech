@@ -52,14 +52,18 @@ class Command(BaseCommand):
             return
 
         # ── 2. Build site URL for the download link ───────────────────────────
-        trusted_origins = getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])
-        # Pick the first non-wildcard origin as the base URL
-        site_url = next(
-            (o.rstrip('/') for o in trusted_origins if '*' not in o),
-            None
-        )
+        # Priority: SITE_URL env var → first non-localhost CSRF origin → LAN IP fallback
+        site_url = env.get('SITE_URL', '').rstrip('/')
         if not site_url:
-            site_url = "http://192.168.1.106"  # fallback to LAN IP
+            trusted_origins = getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])
+            SKIP = ('localhost', '127.0.0.1', '::1')
+            site_url = next(
+                (o.rstrip('/') for o in trusted_origins
+                 if '*' not in o and not any(s in o for s in SKIP)),
+                None
+            )
+        if not site_url:
+            site_url = "http://192.168.1.106"  # LAN IP fallback
         backup_panel_url = f"{site_url}/admin-config/backup/"
 
         # ── 3. Load DB credentials from env ──────────────────────────────────

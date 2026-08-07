@@ -12,6 +12,7 @@ from core.decorators import login_required, role_required, require_permission
 from inventory.models import Product
 from documents.models import Document
 from payments.models import Payment, Expense
+from edms.models import EDMSDocument, EDMSDocumentCategory
 
 
 @require_permission('REPORTING', 'write')
@@ -112,26 +113,25 @@ def financial_dashboard(request):
         end_date = today
         label = "This Month"
 
-    # ── Approved Documents in period ──────────────────────────────────────────
+    # ── 1. SALES: Invoices generated (from Documents module) ─────────────────
     docs_qs = Document.objects.filter(
         status='Approved',
         date__gte=start_date,
         date__lte=end_date,
     )
 
-    # Sales = Invoices + Proforma Invoices
-    sales_qs = docs_qs.filter(type__in=['INV', 'PRO'])
+    # Sales = Invoices only (INV type)
+    sales_qs = docs_qs.filter(type='INV').order_by('-date').select_related('contact')
     total_sales = sales_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
     total_sales_tax = sales_qs.aggregate(t=Sum('tax_total'))['t'] or Decimal('0')
     total_sales_subtotal = sales_qs.aggregate(t=Sum('subtotal'))['t'] or Decimal('0')
     sales_count = sales_qs.count()
+    # Invoice detail list for collapsible
+    sales_invoice_list = list(sales_qs.values(
+        'number', 'grand_total', 'date', 'contact__name'
+    )[:100])
 
-    # Purchase Orders
-    po_qs = docs_qs.filter(type='PO')
-    total_purchases = po_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    purchases_count = po_qs.count()
-
-    # Quotations
+    # Quotations (separate — not part of sales)
     qtn_qs = docs_qs.filter(type='QTN')
     total_quotations = qtn_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
     quotations_count = qtn_qs.count()
@@ -140,6 +140,42 @@ def financial_dashboard(request):
     credit_notes = docs_qs.filter(type='CRN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
     debit_notes = docs_qs.filter(type='DBN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
+    # ── 2. PURCHASES: Invoices entered in EDMS ───────────────────────────────
+    total_purchases = Decimal('0')
+    purchases_count = 0
+    purchase_invoice_list = []
+    try:
+        edms_invoice_qs = EDMSDocument.objects.filter(
+            is_deleted=False,
+            category__name__icontains='invoice',
+            issue_date__gte=start_date,
+            issue_date__lte=end_date,
+        )
+        # Also try with invoice_date field if issue_date is empty
+        edms_invoice_qs2 = EDMSDocument.objects.filter(
+            is_deleted=False,
+            category__name__icontains='invoice',
+            invoice_date__gte=start_date,
+            invoice_date__lte=end_date,
+        ).exclude(id__in=edms_invoice_qs.values('id'))
+
+        from django.db.models import Q as DQ
+        edms_all_invoices = EDMSDocument.objects.filter(
+            is_deleted=False,
+            category__name__icontains='invoice',
+        ).filter(
+            DQ(issue_date__gte=start_date, issue_date__lte=end_date) |
+            DQ(invoice_date__gte=start_date, invoice_date__lte=end_date)
+        ).distinct()
+
+        total_purchases = edms_all_invoices.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        purchases_count = edms_all_invoices.count()
+        purchase_invoice_list = list(edms_all_invoices.values(
+            'invoice_number', 'title', 'amount', 'issue_date', 'invoice_date', 'vendor__name'
+        ).order_by('-issue_date')[:100])
+    except Exception:
+        pass
+
     # ── Payments received vs given in period ─────────────────────────────────
     po_payments_total = Decimal('0')
     try:
@@ -147,32 +183,34 @@ def financial_dashboard(request):
             date__gte=start_date,
             date__lte=end_date,
         )
-        
         po_numbers = set(Document.objects.filter(type='PO').values_list('number', flat=True))
-        
         total_received = Decimal('0')
         for p in payments_qs:
             if p.document_ref and p.document_ref in po_numbers:
                 po_payments_total += p.amount
             else:
                 total_received += p.amount
-
         total_payments_received = total_received
         payments_count = payments_qs.count()
     except Exception:
         total_payments_received = Decimal('0')
         payments_count = 0
 
-    # ── Expenses & Payments Given in period ────────────────────────────────────
+    # ── 3. EXPENSES: All expense entries in period ───────────────────────────
     try:
+        # All expenses (any status) for total
         expenses_qs = Expense.objects.filter(
             date__gte=start_date,
             date__lte=end_date,
-            status='Approved',
-        )
+        ).order_by('-date')
         total_expenses = expenses_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        total_payments_given = total_expenses + po_payments_total
         expenses_count = expenses_qs.count()
+        total_payments_given = total_expenses + po_payments_total
+
+        # Expense detail list for collapsible
+        expense_detail_list = list(expenses_qs.values(
+            'title', 'expense_type', 'amount', 'date', 'status', 'employee_code'
+        )[:100])
 
         pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')
 
@@ -192,6 +230,7 @@ def financial_dashboard(request):
         pending_expenses = Decimal('0')
         daily_expenses = Decimal('0')
         fixed_expenses = Decimal('0')
+        expense_detail_list = []
 
     unpaid_po_advances = Decimal('0')
     try:
@@ -233,11 +272,11 @@ def financial_dashboard(request):
         pass
 
     # ── Profit Calculations ───────────────────────────────────────────────────
-    gross_profit = total_sales_subtotal - total_purchases
-    gross_margin_pct = (gross_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
+    gross_profit = total_sales - total_purchases
+    gross_margin_pct = (gross_profit / total_sales * 100) if total_sales else Decimal('0')
 
     net_profit = gross_profit - total_expenses + (debit_notes - credit_notes)
-    net_margin_pct = (net_profit / total_sales_subtotal * 100) if total_sales_subtotal else Decimal('0')
+    net_margin_pct = (net_profit / total_sales * 100) if total_sales else Decimal('0')
 
     outstanding_receivables = max(Decimal('0'), total_sales - total_payments_received)
 
@@ -360,8 +399,10 @@ def financial_dashboard(request):
         'total_sales_subtotal': total_sales_subtotal,
         'total_sales_tax': total_sales_tax,
         'sales_count': sales_count,
+        'sales_invoice_list': sales_invoice_list,
         'total_purchases': total_purchases,
         'purchases_count': purchases_count,
+        'purchase_invoice_list': purchase_invoice_list,
         'total_quotations': total_quotations,
         'quotations_count': quotations_count,
         # Payments & Payables
@@ -381,6 +422,7 @@ def financial_dashboard(request):
         'daily_expenses': daily_expenses,
         'fixed_expenses': fixed_expenses,
         'expenses_count': expenses_count,
+        'expense_detail_list': expense_detail_list,
         # Profit
         'gross_profit': gross_profit,
         'gross_margin_pct': gross_margin_pct,
