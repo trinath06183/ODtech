@@ -624,7 +624,7 @@ document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
                                     {% for inv in purchase_invoice_list %}
                                     <tr class="hover:bg-rose-50/50">
                                         <td class="px-3 py-1.5 font-medium">
-                                            <a href="/edms/documents/{{ inv.id }}/" target="_blank" class="text-rose-600 hover:text-rose-800 hover:underline">{{ inv.invoice_number|default:"-" }}</a>
+                                            <a href="/edms/document/{{ inv.id }}/" target="_blank" class="text-rose-600 hover:text-rose-800 hover:underline">{{ inv.invoice_number|default:"-" }}</a>
                                         </td>
                                         <td class="px-3 py-1.5 text-slate-500">{{ inv.vendor__name|default:"—" }}</td>
                                         <td class="px-3 py-1.5 text-slate-400">{{ inv.issue_date|default:inv.invoice_date }}</td>
