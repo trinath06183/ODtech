@@ -40,6 +40,17 @@ def backup_create_view(request):
                 # We call the script installed on the server
                 result = subprocess.run(["/usr/local/bin/odtech-autobackup"], capture_output=True, text=True)
                 if result.returncode == 0:
+                    # Clean up old backups — keep only the latest 5
+                    if os.path.exists(BACKUP_DIR):
+                        all_backups = sorted(
+                            glob.glob(os.path.join(BACKUP_DIR, "odtech_backup_*.tar.gz")),
+                            reverse=True  # newest first
+                        )
+                        for old_backup in all_backups[5:]:
+                            try:
+                                os.remove(old_backup)
+                            except Exception:
+                                pass
                     messages.success(request, "Backup created successfully!")
                 else:
                     messages.error(request, f"Backup failed: {result.stderr}")
