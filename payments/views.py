@@ -390,22 +390,69 @@ def expense_export_csv(request):
     from payments.models import Expense
     from django.urls import reverse
     import csv
-    category = request.GET.get('category', 'All')
+    search = request.GET.get('search', '').strip()
+    category = request.GET.get('category', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    employee_code = request.GET.get('employee_code', '').strip()
+    sort = request.GET.get('sort', '').strip()
     status = request.GET.get('status', 'All')
-    q = request.GET.get('q', '').strip()
     
-    expenses = Expense.objects.select_related('submitted_by').all().order_by('-date', '-created_at')
+    expenses = Expense.objects.select_related('submitted_by').all()
     
-    if category != 'All':
+    if search:
+        expenses = expenses.filter(
+            Q(title__icontains=search) | 
+            Q(notes__icontains=search) |
+            Q(submitted_by__empid__icontains=search) |
+            Q(submitted_by__username__icontains=search) |
+            Q(submitted_by__first_name__icontains=search) |
+            Q(submitted_by__last_name__icontains=search) |
+            Q(expense_type__icontains=search)
+        )
+    if category and category != 'All':
         expenses = expenses.filter(expense_type=category)
+    if start_date:
+        expenses = expenses.filter(date__gte=start_date)
+    if end_date:
+        expenses = expenses.filter(date__lte=end_date)
+    if employee_code:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        matching_users = User.objects.filter(
+            Q(first_name__icontains=employee_code) |
+            Q(last_name__icontains=employee_code) |
+            Q(username__icontains=employee_code)
+        ).values_list('empid', flat=True)
+        
+        expenses = expenses.filter(
+            Q(employee_code__icontains=employee_code) |
+            Q(employee_code__in=matching_users)
+        )
+        
     if status != 'All':
         expenses = expenses.filter(status=status)
-    if q:
-        expenses = expenses.filter(
-            Q(title__icontains=q) |
-            Q(employee_code__icontains=q) |
-            Q(submitted_by__username__icontains=q)
-        )
+        
+    expenses = expenses.distinct()
+        
+    if sort == 'amount_asc':
+        expenses = expenses.order_by('amount')
+    elif sort == 'amount_desc':
+        expenses = expenses.order_by('-amount')
+    elif sort == 'date_asc':
+        expenses = expenses.order_by('date')
+    elif sort == 'date_desc':
+        expenses = expenses.order_by('-date')
+    elif sort == 'name_asc':
+        expenses = expenses.order_by('title')
+    elif sort == 'name_desc':
+        expenses = expenses.order_by('-title')
+    elif sort == 'status_asc':
+        expenses = expenses.order_by('status')
+    elif sort == 'status_desc':
+        expenses = expenses.order_by('-status')
+    else:
+        expenses = expenses.order_by('-date', '-created_at')
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="expenses_export.csv"'
