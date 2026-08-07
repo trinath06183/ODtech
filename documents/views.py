@@ -89,6 +89,8 @@ def document_list(request):
     company = CompanyProfile.objects.first()
     page_num = request.GET.get('page', 1)
     total_count = qs.count()
+    from django.db.models import Sum
+    total_sum = qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
     paginator = Paginator(qs, 30)
     page_obj = paginator.get_page(page_num)
@@ -109,6 +111,7 @@ def document_list(request):
     return render(request, 'documents/document_list.html', {
         'documents': page_obj,
         'total_count': total_count,
+        'total_sum': total_sum,
         'stats': stats,
         'filters': filters,
         'current_types': doc_types,

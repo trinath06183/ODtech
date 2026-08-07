@@ -111,6 +111,15 @@
             <option value="{{ suggestion }}"></option>
             {% endfor %}
         </datalist>
+        <!-- Filtered Results Summary -->
+        <div class="flex items-center justify-between bg-blue-900/20 border border-blue-500/20 rounded-xl px-5 py-3 mt-4 mb-2">
+            <div class="text-sm text-blue-200">
+                Showing <span class="font-bold text-white">{{ total_count }}</span> Document{% if total_count != 1 %}s{% endif %}
+            </div>
+            <div class="text-sm text-blue-200">
+                Total Amount: <span class="font-bold text-emerald-400">₹{{ total_sum|floatformat:2 }}</span>
+            </div>
+        </div>
 
         <!-- Documents Table (Scrollable Container / Blue Box Area) -->
         <div class="glass rounded-2xl overflow-hidden border border-white/5">
