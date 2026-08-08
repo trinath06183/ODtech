@@ -150,34 +150,18 @@ def financial_dashboard(request):
     purchases_count = 0
     purchase_invoice_list = []
     try:
-        edms_invoice_qs = EDMSDocument.objects.filter(
-            is_deleted=False,
-            category__name__icontains='invoice',
-            issue_date__gte=start_date,
-            issue_date__lte=end_date,
-        )
-        # Also try with invoice_date field if issue_date is empty
-        edms_invoice_qs2 = EDMSDocument.objects.filter(
+        edms_all_invoices = EDMSDocument.objects.filter(
             is_deleted=False,
             category__name__icontains='invoice',
             invoice_date__gte=start_date,
             invoice_date__lte=end_date,
-        ).exclude(id__in=edms_invoice_qs.values('id'))
-
-        from django.db.models import Q as DQ
-        edms_all_invoices = EDMSDocument.objects.filter(
-            is_deleted=False,
-            category__name__icontains='invoice',
-        ).filter(
-            DQ(issue_date__gte=start_date, issue_date__lte=end_date) |
-            DQ(invoice_date__gte=start_date, invoice_date__lte=end_date)
-        ).distinct()
+        )
 
         total_purchases = edms_all_invoices.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         purchases_count = edms_all_invoices.count()
         purchase_invoice_list = list(edms_all_invoices.values(
             'id', 'invoice_number', 'title', 'amount', 'issue_date', 'invoice_date', 'vendor__name'
-        ).order_by('-issue_date')[:100])
+        ).order_by('-invoice_date')[:100])
     except Exception:
         pass
 

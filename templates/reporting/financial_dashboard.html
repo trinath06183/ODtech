@@ -98,23 +98,23 @@
             </div>
         </a>
 
-        {# 2. Total Purchases #}
-        <a href="{% url 'document_list' %}?type=PO{% if start_date %}&date_from={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&date_to={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        {# 2. Total Purchases (EDMS Invoices) #}
+        <a href="{% url 'edms:document_list' %}?q=invoice" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-                        🛒
+                        🧾
                     </div>
                     <span class="text-xs font-semibold text-purple-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                        View POs →
+                        View Invoices →
                     </span>
                 </div>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Purchases</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">₹{{ total_purchases|floatformat:0 }}</div>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
-                <span>{{ purchases_count }} Purchase Order{{ purchases_count|pluralize }}</span>
-                <span class="text-purple-600 font-semibold">Vendor</span>
+                <span>{{ purchases_count }} Invoice{{ purchases_count|pluralize }}</span>
+                <span class="text-purple-600 font-semibold">EDMS</span>
             </div>
         </a>
 
