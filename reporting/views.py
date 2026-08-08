@@ -149,10 +149,16 @@ def financial_dashboard(request):
     total_purchases = Decimal('0')
     purchases_count = 0
     purchase_invoice_list = []
+    invoice_category_id = ''
     try:
+        from edms.models import EDMSDocumentCategory
+        invoice_cat = EDMSDocumentCategory.objects.filter(name__icontains='invoice', is_active=True).first()
+        if invoice_cat:
+            invoice_category_id = invoice_cat.id
+
         edms_all_invoices = EDMSDocument.objects.filter(
             is_deleted=False,
-            category__name__icontains='invoice',
+            category=invoice_cat,
             invoice_date__gte=start_date,
             invoice_date__lte=end_date,
         )
@@ -392,6 +398,7 @@ def financial_dashboard(request):
         'total_purchases': total_purchases,
         'purchases_count': purchases_count,
         'purchase_invoice_list': purchase_invoice_list,
+        'invoice_category_id': invoice_category_id,
         'total_quotations': total_quotations,
         'quotations_count': quotations_count,
         # Payments & Payables

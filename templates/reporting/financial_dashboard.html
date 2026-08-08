@@ -99,7 +99,7 @@
         </a>
 
         {# 2. Total Purchases (EDMS Invoices) #}
-        <a href="{% url 'edms:document_list' %}?q=invoice{% if start_date %}&date_from={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&date_to={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <a href="{% url 'edms:document_list' %}?category={{ invoice_category_id }}&document_type=purchase{% if start_date %}&date_from={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&date_to={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
