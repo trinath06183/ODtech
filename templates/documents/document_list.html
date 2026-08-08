@@ -151,8 +151,7 @@
         <div
             class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
             <div class="text-sm text-slate-600">
-                Showing <span class="font-bold text-slate-900">{{ total_count }}</span> Document{% if total_count != 1
-                %}s{% endif %}
+                Showing <span class="font-bold text-slate-900">{{ total_count }}</span> Document{% if total_count != 1 %}s{% endif %}
             </div>
             <div class="text-sm text-slate-600">
                 Total Amount: <span class="font-bold text-emerald-600">₹{{ total_sum|floatformat:2 }}</span>
