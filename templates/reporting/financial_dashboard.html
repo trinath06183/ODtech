@@ -140,23 +140,23 @@
             </div>
         </div>
 
-        {# 4. Total Orders #}
-        <a href="{% url 'tracker:individual_products' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        {# 4. Total PIs (Proforma Invoices) #}
+        <a href="{% url 'document_list' %}?type=PRO{% if start_date %}&date_from={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&date_to={{ end_date|date:'Y-m-d' }}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                        📦
+                        📄
                     </div>
                     <span class="text-xs font-semibold text-indigo-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                        View Tracker →
+                        View PIs →
                     </span>
                 </div>
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Orders</span>
-                <div class="text-2xl font-black text-slate-800 mt-1">{{ total_orders }}</div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total PIs Generated</span>
+                <div class="text-2xl font-black text-slate-800 mt-1">{{ pi_count }}</div>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
-                <span>Active: {{ order_in_progress|add:order_open }}</span>
-                <span class="text-indigo-600 font-semibold">Done: {{ order_completed }}</span>
+                <span>₹{{ pi_amount|floatformat:0 }}</span>
+                <span class="text-indigo-600 font-semibold">Proforma Invoices</span>
             </div>
         </a>
 

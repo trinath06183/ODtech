@@ -126,6 +126,11 @@ def financial_dashboard(request):
     total_sales_tax = sales_qs.aggregate(t=Sum('tax_total'))['t'] or Decimal('0')
     total_sales_subtotal = sales_qs.aggregate(t=Sum('subtotal'))['t'] or Decimal('0')
     sales_count = sales_qs.count()
+
+    # PIs (Proforma Invoices) count & amount for the period
+    pi_qs = Document.objects.filter(type='PRO', date__gte=start_date, date__lte=end_date)
+    pi_count = pi_qs.count()
+    pi_amount = pi_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
     # Invoice detail list for collapsible
     sales_invoice_list = list(sales_qs.values(
         'id', 'number', 'grand_total', 'date', 'contact__name'
@@ -417,6 +422,9 @@ def financial_dashboard(request):
         'order_in_progress': order_in_progress,
         'order_completed': order_completed,
         'order_other': order_other,
+        # Proforma Invoices
+        'pi_count': pi_count,
+        'pi_amount': pi_amount,
         # Expenses
         'total_expenses': total_expenses,
         'daily_expenses': daily_expenses,
