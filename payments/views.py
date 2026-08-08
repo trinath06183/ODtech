@@ -17,13 +17,39 @@ def payment_list(request):
     page_num = request.GET.get('page', 1)
     start_date = request.GET.get('start_date', '').strip()
     end_date = request.GET.get('end_date', '').strip()
+    q = request.GET.get('q', '').strip()
+    payment_mode = request.GET.get('payment_mode', '').strip()
+    sort_by = request.GET.get('sort_by', '-date').strip()
     
-    payments = Payment.objects.select_related('contact').order_by('-date', '-id')
+    payments = Payment.objects.select_related('contact')
     
+    from django.db.models import Q
+    if q:
+        payments = payments.filter(
+            Q(contact__name__icontains=q) |
+            Q(document_ref__icontains=q) |
+            Q(reference_number__icontains=q)
+        )
+        
+    if payment_mode:
+        payments = payments.filter(payment_mode=payment_mode)
+        
     if start_date:
         payments = payments.filter(date__gte=start_date)
     if end_date:
         payments = payments.filter(date__lte=end_date)
+        
+    # Validation and applying sort_by
+    allowed_sort_fields = ['date', '-date', 'amount', '-amount', 'contact__name', '-contact__name', 'payment_mode', '-payment_mode']
+    if sort_by not in allowed_sort_fields:
+        sort_by = '-date'
+    
+    if sort_by == '-date':
+        payments = payments.order_by('-date', '-id')
+    elif sort_by == 'date':
+        payments = payments.order_by('date', 'id')
+    else:
+        payments = payments.order_by(sort_by, '-id')
         
     total = payments.aggregate(t=Sum('amount'))['t'] or 0
     total_count = payments.count()
@@ -49,6 +75,12 @@ def payment_list(request):
         'total_count': total_count,
         'has_next': page_obj.has_next(),
         'next_page': 2 if page_obj.has_next() else None,
+        'q': q,
+        'start_date': start_date,
+        'end_date': end_date,
+        'payment_mode': payment_mode,
+        'sort_by': sort_by,
+        'payment_modes': Payment.PAYMENT_MODES,
     })
 
 

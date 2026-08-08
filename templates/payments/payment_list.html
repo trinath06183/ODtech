@@ -37,16 +37,63 @@
 {% endfor %}
 {% endif %}
 
+<!-- Filters -->
+<div class="glass p-5 rounded-2xl mb-6">
+    <form method="GET" action="{% url 'payment_list' %}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end" id="filterForm">
+        <input type="hidden" name="sort_by" id="sortInput" value="{{ sort_by }}">
+        <div>
+            <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Search</label>
+            <input type="text" name="q" value="{{ q }}" placeholder="Party, Ref..." 
+                   class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm text-slate-800">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Mode</label>
+            <select name="payment_mode" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm text-slate-800">
+                <option value="">All Modes</option>
+                {% for code, name in payment_modes %}
+                <option value="{{ code }}" {% if payment_mode == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">From</label>
+            <input type="date" name="start_date" value="{{ start_date }}" 
+                   class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm text-slate-800">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">To</label>
+            <input type="date" name="end_date" value="{{ end_date }}" 
+                   class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm text-slate-800">
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
+                Search
+            </button>
+            <a href="{% url 'payment_list' %}" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm transition-all text-center">
+                Clear
+            </a>
+        </div>
+    </form>
+</div>
+
 <div class="glass rounded-2xl overflow-hidden overflow-x-auto">
     <table class="w-full text-left whitespace-nowrap">
-        <thead class="bg-slate-800/80 border-b border-white/10">
+        <thead class="bg-slate-800/80 border-b border-white/10 select-none">
             <tr class="text-gray-400 text-xs uppercase tracking-wider">
-                <th class="px-6 py-4 font-medium">Date</th>
-                <th class="px-6 py-4 font-medium">Party</th>
+                <th class="px-6 py-4 font-medium cursor-pointer hover:text-emerald-400 transition-colors group" onclick="applySort('date')">
+                    <div class="flex items-center gap-1">Date <span class="{% if sort_by != 'date' and sort_by != '-date' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-date' %}↓{% else %}↑{% endif %}</span></div>
+                </th>
+                <th class="px-6 py-4 font-medium cursor-pointer hover:text-emerald-400 transition-colors group" onclick="applySort('contact__name')">
+                    <div class="flex items-center gap-1">Party <span class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div>
+                </th>
                 <th class="px-6 py-4 font-medium">Against Document</th>
-                <th class="px-6 py-4 font-medium">Mode</th>
+                <th class="px-6 py-4 font-medium cursor-pointer hover:text-emerald-400 transition-colors group" onclick="applySort('payment_mode')">
+                    <div class="flex items-center gap-1">Mode <span class="{% if sort_by != 'payment_mode' and sort_by != '-payment_mode' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-payment_mode' %}↓{% else %}↑{% endif %}</span></div>
+                </th>
                 <th class="px-6 py-4 font-medium">Reference</th>
-                <th class="px-6 py-4 font-medium text-right">Amount</th>
+                <th class="px-6 py-4 font-medium cursor-pointer hover:text-emerald-400 transition-colors group text-right" onclick="applySort('amount')">
+                    <div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'amount' and sort_by != '-amount' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-amount' %}↓{% else %}↑{% endif %}</span></div>
+                </th>
                 {% if request.user.role == 'Admin' %}<th class="px-6 py-4 font-medium text-center">Actions</th>{% endif %}
             </tr>
         </thead>
@@ -55,7 +102,13 @@
         </tbody>
     </table>
 </div>
-<div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{{ next_page }}">
+<div id="scroll-sentinel" class="flex justify-center items-center py-4" 
+     data-next-page="{{ next_page }}"
+     data-q="{{ q|urlencode }}"
+     data-payment-mode="{{ payment_mode|urlencode }}"
+     data-start="{{ start_date|urlencode }}"
+     data-end="{{ end_date|urlencode }}"
+     data-sort="{{ sort_by|urlencode }}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
         <svg class="animate-spin w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         Loading more payments...
@@ -64,18 +117,39 @@
 </div>
 <script>
 (function() {
+    window.applySort = function(field) {
+        const form = document.getElementById('filterForm');
+        const sortInput = document.getElementById('sortInput');
+        const currentSort = sortInput.value;
+        if (currentSort === field) {
+            sortInput.value = '-' + field;
+        } else {
+            sortInput.value = field;
+        }
+        form.submit();
+    };
+
     const sentinel = document.getElementById('scroll-sentinel');
     const spinner = document.getElementById('scroll-spinner');
     const endMsg = document.getElementById('scroll-end-msg');
     const tbody = document.getElementById('payment-tbody');
     let loading = false;
     if (!sentinel) return;
+    
     async function loadMore() {
         const nextPage = sentinel.dataset.nextPage || null;
         if (!nextPage || loading) return;
         loading = true; spinner.classList.remove('hidden');
+        
+        const q = sentinel.dataset.q;
+        const mode = sentinel.dataset.paymentMode;
+        const start = sentinel.dataset.start;
+        const end = sentinel.dataset.end;
+        const sort = sentinel.dataset.sort;
+        const url = `?page=${nextPage}&q=${q}&payment_mode=${mode}&start_date=${start}&end_date=${end}&sort_by=${sort}`;
+        
         try {
-            const res = await fetch(`?page=${nextPage}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await res.json();
             const tmp = document.createElement('tbody');
             tmp.innerHTML = data.html;
