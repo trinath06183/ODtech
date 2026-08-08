@@ -90,6 +90,7 @@ def document_list(request):
     page_num = request.GET.get('page', 1)
     total_count = qs.count()
     from django.db.models import Sum
+    from decimal import Decimal
     total_sum = qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
 
     paginator = Paginator(qs, 30)
