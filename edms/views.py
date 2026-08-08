@@ -275,12 +275,17 @@ class DocumentEditView(EDMSLoginRequiredMixin, EDMSContextMixin, UpdateView):
         return doc
 
     def form_valid(self, form):
-        document = DocumentService.update_metadata(
-            document=self.object,
-            validated_data=form.cleaned_data,
-            user=self.request.user,
+        document = form.save()
+        
+        from edms.services.audit_service import AuditService
+        AuditService.log(
+            action='edit',
             request=self.request,
+            user=self.request.user,
+            document=document,
+            description=f"Metadata updated for '{document.title}'",
         )
+        
         messages.success(self.request, f"Document '{document.title}' updated.")
         return redirect('edms:document_detail', doc_id=document.id)
 
