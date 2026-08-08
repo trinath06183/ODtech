@@ -33,11 +33,7 @@
         {{ search_form.approval_status }}
         {{ search_form.access_level }}
         {{ search_form.sort }}
-        <div class="hidden lg:block"></div>
-        <div class="hidden lg:block"></div>
-        {{ search_form.date_from }}
-        {{ search_form.date_to }}
-        <div class="sm:col-span-2 lg:col-span-4 flex gap-2">
+        <div class="sm:col-span-2 lg:col-span-2 flex items-center gap-2">
             <button type="submit"
                     class="px-5 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors">
                 🔍 Search
@@ -47,6 +43,8 @@
                 Clear
             </a>
         </div>
+        {{ search_form.date_from }}
+        {{ search_form.date_to }}
     </form>
 </div>
 
