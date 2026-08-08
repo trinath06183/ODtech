@@ -292,11 +292,11 @@
     // Dynamic field options mapping
     // We fetch choices from the form rendered in the page to ensure accuracy
     const choicesMap = {
-        'category': '{{ search_form.category|escapejs }}'.replace('id="id_category"', 'name="field_value" id="bulk_value" required'),
-        'department': '{{ search_form.department|escapejs }}'.replace('id="id_department"', 'name="field_value" id="bulk_value" required'),
-        'document_type': '{{ search_form.document_type|escapejs }}'.replace('id="id_document_type"', 'name="field_value" id="bulk_value" required'),
-        'access_level': '{{ search_form.access_level|escapejs }}'.replace('id="id_access_level"', 'name="field_value" id="bulk_value" required'),
-        'approval_status': '{{ search_form.approval_status|escapejs }}'.replace('id="id_approval_status"', 'name="field_value" id="bulk_value" required'),
+        'category': '{{ search_form.category|escapejs }}'.replace('name="category"', 'name="field_value"').replace('id="id_category"', 'id="bulk_value" required'),
+        'department': '{{ search_form.department|escapejs }}'.replace('name="department"', 'name="field_value"').replace('id="id_department"', 'id="bulk_value" required'),
+        'document_type': '{{ search_form.document_type|escapejs }}'.replace('name="document_type"', 'name="field_value"').replace('id="id_document_type"', 'id="bulk_value" required'),
+        'access_level': '{{ search_form.access_level|escapejs }}'.replace('name="access_level"', 'name="field_value"').replace('id="id_access_level"', 'id="bulk_value" required'),
+        'approval_status': '{{ search_form.approval_status|escapejs }}'.replace('name="approval_status"', 'name="field_value"').replace('id="id_approval_status"', 'id="bulk_value" required'),
     };
     
     bulkFieldSelect.addEventListener('change', (e) => {
