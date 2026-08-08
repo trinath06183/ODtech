@@ -108,14 +108,14 @@
                         <span class="text-xs text-gray-400 font-medium">Sort By:</span>
                         <select name="sort_by" onchange="this.form.submit()"
                             class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition cursor-pointer appearance-none pr-8 bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_0.5rem_center] bg-no-repeat">
-                            <option value="-id" {% if sort_by=='-id' or not sort_by %}selected{% endif %}>Default
+                            <option value="-id" {% if sort_by == '-id' or not sort_by %}selected{% endif %}>Default
                                 (Newest)</option>
-                            <option value="-date" {% if sort_by=='-date' %}selected{% endif %}>Date: Newest First
+                            <option value="-date" {% if sort_by == '-date' %}selected{% endif %}>Date: Newest First
                             </option>
-                            <option value="date" {% if sort_by=='date' %}selected{% endif %}>Date: Oldest First</option>
-                            <option value="-grand_total" {% if sort_by=='-grand_total' %}selected{% endif %}>Amount:
+                            <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Date: Oldest First</option>
+                            <option value="-grand_total" {% if sort_by == '-grand_total' %}selected{% endif %}>Amount:
                                 High to Low</option>
-                            <option value="grand_total" {% if sort_by=='grand_total' %}selected{% endif %}>Amount: Low
+                            <option value="grand_total" {% if sort_by == 'grand_total' %}selected{% endif %}>Amount: Low
                                 to High</option>
                         </select>
                     </div>
