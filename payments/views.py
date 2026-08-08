@@ -74,7 +74,7 @@ def payment_list(request):
         'total': total,
         'total_count': total_count,
         'has_next': page_obj.has_next(),
-        'next_page': 2 if page_obj.has_next() else None,
+        'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         'q': q,
         'start_date': start_date,
         'end_date': end_date,

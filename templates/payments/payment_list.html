@@ -103,7 +103,7 @@
     </table>
 </div>
 <div id="scroll-sentinel" class="flex justify-center items-center py-4" 
-     data-next-page="{{ next_page }}"
+     data-next-page="{% if next_page %}{{ next_page }}{% endif %}"
      data-q="{{ q|urlencode }}"
      data-payment-mode="{{ payment_mode|urlencode }}"
      data-start="{{ start_date|urlencode }}"
