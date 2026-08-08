@@ -54,6 +54,9 @@
     <table class="w-full text-sm">
         <thead>
             <tr class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left w-12">
+                    <input type="checkbox" id="selectAllDocs" class="rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                </th>
                 <th class="px-6 py-3 text-left">Document</th>
                 <th class="px-6 py-3 text-left">Category</th>
                 <th class="px-6 py-3 text-left">Type</th>
@@ -66,6 +69,9 @@
         <tbody class="divide-y divide-slate-100">
             {% for doc in documents %}
             <tr class="hover:bg-violet-50/30 transition-colors">
+                <td class="px-6 py-4">
+                    <input type="checkbox" name="doc_ids" value="{{ doc.id }}" class="doc-checkbox rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
                         <div class="text-lg flex-shrink-0">
@@ -174,5 +180,140 @@
     {% endif %}
 </div>
 {% endif %}
+
+<!-- Bulk Action Bar -->
+<div id="bulkActionBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-4 hidden z-50">
+    <span class="text-sm font-medium"><span id="selectedCount">0</span> documents selected</span>
+    <button type="button" onclick="openBulkEditModal()" class="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm font-medium transition-colors">
+        Bulk Edit
+    </button>
+</div>
+
+<!-- Bulk Edit Modal -->
+<div id="bulkEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <form method="POST" action="{% url 'edms:bulk_edit' %}" id="bulkEditForm">
+            {% csrf_token %}
+            <!-- Hidden inputs for selected document IDs will be injected here -->
+            <div id="bulkDocInputs"></div>
+            
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-800">Bulk Edit Documents</h3>
+                <button type="button" onclick="closeBulkEditModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Field to Update</label>
+                    <select name="field_name" id="bulkFieldSelect" class="w-full rounded-xl border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500" required>
+                        <option value="">Select a field...</option>
+                        <option value="category">Category</option>
+                        <option value="department">Department</option>
+                        <option value="document_type">Document Type</option>
+                        <option value="access_level">Access Level</option>
+                        <option value="approval_status">Approval Status</option>
+                    </select>
+                </div>
+                
+                <!-- Dynamic Field Value Inputs -->
+                <div id="bulkValueContainer" class="hidden">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">New Value</label>
+                    <div id="bulkValueInputs">
+                        <!-- Dynamic inputs will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 bg-slate-50 flex justify-end gap-3">
+                <button type="button" onclick="closeBulkEditModal()" class="px-5 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-violet-600 rounded-xl hover:bg-violet-700 transition-colors">Apply Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Checkbox logic
+    const selectAllCheckbox = document.getElementById('selectAllDocs');
+    const docCheckboxes = document.querySelectorAll('.doc-checkbox');
+    const bulkActionBar = document.getElementById('bulkActionBar');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const bulkDocInputs = document.getElementById('bulkDocInputs');
+    
+    function updateBulkActionBar() {
+        const selectedDocs = Array.from(docCheckboxes).filter(cb => cb.checked);
+        if (selectedDocs.length > 0) {
+            bulkActionBar.classList.remove('hidden');
+            selectedCountSpan.textContent = selectedDocs.length;
+        } else {
+            bulkActionBar.classList.add('hidden');
+        }
+    }
+    
+    if(selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            docCheckboxes.forEach(cb => cb.checked = e.target.checked);
+            updateBulkActionBar();
+        });
+    }
+    
+    docCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            updateBulkActionBar();
+            selectAllCheckbox.checked = Array.from(docCheckboxes).every(c => c.checked);
+        });
+    });
+
+    // Modal logic
+    const bulkEditModal = document.getElementById('bulkEditModal');
+    const bulkFieldSelect = document.getElementById('bulkFieldSelect');
+    const bulkValueContainer = document.getElementById('bulkValueContainer');
+    const bulkValueInputs = document.getElementById('bulkValueInputs');
+    
+    function openBulkEditModal() {
+        // Prepare hidden inputs
+        bulkDocInputs.innerHTML = '';
+        docCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'doc_ids';
+                input.value = cb.value;
+                bulkDocInputs.appendChild(input);
+            }
+        });
+        bulkEditModal.classList.remove('hidden');
+    }
+    
+    function closeBulkEditModal() {
+        bulkEditModal.classList.add('hidden');
+    }
+    
+    // Dynamic field options mapping
+    // We fetch choices from the form rendered in the page to ensure accuracy
+    const choicesMap = {
+        'category': '{{ search_form.category|escapejs }}'.replace('id="id_category"', 'name="field_value" id="bulk_value" required'),
+        'department': '{{ search_form.department|escapejs }}'.replace('id="id_department"', 'name="field_value" id="bulk_value" required'),
+        'document_type': '{{ search_form.document_type|escapejs }}'.replace('id="id_document_type"', 'name="field_value" id="bulk_value" required'),
+        'access_level': '{{ search_form.access_level|escapejs }}'.replace('id="id_access_level"', 'name="field_value" id="bulk_value" required'),
+        'approval_status': '{{ search_form.approval_status|escapejs }}'.replace('id="id_approval_status"', 'name="field_value" id="bulk_value" required'),
+    };
+    
+    bulkFieldSelect.addEventListener('change', (e) => {
+        const field = e.target.value;
+        if (field && choicesMap[field]) {
+            bulkValueContainer.classList.remove('hidden');
+            bulkValueInputs.innerHTML = choicesMap[field];
+            // Remove the empty option if we want to enforce selection
+            const select = bulkValueInputs.querySelector('select');
+            if (select && select.options[0].value === "") {
+                select.options[0].text = "Select a value...";
+            }
+        } else {
+            bulkValueContainer.classList.add('hidden');
+            bulkValueInputs.innerHTML = '';
+        }
+    });
+</script>
 
 {% endblock %}

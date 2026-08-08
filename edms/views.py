@@ -289,6 +289,64 @@ class DocumentEditView(EDMSLoginRequiredMixin, EDMSContextMixin, UpdateView):
         messages.success(self.request, f"Document '{document.title}' updated.")
         return redirect('edms:document_detail', doc_id=document.id)
 
+# ─── Bulk Edit ────────────────────────────────────────────────────────────────
+
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+class DocumentBulkEditView(EDMSLoginRequiredMixin, UserPassesTestMixin, View):
+    """
+    Handle bulk edit actions for selected documents.
+    Restricted to admins.
+    """
+    def test_func(self):
+        # Admins only
+        return self.request.user.is_superuser or self.request.user.is_staff
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Access denied: Bulk editing is restricted to administrators.")
+        return redirect('edms:document_list')
+
+    def post(self, request):
+        doc_ids = request.POST.getlist('doc_ids')
+        field_name = request.POST.get('field_name')
+        field_value = request.POST.get('field_value')
+        
+        if not doc_ids:
+            messages.warning(request, "No documents selected.")
+            return redirect('edms:document_list')
+            
+        if not field_name:
+            messages.warning(request, "No field selected for update.")
+            return redirect('edms:document_list')
+
+        allowed_fields = ['category', 'department', 'document_type', 'access_level', 'approval_status']
+        if field_name not in allowed_fields:
+            messages.error(request, "Invalid field selected.")
+            return redirect('edms:document_list')
+
+        # Fetch documents
+        documents = EDMSDocument.objects.filter(id__in=doc_ids)
+        if not documents.exists():
+            messages.warning(request, "Selected documents not found.")
+            return redirect('edms:document_list')
+
+        try:
+            updated_count = DocumentService.bulk_update_metadata(
+                documents=documents,
+                field_name=field_name,
+                new_value=field_value,
+                user=request.user,
+                request=request
+            )
+            messages.success(request, f"Successfully updated {updated_count} document(s).")
+        except Exception as e:
+            logger.exception("[EDMS Bulk Edit] Error: %s", e)
+            messages.error(request, f"An error occurred during bulk update: {str(e)}")
+
+        # Redirect back with existing query params if possible
+        referer = request.META.get('HTTP_REFERER')
+        return redirect(referer if referer else 'edms:document_list')
+
 
 # ─── Secure Download ──────────────────────────────────────────────────────────
 

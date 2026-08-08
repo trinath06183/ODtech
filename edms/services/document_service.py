@@ -102,6 +102,33 @@ class DocumentService:
 
     @staticmethod
     @transaction.atomic
+    def bulk_update_metadata(documents, field_name, new_value, user, request=None):
+        """Bulk update a single metadata field for multiple documents."""
+        from edms.services.audit_service import AuditService
+        from edms.models import EDMSDocumentCategory, Department
+
+        if field_name == 'category' and new_value:
+            new_value = get_object_or_404(EDMSDocumentCategory, pk=new_value)
+        elif field_name == 'department' and new_value:
+            new_value = get_object_or_404(Department, pk=new_value)
+
+        updated_count = 0
+        for document in documents:
+            setattr(document, field_name, new_value)
+            document.save()
+            updated_count += 1
+            
+            AuditService.log(
+                action='edit',
+                request=request,
+                user=user,
+                document=document,
+                description=f"Bulk edit: {field_name.replace('_', ' ').title()} updated to '{new_value}'",
+            )
+        return updated_count
+
+    @staticmethod
+    @transaction.atomic
     def upload_new_version(document, uploaded_file, user, change_note='', request=None):
         """Upload a new version of an existing document."""
         from edms.services.upload_service import UploadService

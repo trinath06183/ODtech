@@ -26,6 +26,9 @@ urlpatterns = [
 
     # ── Document Edit (metadata only) ─────────────────────────────────────────
     path('document/<uuid:doc_id>/edit/', views.DocumentEditView.as_view(), name='document_edit'),
+    
+    # ── Document Bulk Edit ────────────────────────────────────────────────────
+    path('documents/bulk-edit/', views.DocumentBulkEditView.as_view(), name='bulk_edit'),
 
     # ── Document Delete (soft) ────────────────────────────────────────────────
     path('document/<uuid:doc_id>/delete/', views.DocumentDeleteView.as_view(), name='document_delete'),
