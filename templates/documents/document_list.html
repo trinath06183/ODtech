@@ -5,11 +5,21 @@
 {% if messages %}
 <div class="fixed bottom-6 right-6 z-50 space-y-3 max-w-md">
     {% for msg in messages %}
-    <div x-data="{ show: true }" x-show="show" x-transition class="p-4 rounded-xl shadow-lg border flex items-center space-x-3 {% if msg.tags == 'error' %}bg-red-900/90 border-red-700 text-red-100{% else %}bg-emerald-900/90 border-emerald-700 text-emerald-100{% endif %}">
-        {% if msg.tags == 'error' %}<svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{% else %}<svg class="w-5 h-5 flex-shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>{% endif %}
+    <div x-data="{ show: true }" x-show="show" x-transition
+        class="p-4 rounded-xl shadow-lg border flex items-center space-x-3 {% if msg.tags == 'error' %}bg-red-900/90 border-red-700 text-red-100{% else %}bg-emerald-900/90 border-emerald-700 text-emerald-100{% endif %}">
+        {% if msg.tags == 'error' %}<svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>{% else %}<svg class="w-5 h-5 flex-shrink-0 text-emerald-500" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>{% endif %}
         <div class="flex-grow">{{ msg }}</div>
         <button @click="show = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
         </button>
     </div>
     {% endfor %}
@@ -19,7 +29,8 @@
 <!-- Stats Row -->
 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
     {% for stat in stats %}
-    <label for="filter-type-{{ stat.type }}" id="tile-{{ stat.type }}" class="glass p-3 rounded-xl flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
+    <label for="filter-type-{{ stat.type }}" id="tile-{{ stat.type }}"
+        class="glass p-3 rounded-xl flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
         <div class="text-xl">{{ stat.icon }}</div>
         <div class="min-w-0">
             <div class="text-lg font-bold text-white leading-none mb-0.5">{{ stat.count }}</div>
@@ -27,37 +38,53 @@
         </div>
     </label>
     {% endfor %}
-    <a href="{% url 'create_document' %}" class="glass p-3 rounded-xl flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer border border-blue-500/30 hover:border-blue-500 bg-blue-600/10 hover:bg-blue-600/20 group">
-        <svg class="w-5 h-5 text-blue-400 group-hover:text-blue-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        <div class="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 text-center leading-tight">New Doc</div>
+    <a href="{% url 'create_document' %}"
+        class="glass p-3 rounded-xl flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer border border-blue-500/30 hover:border-blue-500 bg-blue-600/10 hover:bg-blue-600/20 group">
+        <svg class="w-5 h-5 text-blue-400 group-hover:text-blue-300 mb-1" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <div class="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 text-center leading-tight">New Doc
+        </div>
     </a>
 </div>
 
 <!-- Grid Container for Split Screen Dashboard -->
 <div class="mb-8">
-    
+
     <!-- Left Column (Controls & Table list) - Spans 3 columns on large screens -->
     <div class="space-y-6">
-        
+
         <!-- Search, Filter & Sort Controls (Red Box Element) -->
         <div class="glass p-4 rounded-2xl">
             <form id="filter-form" method="get" class="flex flex-wrap items-center justify-between gap-4">
                 <div class="hidden">
                     {% for f in filters %}
-                    <input type="checkbox" id="filter-type-{{ f.type }}" name="type" value="{{ f.type }}" class="type-checkbox" {% if f.type in current_types %}checked{% endif %} onchange="var t=document.getElementById('tile-{{ f.type }}'); if(this.checked){t.classList.add('border-blue-500');t.classList.remove('border-white/5');}else{t.classList.remove('border-blue-500');t.classList.add('border-white/5');}">
+                    <input type="checkbox" id="filter-type-{{ f.type }}" name="type" value="{{ f.type }}"
+                        class="type-checkbox" {% if f.type in current_types %}checked{% endif %}
+                        onchange="var t=document.getElementById('tile-{{ f.type }}'); if(this.checked){t.classList.add('border-blue-500');t.classList.remove('border-white/5');}else{t.classList.remove('border-blue-500');t.classList.add('border-white/5');}">
                     {% endfor %}
                 </div>
 
                 <!-- Left: Search Box with Autocomplete Datalist -->
                 <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">
-                    <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search Doc No, Customer, Product..." list="search-suggestions"
-                           class="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
+                    <input type="text" name="q" value="{{ query|default:'' }}"
+                        placeholder="Search Doc No, Customer, Product..." list="search-suggestions"
+                        class="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                     </div>
                     {% if query %}
-                    <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white"
+                        title="Clear search">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </a>
                     {% endif %}
                 </div>
@@ -68,36 +95,45 @@
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400 font-medium">Date:</span>
                         <input type="date" name="date_from" value="{{ date_from|default:'' }}"
-                               class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-32 md:w-auto" title="From Date">
+                            class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-32 md:w-auto"
+                            title="From Date">
                         <span class="text-xs text-gray-500">to</span>
                         <input type="date" name="date_to" value="{{ date_to|default:'' }}"
-                               class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-32 md:w-auto" title="To Date">
+                            class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-32 md:w-auto"
+                            title="To Date">
                     </div>
 
                     <!-- Sort Option -->
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400 font-medium">Sort By:</span>
                         <select name="sort_by" onchange="this.form.submit()"
-                                class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition cursor-pointer appearance-none pr-8 bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_0.5rem_center] bg-no-repeat">
-                            <option value="-id" {% if sort_by == '-id' or not sort_by %}selected{% endif %}>Default (Newest)</option>
-                            <option value="-date" {% if sort_by == '-date' %}selected{% endif %}>Date: Newest First</option>
-                            <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Date: Oldest First</option>
-                            <option value="-grand_total" {% if sort_by == '-grand_total' %}selected{% endif %}>Amount: High to Low</option>
-                            <option value="grand_total" {% if sort_by == 'grand_total' %}selected{% endif %}>Amount: Low to High</option>
+                            class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition cursor-pointer appearance-none pr-8 bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_0.5rem_center] bg-no-repeat">
+                            <option value="-id" {% if sort_by=='-id' or not sort_by %}selected{% endif %}>Default
+                                (Newest)</option>
+                            <option value="-date" {% if sort_by=='-date' %}selected{% endif %}>Date: Newest First
+                            </option>
+                            <option value="date" {% if sort_by=='date' %}selected{% endif %}>Date: Oldest First</option>
+                            <option value="-grand_total" {% if sort_by=='-grand_total' %}selected{% endif %}>Amount:
+                                High to Low</option>
+                            <option value="grand_total" {% if sort_by=='grand_total' %}selected{% endif %}>Amount: Low
+                                to High</option>
                         </select>
                     </div>
 
                     <!-- Buttons -->
                     <div class="flex items-center space-x-2">
-                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20">
+                        <button type="submit"
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20">
                             Apply
                         </button>
                         {% if query or date_from or date_to or sort_by != '-id' %}
-                        <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+                        <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}"
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
                             Reset
                         </a>
                         {% endif %}
-                        <a href="{% url 'document_export_csv' %}?{{ request.GET.urlencode }}" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2">
+                        <a href="{% url 'document_export_csv' %}?{{ request.GET.urlencode }}"
+                            class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2">
                             ⬇ Export
                         </a>
                     </div>
@@ -112,9 +148,11 @@
             {% endfor %}
         </datalist>
         <!-- Filtered Results Summary -->
-        <div class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
+        <div
+            class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
             <div class="text-sm text-slate-600">
-                Showing <span class="font-bold text-slate-900">{{ total_count }}</span> Document{% if total_count != 1 %}s{% endif %}
+                Showing <span class="font-bold text-slate-900">{{ total_count }}</span> Document{% if total_count != 1
+                %}s{% endif %}
             </div>
             <div class="text-sm text-slate-600">
                 Total Amount: <span class="font-bold text-emerald-600">₹{{ total_sum|floatformat:2 }}</span>
@@ -128,20 +166,35 @@
                     <thead class="bg-slate-800 border-b border-white/10 sticky top-0 z-10">
                         <tr class="text-gray-400 text-xs uppercase tracking-wider select-none">
                             <th class="px-6 py-4 font-medium">Doc Number</th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('type')">
-                                <div class="flex items-center gap-1">Type <span class="{% if sort_by != 'type' and sort_by != '-type' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-type' %}↓{% else %}↑{% endif %}</span></div>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group"
+                                onclick="applySort('type')">
+                                <div class="flex items-center gap-1">Type <span
+                                        class="{% if sort_by != 'type' and sort_by != '-type' %}opacity-0 group-hover:opacity-50{% endif %}">{%
+                                        if sort_by == '-type' %}↓{% else %}↑{% endif %}</span></div>
                             </th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('contact__name')">
-                                <div class="flex items-center gap-1">Customer <span class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group"
+                                onclick="applySort('contact__name')">
+                                <div class="flex items-center gap-1">Customer <span
+                                        class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{%
+                                        if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div>
                             </th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('date')">
-                                <div class="flex items-center gap-1">Date <span class="{% if sort_by != 'date' and sort_by != '-date' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-date' %}↓{% else %}↑{% endif %}</span></div>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group"
+                                onclick="applySort('date')">
+                                <div class="flex items-center gap-1">Date <span
+                                        class="{% if sort_by != 'date' and sort_by != '-date' %}opacity-0 group-hover:opacity-50{% endif %}">{%
+                                        if sort_by == '-date' %}↓{% else %}↑{% endif %}</span></div>
                             </th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('status')">
-                                <div class="flex items-center gap-1">Status <span class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group"
+                                onclick="applySort('status')">
+                                <div class="flex items-center gap-1">Status <span
+                                        class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{%
+                                        if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div>
                             </th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group text-right" onclick="applySort('grand_total')">
-                                <div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group text-right"
+                                onclick="applySort('grand_total')">
+                                <div class="flex items-center justify-end gap-1">Amount <span
+                                        class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{%
+                                        if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div>
                             </th>
                             <th class="px-6 py-4 font-medium text-center">Actions</th>
                         </tr>
@@ -154,17 +207,16 @@
         </div>
 
         <!-- Sentinel + Spinner for Infinite Scroll -->
-        <div id="scroll-sentinel" class="flex justify-center items-center py-4"
-             data-next-page="{{ next_page }}"
-             data-query="{{ query|urlencode }}"
-             data-sort="{{ sort_by|urlencode }}"
-             data-date-from="{{ date_from|urlencode }}"
-             data-date-to="{{ date_to|urlencode }}"
-             data-types="{% for t in current_types %}{{ t }},{% endfor %}">
+        <div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{{ next_page }}"
+            data-query="{{ query|urlencode }}" data-sort="{{ sort_by|urlencode }}"
+            data-date-from="{{ date_from|urlencode }}" data-date-to="{{ date_to|urlencode }}"
+            data-types="{% for t in current_types %}{{ t }},{% endfor %}">
             <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
                 <svg class="animate-spin w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
                 </svg>
                 Loading more documents...
             </div>
@@ -173,27 +225,33 @@
     </div>
 
     <!-- Tracker Modal -->
-    <div id="trackerModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div id="trackerModal"
+        class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div class="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
             <h3 class="text-xl font-bold text-white mb-4">Send to Tracking Dashboard</h3>
-            <p class="text-sm text-gray-400 mb-6">Create a new Order in the tracking dashboard. Please confirm or update the mandatory details below.</p>
-            
+            <p class="text-sm text-gray-400 mb-6">Create a new Order in the tracking dashboard. Please confirm or update
+                the mandatory details below.</p>
+
             <input type="hidden" id="trackerDocId">
-            
+
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Order Number *</label>
-                    <input type="text" id="trackerOrderNumber" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                    <input type="text" id="trackerOrderNumber"
+                        class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-1">Customer Phone *</label>
-                    <input type="text" id="trackerCustomerPhone" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
+                    <input type="text" id="trackerCustomerPhone"
+                        class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500">
                 </div>
             </div>
-            
+
             <div class="mt-8 flex justify-end space-x-3">
-                <button type="button" onclick="closeTrackerModal()" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
-                <button type="button" onclick="submitTrackerModal()" id="trackerSubmitBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center">
+                <button type="button" onclick="closeTrackerModal()"
+                    class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+                <button type="button" onclick="submitTrackerModal()" id="trackerSubmitBtn"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center">
                     Send to Tracker
                 </button>
             </div>
@@ -201,159 +259,169 @@
     </div>
 
     <script>
-    function openTrackerModal(docId, suggestedOrderNum, customerPhone) {
-        document.getElementById('trackerDocId').value = docId;
-        document.getElementById('trackerOrderNumber').value = suggestedOrderNum || '';
-        document.getElementById('trackerCustomerPhone').value = customerPhone || '';
-        document.getElementById('trackerModal').classList.remove('hidden');
-    }
-
-    function closeTrackerModal() {
-        document.getElementById('trackerModal').classList.add('hidden');
-    }
-
-    async function submitTrackerModal() {
-        const docId = document.getElementById('trackerDocId').value;
-        const orderNum = document.getElementById('trackerOrderNumber').value.trim();
-        const phone = document.getElementById('trackerCustomerPhone').value.trim();
-        
-        if (!orderNum || !phone) {
-            alert("Order Number and Customer Phone are required.");
-            return;
+        function openTrackerModal(docId, suggestedOrderNum, customerPhone) {
+            document.getElementById('trackerDocId').value = docId;
+            document.getElementById('trackerOrderNumber').value = suggestedOrderNum || '';
+            document.getElementById('trackerCustomerPhone').value = customerPhone || '';
+            document.getElementById('trackerModal').classList.remove('hidden');
         }
-        
-        const btn = document.getElementById('trackerSubmitBtn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "Sending...";
-        btn.disabled = true;
-        
-        try {
-            const response = await fetch(`/documents/api/${docId}/send-to-tracker/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({
-                    order_number: orderNum,
-                    customer_phone: phone
-                })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                window.location.href = data.url;
-            } else {
-                alert("Error: " + data.error);
+
+        function closeTrackerModal() {
+            document.getElementById('trackerModal').classList.add('hidden');
+        }
+
+        async function submitTrackerModal() {
+            const docId = document.getElementById('trackerDocId').value;
+            const orderNum = document.getElementById('trackerOrderNumber').value.trim();
+            const phone = document.getElementById('trackerCustomerPhone').value.trim();
+
+            if (!orderNum || !phone) {
+                alert("Order Number and Customer Phone are required.");
+                return;
+            }
+
+            const btn = document.getElementById('trackerSubmitBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Sending...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`/documents/api/${docId}/send-to-tracker/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        order_number: orderNum,
+                        customer_phone: phone
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = data.url;
+                } else {
+                    alert("Error: " + data.error);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Network error.");
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
-        } catch (e) {
-            alert("Network error.");
-            btn.innerHTML = originalText;
-            btn.disabled = false;
         }
-    }
     </script>
 
-<!-- PO Goods Receiving Modal -->
-<div id="receiveGoodsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl text-white">
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
-                    📦
+    <!-- PO Goods Receiving Modal -->
+    <div id="receiveGoodsModal"
+        class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl text-white">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
+                        📦
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Receive Goods for PO <span id="receivePoNumber"
+                                class="font-mono text-purple-400"></span></h3>
+                        <p class="text-xs text-slate-400">Select items & adjust receiving quantities to increase
+                            inventory stock</p>
+                    </div>
                 </div>
+                <button type="button" onclick="closeReceiveGoodsModal()"
+                    class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+
+            <div id="receiveLoading" class="py-12 text-center text-slate-400">
+                Loading PO items...
+            </div>
+
+            <div id="receiveFormContent" class="hidden space-y-4">
+                <div class="max-h-[350px] overflow-y-auto rounded-xl border border-slate-800">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
+                            <tr>
+                                <th class="p-3 text-center"><input type="checkbox" id="selectAllPoItems"
+                                        onclick="toggleAllPoItems(this)" checked class="rounded border-slate-700"></th>
+                                <th class="p-3">Item / Product</th>
+                                <th class="p-3 text-center">Ordered Qty</th>
+                                <th class="p-3 text-center">Prev. Received</th>
+                                <th class="p-3 text-center">Receiving Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="poItemsTbody" class="divide-y divide-slate-800 bg-slate-900/50">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
                 <div>
-                    <h3 class="text-lg font-bold text-white">Receive Goods for PO <span id="receivePoNumber" class="font-mono text-purple-400"></span></h3>
-                    <p class="text-xs text-slate-400">Select items & adjust receiving quantities to increase inventory stock</p>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase">Receipt Remarks
+                        (Optional)</label>
+                    <input type="text" id="receiveRemarks" placeholder="e.g. Received batch #1 from vendor"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-purple-500 focus:border-purple-500">
                 </div>
             </div>
-            <button type="button" onclick="closeReceiveGoodsModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
-        </div>
 
-        <div id="receiveLoading" class="py-12 text-center text-slate-400">
-            Loading PO items...
-        </div>
-
-        <div id="receiveFormContent" class="hidden space-y-4">
-            <div class="max-h-[350px] overflow-y-auto rounded-xl border border-slate-800">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
-                        <tr>
-                            <th class="p-3 text-center"><input type="checkbox" id="selectAllPoItems" onclick="toggleAllPoItems(this)" checked class="rounded border-slate-700"></th>
-                            <th class="p-3">Item / Product</th>
-                            <th class="p-3 text-center">Ordered Qty</th>
-                            <th class="p-3 text-center">Prev. Received</th>
-                            <th class="p-3 text-center">Receiving Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody id="poItemsTbody" class="divide-y divide-slate-800 bg-slate-900/50">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
+            <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeReceiveGoodsModal()"
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition">
+                    Cancel
+                </button>
+                <button type="button" onclick="submitReceiveGoods()" id="receiveGoodsSubmitBtn"
+                    class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-purple-950 flex items-center gap-2">
+                    Confirm Receipt & Increase Stock 📥
+                </button>
             </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase">Receipt Remarks (Optional)</label>
-                <input type="text" id="receiveRemarks" placeholder="e.g. Received batch #1 from vendor" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-purple-500 focus:border-purple-500">
-            </div>
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
-            <button type="button" onclick="closeReceiveGoodsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition">
-                Cancel
-            </button>
-            <button type="button" onclick="submitReceiveGoods()" id="receiveGoodsSubmitBtn" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-purple-950 flex items-center gap-2">
-                Confirm Receipt & Increase Stock 📥
-            </button>
         </div>
     </div>
-</div>
 
-<script>
-let currentPoDocId = null;
-let currentPoItems = [];
+    <script>
+        let currentPoDocId = null;
+        let currentPoItems = [];
 
-async function openReceiveGoodsModal(docId, docNumber) {
-    currentPoDocId = docId;
-    document.getElementById('receivePoNumber').innerText = docNumber || '';
-    document.getElementById('receiveGoodsModal').classList.remove('hidden');
-    document.getElementById('receiveLoading').classList.remove('hidden');
-    document.getElementById('receiveFormContent').classList.add('hidden');
+        async function openReceiveGoodsModal(docId, docNumber) {
+            currentPoDocId = docId;
+            document.getElementById('receivePoNumber').innerText = docNumber || '';
+            document.getElementById('receiveGoodsModal').classList.remove('hidden');
+            document.getElementById('receiveLoading').classList.remove('hidden');
+            document.getElementById('receiveFormContent').classList.add('hidden');
 
-    try {
-        const res = await fetch(`/documents/api/${docId}/po-items/`);
-        const data = await res.json();
-        if (data.success) {
-            currentPoItems = data.items;
-            renderPoItemsTable(data.items);
-            document.getElementById('receiveLoading').classList.add('hidden');
-            document.getElementById('receiveFormContent').classList.remove('hidden');
-        } else {
-            alert(data.error || "Failed to load PO items.");
-            closeReceiveGoodsModal();
+            try {
+                const res = await fetch(`/documents/api/${docId}/po-items/`);
+                const data = await res.json();
+                if (data.success) {
+                    currentPoItems = data.items;
+                    renderPoItemsTable(data.items);
+                    document.getElementById('receiveLoading').classList.add('hidden');
+                    document.getElementById('receiveFormContent').classList.remove('hidden');
+                } else {
+                    alert(data.error || "Failed to load PO items.");
+                    closeReceiveGoodsModal();
+                }
+            } catch (err) {
+                alert("Error fetching PO items: " + err.message);
+                closeReceiveGoodsModal();
+            }
         }
-    } catch(err) {
-        alert("Error fetching PO items: " + err.message);
-        closeReceiveGoodsModal();
-    }
-}
 
-function closeReceiveGoodsModal() {
-    document.getElementById('receiveGoodsModal').classList.add('hidden');
-}
+        function closeReceiveGoodsModal() {
+            document.getElementById('receiveGoodsModal').classList.add('hidden');
+        }
 
-function renderPoItemsTable(items) {
-    const tbody = document.getElementById('poItemsTbody');
-    if (!items || items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 italic">No items found in this PO.</td></tr>`;
-        return;
-    }
+        function renderPoItemsTable(items) {
+            const tbody = document.getElementById('poItemsTbody');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 italic">No items found in this PO.</td></tr>`;
+                return;
+            }
 
-    tbody.innerHTML = items.map((item, idx) => {
-        const isFullyReceived = item.remaining_qty <= 0;
-        return `
+            tbody.innerHTML = items.map((item, idx) => {
+                const isFullyReceived = item.remaining_qty <= 0;
+                return `
         <tr class="hover:bg-slate-800/50 transition ${isFullyReceived ? 'opacity-60 bg-slate-950/40' : ''}">
             <td class="p-3 text-center">
                 <input type="checkbox" class="po-item-checkbox rounded border-slate-700" data-idx="${idx}" ${isFullyReceived ? '' : 'checked'}>
@@ -376,161 +444,160 @@ function renderPoItemsTable(items) {
             </td>
         </tr>
     `}).join('');
-}
-
-function toggleAllPoItems(mainCb) {
-    document.querySelectorAll('.po-item-checkbox').forEach(cb => cb.checked = mainCb.checked);
-}
-
-async function submitReceiveGoods() {
-    if (!currentPoDocId) return;
-
-    const checkboxes = document.querySelectorAll('.po-item-checkbox');
-    const qtyInputs = document.querySelectorAll('.po-item-qty');
-    const selectedItems = [];
-
-    checkboxes.forEach((cb, i) => {
-        if (cb.checked) {
-            const idx = parseInt(cb.getAttribute('data-idx'));
-            const item = currentPoItems[idx];
-            const qtyVal = parseFloat(qtyInputs[i].value) || 0;
-            if (item && qtyVal > 0) {
-                selectedItems.push({
-                    item_id: item.item_id,
-                    product_id: item.product_id,
-                    received_qty: qtyVal
-                });
-            }
         }
-    });
 
-    if (selectedItems.length === 0) {
-        alert("Please select at least one item and specify a received quantity greater than 0.");
-        return;
-    }
-
-    const btn = document.getElementById('receiveGoodsSubmitBtn');
-    const origText = btn.innerHTML;
-    btn.innerHTML = "Processing Stock Receipt...";
-    btn.disabled = true;
-
-    try {
-        const remarks = document.getElementById('receiveRemarks').value.trim();
-        const res = await fetch(`/documents/api/${currentPoDocId}/receive-po-items/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                received_items: selectedItems,
-                remarks: remarks
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message);
-            closeReceiveGoodsModal();
-            window.location.reload();
-        } else {
-            alert(data.error || "Failed to record stock receipt.");
-            btn.innerHTML = origText;
-            btn.disabled = false;
+        function toggleAllPoItems(mainCb) {
+            document.querySelectorAll('.po-item-checkbox').forEach(cb => cb.checked = mainCb.checked);
         }
-    } catch(err) {
-        alert("Error processing request: " + err.message);
-        btn.innerHTML = origText;
-        btn.disabled = false;
-    }
-}
 
-function applySort(column) {
-    let form = document.getElementById('filter-form');
-    let sortSelect = form.querySelector('select[name=sort_by]');
-    let currentSort = "{{ sort_by }}";
-    
-    let newSort = column;
-    if (currentSort === column) {
-        newSort = "-" + column;
-    }
-    
-    let option = Array.from(sortSelect.options).find(opt => opt.value === newSort);
-    if (!option) {
-        option = document.createElement('option');
-        option.value = newSort;
-        sortSelect.appendChild(option);
-    }
-    sortSelect.value = newSort;
-    
-    form.submit();
-}
-</script>
+        async function submitReceiveGoods() {
+            if (!currentPoDocId) return;
 
-<script>
-(function() {
-    const sentinel = document.getElementById('scroll-sentinel');
-    const spinner  = document.getElementById('scroll-spinner');
-    const endMsg   = document.getElementById('scroll-end-msg');
-    const tbody    = document.getElementById('doc-tbody');
-    let loading    = false;
+            const checkboxes = document.querySelectorAll('.po-item-checkbox');
+            const qtyInputs = document.querySelectorAll('.po-item-qty');
+            const selectedItems = [];
 
-    if (!sentinel) return;
+            checkboxes.forEach((cb, i) => {
+                if (cb.checked) {
+                    const idx = parseInt(cb.getAttribute('data-idx'));
+                    const item = currentPoItems[idx];
+                    const qtyVal = parseFloat(qtyInputs[i].value) || 0;
+                    if (item && qtyVal > 0) {
+                        selectedItems.push({
+                            item_id: item.item_id,
+                            product_id: item.product_id,
+                            received_qty: qtyVal
+                        });
+                    }
+                }
+            });
 
-    function buildUrl(page) {
-        const types = (sentinel.dataset.types || '').split(',').filter(Boolean);
-        const params = new URLSearchParams();
-        types.forEach(t => params.append('type', t));
-        if (sentinel.dataset.query)  params.set('q', sentinel.dataset.query);
-        if (sentinel.dataset.sort)   params.set('sort_by', sentinel.dataset.sort);
-        if (sentinel.dataset.dateFrom) params.set('date_from', sentinel.dataset.dateFrom);
-        if (sentinel.dataset.dateTo) params.set('date_to', sentinel.dataset.dateTo);
-        params.set('page', page);
-        return '?' + params.toString();
-    }
-
-    async function loadMore() {
-        const nextPage = sentinel.dataset.nextPage || null;
-        if (!nextPage || loading) return;
-        loading = true;
-        spinner.classList.remove('hidden');
-
-        try {
-            const res = await fetch(buildUrl(nextPage), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (!res.ok) throw new Error('Network error');
-            const data = await res.json();
-
-            const tmp = document.createElement('tbody');
-            tmp.innerHTML = data.html;
-            while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
-
-            if (data.has_next) {
-                sentinel.dataset.nextPage = data.next_page;
-            } else {
-                observer.unobserve(sentinel);
-                spinner.classList.add('hidden');
-                endMsg.classList.remove('hidden');
-                loading = false;
+            if (selectedItems.length === 0) {
+                alert("Please select at least one item and specify a received quantity greater than 0.");
                 return;
             }
-        } catch(e) { console.error('Infinite scroll error:', e); }
 
-        spinner.classList.add('hidden');
-        loading = false;
-    }
+            const btn = document.getElementById('receiveGoodsSubmitBtn');
+            const origText = btn.innerHTML;
+            btn.innerHTML = "Processing Stock Receipt...";
+            btn.disabled = true;
 
-    const observer = new IntersectionObserver(
-        (entries) => { if (entries[0].isIntersecting) loadMore(); },
-        { rootMargin: '200px' }
-    );
+            try {
+                const remarks = document.getElementById('receiveRemarks').value.trim();
+                const res = await fetch(`/documents/api/${currentPoDocId}/receive-po-items/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        received_items: selectedItems,
+                        remarks: remarks
+                    })
+                });
 
-    if (sentinel.dataset.nextPage) {
-        observer.observe(sentinel);
-    } else {
-        endMsg.classList.remove('hidden');
-    }
-})();
-</script>
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    closeReceiveGoodsModal();
+                    window.location.reload();
+                } else {
+                    alert(data.error || "Failed to record stock receipt.");
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Error processing request: " + err.message);
+                btn.innerHTML = origText;
+                btn.disabled = false;
+            }
+        }
 
-{% endblock %}
+        function applySort(column) {
+            let form = document.getElementById('filter-form');
+            let sortSelect = form.querySelector('select[name=sort_by]');
+            let currentSort = "{{ sort_by }}";
 
+            let newSort = column;
+            if (currentSort === column) {
+                newSort = "-" + column;
+            }
+
+            let option = Array.from(sortSelect.options).find(opt => opt.value === newSort);
+            if (!option) {
+                option = document.createElement('option');
+                option.value = newSort;
+                sortSelect.appendChild(option);
+            }
+            sortSelect.value = newSort;
+
+            form.submit();
+        }
+    </script>
+
+    <script>
+        (function () {
+            const sentinel = document.getElementById('scroll-sentinel');
+            const spinner = document.getElementById('scroll-spinner');
+            const endMsg = document.getElementById('scroll-end-msg');
+            const tbody = document.getElementById('doc-tbody');
+            let loading = false;
+
+            if (!sentinel) return;
+
+            function buildUrl(page) {
+                const types = (sentinel.dataset.types || '').split(',').filter(Boolean);
+                const params = new URLSearchParams();
+                types.forEach(t => params.append('type', t));
+                if (sentinel.dataset.query) params.set('q', sentinel.dataset.query);
+                if (sentinel.dataset.sort) params.set('sort_by', sentinel.dataset.sort);
+                if (sentinel.dataset.dateFrom) params.set('date_from', sentinel.dataset.dateFrom);
+                if (sentinel.dataset.dateTo) params.set('date_to', sentinel.dataset.dateTo);
+                params.set('page', page);
+                return '?' + params.toString();
+            }
+
+            async function loadMore() {
+                const nextPage = sentinel.dataset.nextPage || null;
+                if (!nextPage || loading) return;
+                loading = true;
+                spinner.classList.remove('hidden');
+
+                try {
+                    const res = await fetch(buildUrl(nextPage), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (!res.ok) throw new Error('Network error');
+                    const data = await res.json();
+
+                    const tmp = document.createElement('tbody');
+                    tmp.innerHTML = data.html;
+                    while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
+
+                    if (data.has_next) {
+                        sentinel.dataset.nextPage = data.next_page;
+                    } else {
+                        observer.unobserve(sentinel);
+                        spinner.classList.add('hidden');
+                        endMsg.classList.remove('hidden');
+                        loading = false;
+                        return;
+                    }
+                } catch (e) { console.error('Infinite scroll error:', e); }
+
+                spinner.classList.add('hidden');
+                loading = false;
+            }
+
+            const observer = new IntersectionObserver(
+                (entries) => { if (entries[0].isIntersecting) loadMore(); },
+                { rootMargin: '200px' }
+            );
+
+            if (sentinel.dataset.nextPage) {
+                observer.observe(sentinel);
+            } else {
+                endMsg.classList.remove('hidden');
+            }
+        })();
+    </script>
+
+    {% endblock %}
