@@ -181,9 +181,9 @@ class SearchForm(forms.Form):
                                         widget=forms.Select(attrs={'class': TAILWIND_SELECT}))
     file_extension  = forms.CharField(required=False, label='File Type',
                                       widget=forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': '.pdf'}))
-    date_from       = forms.DateField(required=False, label='Uploaded From',
+    date_from       = forms.DateField(required=False, label='Doc Date From',
                                       widget=forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}))
-    date_to         = forms.DateField(required=False, label='Uploaded To',
+    date_to         = forms.DateField(required=False, label='Doc Date To',
                                       widget=forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}))
     expiry_from     = forms.DateField(required=False,
                                       widget=forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}))

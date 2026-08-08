@@ -303,10 +303,18 @@ class SearchService:
             qs = qs.filter(file_extension__iexact=ext)
 
         # Date ranges
-        if date_from := filters.get('date_from'):
-            qs = qs.filter(created_at__date__gte=date_from)
-        if date_to := filters.get('date_to'):
-            qs = qs.filter(created_at__date__lte=date_to)
+        date_from = filters.get('date_from')
+        date_to = filters.get('date_to')
+        if date_from or date_to:
+            q_issue = Q()
+            q_invoice = Q()
+            if date_from:
+                q_issue &= Q(issue_date__gte=date_from)
+                q_invoice &= Q(invoice_date__gte=date_from)
+            if date_to:
+                q_issue &= Q(issue_date__lte=date_to)
+                q_invoice &= Q(invoice_date__lte=date_to)
+            qs = qs.filter(q_issue | q_invoice)
         if expiry_from := filters.get('expiry_from'):
             qs = qs.filter(expiry_date__gte=expiry_from)
         if expiry_to := filters.get('expiry_to'):
