@@ -247,8 +247,8 @@
 
                 {% if doc.show_payment_summary %}
                 <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; color: #047857;">Less: Amount Paid</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857;">-&#8377; {% if doc.amount_paid %}{{ doc.amount_paid|indian_currency }}{% else %}0.00{% endif %}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; color: #047857;">Amount Paid</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857;">&#8377; {% if doc.amount_paid %}{{ doc.amount_paid|indian_currency }}{% else %}0.00{% endif %}</td>
                 </tr>
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; background: #fff1f2; color: #be123c;">Balance Remaining</td>
