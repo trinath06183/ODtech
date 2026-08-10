@@ -51,21 +51,6 @@ class Command(BaseCommand):
             )
             return
 
-        # ── 2. Build site URL for the download link ───────────────────────────
-        # Priority: SITE_URL env var → first non-localhost CSRF origin → LAN IP fallback
-        site_url = env.get('SITE_URL', '').rstrip('/')
-        if not site_url:
-            trusted_origins = getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])
-            SKIP = ('localhost', '127.0.0.1', '::1')
-            site_url = next(
-                (o.rstrip('/') for o in trusted_origins
-                 if '*' not in o and not any(s in o for s in SKIP)),
-                None
-            )
-        if not site_url:
-            site_url = "http://192.168.1.106"  # LAN IP fallback
-        backup_panel_url = f"{site_url}/admin-config/backup/"
-
         # ── 3. Load DB credentials from env ──────────────────────────────────
         env_path = "/home/server_admin/ODtech/.env"
         env = os.environ.copy()
@@ -86,8 +71,23 @@ class Command(BaseCommand):
         if not db_name or not db_user:
             msg = "Database credentials not found in environment."
             logger.error("backup_db: %s", msg)
-            self._send_failure_email(admin_email, msg, backup_panel_url)
+            self._send_failure_email(admin_email, msg, "http://192.168.1.106/admin-config/backup/")
             return
+
+        # ── 2. Build site URL for the download link ───────────────────────────
+        # Priority: SITE_URL env var → first non-localhost CSRF origin → LAN IP fallback
+        site_url = env.get('SITE_URL', '').rstrip('/')
+        if not site_url:
+            trusted_origins = getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])
+            SKIP = ('localhost', '127.0.0.1', '::1')
+            site_url = next(
+                (o.rstrip('/') for o in trusted_origins
+                 if '*' not in o and not any(s in o for s in SKIP)),
+                None
+            )
+        if not site_url:
+            site_url = "http://192.168.1.106"  # LAN IP fallback
+        backup_panel_url = f"{site_url}/admin-config/backup/"
 
         # ── 4. Run pg_dump ────────────────────────────────────────────────────
         os.makedirs(BACKUP_DIR, exist_ok=True)
