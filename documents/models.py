@@ -53,6 +53,7 @@ class Document(TimeStampedModel):
     show_gst = models.BooleanField(default=False)
     split_gst = models.BooleanField(default=False)
     force_igst = models.BooleanField(default=False)
+    show_payment_summary = models.BooleanField(default=True)
     payment_milestones = models.TextField(blank=True, null=True)
     numbering_mode = models.CharField(max_length=10, default='auto')
     table_columns = models.JSONField(blank=True, null=True)

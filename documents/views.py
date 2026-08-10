@@ -426,6 +426,7 @@ def document_form(request, doc=None, default_type='QTN'):
         show_gst = request.POST.get('show_gst') in ('on', 'true', True)
         split_gst = request.POST.get('split_gst') in ('on', 'true', True)
         force_igst = request.POST.get('force_igst') in ('on', 'true', True)
+        show_payment_summary = request.POST.get('show_payment_summary') in ('on', 'true', True)
         discount_type = request.POST.get('discount_type', 'none')
         discount_value = request.POST.get('discount_value', '0.00')
         payment_milestones = request.POST.get('payment_milestones')
@@ -581,6 +582,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 shipping_name=shipping_name,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
+                show_payment_summary=show_payment_summary,
                 transporter_details=transporter_details,
                 vehicle_number=vehicle_number,
                 transport_doc_no=transport_doc_no,
@@ -618,6 +620,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 shipping_name=shipping_name,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
+                show_payment_summary=show_payment_summary,
                 transporter_details=transporter_details,
                 vehicle_number=vehicle_number,
                 transport_doc_no=transport_doc_no,
@@ -765,6 +768,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 'terms_and_conditions': last_doc.terms_and_conditions,
                 'enable_warranty': last_doc.enable_warranty,
                 'repeat_header': last_doc.repeat_header,
+                'show_payment_summary': last_doc.show_payment_summary,
             }
             last_doc_settings_json = json.dumps(last_doc_settings)
         else:

@@ -350,6 +350,7 @@ class DocumentService:
             show_gst=kwargs.get("show_gst", False),
             split_gst=kwargs.get("split_gst", False),
             force_igst=kwargs.get("force_igst", False),
+            show_payment_summary=kwargs.get("show_payment_summary", True),
             discount_type=kwargs.get("discount_type", "none"),
             discount_value=kwargs.get("discount_value", Decimal("0.00")),
             payment_milestones=kwargs.get("payment_milestones") or None,
@@ -414,6 +415,8 @@ class DocumentService:
             document.split_gst = kwargs.get("split_gst")
         if "force_igst" in kwargs:
             document.force_igst = kwargs.get("force_igst")
+        if "show_payment_summary" in kwargs:
+            document.show_payment_summary = kwargs.get("show_payment_summary")
         if "discount_type" in kwargs:
             document.discount_type = kwargs.get("discount_type")
         if "discount_value" in kwargs:

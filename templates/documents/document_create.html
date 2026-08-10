@@ -336,6 +336,7 @@
                 <input type="hidden" name="shipping_address" :value="enableShippingAddress ? shippingAddress : ''">
                 <input type="hidden" name="shipping_name" :value="enableShippingAddress ? shippingName : ''">
                 <input type="hidden" name="repeat_header" :value="repeatHeader ? 'true' : 'false'">
+                <input type="hidden" name="show_payment_summary" :value="sections.payment_summary ? 'true' : 'false'">
             </form>
 
             {# ── Tab Navigation ─────────────────────────────────── #}
@@ -1417,7 +1418,8 @@ function documentForm() {
             client_info: true, vendor_info: true, consignee_info: true,
             tax_details: true, terms: true, signature: true, validity: true,
             shipping_info: true, po_info: true, bank_details: true,
-            delivery_info: true, dispatch_info: true, pricing: true, received_by: true
+            delivery_info: true, dispatch_info: true, pricing: true, received_by: true,
+            payment_summary: true
         },
 
         availableSections: {
@@ -1426,6 +1428,7 @@ function documentForm() {
                 { id: 'company_info', label: 'Company Legal Info' },
                 { id: 'client_info', label: 'Customer Details' },
                 { id: 'tax_details', label: 'GST Tax Breakdown' },
+                { id: 'payment_summary', label: 'Paid & Remaining Amount' },
                 { id: 'validity', label: 'Validity Period' },
                 { id: 'terms', label: 'Terms & Conditions' },
                 { id: 'signature', label: 'Signature Block' },
@@ -1438,6 +1441,7 @@ function documentForm() {
                 { id: 'po_info', label: 'Purchase Order Ref' },
                 { id: 'bank_details', label: 'Bank Details' },
                 { id: 'tax_details', label: 'GST Breakdown' },
+                { id: 'payment_summary', label: 'Paid & Remaining Amount' },
                 { id: 'terms', label: 'Terms & Conditions' },
                 { id: 'signature', label: 'Signature Block' },
             ],
@@ -1446,6 +1450,7 @@ function documentForm() {
                 { id: 'company_info', label: 'Company Info' },
                 { id: 'client_info', label: 'Client Details' },
                 { id: 'tax_details', label: 'Tax Details' },
+                { id: 'payment_summary', label: 'Paid & Remaining Amount' },
                 { id: 'terms', label: 'Terms & Conditions' },
                 { id: 'signature', label: 'Signature Block' },
             ],
@@ -1455,6 +1460,7 @@ function documentForm() {
                 { id: 'vendor_info', label: 'Vendor Info' },
                 { id: 'delivery_info', label: 'Delivery Specs' },
                 { id: 'tax_details', label: 'GST Details' },
+                { id: 'payment_summary', label: 'Paid & Remaining Amount' },
                 { id: 'terms', label: 'Terms & Conditions' },
                 { id: 'signature', label: 'Authorized Signatory' },
             ],
@@ -1464,6 +1470,7 @@ function documentForm() {
                 { id: 'consignee_info', label: 'Consignee Details' },
                 { id: 'dispatch_info', label: 'Dispatch Info' },
                 { id: 'pricing', label: 'Show Pricing' },
+                { id: 'payment_summary', label: 'Paid & Remaining Amount' },
                 { id: 'terms', label: 'Terms & Conditions' },
                 { id: 'received_by', label: 'Received By Block' },
                 { id: 'signature', label: 'Authorized Signatory' },
@@ -1596,9 +1603,11 @@ function documentForm() {
 
             {% if doc %}
             this.sections.tax_details = {% if doc.show_gst %}true{% else %}false{% endif %};
+            this.sections.payment_summary = {% if doc.show_payment_summary %}true{% else %}false{% endif %};
             {% else %}
             if (lastSettings) {
                 this.sections.tax_details = lastSettings.show_gst;
+                this.sections.payment_summary = lastSettings.show_payment_summary ?? true;
             }
             {% endif %}
 
