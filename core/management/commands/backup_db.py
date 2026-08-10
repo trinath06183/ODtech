@@ -95,14 +95,39 @@ class Command(BaseCommand):
         dump_filename = f"odtech_db_{timestamp}.sql.gz"
         dump_path = os.path.join(BACKUP_DIR, dump_filename)
 
-        self.stdout.write(f"backup_db: Dumping database '{db_name}'...")
+        # Auto-detect pg_dump binary — systemd services often have a stripped PATH
+        pg_dump_bin = shutil.which("pg_dump")
+        if not pg_dump_bin:
+            # Search common PostgreSQL installation paths on Ubuntu/Debian
+            candidates = []
+            for pg_dir in ["/usr/bin", "/usr/local/bin"]:
+                candidate = os.path.join(pg_dir, "pg_dump")
+                if os.path.isfile(candidate):
+                    candidates.append(candidate)
+            # Also search versioned PostgreSQL directories
+            import glob as _glob
+            for versioned in sorted(_glob.glob("/usr/lib/postgresql/*/bin/pg_dump"), reverse=True):
+                candidates.append(versioned)
+            pg_dump_bin = candidates[0] if candidates else None
+
+        if not pg_dump_bin:
+            msg = (
+                "pg_dump binary not found. PostgreSQL client tools may not be installed. "
+                "Run: sudo apt-get install postgresql-client"
+            )
+            logger.error("backup_db: %s", msg)
+            self._send_failure_email(admin_email, msg, backup_panel_url)
+            self.stderr.write(f"ERROR: {msg}")
+            return
+
+        self.stdout.write(f"backup_db: Dumping database '{db_name}' using {pg_dump_bin}...")
         try:
             pg_env = env.copy()
             pg_env['PGPASSWORD'] = db_password
 
             pg_proc = subprocess.Popen(
                 [
-                    "pg_dump",
+                    pg_dump_bin,
                     "--clean", "--if-exists",
                     "-U", db_user,
                     "-h", db_host,
@@ -133,7 +158,7 @@ class Command(BaseCommand):
             self.stderr.write(f"ERROR: {msg}")
             return
         except FileNotFoundError:
-            msg = "pg_dump command not found. Is PostgreSQL installed on this server?"
+            msg = f"pg_dump not found at '{pg_dump_bin}'. Run: sudo apt-get install postgresql-client"
             logger.error("backup_db: %s", msg)
             self._send_failure_email(admin_email, msg, backup_panel_url)
             self.stderr.write(f"ERROR: {msg}")
