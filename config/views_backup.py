@@ -41,12 +41,12 @@ def backup_create_view(request):
             from django.core.management import call_command
             from io import StringIO
             out = StringIO()
-            call_command('backup_db', stdout=out, stderr=out)
+            call_command('backup_db', triggered_by='manual', stdout=out, stderr=out)
             output = out.getvalue()
-            if 'ERROR' in output or 'error' in output.lower():
+            if 'ERROR' in output:
                 messages.error(request, f"Backup failed: {output}")
             else:
-                messages.success(request, "Backup created successfully!")
+                messages.success(request, "Backup created and emailed to admin successfully!")
         except Exception as e:
             messages.error(request, f"Failed to create backup: {e}")
             

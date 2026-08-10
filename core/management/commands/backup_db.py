@@ -29,7 +29,17 @@ BACKUP_DIR = "/home/server_admin/backups"
 class Command(BaseCommand):
     help = "Dump the PostgreSQL database and email it to the admin (DB only)."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--triggered-by',
+            default='schedule',
+            choices=['schedule', 'manual'],
+            help='Who triggered this backup: schedule (nightly) or manual (user clicked Generate Now)',
+        )
+
     def handle(self, *args, **options):
+        triggered_by = options.get('triggered_by', 'schedule')
+        is_manual = triggered_by == 'manual'
         self.stdout.write("backup_db: Starting DB-only backup...")
 
         # ── 1. Get admin backup email ─────────────────────────────────────────
@@ -186,31 +196,47 @@ class Command(BaseCommand):
         # ── 6. Send email with attachment + download link ─────────────────────
         MAX_ATTACH_MB = 20
         can_attach = backup_size_mb <= MAX_ATTACH_MB
+        now_str = timezone.now().strftime('%d %b %Y, %I:%M %p IST')
+        date_str = timezone.now().strftime('%d %b %Y')
+
+        if is_manual:
+            subject = f"[ODtech ERP] ✅ Manual DB Backup — {date_str}"
+            trigger_line = "This backup was manually triggered via the Backup & Restore panel."
+        else:
+            subject = f"[ODtech ERP] 🌙 Nightly Auto Backup — {date_str}"
+            trigger_line = "This is your scheduled nightly automatic database backup (runs daily at 11:30 PM IST)."
 
         body = (
             f"Hi Admin,\n\n"
-            f"Your daily automatic database backup has been created successfully.\n\n"
-            f"  • File    : {dump_filename}\n"
-            f"  • Size    : {backup_size_mb:.1f} MB\n"
-            f"  • Time    : {timezone.now().strftime('%d %b %Y, %I:%M %p IST')}\n"
-            f"  • Contents: Database only (no media files)\n\n"
+            f"{trigger_line}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"  Backup Summary\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"  • File     : {dump_filename}\n"
+            f"  • Size     : {backup_size_mb:.1f} MB\n"
+            f"  • Time     : {now_str}\n"
+            f"  • Contents : Database only (.sql.gz)\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         )
 
         if can_attach:
-            body += "The database backup file is attached to this email.\n\n"
+            body += "📎 The database backup file (.sql.gz) is attached to this email.\n\n"
         else:
             body += (
-                f"⚠ The backup file ({backup_size_mb:.1f} MB) is too large to attach directly.\n\n"
+                f"⚠ The backup file ({backup_size_mb:.1f} MB) exceeds the 20 MB email limit "
+                f"and could not be attached directly.\n\n"
             )
 
         body += (
-            f"You can download all backup files from the Backup & Restore panel:\n"
-            f"{backup_panel_url}\n\n"
-            f"This is an automated message from ODtech ERP."
+            f"📥 Download all backup files (DB + full media backup) from the Backup & Restore panel:\n"
+            f"   {backup_panel_url}\n\n"
+            f"💡 Tip: The panel also lets you download the complete system backup (.tar.gz) "
+            f"which includes all uploaded media files.\n\n"
+            f"— ODtech ERP (Automated Message)"
         )
 
         email = EmailMessage(
-            subject=f"[ODtech ERP] Daily DB Backup — {timezone.now().strftime('%d %b %Y')}",
+            subject=subject,
             body=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[admin_email],
