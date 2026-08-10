@@ -362,6 +362,20 @@ class DocumentService:
             source_document=kwargs.get("source_document"),
         )
         DocumentService.replace_items(document, items)
+
+        source_doc = kwargs.get("source_document")
+        if source_doc:
+            from core.models import DocumentLink
+            from django.contrib.contenttypes.models import ContentType
+            doc_ct = ContentType.objects.get_for_model(Document)
+            DocumentLink.objects.get_or_create(
+                source_type=doc_ct,
+                source_id=source_doc.id,
+                target_type=doc_ct,
+                target_id=document.id,
+                defaults={'link_type': 'converted'}
+            )
+
         if is_auto_number:
             NumberingService.bump_sequence(document_type)
         return document

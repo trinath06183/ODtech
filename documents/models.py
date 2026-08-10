@@ -157,16 +157,64 @@ class Document(TimeStampedModel):
         except Exception:
             return []
 
+    def get_all_linked_document_numbers(self):
+        """
+        Recursively traverses all linked documents (via DocumentLink and source_document)
+        to return all connected document numbers in the document lifecycle.
+        """
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        from core.models import DocumentLink
+
+        visited_ids = {self.id}
+        queue = [self.id]
+
+        doc_ct = ContentType.objects.get_for_model(self.__class__)
+
+        while queue:
+            curr_id = queue.pop(0)
+
+            # 1. DocumentLink links
+            links = DocumentLink.objects.filter(
+                Q(source_type=doc_ct, source_id=curr_id) |
+                Q(target_type=doc_ct, target_id=curr_id)
+            ).values_list('source_id', 'target_id')
+
+            for s_id, t_id in links:
+                if s_id not in visited_ids:
+                    visited_ids.add(s_id)
+                    queue.append(s_id)
+                if t_id not in visited_ids:
+                    visited_ids.add(t_id)
+                    queue.append(t_id)
+
+            # 2. source_document relationships
+            related_docs = Document.objects.filter(
+                Q(id=curr_id) | Q(source_document_id=curr_id)
+            ).values_list('id', 'source_document_id')
+
+            for d_id, src_id in related_docs:
+                if d_id and d_id not in visited_ids:
+                    visited_ids.add(d_id)
+                    queue.append(d_id)
+                if src_id and src_id not in visited_ids:
+                    visited_ids.add(src_id)
+                    queue.append(src_id)
+
+        return list(Document.objects.filter(id__in=visited_ids).values_list('number', flat=True))
+
     @property
     def amount_paid(self):
         from django.db.models import Sum
         from payments.models import Payment
-        return Payment.objects.filter(document_ref=self.number).aggregate(t=Sum('amount'))['t'] or 0
-        
+        doc_numbers = self.get_all_linked_document_numbers()
+        return Payment.objects.filter(document_ref__in=doc_numbers).aggregate(t=Sum('amount'))['t'] or 0
+
     @property
     def payments_list(self):
         from payments.models import Payment
-        return Payment.objects.filter(document_ref=self.number).order_by('-date')
+        doc_numbers = self.get_all_linked_document_numbers()
+        return Payment.objects.filter(document_ref__in=doc_numbers).order_by('-date')
 
     @property
     def balance_due(self):
@@ -185,27 +233,23 @@ class Document(TimeStampedModel):
                 return 'Partially Paid'
             return 'Unpaid'
             
-        from django.contrib.contenttypes.models import ContentType
-        from core.models import DocumentLink
+        doc_numbers = self.get_all_linked_document_numbers()
+        linked_invoices = Document.objects.filter(number__in=doc_numbers, type='INV')
         
-        doc_ct = ContentType.objects.get_for_model(self.__class__)
-        links = DocumentLink.objects.filter(source_type=doc_ct, source_id=self.id)
+        if linked_invoices.exists():
+            total_invoiced = sum(inv.grand_total for inv in linked_invoices)
+            total_paid = sum(inv.amount_paid for inv in linked_invoices)
+            if total_invoiced > 0:
+                if total_paid >= total_invoiced:
+                    return 'Paid'
+                elif total_paid > 0:
+                    return 'Partially Paid'
+                return 'Unpaid'
         
-        total_invoiced = 0
-        total_paid = 0
-        
-        for link in links:
-            target = link.target_object
-            if target and getattr(target, 'type', None) == 'INV':
-                total_invoiced += getattr(target, 'grand_total', 0)
-                total_paid += getattr(target, 'amount_paid', 0)
-                
-        if total_invoiced > 0:
-            if total_paid >= total_invoiced:
+        if self.amount_paid > 0:
+            if self.balance_due <= 0 and self.grand_total > 0:
                 return 'Paid'
-            elif total_paid > 0:
-                return 'Partially Paid'
-            return 'Unpaid'
+            return 'Partially Paid'
             
         return 'N/A'
 

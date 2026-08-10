@@ -144,31 +144,16 @@ def document_preview(request, document_id):
     style_block = '<style>' + '\n'.join(style_match) + '</style>' if style_match else ''
     preview_html = style_block + (body_match.group(1) if body_match else full_html)
 
-    from django.db.models import Sum
-    from payments.models import Payment
-    total_paid = Payment.objects.filter(document_ref=doc.number).aggregate(t=Sum('amount'))['t'] or 0
-    balance_due = doc.grand_total - total_paid
+    total_paid = doc.amount_paid
+    balance_due = doc.balance_due
 
     # ── Previous / Next navigation (same doc type, ordered by id) ────────────
     prev_doc = Document.objects.filter(type=doc.type, id__lt=doc.id).order_by('-id').first()
     next_doc = Document.objects.filter(type=doc.type, id__gt=doc.id).order_by('id').first()
 
     linked_documents = doc.get_linked_documents()
-    
-    # Collect document numbers for all linked commercial documents to fetch all payments
-    all_doc_numbers = [doc.number]
-    for link in linked_documents:
-        if link.source_id == doc.id:
-            target = link.target_object
-            if target and getattr(target, 'type', None):
-                all_doc_numbers.append(target.number)
-        else:
-            source = link.source_object
-            if source and getattr(source, 'type', None):
-                all_doc_numbers.append(source.number)
-                
-    all_linked_payments = Payment.objects.filter(document_ref__in=all_doc_numbers).order_by('-date')
-    total_paid_all = all_linked_payments.aggregate(t=Sum('amount'))['t'] or 0
+    all_linked_payments = doc.payments_list
+    total_paid_all = doc.amount_paid
 
     return render(request, 'documents/document_preview.html', {
         'doc': doc,
