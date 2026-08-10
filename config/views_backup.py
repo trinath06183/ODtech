@@ -15,8 +15,12 @@ def backup_manager_view(request):
     """View to list all backups."""
     backups = []
     if os.path.exists(BACKUP_DIR):
-        files = glob.glob(os.path.join(BACKUP_DIR, "odtech_backup_*.tar.gz"))
-        for f in sorted(files, reverse=True):
+        # Collect both .tar.gz (full backups) and .sql.gz (DB-only backups)
+        files = (
+            glob.glob(os.path.join(BACKUP_DIR, "odtech_backup_*.tar.gz")) +
+            glob.glob(os.path.join(BACKUP_DIR, "odtech_db_*.sql.gz"))
+        )
+        for f in sorted(files, key=os.path.getmtime, reverse=True):
             stat = os.stat(f)
             backups.append({
                 'name': os.path.basename(f),
@@ -31,46 +35,40 @@ def backup_manager_view(request):
 
 @role_required('Admin')
 def backup_create_view(request):
-    """Trigger the auto-backup script and redirect back."""
+    """Trigger the backup_db management command and redirect back."""
     if request.method == 'POST':
-        if os.name == 'nt':
-            messages.warning(request, "Backup creation is only supported on the production Linux server.")
-        else:
-            try:
-                # We call the script installed on the server
-                result = subprocess.run(["/usr/local/bin/odtech-autobackup"], capture_output=True, text=True)
-                if result.returncode == 0:
-                    # Clean up old backups — keep only the latest 5
-                    if os.path.exists(BACKUP_DIR):
-                        all_backups = sorted(
-                            glob.glob(os.path.join(BACKUP_DIR, "odtech_backup_*.tar.gz")),
-                            reverse=True  # newest first
-                        )
-                        for old_backup in all_backups[5:]:
-                            try:
-                                os.remove(old_backup)
-                            except Exception:
-                                pass
-                    messages.success(request, "Backup created successfully!")
-                else:
-                    messages.error(request, f"Backup failed: {result.stderr}")
-            except Exception as e:
-                messages.error(request, f"Failed to execute backup script: {e}")
+        try:
+            from django.core.management import call_command
+            from io import StringIO
+            out = StringIO()
+            call_command('backup_db', stdout=out, stderr=out)
+            output = out.getvalue()
+            if 'ERROR' in output or 'error' in output.lower():
+                messages.error(request, f"Backup failed: {output}")
+            else:
+                messages.success(request, "Backup created successfully!")
+        except Exception as e:
+            messages.error(request, f"Failed to create backup: {e}")
             
     return redirect('backup_manager')
 
 @role_required('Admin')
 def backup_download_view(request, filename):
     """Download a specific backup file."""
-    if not filename.startswith("odtech_backup_") or not filename.endswith(".tar.gz"):
+    valid = (
+        (filename.startswith("odtech_backup_") and filename.endswith(".tar.gz")) or
+        (filename.startswith("odtech_db_") and filename.endswith(".sql.gz"))
+    )
+    if not valid:
         raise Http404("Invalid backup filename.")
         
     filepath = os.path.join(BACKUP_DIR, filename)
     if not os.path.exists(filepath):
         raise Http404("Backup file not found.")
         
+    content_type = 'application/gzip'
     with open(filepath, 'rb') as f:
-        response = HttpResponse(f.read(), content_type='application/gzip')
+        response = HttpResponse(f.read(), content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
