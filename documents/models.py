@@ -178,13 +178,13 @@ class Document(TimeStampedModel):
             links = DocumentLink.objects.filter(
                 Q(source_type=doc_ct, source_id=curr_id) |
                 Q(target_type=doc_ct, target_id=curr_id)
-            ).values_list('source_id', 'target_id')
+            ).values_list('source_type_id', 'source_id', 'target_type_id', 'target_id')
 
-            for s_id, t_id in links:
-                if s_id not in visited_ids:
+            for s_ct_id, s_id, t_ct_id, t_id in links:
+                if s_ct_id == doc_ct.id and s_id not in visited_ids:
                     visited_ids.add(s_id)
                     queue.append(s_id)
-                if t_id not in visited_ids:
+                if t_ct_id == doc_ct.id and t_id not in visited_ids:
                     visited_ids.add(t_id)
                     queue.append(t_id)
 
