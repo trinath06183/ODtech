@@ -8,6 +8,7 @@ urlpatterns = [
     path('<int:payment_id>/delete/', views.payment_delete, name='payment_delete'),
     path('expenses/', views.expense_list, name='expense_list'),
     path('expenses/export/', views.expense_export_csv, name='expense_export_csv'),
+    path('expenses/print_unpaid/', views.print_unpaid_expenses, name='print_unpaid_expenses'),
     path('expenses/new/', views.expense_create, name='expense_create'),
     path('expenses/<int:pk>/', views.expense_detail, name='expense_detail'),
     path('expenses/<int:pk>/edit/', views.expense_edit, name='expense_edit'),

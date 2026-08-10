@@ -246,6 +246,15 @@ def expense_list(request):
         'next_page': 2 if page_obj.has_next() else None,
     })
 
+def print_unpaid_expenses(request):
+    unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False).order_by('date')
+    total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
+    return render(request, 'payments/print_unpaid_expenses.html', {
+        'expenses': unpaid_expenses,
+        'total_unpaid': total_unpaid,
+        'company': request.user.company if hasattr(request.user, 'company') else None
+    })
+
 @require_permission('PAYMENTS', 'write')
 def expense_create(request):
     if request.method == 'POST':

@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unpaid Expenses Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 0;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .amount {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        .total-row td {
+            border-top: 2px solid #333;
+        }
+        .details-col {
+            max-width: 300px;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+            color: #555;
+        }
+        @media print {
+            body { padding: 0; }
+            button { display: none; }
+            @page { margin: 1cm; }
+        }
+        .print-btn {
+            display: block;
+            width: 100px;
+            margin: 0 auto 20px auto;
+            padding: 10px;
+            background-color: #4f46e5;
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .print-btn:hover {
+            background-color: #4338ca;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">Print Report</button>
+
+    <div class="header">
+        <h1>{{ company.name|default:"ODtech" }}</h1>
+        <p>Unpaid Expenses Report</p>
+        <p style="font-size: 0.9em;">Generated on: {% now "jS F Y, h:i A" %}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Details / Notes</th>
+                <th class="amount">Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td style="white-space: nowrap;">{{ expense.date|date:"d M Y" }}</td>
+                <td>
+                    <strong>{{ expense.title }}</strong><br>
+                    <span style="font-size: 0.85em; color: #666;">Emp: {{ expense.employee_code }}</span>
+                </td>
+                <td>{{ expense.expense_type }}</td>
+                <td class="details-col">{{ expense.notes|default:"-" }}</td>
+                <td class="amount">{{ expense.amount|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 20px;">No unpaid expenses found.</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" style="text-align: right;">Total Unpaid Amount:</td>
+                <td class="amount">₹ {{ total_unpaid|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+        <div style="text-align: center;">
+            <hr style="width: 150px; border-top: 1px solid #333;">
+            <p>Prepared By</p>
+        </div>
+        <div style="text-align: center;">
+            <hr style="width: 150px; border-top: 1px solid #333;">
+            <p>Authorized Signatory</p>
+        </div>
+    </div>
+
+    <script>
+        // Automatically open print dialog when page loads
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html>
