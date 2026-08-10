@@ -237,16 +237,20 @@
             </div>
         </div>
         {% endif %}
-
-        <!-- Linked Payments -->
-        {% if doc.payments_list %}
+            <!-- Linked Payments -->
+        {% if all_linked_payments %}
         <div class="glass p-5 rounded-2xl shadow-lg" style="position: relative; z-index: 10;">
             <h3 class="text-slate-800 font-bold text-sm mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-200 pb-3">
                 <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Linked Payments
             </h3>
             <div class="flex flex-col gap-3">
-                {% for pmt in doc.payments_list %}
+                <div class="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 mb-2">
+                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Total Payments (All Linked)</span>
+                    <span class="text-emerald-700 font-bold text-sm">&#8377;{{ total_paid_all|floatformat:2 }}</span>
+                </div>
+                
+                {% for pmt in all_linked_payments %}
                 <div class="bg-white/60 p-3 rounded-xl border border-slate-200 relative group transition-colors hover:bg-slate-50/80">
                     <div class="flex justify-between items-start mb-1">
                         <span class="text-slate-500 text-xs font-medium">{{ pmt.date|date:"d M y" }}</span>
@@ -254,6 +258,10 @@
                     </div>
                     <div class="text-emerald-600 font-bold text-base">&#8377;{{ pmt.amount|floatformat:2 }}</div>
                     {% if pmt.reference_number %}<div class="text-slate-400 font-mono text-[10px] mt-1 break-all">{{ pmt.reference_number }}</div>{% endif %}
+                    
+                    <div class="mt-2 inline-block bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-blue-100">
+                        Doc: {{ pmt.document_ref }}
+                    </div>
                     
                     {% if request.user.role == 'Admin' %}
                     <form method="post" action="{% url 'payment_delete' pmt.id %}?next={{ request.path }}" onsubmit="return confirm('Delete this payment record?');" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -269,36 +277,70 @@
         </div>
         {% endif %}
 
-        <!-- Conversion History -->
-        {% if doc.source_document or doc.converted_documents.exists %}
+        <!-- Document Trail (Lifecycle & Links) -->
         <div class="glass p-5 rounded-2xl shadow-lg mt-4" style="position: relative; z-index: 10;">
-            <h3 class="text-slate-800 font-bold text-sm mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-200 pb-3">
-                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                Document History
-            </h3>
-            <div class="flex flex-col gap-3">
-                {% if doc.source_document %}
-                <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
-                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Converted From</div>
-                    <a href="{% url 'document_preview' doc.source_document.id %}" class="font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 text-sm">
-                        {{ doc.source_document.get_type_display }} - {{ doc.source_document.number }}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    </a>
-                </div>
+            <div class="flex items-center justify-between mb-4 border-b border-slate-200 pb-3">
+                <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2 uppercase tracking-wide">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    Document Trail
+                </h3>
+                <button onclick="openLinkModal()" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-bold transition">
+                    + Link
+                </button>
+            </div>
+            
+            <div class="flex flex-col gap-3 relative border-l-2 border-slate-200 ml-2 pl-4">
+                {% if linked_documents %}
+                    {% for link in linked_documents %}
+                    <div class="relative group">
+                        <!-- Timeline Dot -->
+                        <div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-blue-500 ring-4 ring-white"></div>
+                        
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors">
+                            <div class="flex justify-between items-start mb-1">
+                                <div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                                    {{ link.get_link_type_display }}
+                                </div>
+                                <button onclick="deleteLink({{ link.id }})" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            
+                            {% if link.source_id == doc.id %}
+                                {# The linked document is the target #}
+                                {% with target=link.target_object %}
+                                <a href="{% if target.type %}{% url 'document_preview' target.id %}{% else %}{% url 'edms:document_detail' target.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
+                                    {% if target.type %}{{ target.get_type_display }} - {{ target.number }}{% else %}EDMS: {{ target.title }}{% endif %}
+                                </a>
+                                {% if target.type == 'INV' %}
+                                <div class="mt-1 flex gap-2">
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{{ target.lifecycle_payment_status }}</span>
+                                    <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ target.grand_total }}</span>
+                                </div>
+                                {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                {# The linked document is the source #}
+                                {% with source=link.source_object %}
+                                <a href="{% if source.type %}{% url 'document_preview' source.id %}{% else %}{% url 'edms:document_detail' source.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
+                                    {% if source.type %}{{ source.get_type_display }} - {{ source.number }}{% else %}EDMS: {{ source.title }}{% endif %}
+                                </a>
+                                {% if source.type == 'INV' %}
+                                <div class="mt-1 flex gap-2">
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{{ source.lifecycle_payment_status }}</span>
+                                    <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ source.grand_total }}</span>
+                                </div>
+                                {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-xs text-slate-400 italic py-2">No linked documents found.</div>
                 {% endif %}
-                
-                {% for conv in doc.converted_documents.all %}
-                <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
-                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Converted To</div>
-                    <a href="{% url 'document_preview' conv.id %}" class="font-bold text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1 text-sm">
-                        {{ conv.get_type_display }} - {{ conv.number }}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    </a>
-                </div>
-                {% endfor %}
             </div>
         </div>
-        {% endif %}
 
     </div>
 </div>
@@ -583,6 +625,201 @@ async function submitReceiveGoods() {
         } else {
             alert(data.error || "Failed to record stock receipt.");
             btn.innerHTML = origText;
+        if (data.success) {
+            window.location.href = data.url;
+        } else {
+            alert("Error: " + data.error);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (e) {
+        alert("Network error.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+</script>
+
+<!-- PO Goods Receiving Modal -->
+<div id="receiveGoodsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl text-white">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
+                    📦
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Receive Goods for PO <span id="receivePoNumber" class="font-mono text-purple-400"></span></h3>
+                    <p class="text-xs text-slate-400">Select items & adjust receiving quantities to increase inventory stock</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeReceiveGoodsModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+        </div>
+
+        <div id="receiveLoading" class="py-12 text-center text-slate-400">
+            Loading PO items...
+        </div>
+
+        <div id="receiveFormContent" class="hidden space-y-4">
+            <div class="max-h-[350px] overflow-y-auto rounded-xl border border-slate-800">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
+                        <tr>
+                            <th class="p-3 text-center"><input type="checkbox" id="selectAllPoItems" onclick="toggleAllPoItems(this)" checked class="rounded border-slate-700"></th>
+                            <th class="p-3">Item / Product</th>
+                            <th class="p-3 text-center">Ordered Qty</th>
+                            <th class="p-3 text-center">Prev. Received</th>
+                            <th class="p-3 text-center">Receiving Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="poItemsTbody" class="divide-y divide-slate-800 bg-slate-900/50">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase">Receipt Remarks (Optional)</label>
+                <input type="text" id="receiveRemarks" placeholder="e.g. Received batch #1 from vendor" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-purple-500 focus:border-purple-500">
+            </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+            <button type="button" onclick="closeReceiveGoodsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition">
+                Cancel
+            </button>
+            <button type="button" onclick="submitReceiveGoods()" id="receiveGoodsSubmitBtn" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-purple-950 flex items-center gap-2">
+                Confirm Receipt & Increase Stock 📥
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPoDocId = null;
+let currentPoItems = [];
+
+async function openReceiveGoodsModal(docId, docNumber) {
+    currentPoDocId = docId;
+    document.getElementById('receivePoNumber').innerText = docNumber || '';
+    document.getElementById('receiveGoodsModal').classList.remove('hidden');
+    document.getElementById('receiveLoading').classList.remove('hidden');
+    document.getElementById('receiveFormContent').classList.add('hidden');
+
+    try {
+        const res = await fetch(`/documents/api/${docId}/po-items/`);
+        const data = await res.json();
+        if (data.success) {
+            currentPoItems = data.items;
+            renderPoItemsTable(data.items);
+            document.getElementById('receiveLoading').classList.add('hidden');
+            document.getElementById('receiveFormContent').classList.remove('hidden');
+        } else {
+            alert(data.error || "Failed to load PO items.");
+            closeReceiveGoodsModal();
+        }
+    } catch(err) {
+        alert("Error fetching PO items: " + err.message);
+        closeReceiveGoodsModal();
+    }
+}
+
+function closeReceiveGoodsModal() {
+    document.getElementById('receiveGoodsModal').classList.add('hidden');
+}
+
+function renderPoItemsTable(items) {
+    const tbody = document.getElementById('poItemsTbody');
+    if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 italic">No items found in this PO.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map((item, idx) => {
+        const isFullyReceived = item.remaining_qty <= 0;
+        return `
+        <tr class="hover:bg-slate-800/50 transition ${isFullyReceived ? 'opacity-60 bg-slate-950/40' : ''}">
+            <td class="p-3 text-center">
+                <input type="checkbox" class="po-item-checkbox rounded border-slate-700" data-idx="${idx}" ${isFullyReceived ? '' : 'checked'}>
+            </td>
+            <td class="p-3">
+                <div class="font-semibold text-white flex items-center gap-2">
+                    <span>${item.name}</span>
+                    ${isFullyReceived ? '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30">Fully Received ✅</span>' : ''}
+                </div>
+                <div class="text-xs text-slate-400 font-mono">${item.sku ? 'SKU: ' + item.sku : ''} ${item.unit ? ' (' + item.unit + ')' : ''}</div>
+            </td>
+            <td class="p-3 text-center font-bold text-slate-300">
+                ${item.ordered_qty}
+            </td>
+            <td class="p-3 text-center font-semibold text-purple-400">
+                ${item.already_received_qty}
+            </td>
+            <td class="p-3 text-center w-36">
+                <input type="number" step="0.01" min="0" value="${item.remaining_qty}" class="po-item-qty w-24 bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-center text-white text-sm font-bold focus:ring-purple-500 focus:border-purple-500" data-idx="${idx}">
+            </td>
+        </tr>
+    `}).join('');
+}
+
+function toggleAllPoItems(mainCb) {
+    document.querySelectorAll('.po-item-checkbox').forEach(cb => cb.checked = mainCb.checked);
+}
+
+async function submitReceiveGoods() {
+    if (!currentPoDocId) return;
+
+    const checkboxes = document.querySelectorAll('.po-item-checkbox');
+    const qtyInputs = document.querySelectorAll('.po-item-qty');
+    const selectedItems = [];
+
+    checkboxes.forEach((cb, i) => {
+        if (cb.checked) {
+            const idx = parseInt(cb.getAttribute('data-idx'));
+            const item = currentPoItems[idx];
+            const qtyVal = parseFloat(qtyInputs[i].value) || 0;
+            if (item && qtyVal > 0) {
+                selectedItems.push({
+                    item_id: item.item_id,
+                    product_id: item.product_id,
+                    received_qty: qtyVal
+                });
+            }
+        }
+    });
+
+    if (selectedItems.length === 0) {
+        alert("Please select at least one item and specify a received quantity greater than 0.");
+        return;
+    }
+
+    const btn = document.getElementById('receiveGoodsSubmitBtn');
+    const origText = btn.innerHTML;
+    btn.innerHTML = "Processing Stock Receipt...";
+    btn.disabled = true;
+
+    try {
+        const remarks = document.getElementById('receiveRemarks').value.trim();
+        const res = await fetch(`/documents/api/${currentPoDocId}/receive-po-items/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                received_items: selectedItems,
+                remarks: remarks
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            closeReceiveGoodsModal();
+            window.location.reload();
+        } else {
+            alert(data.error || "Failed to record stock receipt.");
+            btn.innerHTML = origText;
             btn.disabled = false;
         }
     } catch(err) {
@@ -593,4 +830,189 @@ async function submitReceiveGoods() {
 }
 </script>
 
-{% endblock %}
+<!-- Document Link Modal -->
+<div id="linkDocumentModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeLinkModal()"></div>
+    
+    <!-- Modal Content -->
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                Link a Document
+            </h2>
+            <button type="button" onclick="closeLinkModal()" class="text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-slate-100 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1 min-h-0">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Search for Document to Link</label>
+                    <p class="text-xs text-slate-500 mb-2">Search by PO number, Invoice Number, or Document Name...</p>
+                    <div class="relative">
+                        <input type="text" id="linkSearchInput" class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm" placeholder="Search across all documents..." oninput="debounceSearchLinks()" autocomplete="off">
+                        <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                </div>
+
+                <div id="linkSearchResults" class="max-h-60 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 hidden">
+                    <!-- Results injected here via JS -->
+                </div>
+
+                <div id="linkSelectedSection" class="hidden bg-blue-50 p-4 rounded-xl border border-blue-200">
+                    <label class="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Selected Document</label>
+                    <div id="linkSelectedDocTitle" class="font-bold text-slate-800 mb-3 text-sm"></div>
+                    
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Link Type</label>
+                    <select id="linkTypeSelect" class="w-full border border-slate-300 rounded-lg py-1.5 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                        <option value="related">Related Document</option>
+                        <option value="payment">Payment Proof</option>
+                        <option value="supporting">Supporting Document</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl shrink-0">
+            <button type="button" onclick="closeLinkModal()" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">Cancel</button>
+            <button type="button" id="submitLinkBtn" onclick="submitLink()" disabled class="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed">Create Link</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let linkSearchTimeout = null;
+let selectedTargetModel = null;
+let selectedTargetId = null;
+
+function openLinkModal() {
+    document.getElementById('linkDocumentModal').classList.remove('hidden');
+    document.getElementById('linkSearchInput').value = '';
+    document.getElementById('linkSearchResults').classList.add('hidden');
+    document.getElementById('linkSelectedSection').classList.add('hidden');
+    document.getElementById('submitLinkBtn').disabled = true;
+    setTimeout(() => document.getElementById('linkSearchInput').focus(), 100);
+}
+
+function closeLinkModal() {
+    document.getElementById('linkDocumentModal').classList.add('hidden');
+}
+
+function debounceSearchLinks() {
+    clearTimeout(linkSearchTimeout);
+    linkSearchTimeout = setTimeout(searchLinks, 400);
+}
+
+async function searchLinks() {
+    const query = document.getElementById('linkSearchInput').value.trim();
+    const resultsContainer = document.getElementById('linkSearchResults');
+    
+    if (query.length < 2) {
+        resultsContainer.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/api/document-links/search/?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        
+        resultsContainer.innerHTML = '';
+        
+        if (data.results.length === 0) {
+            resultsContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-500 italic">No documents found matching your search.</div>';
+        } else {
+            data.results.forEach(item => {
+                let model = item.type === 'Commercial Document' ? 'documents.document' : 'edms.edmsdocument';
+                
+                const div = document.createElement('div');
+                div.className = 'p-3 hover:bg-blue-50 cursor-pointer flex items-start gap-3 transition-colors';
+                div.innerHTML = `
+                    <div class="mt-0.5">${item.icon}</div>
+                    <div>
+                        <div class="font-bold text-sm text-slate-800">${item.title}</div>
+                        <div class="text-xs text-slate-500">${item.subtitle}</div>
+                    </div>
+                `;
+                div.onclick = () => selectDocumentToLink(model, item.id, item.title, item.icon);
+                resultsContainer.appendChild(div);
+            });
+        }
+        
+        resultsContainer.classList.remove('hidden');
+    } catch (e) {
+        console.error('Search failed', e);
+    }
+}
+
+function selectDocumentToLink(model, id, title, icon) {
+    selectedTargetModel = model;
+    selectedTargetId = id;
+    
+    document.getElementById('linkSearchResults').classList.add('hidden');
+    document.getElementById('linkSelectedSection').classList.remove('hidden');
+    document.getElementById('linkSelectedDocTitle').innerHTML = `${icon} ${title}`;
+    document.getElementById('submitLinkBtn').disabled = false;
+}
+
+async function submitLink() {
+    const btn = document.getElementById('submitLinkBtn');
+    btn.disabled = true;
+    btn.innerHTML = 'Linking...';
+    
+    try {
+        const res = await fetch('/api/document-links/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                source_model: 'documents.document',
+                source_id: '{{ doc.id }}',
+                target_model: selectedTargetModel,
+                target_id: selectedTargetId,
+                link_type: document.getElementById('linkTypeSelect').value
+            })
+        });
+        
+        const data = await res.json();
+        if (data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Failed to create link');
+            btn.disabled = false;
+            btn.innerHTML = 'Create Link';
+        }
+    } catch(e) {
+        alert('An error occurred');
+        btn.disabled = false;
+        btn.innerHTML = 'Create Link';
+    }
+}
+
+async function deleteLink(linkId) {
+    if (!confirm('Are you sure you want to remove this link?')) return;
+    
+    try {
+        const res = await fetch(`/api/document-links/${linkId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Failed to delete link');
+        }
+    } catch(e) {
+        alert('An error occurred');
+    }
+}
+</script>
+
+{% endblock content %}

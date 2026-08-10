@@ -137,6 +137,7 @@ class DocumentDetailView(EDMSLoginRequiredMixin, EDMSContextMixin, DetailView):
         ctx['can_approve']   = PermissionService.has_document_access(self.request.user, doc, 'approve')[0]
         ctx['can_share']     = PermissionService.has_document_access(self.request.user, doc, 'share')[0]
         ctx['preview_url']   = reverse_lazy('edms:document_preview', kwargs={'doc_id': doc.id})
+        ctx['linked_documents'] = doc.get_linked_documents()
         return ctx
 
 

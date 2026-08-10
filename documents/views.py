@@ -153,6 +153,23 @@ def document_preview(request, document_id):
     prev_doc = Document.objects.filter(type=doc.type, id__lt=doc.id).order_by('-id').first()
     next_doc = Document.objects.filter(type=doc.type, id__gt=doc.id).order_by('id').first()
 
+    linked_documents = doc.get_linked_documents()
+    
+    # Collect document numbers for all linked commercial documents to fetch all payments
+    all_doc_numbers = [doc.number]
+    for link in linked_documents:
+        if link.source_id == doc.id:
+            target = link.target_object
+            if target and getattr(target, 'type', None):
+                all_doc_numbers.append(target.number)
+        else:
+            source = link.source_object
+            if source and getattr(source, 'type', None):
+                all_doc_numbers.append(source.number)
+                
+    all_linked_payments = Payment.objects.filter(document_ref__in=all_doc_numbers).order_by('-date')
+    total_paid_all = all_linked_payments.aggregate(t=Sum('amount'))['t'] or 0
+
     return render(request, 'documents/document_preview.html', {
         'doc': doc,
         'preview_html': preview_html,
@@ -161,6 +178,9 @@ def document_preview(request, document_id):
         'document_types': Document.DOCUMENT_TYPES,
         'prev_doc': prev_doc,
         'next_doc': next_doc,
+        'linked_documents': linked_documents,
+        'all_linked_payments': all_linked_payments,
+        'total_paid_all': total_paid_all,
     })
 
 

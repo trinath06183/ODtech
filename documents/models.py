@@ -171,6 +171,54 @@ class Document(TimeStampedModel):
     def balance_due(self):
         return self.grand_total - self.amount_paid
 
+    @property
+    def lifecycle_payment_status(self):
+        """
+        Calculates payment status by checking if this document is an invoice
+        and checking any child/linked documents that are invoices.
+        """
+        if self.type == 'INV':
+            if self.balance_due <= 0 and self.grand_total > 0:
+                return 'Paid'
+            elif self.amount_paid > 0:
+                return 'Partially Paid'
+            return 'Unpaid'
+            
+        from django.contrib.contenttypes.models import ContentType
+        from core.models import DocumentLink
+        
+        doc_ct = ContentType.objects.get_for_model(self.__class__)
+        links = DocumentLink.objects.filter(source_type=doc_ct, source_id=self.id)
+        
+        total_invoiced = 0
+        total_paid = 0
+        
+        for link in links:
+            target = link.target_object
+            if target and getattr(target, 'type', None) == 'INV':
+                total_invoiced += getattr(target, 'grand_total', 0)
+                total_paid += getattr(target, 'amount_paid', 0)
+                
+        if total_invoiced > 0:
+            if total_paid >= total_invoiced:
+                return 'Paid'
+            elif total_paid > 0:
+                return 'Partially Paid'
+            return 'Unpaid'
+            
+        return 'N/A'
+
+    def get_linked_documents(self):
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        from core.models import DocumentLink
+        
+        doc_ct = ContentType.objects.get_for_model(self.__class__)
+        return DocumentLink.objects.filter(
+            Q(source_type=doc_ct, source_id=self.id) | 
+            Q(target_type=doc_ct, target_id=self.id)
+        ).order_by('-created_at')
+
     def __str__(self):
         return f"{self.type} - {self.number} ({self.status})"
 

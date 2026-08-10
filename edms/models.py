@@ -396,6 +396,17 @@ class EDMSDocument(TimeStampedModel):
             models.Index(fields=['file_hash']),
         ]
 
+    def get_linked_documents(self):
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        from core.models import DocumentLink
+        
+        doc_ct = ContentType.objects.get_for_model(self.__class__)
+        return DocumentLink.objects.filter(
+            Q(source_type=doc_ct, source_id=self.id) | 
+            Q(target_type=doc_ct, target_id=self.id)
+        ).order_by('-created_at')
+
     def __str__(self):
         return f"{self.title} (v{self.current_version})"
 
