@@ -324,7 +324,7 @@
                 <input type="hidden" name="items_json" :value="JSON.stringify(items)">
                 <input type="hidden" name="action" :value="formAction">
                 <input type="hidden" name="terms_and_conditions" :value="terms">
-                <input type="hidden" name="show_gst" :value="sections.tax_details ? 'true' : 'false'">
+                <input type="hidden" name="show_gst" :value="(sections.tax_details || columns.gst_percent || columns.gst_amt) ? 'true' : 'false'">
                 <input type="hidden" name="split_gst" :value="splitGST ? 'true' : 'false'">
                 <input type="hidden" name="force_igst" :value="forceIGST ? 'true' : 'false'">
                 <input type="hidden" name="discount_type" :value="discountType">
@@ -772,8 +772,8 @@
                                 <th x-show="enableDiscount && (discountType==='individual'||discountType==='individual_pct')" style="width:80px;">
                                     Disc <span x-text="discountType==='individual_pct'?'(%)':'(₹)'"></span>
                                 </th>
-                                <th x-show="sections.tax_details && columns.gst_percent" style="width:60px;">GST%</th>
-                                <th x-show="sections.tax_details && columns.gst_amt" style="width:80px;">GST Amt</th>
+                                <th x-show="columns.gst_percent" style="width:60px;">GST%</th>
+                                <th x-show="columns.gst_amt" style="width:80px;">GST Amt</th>
                                 <th x-show="columns.total" style="width:90px;">Total (₹)</th>
                                 <th x-show="enableWarranty" style="width:50px;">Wty.</th>
                                 <th style="width:34px;"></th>
@@ -824,11 +824,11 @@
                                             x-show="discountType==='individual_pct'" @input="calculateTotals()"
                                             class="cell-inp" style="text-align:right;" placeholder="0.00">
                                     </td>
-                                    <td x-show="sections.tax_details && columns.gst_percent">
+                                    <td x-show="columns.gst_percent">
                                         <input type="number" step="0.5" x-model.number="item.tax"
                                             @input="calculateTotals()" class="cell-inp" style="text-align:right;">
                                     </td>
-                                    <td x-show="sections.tax_details && columns.gst_amt"
+                                    <td x-show="columns.gst_amt"
                                         class="text-right font-mono text-sm text-gray-300" x-text="fmtNum(item.taxAmt)"></td>
                                     <td x-show="columns.total"
                                         class="text-right font-mono font-bold text-sm text-white" x-text="fmtNum(item.total)"></td>
@@ -1628,7 +1628,21 @@ function documentForm() {
                     }
                 }
             });
-            this.$watch('sections.tax_details', () => this.calculateTotals());
+            this.$watch('sections.tax_details', (val) => {
+                if (val) {
+                    this.columns.gst_percent = true;
+                    this.columns.gst_amt = true;
+                }
+                this.calculateTotals();
+            });
+            this.$watch('columns.gst_percent', (val) => {
+                if (val) this.sections.tax_details = true;
+                this.calculateTotals();
+            });
+            this.$watch('columns.gst_amt', (val) => {
+                if (val) this.sections.tax_details = true;
+                this.calculateTotals();
+            });
             this.$watch('discountType', () => this.calculateTotals());
             this.$watch('discountValue', () => this.calculateTotals());
             this.$watch('enableDiscount', () => this.calculateTotals());
@@ -1881,7 +1895,7 @@ function documentForm() {
             this.totalDiscount = totalDisc;
 
             let sub = 0, tax = 0;
-            const useGST = !!this.sections.tax_details;
+            const useGST = !!(this.sections.tax_details || this.columns.gst_percent || this.columns.gst_amt);
             this.items.forEach(item => {
                 const txPc = useGST ? (parseFloat(item.tax) || 0) : 0;
                 const base = item.gross - item.discount;
