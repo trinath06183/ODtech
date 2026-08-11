@@ -18,7 +18,7 @@ def settings_view(request):
         po_prefix         = request.POST.get('po_prefix', 'PO-').strip()
         challan_prefix    = request.POST.get('challan_prefix', 'CHL-').strip()
         terms_conditions  = request.POST.get('terms_conditions', '').strip()
-        doc_number_format = request.POST.get('doc_number_format', 'OD-{FY}-{MM}-{N}').strip()
+        doc_number_format = request.POST.get('doc_number_format', 'OD-{TYPE}-{FY}-{MM}-{N}').strip()
         allow_document_deletion = request.POST.get('allow_document_deletion') == 'on'
         header_address    = request.POST.get('header_address', '').strip()
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
@@ -95,7 +95,7 @@ def settings_view(request):
         'prefix_fields':        prefix_fields,
         'sequence_fields':      sequence_fields,
         'doc_number_formats':   CompanyProfile.DOC_NUMBER_FORMAT_CHOICES,
-        'current_doc_format':   getattr(company, 'doc_number_format', 'OD-{FY}-{MM}-{N}') if company else 'OD-{FY}-{MM}-{N}',
+        'current_doc_format':   getattr(company, 'doc_number_format', 'OD-{TYPE}-{FY}-{MM}-{N}') if company else 'OD-{TYPE}-{FY}-{MM}-{N}',
     })
 from django.shortcuts import get_object_or_404
 from .models import CompanyDocument

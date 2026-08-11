@@ -33,7 +33,7 @@ class CompanyProfile(TimeStampedModel):
     doc_number_format = models.CharField(
         max_length=40,
         choices=DOC_NUMBER_FORMAT_CHOICES,
-        default='OD-{FY}-{MM}-{N}',
+        default='OD-{TYPE}-{FY}-{MM}-{N}',
     )
     
     # Security/Action Settings

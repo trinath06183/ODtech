@@ -62,8 +62,19 @@ class NumberingService:
 
         month_str = document_date.strftime("%m")
 
+        type_code_map = {
+            'QTN': 'QTN',
+            'PRO': 'PI',
+            'INV': 'INV',
+            'PO':  'PO',
+            'CHL': 'DC',
+            'CRN': 'CN',
+            'DBN': 'DN',
+        }
+        type_code = type_code_map.get(document_type, document_type)
+
         # Read configured format and next sequence from CompanyProfile
-        fmt = 'OD-{FY}-{MM}-{N}'  # default
+        fmt = 'OD-{TYPE}-{FY}-{MM}-{N}'  # default
         next_number = 1
         
         config_field_map = {
@@ -82,6 +93,11 @@ class NumberingService:
             if company:
                 if company.doc_number_format:
                     fmt = company.doc_number_format
+                    if '{TYPE}' not in fmt:
+                        if 'OD-' in fmt:
+                            fmt = fmt.replace('OD-', 'OD-{TYPE}-')
+                        else:
+                            fmt = f'{TYPE}-{fmt}'
                     
                 config_field = config_field_map.get(document_type)
                 if config_field:
@@ -94,7 +110,7 @@ class NumberingService:
         while True:
             candidate = (
                 fmt
-                .replace('{TYPE}', document_type)
+                .replace('{TYPE}', type_code)
                 .replace('{FYFY}', fy_4)
                 .replace('{FY}',   fy_2)
                 .replace('{MM}',   month_str)
