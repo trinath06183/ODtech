@@ -140,8 +140,8 @@
 
 <div class="info-grid" style="margin-top: 15px; margin-bottom: 10px;">
     <div class="info-col" style="width: 55%; padding-right: 20px;">
-        <div class="text-red mb-1" style="font-size: 12px; font-weight: bold;">Terms And Conditions</div>
         {% if doc.terms_list %}
+        <div class="text-red mb-1" style="font-size: 12px; font-weight: bold;">Terms And Conditions</div>
         <ol style="font-size: 9px; line-height: 1.4; padding-left: 14px; margin: 0;">
             {% for term in doc.terms_list %}
             <li style="margin-bottom: 2px;">{{ term }}</li>

@@ -323,7 +323,7 @@
                 {# Hidden fields #}
                 <input type="hidden" name="items_json" :value="JSON.stringify(items)">
                 <input type="hidden" name="action" :value="formAction">
-                <input type="hidden" name="terms_and_conditions" :value="terms">
+                <input type="hidden" name="terms_and_conditions" :value="sections.terms ? terms : ''">
                 <input type="hidden" name="show_gst" :value="(sections.tax_details || columns.gst_percent || columns.gst_amt) ? 'true' : 'false'">
                 <input type="hidden" name="split_gst" :value="splitGST ? 'true' : 'false'">
                 <input type="hidden" name="force_igst" :value="forceIGST ? 'true' : 'false'">
@@ -1604,12 +1604,17 @@ function documentForm() {
             {% if doc %}
             this.sections.tax_details = {% if doc.show_gst %}true{% else %}false{% endif %};
             this.sections.payment_summary = {% if doc.show_payment_summary %}true{% else %}false{% endif %};
+            this.sections.terms = {% if doc.terms_and_conditions %}true{% else %}false{% endif %};
             {% else %}
             if (lastSettings) {
                 this.sections.tax_details = lastSettings.show_gst;
                 this.sections.payment_summary = lastSettings.show_payment_summary ?? true;
             }
             {% endif %}
+
+            this.$watch('sections.terms', (val) => {
+                if (val && !this.terms) this.loadDefaultTerms();
+            });
 
             this.$watch('docType', (newVal, oldVal) => {
                 // Only auto-load default terms when changing doc type on a new (non-edit, non-conversion) document

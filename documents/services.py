@@ -336,7 +336,7 @@ class DocumentService:
     @transaction.atomic
     def create_document(document_type, contact_id, items, **kwargs):
         terms = kwargs.get("terms_and_conditions")
-        if not terms:
+        if terms is None:
             terms = Document.get_default_terms(document_type)
         # Allow caller to specify an explicit invoice date; fall back to today
         invoice_date = kwargs.get("invoice_date") or None
