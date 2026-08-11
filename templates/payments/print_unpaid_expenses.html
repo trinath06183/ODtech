@@ -10,36 +10,46 @@
             font-family: Arial, sans-serif;
             color: #1e293b;
             margin: 0;
-            padding: 20px;
+            padding: 10px 15px;
+            font-size: 11px;
         }
         .header {
             text-align: center;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 12px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 6px;
+        }
+        .logo-img {
+            height: 42px;
+            max-width: 180px;
+            object-fit: contain;
+            margin: 0 auto 4px auto;
+            display: block;
+            cursor: pointer;
         }
         .header h1 {
-            margin: 0 0 4px 0;
-            font-size: 24px;
+            margin: 0 0 2px 0;
+            font-size: 18px;
             color: #0f172a;
         }
         .header p {
             margin: 0;
-            color: #64748b;
+            color: #475569;
+            font-size: 11px;
         }
         .emp-section {
-            margin-bottom: 30px;
+            margin-bottom: 12px;
             page-break-inside: avoid;
         }
         .emp-header {
             background-color: #f1f5f9;
-            border-left: 5px solid #4f46e5;
-            padding: 10px 14px;
-            font-size: 15px;
+            border-left: 4px solid #4f46e5;
+            padding: 4px 8px;
+            font-size: 12px;
             font-weight: bold;
             color: #1e1b4b;
-            margin-bottom: 10px;
-            border-radius: 4px;
+            margin-bottom: 4px;
+            border-radius: 3px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -47,21 +57,22 @@
         .emp-badge {
             background-color: #e0e7ff;
             color: #3730a3;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 10px;
             font-weight: 600;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         th, td {
             border: 1px solid #cbd5e1;
-            padding: 9px 10px;
+            padding: 4px 6px;
             text-align: left;
-            font-size: 13px;
+            font-size: 11px;
+            line-height: 1.2;
         }
         th {
             background-color: #f8fafc;
@@ -78,60 +89,42 @@
             font-weight: bold;
         }
         .emp-subtotal-row td {
-            border-top: 2px solid #6366f1;
+            border-top: 1.5px solid #6366f1;
             color: #312e81;
+            padding: 4px 6px;
         }
         .grand-total-box {
             background-color: #fef2f2;
-            border: 2px solid #f87171;
-            border-radius: 8px;
-            padding: 14px 20px;
-            margin-top: 30px;
+            border: 1.5px solid #f87171;
+            border-radius: 5px;
+            padding: 6px 12px;
+            margin-top: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 15px;
+            font-size: 12px;
             font-weight: bold;
             color: #991b1b;
             page-break-inside: avoid;
         }
         .details-col {
-            max-width: 280px;
+            max-width: 250px;
             white-space: pre-wrap;
-            font-size: 12px;
+            font-size: 10px;
             color: #475569;
         }
         @media print {
             body { padding: 0; }
-            button { display: none; }
-            @page { margin: 1cm; }
-        }
-        .print-btn {
-            display: block;
-            width: 130px;
-            margin: 0 auto 20px auto;
-            padding: 10px;
-            background-color: #4f46e5;
-            color: white;
-            text-align: center;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: bold;
-        }
-        .print-btn:hover {
-            background-color: #4338ca;
+            @page { margin: 6mm; }
         }
     </style>
 </head>
 <body>
-    <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
-
     <div class="header">
+        <img src="{% if company.logo %}{{ company.logo.url }}{% else %}{% static 'img/logo.png' %}{% endif %}" alt="ODtech Logo" class="logo-img" onclick="window.print()" title="Click to print report" onerror="this.style.display='none'">
         <h1>{{ company.name|default:"ODtech" }}</h1>
-        <p style="font-weight: bold; font-size: 16px; color: #334155;">Unpaid Expenses Report (By Employee)</p>
-        <p style="font-size: 0.85em; margin-top: 4px;">Generated on: {% now "jS F Y, h:i A" %}</p>
+        <p style="font-weight: bold; color: #334155;">Unpaid Expenses Report (By Employee)</p>
+        <p style="font-size: 10px; margin-top: 2px; color: #64748b;">Generated on: {% now "jS F Y, h:i A" %}</p>
     </div>
 
     {% for group in grouped_expenses %}
@@ -144,8 +137,8 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 15%;">Date</th>
-                    <th style="width: 25%;">Title</th>
+                    <th style="width: 14%;">Date</th>
+                    <th style="width: 26%;">Title</th>
                     <th style="width: 20%;">Category</th>
                     <th style="width: 25%;">Details / Notes</th>
                     <th style="width: 15%; text-align: right;">Amount (₹)</th>
@@ -171,7 +164,7 @@
         </table>
     </div>
     {% empty %}
-    <div style="text-align: center; padding: 40px; color: #64748b; font-size: 15px;">
+    <div style="text-align: center; padding: 25px; color: #64748b; font-size: 13px;">
         No unpaid expenses found.
     </div>
     {% endfor %}
@@ -179,18 +172,18 @@
     {% if grouped_expenses %}
     <div class="grand-total-box">
         <span>OVERALL GRAND TOTAL UNPAID EXPENSES ({{ total_count }} item{{ total_count|pluralize }})</span>
-        <span style="font-size: 18px; font-family: monospace;">₹ {{ total_unpaid|floatformat:2 }}</span>
+        <span style="font-size: 14px; font-family: monospace;">₹ {{ total_unpaid|floatformat:2 }}</span>
     </div>
     {% endif %}
 
-    <div style="margin-top: 50px; display: flex; justify-content: space-between; page-break-inside: avoid;">
+    <div style="margin-top: 25px; display: flex; justify-content: space-between; page-break-inside: avoid;">
         <div style="text-align: center;">
-            <hr style="width: 160px; border-top: 1px solid #475569;">
-            <p style="font-size: 13px; color: #475569; margin-top: 6px;">Prepared By</p>
+            <hr style="width: 140px; border-top: 1px solid #475569; margin-bottom: 4px;">
+            <p style="font-size: 11px; color: #475569; margin: 0;">Prepared By</p>
         </div>
         <div style="text-align: center;">
-            <hr style="width: 160px; border-top: 1px solid #475569;">
-            <p style="font-size: 13px; color: #475569; margin-top: 6px;">Authorized Signatory</p>
+            <hr style="width: 140px; border-top: 1px solid #475569; margin-bottom: 4px;">
+            <p style="font-size: 11px; color: #475569; margin: 0;">Authorized Signatory</p>
         </div>
     </div>
 
@@ -198,7 +191,7 @@
         window.onload = function() {
             setTimeout(function() {
                 window.print();
-            }, 500);
+            }, 400);
         };
     </script>
 </body>
