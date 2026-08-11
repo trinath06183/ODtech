@@ -363,6 +363,7 @@ class DocumentService:
             transport_doc_date=kwargs.get("transport_doc_date") or None,
             transport_reason=kwargs.get("transport_reason", "Refilling only, No Commercial involvement."),
             terms_and_conditions=terms,
+            currency=kwargs.get("currency", "INR"),
             show_gst=kwargs.get("show_gst", False),
             split_gst=kwargs.get("split_gst", False),
             force_igst=kwargs.get("force_igst", False),
@@ -437,6 +438,8 @@ class DocumentService:
             document.date = kwargs["invoice_date"]
         if "place_of_supply" in kwargs:
             document.place_of_supply = kwargs.get("place_of_supply")
+        if "currency" in kwargs:
+            document.currency = kwargs.get("currency") or "INR"
         if "terms_and_conditions" in kwargs:
             document.terms_and_conditions = kwargs.get("terms_and_conditions")
         if "show_gst" in kwargs:

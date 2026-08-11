@@ -20,7 +20,9 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.table_columns.rate or doc.table_columns is None %}
-            <th class="text-right" style="width: 10%;">Rate (₹)</th>
+            {% if doc.type != 'CHL' %}
+            {% if doc.table_columns.rate or doc.table_columns is None %}
+            <th class="text-right" style="width: 10%;">Rate ({{ doc.currency_symbol }})</th>
             {% endif %}
             {% endif %}
             {% if doc.type != 'CHL' %}
@@ -40,7 +42,7 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.table_columns.total or doc.table_columns is None %}
-            <th class="text-right" style="width: 12%;">Total (₹)</th>
+            <th class="text-right" style="width: 12%;">Total ({{ doc.currency_symbol }})</th>
             {% endif %}
             {% endif %}
         </tr>
@@ -73,12 +75,12 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.table_columns.rate or doc.table_columns is None %}
-            <td class="text-right" style="vertical-align: top; text-align: right;">₹ {{ item.unit_price|indian_currency }}</td>
+            <td class="text-right" style="vertical-align: top; text-align: right;">{{ doc.currency_symbol }} {{ item.unit_price|indian_currency }}</td>
             {% endif %}
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.discount_type == 'individual' or doc.discount_type == 'individual_pct' %}
-            <td class="text-right" style="vertical-align: top; text-align: right;">₹ {{ item.discount|indian_currency }}</td>
+            <td class="text-right" style="vertical-align: top; text-align: right;">{{ doc.currency_symbol }} {{ item.discount|indian_currency }}</td>
             {% endif %}
             {% endif %}
             {% if doc.type != 'CHL' %}
@@ -88,12 +90,12 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.show_gst and doc.table_columns.gst_amt != False %}
-            <td class="text-right" style="vertical-align: top; text-align: right;">₹ {{ item.tax_amount|indian_currency }}</td>
+            <td class="text-right" style="vertical-align: top; text-align: right;">{{ doc.currency_symbol }} {{ item.tax_amount|indian_currency }}</td>
             {% endif %}
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.table_columns.total or doc.table_columns is None %}
-            <td class="text-right" style="vertical-align: top; text-align: right; font-weight: bold;">{% if doc.show_gst %}₹ {{ item.total|indian_currency }}{% else %}₹ {{ item.base_amount|indian_currency }}{% endif %}</td>
+            <td class="text-right" style="vertical-align: top; text-align: right; font-weight: bold;">{% if doc.show_gst %}{{ doc.currency_symbol }} {{ item.total|indian_currency }}{% else %}{{ doc.currency_symbol }} {{ item.base_amount|indian_currency }}{% endif %}</td>
             {% endif %}
             {% endif %}
         </tr>
@@ -117,7 +119,7 @@
             {% if doc.discount_type == 'individual' or doc.discount_type == 'individual_pct' %}<td></td>{% endif %}
             {% if doc.show_gst and doc.table_columns.gst_percent != False %}<td></td>{% endif %}
             {% if doc.show_gst and doc.table_columns.gst_amt != False %}<td style="font-weight: bold;">Taxable Sub Total</td>{% endif %}
-            {% if doc.table_columns.total or doc.table_columns is None %}<td style="text-align: right; padding-right: 5px; font-weight: bold;">&#8377; {{ doc.grand_total|indian_currency }}</td>{% endif %}
+            {% if doc.table_columns.total or doc.table_columns is None %}<td style="text-align: right; padding-right: 5px; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.grand_total|indian_currency }}</td>{% endif %}
             {% endif %}
         </tr>
         {% else %}
@@ -131,7 +133,7 @@
             {% if doc.type != 'CHL' %}
             {% if doc.table_columns.rate or doc.table_columns is None %}<td style="font-weight: bold;">Total</td>{% endif %}
             {% if doc.discount_type == 'individual' or doc.discount_type == 'individual_pct' %}<td></td>{% endif %}
-            {% if doc.table_columns.total or doc.table_columns is None %}<td style="text-align: right; padding-right: 5px; font-weight: bold;">&#8377; {{ doc.subtotal|indian_currency }}</td>{% endif %}
+            {% if doc.table_columns.total or doc.table_columns is None %}<td style="text-align: right; padding-right: 5px; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.subtotal|indian_currency }}</td>{% endif %}
             {% endif %}
         </tr>
         {% endif %}

@@ -61,6 +61,24 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="GST API Key (RapidAPI)",
         help_text="Key for RapidAPI GST Insights service to auto-fetch party name and registered address."
     )
+    default_currency = models.CharField(
+        max_length=10,
+        default='INR',
+        choices=[
+            ('INR', 'INR (₹) - Indian Rupee'),
+            ('USD', 'USD ($) - US Dollar'),
+            ('EUR', 'EUR (€) - Euro'),
+            ('GBP', 'GBP (£) - British Pound'),
+            ('AED', 'AED (د.إ) - UAE Dirham'),
+            ('SAR', 'SAR (ر.س) - Saudi Riyal'),
+            ('CAD', 'CAD (CA$) - Canadian Dollar'),
+            ('AUD', 'AUD (A$) - Australian Dollar'),
+            ('SGD', 'SGD (S$) - Singapore Dollar'),
+            ('JPY', 'JPY (¥) - Japanese Yen'),
+        ],
+        verbose_name="Default Currency",
+        help_text="Default currency pre-selected when creating new documents."
+    )
 
     def __str__(self):
         return self.name

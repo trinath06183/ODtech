@@ -6,7 +6,50 @@ from contacts.models import Contact
 from inventory.models import Product
 from django.utils import timezone
 
+CURRENCY_CHOICES = [
+    ('INR', 'INR (₹) - Indian Rupee'),
+    ('USD', 'USD ($) - US Dollar'),
+    ('EUR', 'EUR (€) - Euro'),
+    ('GBP', 'GBP (£) - British Pound'),
+    ('AED', 'AED (د.إ) - UAE Dirham'),
+    ('SAR', 'SAR (ر.س) - Saudi Riyal'),
+    ('CAD', 'CAD (CA$) - Canadian Dollar'),
+    ('AUD', 'AUD (A$) - Australian Dollar'),
+    ('SGD', 'SGD (S$) - Singapore Dollar'),
+    ('JPY', 'JPY (¥) - Japanese Yen'),
+]
+
+CURRENCY_SYMBOLS = {
+    'INR': '₹',
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'AED': 'AED',
+    'SAR': 'SAR',
+    'CAD': 'CA$',
+    'AUD': 'A$',
+    'SGD': 'S$',
+    'JPY': '¥',
+}
+
+CURRENCY_WORDS = {
+    'INR': ('Rupees', 'Paise'),
+    'USD': ('Dollars', 'Cents'),
+    'EUR': ('Euros', 'Cents'),
+    'GBP': ('Pounds', 'Pence'),
+    'AED': ('Dirhams', 'Fils'),
+    'SAR': ('Riyals', 'Halalas'),
+    'CAD': ('Dollars', 'Cents'),
+    'AUD': ('Dollars', 'Cents'),
+    'SGD': ('Dollars', 'Cents'),
+    'JPY': ('Yen', 'Sen'),
+}
+
 class Document(TimeStampedModel):
+    CURRENCY_CHOICES = CURRENCY_CHOICES
+    CURRENCY_SYMBOLS = CURRENCY_SYMBOLS
+    CURRENCY_WORDS = CURRENCY_WORDS
+
     DOCUMENT_TYPES = (
         ('QTN', 'Quotation'),
         ('INV', 'Invoice'),
@@ -23,6 +66,7 @@ class Document(TimeStampedModel):
     )
     
     type = models.CharField(max_length=10, choices=DOCUMENT_TYPES)
+    currency = models.CharField(max_length=10, default='INR', choices=CURRENCY_CHOICES, verbose_name="Currency")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
     number = models.CharField(max_length=50, unique=True)
     date = models.DateField(default=timezone.now)
@@ -123,21 +167,27 @@ class Document(TimeStampedModel):
     def sgst_amount(self):
         return self.tax_total / 2
 
+    @property
+    def currency_symbol(self):
+        return CURRENCY_SYMBOLS.get(self.currency, '₹')
+
     def to_words(self, amount):
+        main_unit, sub_unit = CURRENCY_WORDS.get(self.currency, ('Rupees', 'Paise'))
         try:
             from num2words import num2words
             import math
-            rupees = math.floor(amount)
-            paise = round((amount - rupees) * 100)
+            main_amt = math.floor(amount)
+            sub_amt = round((amount - main_amt) * 100)
             
-            rupees_words = num2words(rupees, lang='en_IN').replace(',', '').title()
-            if paise > 0:
-                paise_words = num2words(paise, lang='en_IN').replace(',', '').title()
-                return f"{rupees_words} Rupees and {paise_words} Paise Only"
+            lang = 'en_IN' if self.currency == 'INR' else 'en'
+            main_words = num2words(main_amt, lang=lang).replace(',', '').title()
+            if sub_amt > 0:
+                sub_words = num2words(sub_amt, lang=lang).replace(',', '').title()
+                return f"{main_words} {main_unit} and {sub_words} {sub_unit} Only"
             else:
-                return f"{rupees_words} Rupees Only"
-        except ImportError:
-            return f"{amount} Rupees Only"
+                return f"{main_words} {main_unit} Only"
+        except Exception:
+            return f"{amount} {main_unit} Only"
 
     @property
     def amount_in_words(self):

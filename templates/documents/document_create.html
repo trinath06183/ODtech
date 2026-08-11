@@ -323,6 +323,7 @@
                 {# Hidden fields #}
                 <input type="hidden" name="items_json" :value="JSON.stringify(items)">
                 <input type="hidden" name="action" :value="formAction">
+                <input type="hidden" name="currency" :value="currency">
                 <input type="hidden" name="terms_and_conditions" :value="sections.terms ? terms : ''">
                 <input type="hidden" name="show_gst" :value="(sections.tax_details || columns.gst_percent || columns.gst_amt) ? 'true' : 'false'">
                 <input type="hidden" name="split_gst" :value="splitGST ? 'true' : 'false'">
@@ -454,6 +455,16 @@
                             <input type="text" name="place_of_supply" form="document-main-form" x-model="placeOfSupply"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
                                 placeholder="e.g. 21-Odisha">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Currency</label>
+                            <select name="currency" form="document-main-form" x-model="currency"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                                {% for val, label in currency_choices %}
+                                <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <!-- Transporter Details Section (for Delivery Challan & Dispatch) -->
@@ -768,13 +779,13 @@
                                 <th x-show="columns.hsn_code" style="min-width:80px;">HSN/SAC</th>
                                 <th x-show="columns.qty" style="width:70px;">Qty</th>
                                 <th x-show="columns.unit" style="width:60px;">Unit</th>
-                                <th x-show="columns.rate" style="min-width:90px;">Rate (₹)</th>
+                                <th x-show="columns.rate" style="min-width:90px;">Rate (<span x-text="currencySymbol()"></span>)</th>
                                 <th x-show="enableDiscount && (discountType==='individual'||discountType==='individual_pct')" style="width:80px;">
-                                    Disc <span x-text="discountType==='individual_pct'?'(%)':'(₹)'"></span>
+                                    Disc <span x-text="discountType==='individual_pct'?'(%)':'('+currencySymbol()+')'"></span>
                                 </th>
                                 <th x-show="columns.gst_percent" style="width:60px;">GST%</th>
                                 <th x-show="columns.gst_amt" style="width:80px;">GST Amt</th>
-                                <th x-show="columns.total" style="width:90px;">Total (₹)</th>
+                                <th x-show="columns.total" style="width:90px;">Total (<span x-text="currencySymbol()"></span>)</th>
                                 <th x-show="enableWarranty" style="width:50px;">Wty.</th>
                                 <th style="width:34px;"></th>
                             </tr>
@@ -895,31 +906,31 @@
                         <div class="totals-box">
                             <div class="tot-row" x-show="enableDiscount">
                                 <span class="tot-label">Gross Sub Total</span>
-                                <span class="tot-val">₹ <span x-text="fmtNum(grossSubtotal)"></span></span>
+                                <span class="tot-val"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(grossSubtotal)"></span></span>
                             </div>
                             <div class="tot-row" x-show="enableDiscount">
                                 <span class="tot-label">
                                     Less: Discount
                                     <span x-show="discountType==='percentage'" x-text="'('+discountValue+'%)'"></span>
                                 </span>
-                                <span class="tot-val text-red-400">- ₹ <span x-text="fmtNum(totalDiscount)"></span></span>
+                                <span class="tot-val text-red-400">- <span x-text="currencySymbol()"></span> <span x-text="fmtNum(totalDiscount)"></span></span>
                             </div>
                             <div class="tot-row">
                                 <span class="tot-label" x-text="enableDiscount ? 'Taxable Sub Total' : 'Sub Total'"></span>
-                                <span class="tot-val">₹ <span x-text="fmtNum(subtotal)"></span></span>
+                                <span class="tot-val"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(subtotal)"></span></span>
                             </div>
                             <template x-if="sections.tax_details && splitGST">
-                                <div class="tot-row"><span class="tot-label">Add: CGST</span><span class="tot-val">₹ <span x-text="fmtNum(taxTotal/2)"></span></span></div>
+                                <div class="tot-row"><span class="tot-label">Add: CGST</span><span class="tot-val"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(taxTotal/2)"></span></span></div>
                             </template>
                             <template x-if="sections.tax_details && splitGST">
-                                <div class="tot-row"><span class="tot-label">Add: SGST</span><span class="tot-val">₹ <span x-text="fmtNum(taxTotal/2)"></span></span></div>
+                                <div class="tot-row"><span class="tot-label">Add: SGST</span><span class="tot-val"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(taxTotal/2)"></span></span></div>
                             </template>
                             <template x-if="sections.tax_details && !splitGST">
-                                <div class="tot-row"><span class="tot-label">Add: GST</span><span class="tot-val">₹ <span x-text="fmtNum(taxTotal)"></span></span></div>
+                                <div class="tot-row"><span class="tot-label">Add: GST</span><span class="tot-val"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(taxTotal)"></span></span></div>
                             </template>
                             <div class="tot-row tot-grand">
                                 <span>TOTAL</span>
-                                <span class="font-mono">₹ <span x-text="fmtNum(sections.tax_details ? grandTotal : subtotal)"></span></span>
+                                <span class="font-mono"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(sections.tax_details ? grandTotal : subtotal)"></span></span>
                             </div>
                         </div>
                         {# Milestones in totals #}
@@ -928,7 +939,7 @@
                                 <template x-for="(m, idx) in milestones" :key="idx">
                                     <div class="tot-row">
                                         <span class="tot-label text-xs" x-text="m.label + ' @ ' + m.percentage + '%'"></span>
-                                        <span class="tot-val text-xs">₹ <span x-text="fmtNum(m.amount)"></span></span>
+                                        <span class="tot-val text-xs"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(m.amount)"></span></span>
                                     </div>
                                 </template>
                             </div>
@@ -975,9 +986,9 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Amount Paid (₹)</label>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Amount Paid (<span x-text="currencySymbol()"></span>)</label>
                             <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none font-mono">₹</span>
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none font-mono" x-text="currencySymbol()"></span>
                                 <input type="number" step="0.01" name="payment_amount" form="document-main-form" placeholder="0.00" 
                                     class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-8 pr-3 py-2 text-white text-sm focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
                             </div>
@@ -1369,6 +1380,9 @@ function documentForm() {
         originalInvoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
         isConversion: {% if doc and is_conversion %}true{% else %}false{% endif %},
         placeOfSupply: {% if doc %}'{{ doc.place_of_supply|default:"21-Odisha"|escapejs }}'{% else %}(lastSettings ? (lastSettings.place_of_supply || '21-Odisha') : '21-Odisha'){% endif %},
+        currency: {% if doc %}'{{ doc.currency|default:"INR" }}'{% else %}(lastSettings && lastSettings.currency ? lastSettings.currency : '{{ company.default_currency|default:"INR" }}'){% endif %},
+        currencySymbols: { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED', SAR: 'SAR', CAD: 'CA$', AUD: 'A$', SGD: 'S$', JPY: '¥' },
+        currencySymbol() { return this.currencySymbols[this.currency] || '₹'; },
 
         subtotal: 0, taxTotal: 0, grandTotal: 0,
         grossSubtotal: 0, totalDiscount: 0,

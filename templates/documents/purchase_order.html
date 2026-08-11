@@ -105,46 +105,46 @@
                 {% if doc.discount_type != 'none' %}
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; width: 52%; font-weight: bold;">Gross Sub Total</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; text-align: right; font-weight: bold;">&#8377; {{ doc.gross_subtotal|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.gross_subtotal|indian_currency }}</td>
                 </tr>
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">
                         Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% endif %}
                     </td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold;">-&#8377; {{ doc.total_discount|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold;">-{{ doc.currency_symbol }} {{ doc.total_discount|indian_currency }}</td>
                 </tr>
                 {% endif %}
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} width: 52%; font-weight: bold;">{% if doc.discount_type != 'none' %}Taxable Sub Total{% else %}Sub Total{% endif %}</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} text-align: right; font-weight: bold;">&#8377; {{ doc.subtotal|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.subtotal|indian_currency }}</td>
                 </tr>
                 {% if doc.is_igst %}
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">IGST</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">&#8377; {{ doc.tax_total|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.tax_total|indian_currency }}</td>
                 </tr>
                 {% else %}
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: CGST</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">&#8377; {{ doc.cgst_amount|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.cgst_amount|indian_currency }}</td>
                 </tr>
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: SGST</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">&#8377; {{ doc.sgst_amount|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.sgst_amount|indian_currency }}</td>
                 </tr>
                 {% endif %}
                 <tr>
                     <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
-                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">&#8377; {{ doc.grand_total|indian_currency }}</td>
+                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">{{ doc.currency_symbol }} {{ doc.grand_total|indian_currency }}</td>
                 </tr>
                 {% if doc.show_payment_summary and doc.amount_paid > 0 %}
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; color: #047857;">Amount Paid</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857;">&#8377; {{ doc.amount_paid|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857;">{{ doc.currency_symbol }} {{ doc.amount_paid|indian_currency }}</td>
                 </tr>
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; background: #fff1f2; color: #be123c;">Balance Remaining</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; background: #fff1f2; color: #be123c;">&#8377; {{ doc.balance_due|indian_currency }}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; background: #fff1f2; color: #be123c;">{{ doc.currency_symbol }} {{ doc.balance_due|indian_currency }}</td>
                 </tr>
                 {% endif %}
 

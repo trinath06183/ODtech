@@ -407,6 +407,7 @@ def document_form(request, doc=None, default_type='QTN'):
         action = request.POST.get('action', 'save_as_new') # 'update' or 'save_as_new'
         contact_id = request.POST.get('contact')
         doc_type = request.POST.get('type', 'QTN')
+        currency = request.POST.get('currency', 'INR').strip()
         terms_and_conditions = request.POST.get('terms_and_conditions')
         show_gst = request.POST.get('show_gst') in ('on', 'true', True)
         split_gst = request.POST.get('split_gst') in ('on', 'true', True)
@@ -549,6 +550,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 doc_type,
                 contact_id,
                 items,
+                currency=currency,
                 terms_and_conditions=terms_and_conditions,
                 show_gst=show_gst,
                 split_gst=split_gst,
@@ -586,6 +588,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 doc_type,
                 contact_id,
                 items,
+                currency=currency,
                 terms_and_conditions=terms_and_conditions,
                 show_gst=show_gst,
                 split_gst=split_gst,
@@ -754,6 +757,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 'enable_warranty': last_doc.enable_warranty,
                 'repeat_header': last_doc.repeat_header,
                 'show_payment_summary': last_doc.show_payment_summary,
+                'currency': last_doc.currency,
             }
             last_doc_settings_json = json.dumps(last_doc_settings)
         else:
@@ -789,6 +793,7 @@ def document_form(request, doc=None, default_type='QTN'):
         'document_types': Document.DOCUMENT_TYPES,
         'company': company,
         'next_number': next_number,
+        'currency_choices': Document.CURRENCY_CHOICES,
     })
 
 @require_permission('DOCUMENTS', 'write')

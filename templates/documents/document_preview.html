@@ -192,14 +192,14 @@
             </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Grand Total</div>
-                <div class="text-emerald-600 font-bold text-xl">&#8377; {{ doc.grand_total|floatformat:2 }}</div>
+                <div class="text-emerald-600 font-bold text-xl">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
             </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl relative">
                 <div class="flex justify-between items-center mb-1">
                     <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Balance Due</div>
                     <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 transition font-bold uppercase tracking-wide">Record Pay</a>
                 </div>
-                <div class="{% if balance_due > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-bold text-xl">&#8377; {{ balance_due|floatformat:2 }}</div>
+                <div class="{% if balance_due > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-bold text-xl">{{ doc.currency_symbol }} {{ balance_due|floatformat:2 }}</div>
             </div>
         </div>
 
@@ -247,7 +247,7 @@
             <div class="flex flex-col gap-3">
                 <div class="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 mb-2">
                     <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Total Payments (All Linked)</span>
-                    <span class="text-emerald-700 font-bold text-sm">&#8377;{{ total_paid_all|floatformat:2 }}</span>
+                    <span class="text-emerald-700 font-bold text-sm">{{ doc.currency_symbol }} {{ total_paid_all|floatformat:2 }}</span>
                 </div>
                 
                 {% for pmt in all_linked_payments %}
@@ -256,7 +256,7 @@
                         <span class="text-slate-500 text-xs font-medium">{{ pmt.date|date:"d M y" }}</span>
                         <span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] border border-slate-200 rounded font-semibold">{{ pmt.payment_mode }}</span>
                     </div>
-                    <div class="text-emerald-600 font-bold text-base">&#8377;{{ pmt.amount|floatformat:2 }}</div>
+                    <div class="text-emerald-600 font-bold text-base">{{ doc.currency_symbol }} {{ pmt.amount|floatformat:2 }}</div>
                     {% if pmt.reference_number %}<div class="text-slate-400 font-mono text-[10px] mt-1 break-all">{{ pmt.reference_number }}</div>{% endif %}
                     
                     <div class="mt-2 inline-block bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-blue-100">

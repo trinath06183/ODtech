@@ -23,6 +23,7 @@ def settings_view(request):
         header_address    = request.POST.get('header_address', '').strip()
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
         gst_api_key       = request.POST.get('gst_api_key', '').strip()
+        default_currency  = request.POST.get('default_currency', 'INR').strip()
 
         seq_qtn = request.POST.get('seq_qtn')
         seq_inv = request.POST.get('seq_inv')
@@ -57,6 +58,7 @@ def settings_view(request):
                 company.gst_api_key = gst_api_key
             elif 'gst_api_key' in request.POST and request.POST['gst_api_key'].strip() == '':
                 company.gst_api_key = None
+            company.default_currency = default_currency
             # Validate format value against allowed choices
             valid_formats = [c[0] for c in CompanyProfile.DOC_NUMBER_FORMAT_CHOICES]
             if doc_number_format in valid_formats:
@@ -102,6 +104,7 @@ def settings_view(request):
         'sequence_fields':      sequence_fields,
         'doc_number_formats':   CompanyProfile.DOC_NUMBER_FORMAT_CHOICES,
         'current_doc_format':   getattr(company, 'doc_number_format', 'OD-{TYPE}-{FY}-{MM}-{N}') if company else 'OD-{TYPE}-{FY}-{MM}-{N}',
+        'currency_choices':     CompanyProfile._meta.get_field('default_currency').choices,
     })
 from django.shortcuts import get_object_or_404
 from .models import CompanyDocument
