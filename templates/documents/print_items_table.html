@@ -20,8 +20,6 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.table_columns.rate or doc.table_columns is None %}
-            {% if doc.type != 'CHL' %}
-            {% if doc.table_columns.rate or doc.table_columns is None %}
             <th class="text-right" style="width: 10%;">Rate ({{ doc.currency_symbol }})</th>
             {% endif %}
             {% endif %}
