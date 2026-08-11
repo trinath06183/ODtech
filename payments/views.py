@@ -247,11 +247,29 @@ def expense_list(request):
     })
 
 def print_unpaid_expenses(request):
-    unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False).order_by('date')
+    unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False).select_related('submitted_by').order_by('employee_code', 'date')
     total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+    from collections import defaultdict
+    grouped_dict = defaultdict(list)
+    for exp in unpaid_expenses:
+        emp_key = (exp.employee_code or getattr(exp.submitted_by, 'username', 'Unassigned') if exp.submitted_by else 'Unassigned').strip()
+        grouped_dict[emp_key].append(exp)
+
+    grouped_expenses = []
+    for emp_code, exp_list in grouped_dict.items():
+        emp_total = sum(e.amount for e in exp_list)
+        grouped_expenses.append({
+            'employee_code': emp_code,
+            'expenses': exp_list,
+            'subtotal': emp_total,
+            'count': len(exp_list),
+        })
+
     return render(request, 'payments/print_unpaid_expenses.html', {
-        'expenses': unpaid_expenses,
+        'grouped_expenses': grouped_expenses,
         'total_unpaid': total_unpaid,
+        'total_count': unpaid_expenses.count(),
         'company': request.user.company if hasattr(request.user, 'company') else None
     })
 

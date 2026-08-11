@@ -4,57 +4,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unpaid Expenses Report</title>
+    <title>Unpaid Expenses Report by Employee</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            color: #333;
+            color: #1e293b;
             margin: 0;
             padding: 20px;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 12px;
         }
         .header h1 {
-            margin: 0 0 5px 0;
+            margin: 0 0 4px 0;
             font-size: 24px;
+            color: #0f172a;
         }
         .header p {
             margin: 0;
-            color: #666;
+            color: #64748b;
+        }
+        .emp-section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        .emp-header {
+            background-color: #f1f5f9;
+            border-left: 5px solid #4f46e5;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #1e1b4b;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .emp-badge {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 1px solid #cbd5e1;
+            padding: 9px 10px;
             text-align: left;
+            font-size: 13px;
         }
         th {
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
             font-weight: bold;
+            color: #334155;
         }
         .amount {
             text-align: right;
+            font-family: monospace;
+            font-weight: 600;
         }
-        .total-row {
+        .emp-subtotal-row {
+            background-color: #eef2ff;
             font-weight: bold;
-            background-color: #f8f9fa;
         }
-        .total-row td {
-            border-top: 2px solid #333;
+        .emp-subtotal-row td {
+            border-top: 2px solid #6366f1;
+            color: #312e81;
+        }
+        .grand-total-box {
+            background-color: #fef2f2;
+            border: 2px solid #f87171;
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #991b1b;
+            page-break-inside: avoid;
         }
         .details-col {
-            max-width: 300px;
+            max-width: 280px;
             white-space: pre-wrap;
-            font-size: 0.9em;
-            color: #555;
+            font-size: 12px;
+            color: #475569;
         }
         @media print {
             body { padding: 0; }
@@ -63,16 +108,17 @@
         }
         .print-btn {
             display: block;
-            width: 100px;
+            width: 130px;
             margin: 0 auto 20px auto;
             padding: 10px;
             background-color: #4f46e5;
             color: white;
             text-align: center;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
+            font-weight: bold;
         }
         .print-btn:hover {
             background-color: #4338ca;
@@ -80,61 +126,75 @@
     </style>
 </head>
 <body>
-    <button class="print-btn" onclick="window.print()">Print Report</button>
+    <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
 
     <div class="header">
         <h1>{{ company.name|default:"ODtech" }}</h1>
-        <p>Unpaid Expenses Report</p>
-        <p style="font-size: 0.9em;">Generated on: {% now "jS F Y, h:i A" %}</p>
+        <p style="font-weight: bold; font-size: 16px; color: #334155;">Unpaid Expenses Report (By Employee)</p>
+        <p style="font-size: 0.85em; margin-top: 4px;">Generated on: {% now "jS F Y, h:i A" %}</p>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Details / Notes</th>
-                <th class="amount">Amount (₹)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for expense in expenses %}
-            <tr>
-                <td style="white-space: nowrap;">{{ expense.date|date:"d M Y" }}</td>
-                <td>
-                    <strong>{{ expense.title }}</strong><br>
-                    <span style="font-size: 0.85em; color: #666;">Emp: {{ expense.employee_code }}</span>
-                </td>
-                <td>{{ expense.expense_type }}</td>
-                <td class="details-col">{{ expense.notes|default:"-" }}</td>
-                <td class="amount">{{ expense.amount|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 20px;">No unpaid expenses found.</td>
-            </tr>
-            {% endfor %}
-            <tr class="total-row">
-                <td colspan="4" style="text-align: right;">Total Unpaid Amount:</td>
-                <td class="amount">₹ {{ total_unpaid|floatformat:2 }}</td>
-            </tr>
-        </tbody>
-    </table>
-    
-    <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+    {% for group in grouped_expenses %}
+    <div class="emp-section">
+        <div class="emp-header">
+            <span>👤 Employee ID: <strong>{{ group.employee_code }}</strong></span>
+            <span class="emp-badge">{{ group.count }} Expense{{ group.count|pluralize }}</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Date</th>
+                    <th style="width: 25%;">Title</th>
+                    <th style="width: 20%;">Category</th>
+                    <th style="width: 25%;">Details / Notes</th>
+                    <th style="width: 15%; text-align: right;">Amount (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in group.expenses %}
+                <tr>
+                    <td style="white-space: nowrap;">{{ expense.date|date:"d M Y" }}</td>
+                    <td>
+                        <strong>{{ expense.title }}</strong>
+                    </td>
+                    <td>{{ expense.expense_type }}</td>
+                    <td class="details-col">{{ expense.notes|default:"-" }}</td>
+                    <td class="amount">{{ expense.amount|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="emp-subtotal-row">
+                    <td colspan="4" style="text-align: right;">Total Unpaid for {{ group.employee_code }}:</td>
+                    <td class="amount">₹ {{ group.subtotal|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% empty %}
+    <div style="text-align: center; padding: 40px; color: #64748b; font-size: 15px;">
+        No unpaid expenses found.
+    </div>
+    {% endfor %}
+
+    {% if grouped_expenses %}
+    <div class="grand-total-box">
+        <span>OVERALL GRAND TOTAL UNPAID EXPENSES ({{ total_count }} item{{ total_count|pluralize }})</span>
+        <span style="font-size: 18px; font-family: monospace;">₹ {{ total_unpaid|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 50px; display: flex; justify-content: space-between; page-break-inside: avoid;">
         <div style="text-align: center;">
-            <hr style="width: 150px; border-top: 1px solid #333;">
-            <p>Prepared By</p>
+            <hr style="width: 160px; border-top: 1px solid #475569;">
+            <p style="font-size: 13px; color: #475569; margin-top: 6px;">Prepared By</p>
         </div>
         <div style="text-align: center;">
-            <hr style="width: 150px; border-top: 1px solid #333;">
-            <p>Authorized Signatory</p>
+            <hr style="width: 160px; border-top: 1px solid #475569;">
+            <p style="font-size: 13px; color: #475569; margin-top: 6px;">Authorized Signatory</p>
         </div>
     </div>
 
     <script>
-        // Automatically open print dialog when page loads
         window.onload = function() {
             setTimeout(function() {
                 window.print();
