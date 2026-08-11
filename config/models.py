@@ -56,6 +56,11 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="Admin Backup Email",
         help_text="Email address to receive daily database backups."
     )
+    gst_api_key = models.CharField(
+        max_length=255, blank=True, null=True,
+        verbose_name="GST API Key (RapidAPI)",
+        help_text="Key for RapidAPI GST Insights service to auto-fetch party name and registered address."
+    )
 
     def __str__(self):
         return self.name

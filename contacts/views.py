@@ -89,10 +89,19 @@ def gstin_lookup_api(request):
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    # Read API Key from .env
+    # Read API Key from CompanyProfile or .env
     import http.client as _http_client
 
-    gst_api_key = os.environ.get('GST_API_KEY', '').strip(' "\'')
+    db_key = None
+    try:
+        from config.models import CompanyProfile
+        c_obj = CompanyProfile.objects.first()
+        if c_obj:
+            db_key = c_obj.gst_api_key
+    except Exception:
+        pass
+
+    gst_api_key = (db_key or os.environ.get('GST_API_KEY', '')).strip(' "\'')
 
     # ── Primary: GST Insights API (gst-insights-api.p.rapidapi.com) ──────────
     if gst_api_key and not fetched:

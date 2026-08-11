@@ -136,6 +136,11 @@
                     </div>
                 </div>
                 <button type="button" @click="showGstinModal = false" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+            <div x-show="!gstinData.fetched" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300 flex items-start gap-2">
+                <span class="text-base">ℹ️</span>
+                <div>
+                    <strong>Basic Details Derived:</strong> State, PAN, & Entity Type parsed from GSTIN. To auto-fill registered Party Name & Address, configure your <strong>GST API Key</strong> under Settings.
+                </div>
             </div>
 
             <div class="space-y-3 bg-slate-800/60 p-4 rounded-2xl border border-white/5 text-sm">

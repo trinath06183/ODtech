@@ -22,6 +22,7 @@ def settings_view(request):
         allow_document_deletion = request.POST.get('allow_document_deletion') == 'on'
         header_address    = request.POST.get('header_address', '').strip()
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
+        gst_api_key       = request.POST.get('gst_api_key', '').strip()
 
         seq_qtn = request.POST.get('seq_qtn')
         seq_inv = request.POST.get('seq_inv')
@@ -51,6 +52,11 @@ def settings_view(request):
             elif 'admin_backup_email' in request.POST and request.POST['admin_backup_email'].strip() == '':
                 # User explicitly cleared the field
                 company.admin_backup_email = None
+
+            if gst_api_key:
+                company.gst_api_key = gst_api_key
+            elif 'gst_api_key' in request.POST and request.POST['gst_api_key'].strip() == '':
+                company.gst_api_key = None
             # Validate format value against allowed choices
             valid_formats = [c[0] for c in CompanyProfile.DOC_NUMBER_FORMAT_CHOICES]
             if doc_number_format in valid_formats:

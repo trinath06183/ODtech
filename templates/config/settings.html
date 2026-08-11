@@ -57,6 +57,13 @@
                     <p class="mt-1 text-xs text-gray-500">Email address to receive daily database backups.</p>
                 </div>
 
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">GST API Key (RapidAPI)</label>
+                    <input type="text" name="gst_api_key" value="{{ company.gst_api_key|default:'' }}" placeholder="Enter RapidAPI Key (e.g. for GST Insights API)"
+                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 shadow-sm transition">
+                    <p class="mt-1 text-xs text-gray-500">API Key from RapidAPI (e.g. <code>GST Insights API</code> or <code>GST Verification API</code>) to auto-fill registered party name & address when searching GSTINs.</p>
+                </div>
+
                 <!-- Document Header Address Panel -->
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
