@@ -127,7 +127,11 @@ def document_list(request):
 # ─── Preview (wrapper UI page) ────────────────────────────────────────────────
 @require_permission('DOCUMENTS', 'read')
 def document_preview(request, document_id):
-    doc = get_object_or_404(Document, id=document_id)
+    doc = get_object_or_404(
+        Document.objects.select_related('contact', 'source_document')
+                        .prefetch_related('items__product', 'converted_documents'),
+        id=document_id,
+    )
     full_html = PDFService.render_html(doc, request=request)
 
     # Extract only the <body> content so we don't embed a full HTML doc inside the ERP page
@@ -757,6 +761,26 @@ def document_form(request, doc=None, default_type='QTN'):
             last_doc_settings_json = json.dumps(last_doc_settings)
         else:
             table_columns_json = "null"
+            # ── Fallback to company-level defaults when no prior document exists ──
+            try:
+                _co = CompanyProfile.objects.first()
+                if _co:
+                    last_doc_settings = {
+                        'show_gst': _co.gst_enabled,
+                        'split_gst': False,
+                        'place_of_supply': '21-Odisha',
+                        'numbering_mode': 'auto',
+                        'discount_type': 'none',
+                        'discount_value': 0.0,
+                        'terms_and_conditions': None,
+                        'enable_warranty': False,
+                        'repeat_header': False,
+                        'show_payment_summary': True,
+                        'currency': _co.default_currency or 'INR',
+                    }
+                    last_doc_settings_json = json.dumps(last_doc_settings)
+            except Exception:
+                pass
 
     if is_conversion:
         next_number = NumberingService.generate_document_number(target_type)

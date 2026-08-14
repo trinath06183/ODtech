@@ -103,6 +103,21 @@ def gstin_lookup_api(request):
 
     gst_api_key = (db_key or os.environ.get('GST_API_KEY', '')).strip(' "\'')
 
+    # ── Early exit: no API key configured ────────────────────────────────────
+    if not gst_api_key:
+        return JsonResponse({
+            'success': False,
+            'error': 'GST API key is not configured. Please add it in Company Settings → GST API Key.',
+            'fetched': False,
+            'gstin': gstin,
+            'pan': pan,
+            'place_of_supply': place_of_supply,
+            'state_name': state_name,
+            'legal_name': '', 'trade_name': '', 'name': '',
+            'address': '', 'status': 'Active', 'taxpayer_type': taxpayer_type,
+            'pincode': '',
+        })
+
     # ── Primary: GST Insights API (gst-insights-api.p.rapidapi.com) ──────────
     if gst_api_key and not fetched:
         try:

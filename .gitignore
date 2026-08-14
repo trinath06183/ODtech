@@ -27,3 +27,11 @@ dist/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+build/
+dist/
+*.spec
+db_dump.json
+complete_db_dump.json
+__pycache__/
+*.pyc

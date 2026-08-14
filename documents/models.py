@@ -147,6 +147,15 @@ class Document(TimeStampedModel):
 
     @property
     def terms_list(self):
+        # Respect company-wide "Show T&C" setting
+        try:
+            from config.models import CompanyProfile
+            company = CompanyProfile.objects.first()
+            if company and not company.show_terms:
+                return []
+        except Exception:
+            pass
+
         terms = self.terms_and_conditions
         if terms is None:
             terms = self.get_default_terms(self.type)

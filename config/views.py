@@ -24,6 +24,8 @@ def settings_view(request):
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
         gst_api_key       = request.POST.get('gst_api_key', '').strip()
         default_currency  = request.POST.get('default_currency', 'INR').strip()
+        gst_enabled       = request.POST.get('gst_enabled') == 'on'
+        show_terms        = request.POST.get('show_terms') == 'on'
 
         seq_qtn = request.POST.get('seq_qtn')
         seq_inv = request.POST.get('seq_inv')
@@ -58,6 +60,8 @@ def settings_view(request):
                 company.gst_api_key = gst_api_key
             elif 'gst_api_key' in request.POST and request.POST['gst_api_key'].strip() == '':
                 company.gst_api_key = None
+            company.gst_enabled = gst_enabled
+            company.show_terms = show_terms
             company.default_currency = default_currency
             # Validate format value against allowed choices
             valid_formats = [c[0] for c in CompanyProfile.DOC_NUMBER_FORMAT_CHOICES]

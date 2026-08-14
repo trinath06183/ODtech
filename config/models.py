@@ -61,6 +61,16 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="GST API Key (RapidAPI)",
         help_text="Key for RapidAPI GST Insights service to auto-fetch party name and registered address."
     )
+    gst_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Enable GST by Default",
+        help_text="When enabled, GST columns will be pre-checked ON for all new documents."
+    )
+    show_terms = models.BooleanField(
+        default=True,
+        verbose_name="Show Terms & Conditions on Print",
+        help_text="When disabled, Terms & Conditions section will not appear on printed documents."
+    )
     default_currency = models.CharField(
         max_length=10,
         default='INR',

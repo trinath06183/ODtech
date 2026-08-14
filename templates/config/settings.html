@@ -74,6 +74,27 @@
                     <p class="mt-1 text-xs text-gray-500">Default currency pre-selected when creating new documents.</p>
                 </div>
 
+                <!-- GST & Terms toggles -->
+                <div class="sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-300 mb-3">Enable GST by Default</label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" name="gst_enabled" value="on" {% if company.gst_enabled %}checked{% endif %}
+                               class="w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-blue-500">
+                        <span class="text-sm text-gray-400 group-hover:text-gray-200 transition">Auto-enable GST on new documents</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">When enabled, the GST toggle will be pre-checked ON for every new document you create.</p>
+                </div>
+
+                <div class="sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-300 mb-3">Show Terms &amp; Conditions</label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" name="show_terms" value="on" {% if company.show_terms %}checked{% endif %}
+                               class="w-5 h-5 rounded border-gray-300 text-green-500 focus:ring-green-500">
+                        <span class="text-sm text-gray-400 group-hover:text-gray-200 transition">Show T&amp;C on printed documents</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500">When disabled, the Terms &amp; Conditions section will be hidden on all printed PDFs and printouts.</p>
+                </div>
+
                 <!-- Document Header Address Panel -->
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">

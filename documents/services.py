@@ -289,14 +289,11 @@ class PDFService:
 class DocumentService:
     @staticmethod
     def apportion_discount(discount_type, discount_value, items):
-        import decimal
-        from core.utils import to_decimal, money
-
         discount_value = to_decimal(discount_value)
-        
+
         # Calculate gross bases
         gross_bases = []
-        total_gross = decimal.Decimal('0.00')
+        total_gross = Decimal('0.00')
         for item in items:
             qty = to_decimal(item.get('qty', 0))
             rate = to_decimal(item.get('rate', 0))
@@ -306,25 +303,25 @@ class DocumentService:
 
         if discount_type == 'fixed':
             if total_gross > 0:
-                allocated_total = decimal.Decimal('0.00')
+                allocated_total = Decimal('0.00')
                 for i, item in enumerate(items):
                     gross = gross_bases[i]
                     item_discount = money(discount_value * gross / total_gross)
                     item['discount'] = item_discount
                     allocated_total += item_discount
-                
+
                 diff = discount_value - allocated_total
                 if diff != 0 and len(items) > 0:
                     max_idx = gross_bases.index(max(gross_bases))
                     items[max_idx]['discount'] += diff
             else:
                 for item in items:
-                    item['discount'] = decimal.Decimal('0.00')
+                    item['discount'] = Decimal('0.00')
 
         elif discount_type == 'percentage':
             for i, item in enumerate(items):
                 gross = gross_bases[i]
-                item['discount'] = money(gross * discount_value / decimal.Decimal('100.00'))
+                item['discount'] = money(gross * discount_value / Decimal('100.00'))
 
         elif discount_type in ['individual', 'individual_pct']:
             for item in items:
@@ -332,7 +329,7 @@ class DocumentService:
 
         else:
             for item in items:
-                item['discount'] = decimal.Decimal('0.00')
+                item['discount'] = Decimal('0.00')
 
     @staticmethod
     @transaction.atomic
