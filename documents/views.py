@@ -11,6 +11,7 @@ from core.decorators import require_permission
 from inventory.models import Product
 from contacts.models import Contact
 from config.models import CompanyProfile
+from django.views.decorators.http import require_POST
 import json
 
 # ─── Document List ────────────────────────────────────────────────────────────
