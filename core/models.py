@@ -43,12 +43,12 @@ class DocumentLink(TimeStampedModel):
     
     # The document initiating the link
     source_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name='source_links')
-    source_id = models.PositiveIntegerField()
+    source_id = models.CharField(max_length=64, db_index=True)
     source_object = GenericForeignKey('source_type', 'source_id')
     
     # The document being linked to
     target_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name='target_links')
-    target_id = models.PositiveIntegerField()
+    target_id = models.CharField(max_length=64, db_index=True)
     target_object = GenericForeignKey('target_type', 'target_id')
     
     link_type = models.CharField(max_length=20, choices=LINK_TYPES, default='related')

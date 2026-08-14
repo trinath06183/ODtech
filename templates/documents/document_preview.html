@@ -306,11 +306,12 @@
                                 </button>
                             </div>
                             
-                            {% if link.source_id == doc.id %}
+                            {% if link.source_id|stringformat:"s" == doc.id|stringformat:"s" %}
                                 {# The linked document is the target #}
                                 {% with target=link.target_object %}
-                                <a href="{% if target.type %}{% url 'document_preview' target.id %}{% else %}{% url 'edms:document_detail' target.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
-                                    {% if target.type %}{{ target.get_type_display }} - {{ target.number }}{% else %}EDMS: {{ target.title }}{% endif %}
+                                {% if target %}
+                                <a href="{% if target.number %}{% url 'document_preview' target.id %}{% else %}{% url 'edms:document_detail' target.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
+                                    {% if target.number %}{{ target.get_type_display }} - {{ target.number }}{% else %}EDMS: {{ target.title }}{% endif %}
                                 </a>
                                 {% if target.type == 'INV' %}
                                 <div class="mt-1 flex gap-2">
@@ -318,18 +319,21 @@
                                     <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ target.grand_total }}</span>
                                 </div>
                                 {% endif %}
+                                {% endif %}
                                 {% endwith %}
                             {% else %}
                                 {# The linked document is the source #}
                                 {% with source=link.source_object %}
-                                <a href="{% if source.type %}{% url 'document_preview' source.id %}{% else %}{% url 'edms:document_detail' source.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
-                                    {% if source.type %}{{ source.get_type_display }} - {{ source.number }}{% else %}EDMS: {{ source.title }}{% endif %}
+                                {% if source %}
+                                <a href="{% if source.number %}{% url 'document_preview' source.id %}{% else %}{% url 'edms:document_detail' source.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
+                                    {% if source.number %}{{ source.get_type_display }} - {{ source.number }}{% else %}EDMS: {{ source.title }}{% endif %}
                                 </a>
                                 {% if source.type == 'INV' %}
                                 <div class="mt-1 flex gap-2">
                                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{{ source.lifecycle_payment_status }}</span>
                                     <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ source.grand_total }}</span>
                                 </div>
+                                {% endif %}
                                 {% endif %}
                                 {% endwith %}
                             {% endif %}

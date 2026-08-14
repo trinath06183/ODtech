@@ -235,17 +235,27 @@ class Document(TimeStampedModel):
 
             # 1. DocumentLink links
             links = DocumentLink.objects.filter(
-                Q(source_type=doc_ct, source_id=curr_id) |
-                Q(target_type=doc_ct, target_id=curr_id)
+                Q(source_type=doc_ct, source_id=str(curr_id)) |
+                Q(target_type=doc_ct, target_id=str(curr_id))
             ).values_list('source_type_id', 'source_id', 'target_type_id', 'target_id')
 
             for s_ct_id, s_id, t_ct_id, t_id in links:
-                if s_ct_id == doc_ct.id and s_id not in visited_ids:
-                    visited_ids.add(s_id)
-                    queue.append(s_id)
-                if t_ct_id == doc_ct.id and t_id not in visited_ids:
-                    visited_ids.add(t_id)
-                    queue.append(t_id)
+                if s_ct_id == doc_ct.id:
+                    try:
+                        s_int = int(s_id)
+                        if s_int not in visited_ids:
+                            visited_ids.add(s_int)
+                            queue.append(s_int)
+                    except (ValueError, TypeError):
+                        pass
+                if t_ct_id == doc_ct.id:
+                    try:
+                        t_int = int(t_id)
+                        if t_int not in visited_ids:
+                            visited_ids.add(t_int)
+                            queue.append(t_int)
+                    except (ValueError, TypeError):
+                        pass
 
             # 2. source_document relationships
             related_docs = Document.objects.filter(
@@ -319,8 +329,8 @@ class Document(TimeStampedModel):
         
         doc_ct = ContentType.objects.get_for_model(self.__class__)
         return DocumentLink.objects.filter(
-            Q(source_type=doc_ct, source_id=self.id) | 
-            Q(target_type=doc_ct, target_id=self.id)
+            Q(source_type=doc_ct, source_id=str(self.id)) | 
+            Q(target_type=doc_ct, target_id=str(self.id))
         ).order_by('-created_at')
 
     def __str__(self):

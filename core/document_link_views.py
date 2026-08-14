@@ -27,9 +27,9 @@ def create_document_link(request):
 
         link, created = DocumentLink.objects.get_or_create(
             source_type=source_ct,
-            source_id=source_id,
+            source_id=str(source_id),
             target_type=target_ct,
-            target_id=target_id,
+            target_id=str(target_id),
             link_type=link_type,
             defaults={'created_by': request.user}
         )
