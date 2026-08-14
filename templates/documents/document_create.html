@@ -1814,37 +1814,24 @@ function documentForm() {
         autoUpdateTerms() {
             let termsChanged = false;
 
-            // 1. Sync Warranty Term
+            // 1. Sync Warranty Term: ONLY auto-generate when line-item warranty tracking is enabled AND items have warranty specified
             let warrantyTerm = this.termsList.find(t => t.label === 'Warranty:');
-            if (warrantyTerm) {
-                if (this.enableWarranty) {
-                    let wtyItems = this.items.filter(it => it.has_warranty && (it.name || '').trim() !== '');
-                    if (wtyItems.length === 0) {
-                        if (warrantyTerm.selected) {
-                            warrantyTerm.selected = false;
-                            warrantyTerm.value = '';
-                            termsChanged = true;
-                        }
+            if (warrantyTerm && this.enableWarranty) {
+                let wtyItems = this.items.filter(it => it.has_warranty && (it.name || '').trim() !== '');
+                if (wtyItems.length > 0) {
+                    let periods = [...new Set(wtyItems.map(it => (it.warranty_period || '').trim()).filter(p => p !== ''))];
+                    let newValue = '';
+                    if (periods.length === 1 && periods[0]) {
+                        newValue = `${periods[0]} warranty on Products`;
                     } else {
-                        // Removed auto-check to prevent overriding user preference
-                        let periods = [...new Set(wtyItems.map(it => (it.warranty_period || '').trim()).filter(p => p !== ''))];
-                        let newValue = '';
-                        if (periods.length === 1 && periods[0]) {
-                            newValue = `${periods[0]} warranty on Products`;
-                        } else {
-                            newValue = 'As per individual product warranty details';
-                        }
+                        newValue = 'As per individual product warranty details';
+                    }
+                    if (!warrantyTerm.value || warrantyTerm.value === 'As per individual product warranty details' || warrantyTerm.value.endsWith('warranty on Products')) {
                         if (warrantyTerm.value !== newValue) {
                             warrantyTerm.value = newValue;
+                            warrantyTerm.selected = true;
                             termsChanged = true;
                         }
-                    }
-                } else {
-                    // When warranty is disabled, clear warranty value but do NOT force-uncheck the row
-                    // (user may want the checkbox state preserved)
-                    if (warrantyTerm.value) {
-                        warrantyTerm.value = '';
-                        termsChanged = true;
                     }
                 }
             }

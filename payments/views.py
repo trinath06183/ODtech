@@ -1,14 +1,13 @@
 from core.decorators import require_permission
-from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
-from core.decorators import login_required, role_required, require_permission
 from contacts.models import Contact
+from config.models import CompanyProfile
 from .models import Payment
 
 
@@ -150,8 +149,6 @@ from django.utils import timezone
 from .models import Expense
 from .forms import ExpenseForm
 
-from django.db.models import Q, Sum
-
 @require_permission('PAYMENTS', 'read')
 def expense_list(request):
     expenses = Expense.objects.all()
@@ -246,6 +243,7 @@ def expense_list(request):
         'next_page': 2 if page_obj.has_next() else None,
     })
 
+@require_permission('PAYMENTS', 'read')
 def print_unpaid_expenses(request):
     unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False).select_related('submitted_by').order_by('employee_code', 'date')
     total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
@@ -270,7 +268,7 @@ def print_unpaid_expenses(request):
         'grouped_expenses': grouped_expenses,
         'total_unpaid': total_unpaid,
         'total_count': unpaid_expenses.count(),
-        'company': request.user.company if hasattr(request.user, 'company') else None
+        'company': CompanyProfile.objects.first(),
     })
 
 @require_permission('PAYMENTS', 'write')

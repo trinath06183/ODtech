@@ -20,6 +20,10 @@ media/
 staticfiles/
 edms_storage/
 
+# PyInstaller
+build/
+dist/
+
 # OS generated files
 .DS_Store
 Thumbs.db

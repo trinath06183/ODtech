@@ -1,18 +1,17 @@
-from core.decorators import require_permission
 from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
+from django.db.models import Q, Sum, Count
 from .models import Document, DocumentItem
 from .services import DocumentService, PDFService, NumberingService
-from core.decorators import login_required, role_required, require_permission
+from core.decorators import require_permission
 from inventory.models import Product
 from contacts.models import Contact
 from config.models import CompanyProfile
 import json
-from django.views.decorators.http import require_POST
 
 # ─── Document List ────────────────────────────────────────────────────────────
 @require_permission('DOCUMENTS', 'read')
@@ -29,8 +28,6 @@ def document_list(request):
         qs = qs.filter(type__in=doc_types)
 
     if query:
-        from django.db.models import Q
-        
         # Find categories of products matching the query to show similar products
         matching_categories = list(Product.objects.filter(
             Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
@@ -58,7 +55,6 @@ def document_list(request):
         sort_by = '-id'
     qs = qs.order_by(sort_by)
 
-    from django.db.models import Count
     type_counts = dict(Document.objects.values('type').annotate(c=Count('id')).values_list('type', 'c'))
 
     stats = [
@@ -89,8 +85,6 @@ def document_list(request):
     company = CompanyProfile.objects.first()
     page_num = request.GET.get('page', 1)
     total_count = qs.count()
-    from django.db.models import Sum
-    from decimal import Decimal
     try:
         total_sum = qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
     except Exception:
@@ -182,11 +176,12 @@ def document_preview_data(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     items = []
     for item in doc.items.select_related('product').all():
+        has_product = item.product is not None
         items.append({
-            'name': item.product.name,
-            'sku': item.product.sku,
+            'name': item.product.name if has_product else (item.name or ''),
+            'sku': item.product.sku if has_product else (getattr(item, 'part_number', '') or ''),
             'qty': float(item.quantity),
-            'unit': item.unit or item.product.unit or 'EA',
+            'unit': item.unit or (item.product.unit if has_product else 'EA') or 'EA',
             'unit_price': float(item.unit_price),
             'tax_rate': float(item.tax_rate),
             'total': float(item.total),

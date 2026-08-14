@@ -147,6 +147,8 @@ class NumberingService:
                 company.save(update_fields=[config_field])
         except Exception:
             pass
+
+
 class TaxService:
     COMPANY_STATE_TOKENS = {"odisha", "orissa", "21", "21-odisha"}
 
@@ -480,13 +482,12 @@ class DocumentService:
         
         totals = TaxService.calculate_document_totals(valid_items, show_gst=document.show_gst)
         from inventory.models import Product
+        from decimal import Decimal
         for item in valid_items:
             product_id = item.get("product_id")
             
             # Support Custom Line Items
             if not product_id:
-                from inventory.models import Product
-                from decimal import Decimal
                 custom_product, _ = Product.objects.get_or_create(
                     sku="CUSTOM",
                     defaults={
@@ -505,7 +506,6 @@ class DocumentService:
             hsn_val = item.get("hsn_code")
             if not hsn_val and product_id:
                 try:
-                    from inventory.models import Product
                     hsn_val = Product.objects.get(id=product_id).hsn_code or ""
                 except Product.DoesNotExist:
                     pass
