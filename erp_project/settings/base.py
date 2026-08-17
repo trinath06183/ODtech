@@ -3,10 +3,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-@gc&@e_gwg=2c3=vxexfs&7so*lhh4vv%kku4blsf)-34sb1rg",
-)
+# In production DJANGO_SECRET_KEY must always be set via environment variable.
+# Deliberately no fallback — KeyError on missing key is a safe failure.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-placeholder-do-not-use-in-production")
 
 DEBUG = False
 
@@ -47,7 +46,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -121,6 +120,7 @@ CSRF_COOKIE_NAME = 'odtech_bom_csrftoken'
 SESSION_COOKIE_NAME = 'odtech_bom_sessionid'
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_HSTS_SECONDS = 31536000          # 1 year — required for HSTS to take effect
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_REFERRER_POLICY = 'same-origin'

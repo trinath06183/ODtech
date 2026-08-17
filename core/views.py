@@ -1,12 +1,15 @@
+import logging
 from decimal import Decimal
 from django.db.models import Sum, Count
 from django.shortcuts import render
 from django.utils import timezone
 import datetime
 
-from core.decorators import login_required
+from core.decorators import login_required, role_required
 from inventory.models import Product, StockTransaction
 from tracker.models import UserTodo, UserNote
+
+logger = logging.getLogger(__name__)
 
 
 def _get_period_boundaries():
@@ -110,10 +113,9 @@ def dashboard(request):
 
     # ── Inventory: single aggregated stock query (avoids N+1) ────────────────
     # Get stock total per product in ONE query instead of one query per product
-    from django.db.models import Sum as DbSum
     stock_map = {
         row['product_id']: row['total'] or Decimal('0')
-        for row in StockTransaction.objects.values('product_id').annotate(total=DbSum('quantity'))
+        for row in StockTransaction.objects.values('product_id').annotate(total=Sum('quantity'))
     }
 
     products = Product.objects.only('id', 'selling_price', 'reorder_level')
@@ -147,7 +149,7 @@ def dashboard(request):
             .order_by('-created_at')[:5]
         )
     except Exception:
-        pass
+        logger.exception("Failed to load EDMS stats on dashboard")
 
     # ── New KPI Metrics (Month + FY) ─────────────────────────────────────────
     month_start, fy_start = _get_period_boundaries()
@@ -163,6 +165,7 @@ def dashboard(request):
     try:
         total_sales, total_purchases, net_pl, receivables = _legacy_kpis(precomputed_sales_fy=sales_fy)
     except Exception:
+        logger.exception("Failed to compute legacy KPIs on dashboard")
         total_sales = total_purchases = net_pl = Decimal('0')
         receivables = {'total': Decimal('0'), 'overdue_30': Decimal('0'), 'overdue_60': Decimal('0'), 'overdue_90': Decimal('0')}
 
@@ -268,14 +271,6 @@ def dashboard_drilldown(request):
                 .filter(order_status='CLOSED', updated_at__date__gte=since)
                 .order_by('-updated_at')[:20]
             )
-            
-            data.append({
-                'number': 'DEBUG',
-                'customer': f"Count: {qs.count()} | since: {since} | metric: {metric}",
-                'date': '—',
-                'url': '#'
-            })
-
             for o in qs:
                 data.append({
                     'number':   o.order_number,
@@ -303,14 +298,11 @@ def dashboard_drilldown(request):
                     'url':      f'/documents/{d.id}/preview/',
                 })
 
-    except Exception as e:
-        import traceback
-        data.append({
-            'number': 'ERROR',
-            'customer': str(e),
-            'date': traceback.format_exc().splitlines()[-1],
-            'url': '#'
-        })
+    except Exception:
+        logger.exception("dashboard_drilldown failed for metric=%s period=%s", metric, period)
+        return JsonResponse({'metric': metric, 'period': period, 'data': [], 'error': 'An internal error occurred.'}, status=500)
+
+    return JsonResponse({'metric': metric, 'period': period, 'data': data})
 
 
 
@@ -472,12 +464,35 @@ def sales_dashboard_api(request):
         .annotate(total=Sum('grand_total'), count=Count('id'))
         .order_by('-total')[:10]
     )
+
+    # Batch-fetch payments for all top customers in ONE query (eliminates N+1)
+    top_contact_ids = [r['contact__id'] for r in top_customers_qs]
+    inv_in_period = (
+        inv_qs
+        .filter(date__gte=since, contact_id__in=top_contact_ids)
+        .values('contact_id', 'number')
+    )
+    # Build {contact_id: [invoice_numbers]}
+    contact_inv_map: dict[int, list] = {}
+    for row in inv_in_period:
+        contact_inv_map.setdefault(row['contact_id'], []).append(row['number'])
+
+    # One aggregated payments query per contact via document_ref
+    all_inv_numbers = [n for nums in contact_inv_map.values() for n in nums]
+    payments_by_inv = (
+        Payment.objects
+        .filter(document_ref__in=all_inv_numbers)
+        .values('document_ref')
+        .annotate(total_paid=Sum('amount'))
+    )
+    # Map invoice_number -> paid amount
+    inv_paid_map = {p['document_ref']: float(p['total_paid'] or 0) for p in payments_by_inv}
+
     top_customers = []
     for r in top_customers_qs:
         cid = r['contact__id']
-        # Get amount paid for this customer's invoices
-        inv_nums = list(inv_qs.filter(date__gte=since, contact_id=cid).values_list('number', flat=True))
-        paid_for_cust = float(Payment.objects.filter(document_ref__in=inv_nums).aggregate(t=Sum('amount'))['t'] or 0)
+        inv_nums_for_cust = contact_inv_map.get(cid, [])
+        paid_for_cust = sum(inv_paid_map.get(num, 0) for num in inv_nums_for_cust)
         invoiced = float(r['total'] or 0)
         top_customers.append({
             'name':     r['contact__name'] or '—',
@@ -617,15 +632,60 @@ def sales_tracking_api(request):
         if not all_years:
             all_years = [today.year]
 
+        # ── Bulk-fetch all monthly data in 6 queries instead of 6-7 per month ──
+        year_start = datetime.date(year, 1, 1)
+        year_end   = datetime.date(year, 12, 31)
+
+        from django.db.models.functions import ExtractMonth
+
+        qtn_by_month = {
+            r['m']: r['cnt']
+            for r in Document.objects
+                .filter(type='QTN', date__range=(year_start, year_end))
+                .annotate(m=ExtractMonth('date'))
+                .values('m').annotate(cnt=Count('id'))
+        }
+        ord_recv_by_month = {
+            r['m']: r['cnt']
+            for r in Order.objects
+                .filter(created_at__date__range=(year_start, year_end))
+                .annotate(m=ExtractMonth('created_at'))
+                .values('m').annotate(cnt=Count('id'))
+        }
+        ord_closed_by_month = {
+            r['m']: r['cnt']
+            for r in Order.objects
+                .filter(order_status='CLOSED', updated_at__date__range=(year_start, year_end))
+                .annotate(m=ExtractMonth('updated_at'))
+                .values('m').annotate(cnt=Count('id'))
+        }
+        inv_count_by_month = {
+            r['m']: r['cnt']
+            for r in Document.objects
+                .filter(type='INV', date__range=(year_start, year_end))
+                .annotate(m=ExtractMonth('date'))
+                .values('m').annotate(cnt=Count('id'))
+        }
+        inv_value_by_month = {
+            r['m']: float(r['val'] or 0)
+            for r in Document.objects
+                .filter(type='INV', status='Approved', date__range=(year_start, year_end))
+                .annotate(m=ExtractMonth('date'))
+                .values('m').annotate(val=Sum('grand_total'))
+        }
+        pay_by_month = {
+            r['m']: float(r['val'] or 0)
+            for r in Payment.objects
+                .filter(date__range=(year_start, year_end))
+                .annotate(m=ExtractMonth('date'))
+                .values('m').annotate(val=Sum('amount'))
+        }
+
         rows = []
         for month_num in range(1, 13):
             month_start = datetime.date(year, month_num, 1)
-            last_day    = calendar.monthrange(year, month_num)[1]
-            month_end   = datetime.date(year, month_num, last_day)
             label       = month_start.strftime('%b %Y')
-
-            # Skip future months
-            is_future = month_start > today.replace(day=1)
+            is_future   = month_start > today.replace(day=1)
 
             if is_future:
                 rows.append({
@@ -641,22 +701,15 @@ def sales_tracking_api(request):
                 })
                 continue
 
-            qtns  = Document.objects.filter(type='QTN', date__range=(month_start, month_end)).count()
-            ord_r = Order.objects.filter(created_at__date__range=(month_start, month_end)).count()
-            ord_c = Order.objects.filter(order_status='CLOSED', updated_at__date__range=(month_start, month_end)).count()
-            inv_c = Document.objects.filter(type='INV', date__range=(month_start, month_end)).count()
-            inv_v = float(Document.objects.filter(type='INV', status='Approved', date__range=(month_start, month_end)).aggregate(t=Sum('grand_total'))['t'] or 0)
-            pay_r = float(Payment.objects.filter(date__range=(month_start, month_end)).aggregate(t=Sum('amount'))['t'] or 0)
-
             rows.append({
                 'label':      label,
                 'month':      month_num,
-                'qtns':       qtns,
-                'ord_recv':   ord_r,
-                'ord_closed': ord_c,
-                'inv_count':  inv_c,
-                'inv_value':  inv_v,
-                'pay_recv':   pay_r,
+                'qtns':       qtn_by_month.get(month_num, 0),
+                'ord_recv':   ord_recv_by_month.get(month_num, 0),
+                'ord_closed': ord_closed_by_month.get(month_num, 0),
+                'inv_count':  inv_count_by_month.get(month_num, 0),
+                'inv_value':  inv_value_by_month.get(month_num, 0),
+                'pay_recv':   pay_by_month.get(month_num, 0),
                 'is_future':  False,
             })
 
@@ -670,14 +723,20 @@ def sales_tracking_api(request):
 class LogUnlockView(View):
     template_name = 'core/log_unlock.html'
 
-    def get(self, request, *args, **kwargs):
-        if not getattr(request.user, 'role', '') == 'Admin':
+    def _check_admin(self, request):
+        """Return True if user is Admin, otherwise add an error message and return False."""
+        if getattr(request.user, 'role', '') != 'Admin':
             messages.error(request, "Only Admins can view system logs.")
+            return False
+        return True
+
+    def get(self, request, *args, **kwargs):
+        if not self._check_admin(request):
             return redirect('dashboard')
         return render(request, self.template_name)
 
     def post(self, request, *args, **kwargs):
-        if not getattr(request.user, 'role', '') == 'Admin':
+        if not self._check_admin(request):
             return redirect('dashboard')
 
         password = request.POST.get('password', '')
@@ -698,7 +757,7 @@ class SystemActivityLogView(ListView):
     paginate_by = 50
 
     def dispatch(self, request, *args, **kwargs):
-        if not getattr(request.user, 'role', '') == 'Admin':
+        if getattr(request.user, 'role', '') != 'Admin':
             messages.error(request, "Only Admins can view system logs.")
             return redirect('dashboard')
         
