@@ -191,7 +191,7 @@ def login_resend_otp(request):
     return redirect('login_verify_otp')
 
 
-@require_permission('USERS', 'read')
+@login_required
 def onboarding_view(request):
     """View for first-time login onboarding to complete user profile."""
     if request.user.is_onboarded:
@@ -249,7 +249,7 @@ def verify_email_view(request, uidb64, token):
         return render(request, 'users/verify_email_failed.html')
 
 
-@require_permission('USERS', 'read')
+@login_required
 def logout_view(request):
     """POST-only logout for CSRF safety; GET redirects to login."""
     if request.method == 'POST':
