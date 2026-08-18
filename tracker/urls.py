@@ -6,6 +6,7 @@ app_name = 'tracker'
 urlpatterns = [
     # Dashboard (Read)
     path('', views.dashboard_view, name='dashboard'),
+    path('kanban/', views.kanban_board_view, name='kanban_board'),
     path('products/all/', views.individual_products_view, name='individual_products'),
     
     # Order CRUD

@@ -6,4 +6,6 @@ urlpatterns = [
     path('stock/', views.stock_summary, name='stock_summary'),
     path('financials/', views.financial_dashboard, name='financial_dashboard'),
     path('planning/', views.business_planning_dashboard, name='business_planning'),
+    path('pl/', views.profit_and_loss_view, name='profit_and_loss'),
+    path('api/pl/', views.profit_and_loss_api, name='profit_and_loss_api'),
 ]

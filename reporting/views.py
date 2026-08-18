@@ -569,3 +569,261 @@ def business_planning_dashboard(request):
     context['next_orders_total'] = context['next_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     context['next_purchases_total'] = context['next_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     return render(request, 'reporting/planning_dashboard.html', context)
+
+
+# ─── Live P&L Statement ────────────────────────────────────────────────────────
+
+def _get_pl_date_range(request):
+    """Parse period/custom date range from request for P&L views."""
+    today = date.today()
+    period = request.GET.get('period', 'this_fy')
+
+    ranges = {
+        'today': (today, today, 'Today'),
+        'this_week': (today - timedelta(days=today.weekday()), today, 'This Week'),
+        'this_month': (today.replace(day=1), today, f"{today.strftime('%B %Y')}"),
+        'last_month': None,  # computed below
+        'this_quarter': None,
+        'this_fy': None,
+        'last_fy': None,
+    }
+
+    if period == 'last_month':
+        first_of_this = today.replace(day=1)
+        end = first_of_this - timedelta(days=1)
+        start = end.replace(day=1)
+        label = end.strftime('%B %Y')
+        return period, start, end, label
+
+    if period == 'this_quarter':
+        q = (today.month - 1) // 3
+        start = date(today.year, q * 3 + 1, 1)
+        label = f"Q{q+1} {today.year}"
+        return period, start, today, label
+
+    if period == 'this_fy':
+        fy_y = today.year if today.month >= 4 else today.year - 1
+        start = date(fy_y, 4, 1)
+        label = f"FY {fy_y}–{str(fy_y + 1)[2:]}"
+        return period, start, today, label
+
+    if period == 'last_fy':
+        fy_y = (today.year if today.month >= 4 else today.year - 1) - 1
+        start = date(fy_y, 4, 1)
+        end = date(fy_y + 1, 3, 31)
+        label = f"FY {fy_y}–{str(fy_y + 1)[2:]}"
+        return period, start, end, label
+
+    if period == 'custom':
+        try:
+            start = date.fromisoformat(request.GET.get('start', ''))
+            end = date.fromisoformat(request.GET.get('end', ''))
+            label = f"{start.strftime('%d %b %Y')} – {end.strftime('%d %b %Y')}"
+            return period, start, end, label
+        except (ValueError, TypeError):
+            pass
+
+    # default: this_fy
+    fy_y = today.year if today.month >= 4 else today.year - 1
+    start = date(fy_y, 4, 1)
+    label = f"FY {fy_y}–{str(fy_y + 1)[2:]}"
+    return 'this_fy', start, today, label
+
+
+def _compute_pl(start_date, end_date):
+    """Return a dict of all P&L line items for the given date range."""
+    from decimal import Decimal
+    from django.db.models import Sum, Count, Q
+    from documents.models import Document
+    from payments.models import Payment, Expense
+
+    Z = Decimal('0')
+
+    # ── Revenue (Invoices approved in period) ────────────────────────────────
+    inv_qs = Document.objects.filter(type='INV', status='Approved',
+                                     date__gte=start_date, date__lte=end_date)
+    revenue_gross = inv_qs.aggregate(t=Sum('grand_total'))['t'] or Z
+    revenue_subtotal = inv_qs.aggregate(t=Sum('subtotal'))['t'] or Z
+    revenue_tax = inv_qs.aggregate(t=Sum('tax_total'))['t'] or Z
+    invoice_count = inv_qs.count()
+
+    # Credit / Debit Note adjustments
+    crn = Document.objects.filter(type='CRN', status='Approved',
+                                  date__gte=start_date, date__lte=end_date
+                                  ).aggregate(t=Sum('grand_total'))['t'] or Z
+    dbn = Document.objects.filter(type='DBN', status='Approved',
+                                  date__gte=start_date, date__lte=end_date
+                                  ).aggregate(t=Sum('grand_total'))['t'] or Z
+    net_revenue = revenue_gross - crn + dbn
+
+    # Proforma Invoices
+    pi_qs = Document.objects.filter(type='PRO', status='Approved',
+                                    date__gte=start_date, date__lte=end_date)
+    pi_amount = pi_qs.aggregate(t=Sum('grand_total'))['t'] or Z
+
+    # Quotations
+    qtn_qs = Document.objects.filter(type='QTN', status='Approved',
+                                     date__gte=start_date, date__lte=end_date)
+    qtn_amount = qtn_qs.aggregate(t=Sum('grand_total'))['t'] or Z
+
+    # ── COGS: Purchase Orders approved in period ─────────────────────────────
+    cogs = Document.objects.filter(type='PO', status='Approved',
+                                   date__gte=start_date, date__lte=end_date
+                                   ).aggregate(t=Sum('grand_total'))['t'] or Z
+
+    # EDMS vendor invoices
+    edms_purchases = Z
+    try:
+        from edms.models import EDMSDocumentCategory, EDMSDocument
+        inv_cat = EDMSDocumentCategory.objects.filter(name__icontains='invoice', is_active=True).first()
+        if inv_cat:
+            edms_purchases = EDMSDocument.objects.filter(
+                is_deleted=False, category=inv_cat,
+                invoice_date__gte=start_date, invoice_date__lte=end_date
+            ).aggregate(t=Sum('amount'))['t'] or Z
+    except Exception:
+        pass
+    total_cogs = cogs + edms_purchases
+
+    gross_profit = net_revenue - total_cogs
+    gross_margin = (gross_profit / net_revenue * 100) if net_revenue else Z
+
+    # ── Operating Expenses ───────────────────────────────────────────────────
+    exp_qs = Expense.objects.filter(date__gte=start_date, date__lte=end_date, status='Approved')
+    total_opex = exp_qs.aggregate(t=Sum('amount'))['t'] or Z
+
+    DAILY_TYPES = ['Petrol and Diesel', 'Travel', 'Hotel', 'Food Expenses',
+                   'Office stationary', 'Courier expenses', 'Transportation Payment',
+                   'Marketing Expenses', 'Customer Delight', 'Other Daily']
+    FIXED_TYPES = ['Staff salary', 'OFC rent', 'Electricity bill', 'Internet Bill',
+                   'Google workspace', 'Website and hosting cost', 'Other Fixed']
+    daily_opex = exp_qs.filter(expense_type__in=DAILY_TYPES).aggregate(t=Sum('amount'))['t'] or Z
+    fixed_opex = exp_qs.filter(expense_type__in=FIXED_TYPES).aggregate(t=Sum('amount'))['t'] or Z
+
+    expense_breakdown = list(
+        exp_qs.values('expense_type')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('-total')[:10]
+    )
+
+    # ── Net Profit ───────────────────────────────────────────────────────────
+    net_profit = gross_profit - total_opex
+    net_margin = (net_profit / net_revenue * 100) if net_revenue else Z
+
+    # ── Cash Position ───────────────────────────────────────────────────────
+    payments_in = Payment.objects.filter(
+        date__gte=start_date, date__lte=end_date
+    ).aggregate(t=Sum('amount'))['t'] or Z
+    outstanding_receivables = max(Z, net_revenue - payments_in)
+
+    # ── Monthly trend (last 12 months) ──────────────────────────────────────
+    today = date.today()
+    monthly_trend = []
+    for i in range(11, -1, -1):
+        ref = today.replace(day=1)
+        # go back i months
+        m = ref.month - i
+        y = ref.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        ms = date(y, m, 1)
+        me = date(y, m + 1, 1) - timedelta(days=1) if m < 12 else date(y, 12, 31)
+
+        m_rev = Document.objects.filter(type='INV', status='Approved',
+                                        date__gte=ms, date__lte=me
+                                        ).aggregate(t=Sum('grand_total'))['t'] or Z
+        m_cogs = Document.objects.filter(type='PO', status='Approved',
+                                         date__gte=ms, date__lte=me
+                                         ).aggregate(t=Sum('grand_total'))['t'] or Z
+        m_exp = Expense.objects.filter(status='Approved', date__gte=ms, date__lte=me
+                                       ).aggregate(t=Sum('amount'))['t'] or Z
+        monthly_trend.append({
+            'month': ms.strftime('%b %Y'),
+            'revenue': float(m_rev),
+            'cogs': float(m_cogs),
+            'opex': float(m_exp),
+            'profit': float(m_rev - m_cogs - m_exp),
+        })
+
+    return {
+        'revenue_gross': revenue_gross,
+        'revenue_subtotal': revenue_subtotal,
+        'revenue_tax': revenue_tax,
+        'net_revenue': net_revenue,
+        'invoice_count': invoice_count,
+        'pi_amount': pi_amount,
+        'qtn_amount': qtn_amount,
+        'crn': crn,
+        'dbn': dbn,
+        'cogs': cogs,
+        'edms_purchases': edms_purchases,
+        'total_cogs': total_cogs,
+        'gross_profit': gross_profit,
+        'gross_margin': gross_margin,
+        'total_opex': total_opex,
+        'daily_opex': daily_opex,
+        'fixed_opex': fixed_opex,
+        'expense_breakdown': expense_breakdown,
+        'net_profit': net_profit,
+        'net_margin': net_margin,
+        'payments_in': payments_in,
+        'outstanding_receivables': outstanding_receivables,
+        'monthly_trend': monthly_trend,
+    }
+
+
+@require_permission('REPORTING', 'read')
+def profit_and_loss_view(request):
+    """Dedicated Live Profit & Loss Statement page."""
+    period, start_date, end_date, label = _get_pl_date_range(request)
+    pl = _compute_pl(start_date, end_date)
+
+    periods = [
+        ('today', 'Today'),
+        ('this_week', 'This Week'),
+        ('this_month', 'This Month'),
+        ('last_month', 'Last Month'),
+        ('this_quarter', 'This Quarter'),
+        ('this_fy', 'This FY'),
+        ('last_fy', 'Last FY'),
+        ('custom', 'Custom Range'),
+    ]
+
+    context = {
+        'period': period,
+        'periods': periods,
+        'label': label,
+        'start_date': start_date,
+        'end_date': end_date,
+        'monthly_trend_json': json.dumps(pl['monthly_trend']),
+        **pl,
+    }
+    return render(request, 'reporting/profit_and_loss.html', context)
+
+
+@require_permission('REPORTING', 'read')
+def profit_and_loss_api(request):
+    """JSON API returning P&L numbers for a given period — used by Chart.js."""
+    from django.http import JsonResponse
+    from decimal import Decimal
+
+    period, start_date, end_date, label = _get_pl_date_range(request)
+    pl = _compute_pl(start_date, end_date)
+
+    def dec2f(v):
+        return float(v) if isinstance(v, Decimal) else v
+
+    return JsonResponse({
+        'label': label,
+        'start_date': start_date.isoformat(),
+        'end_date': end_date.isoformat(),
+        'net_revenue': dec2f(pl['net_revenue']),
+        'total_cogs': dec2f(pl['total_cogs']),
+        'gross_profit': dec2f(pl['gross_profit']),
+        'gross_margin': dec2f(pl['gross_margin']),
+        'total_opex': dec2f(pl['total_opex']),
+        'net_profit': dec2f(pl['net_profit']),
+        'net_margin': dec2f(pl['net_margin']),
+        'monthly_trend': pl['monthly_trend'],
+    })

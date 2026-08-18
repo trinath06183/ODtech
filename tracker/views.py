@@ -2913,3 +2913,78 @@ def api_rename_lot(request, order_id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# ─── Kanban / Pipeline Board ──────────────────────────────────────────────────
+
+@require_permission('TRACKER', 'read')
+def kanban_board_view(request):
+    """
+    Kanban pipeline board for Orders.
+    Orders are displayed as draggable cards in status swimlanes.
+    Status updates are handled by the existing update_order_status_api endpoint.
+    """
+    statuses = ['OPEN', 'SOURCING', 'PROCURED', 'SHIPPED', 'CLOSED']
+    status_labels = {
+        'OPEN': 'Open',
+        'SOURCING': 'Sourcing',
+        'PROCURED': 'Procured',
+        'SHIPPED': 'Shipped',
+        'CLOSED': 'Closed',
+    }
+    status_colors = {
+        'OPEN':     '#6366f1',   # indigo
+        'SOURCING': '#f59e0b',   # amber
+        'PROCURED': '#3b82f6',   # blue
+        'SHIPPED':  '#8b5cf6',   # violet
+        'CLOSED':   '#10b981',   # emerald
+    }
+
+    all_orders = (
+        Order.objects
+        .prefetch_related('products', 'lots')
+        .select_related('created_by')
+        .order_by('-created_at')
+    )
+
+    # Build JSON-serializable data for each order card
+    columns = []
+    for status in statuses:
+        orders_in_col = all_orders.filter(order_status=status)
+        cards = []
+        for o in orders_in_col:
+            products_qs = o.products.all()
+            product_count = products_qs.count()
+            total_value = sum(
+                float(p.selling_price_inc_gst or 0) * int(p.quantity or 0)
+                for p in products_qs
+            )
+            cards.append({
+                'id': str(o.id),
+                'order_number': o.order_number,
+                'customer_name': o.customer_name,
+                'customer_phone': o.customer_phone,
+                'product_count': product_count,
+                'total_value': total_value,
+                'payment_status': o.payment_status,
+                'created_by': o.created_by.get_full_name() if o.created_by else '—',
+                'order_date': o.order_date.strftime('%d %b %Y') if o.order_date else '',
+                'remark': (o.remark or '')[:80],
+                'detail_url': reverse('tracker:order_detail', args=[o.id]),
+            })
+
+        columns.append({
+            'status': status,
+            'label': status_labels[status],
+            'color': status_colors[status],
+            'cards': cards,
+            'count': len(cards),
+        })
+
+    context = {
+        'columns': columns,
+        'columns_json': json.dumps(columns),
+        'total_orders': all_orders.count(),
+        'open_count': all_orders.filter(order_status='OPEN').count(),
+    }
+    return render(request, 'tracker/kanban_board.html', context)

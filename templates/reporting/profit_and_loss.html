@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% block header %}Profit & Loss Statement{% endblock %}
+{% block content %}
+
+<div class="space-y-6">
+
+  <!-- Header + Period Selector -->
+  <div class="glass p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-extrabold text-white tracking-tight">Profit & Loss Statement</h1>
+      <p class="text-gray-400 text-sm mt-0.5">Live income statement — <span class="text-indigo-400 font-semibold">{{ label }}</span></p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% for key, lbl in periods %}
+        <a href="?period={{ key }}"
+           class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all border
+                  {% if period == key %}bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/30
+                  {% else %}bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white{% endif %}">
+          {{ lbl }}
+        </a>
+      {% endfor %}
+      {% if period == 'custom' %}
+      <form method="get" class="flex gap-2 items-center">
+        <input type="hidden" name="period" value="custom">
+        <input type="date" name="start" value="{{ start_date|date:'Y-m-d' }}"
+               class="bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-1.5">
+        <span class="text-gray-500 text-sm">to</span>
+        <input type="date" name="end" value="{{ end_date|date:'Y-m-d' }}"
+               class="bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-1.5">
+        <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg font-medium">Apply</button>
+      </form>
+      {% else %}
+      <a href="?period=custom" class="px-3 py-1.5 rounded-lg text-sm font-medium border bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white transition-all">Custom</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- KPI Cards Row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- Net Revenue -->
+    <div class="glass p-5 rounded-2xl border border-indigo-500/20 hover:border-indigo-500/40 transition-all">
+      <div class="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-2">Net Revenue</div>
+      <div class="text-3xl font-extrabold text-white">₹{{ net_revenue|floatformat:0 }}</div>
+      <div class="text-xs text-gray-500 mt-1">{{ invoice_count }} Approved Invoice{{ invoice_count|pluralize }}</div>
+    </div>
+    <!-- COGS -->
+    <div class="glass p-5 rounded-2xl border border-red-500/20 hover:border-red-500/40 transition-all">
+      <div class="text-xs font-bold uppercase tracking-widest text-red-400 mb-2">Cost of Goods Sold</div>
+      <div class="text-3xl font-extrabold text-white">₹{{ total_cogs|floatformat:0 }}</div>
+      <div class="text-xs text-gray-500 mt-1">Purchase Orders + Vendor Invoices</div>
+    </div>
+    <!-- Gross Profit -->
+    <div class="glass p-5 rounded-2xl border
+      {% if gross_profit >= 0 %}border-emerald-500/20 hover:border-emerald-500/40{% else %}border-rose-500/20 hover:border-rose-500/40{% endif %} transition-all">
+      <div class="text-xs font-bold uppercase tracking-widest
+        {% if gross_profit >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %} mb-2">Gross Profit</div>
+      <div class="text-3xl font-extrabold {% if gross_profit >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+        ₹{{ gross_profit|floatformat:0 }}
+      </div>
+      <div class="text-xs text-gray-500 mt-1">Margin: {{ gross_margin|floatformat:1 }}%</div>
+    </div>
+    <!-- Net Profit -->
+    <div class="glass p-5 rounded-2xl border
+      {% if net_profit >= 0 %}border-emerald-500/30 hover:border-emerald-500/50{% else %}border-rose-500/30 hover:border-rose-500/50{% endif %} transition-all">
+      <div class="text-xs font-bold uppercase tracking-widest
+        {% if net_profit >= 0 %}text-emerald-300{% else %}text-rose-300{% endif %} mb-2">Net Profit</div>
+      <div class="text-3xl font-extrabold {% if net_profit >= 0 %}text-emerald-300{% else %}text-rose-400{% endif %}">
+        ₹{{ net_profit|floatformat:0 }}
+      </div>
+      <div class="text-xs text-gray-500 mt-1">Net Margin: {{ net_margin|floatformat:1 }}%</div>
+    </div>
+  </div>
+
+  <!-- Two-column: P&L Table + Expense Breakdown -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+    <!-- P&L Statement Table -->
+    <div class="glass p-6 rounded-2xl">
+      <h2 class="text-base font-bold text-white mb-4 tracking-tight">Income Statement</h2>
+      <div class="space-y-0 text-sm">
+
+        <!-- Revenue Section -->
+        <div class="flex justify-between py-2.5 border-b border-white/5">
+          <span class="font-semibold text-indigo-300 uppercase tracking-wider text-xs">Revenue</span>
+          <span></span>
+        </div>
+        <div class="flex justify-between py-2 text-gray-300 pl-3">
+          <span>Gross Invoiced (INV)</span>
+          <span class="font-mono">₹{{ revenue_gross|floatformat:2 }}</span>
+        </div>
+        {% if crn > 0 %}
+        <div class="flex justify-between py-2 text-gray-400 pl-3">
+          <span>Less: Credit Notes</span>
+          <span class="font-mono text-rose-400">− ₹{{ crn|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if dbn > 0 %}
+        <div class="flex justify-between py-2 text-gray-400 pl-3">
+          <span>Add: Debit Notes</span>
+          <span class="font-mono text-emerald-400">+ ₹{{ dbn|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between py-2.5 bg-indigo-500/10 rounded-lg px-3 mb-1 font-bold text-indigo-200">
+          <span>Net Revenue</span>
+          <span class="font-mono">₹{{ net_revenue|floatformat:2 }}</span>
+        </div>
+
+        <!-- COGS Section -->
+        <div class="flex justify-between py-2.5 border-b border-white/5 mt-3">
+          <span class="font-semibold text-red-300 uppercase tracking-wider text-xs">Cost of Goods Sold</span>
+          <span></span>
+        </div>
+        <div class="flex justify-between py-2 text-gray-300 pl-3">
+          <span>Purchase Orders (Approved)</span>
+          <span class="font-mono">₹{{ cogs|floatformat:2 }}</span>
+        </div>
+        {% if edms_purchases > 0 %}
+        <div class="flex justify-between py-2 text-gray-300 pl-3">
+          <span>Vendor Invoices (EDMS)</span>
+          <span class="font-mono">₹{{ edms_purchases|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between py-2.5 bg-red-500/10 rounded-lg px-3 mb-1 font-bold text-red-200">
+          <span>Total COGS</span>
+          <span class="font-mono">₹{{ total_cogs|floatformat:2 }}</span>
+        </div>
+
+        <!-- Gross Profit -->
+        <div class="flex justify-between py-3 border-t-2 border-white/10 mt-2 font-extrabold text-base
+          {% if gross_profit >= 0 %}text-emerald-300{% else %}text-rose-400{% endif %}">
+          <span>GROSS PROFIT</span>
+          <span class="font-mono">₹{{ gross_profit|floatformat:2 }} &nbsp;<span class="text-xs font-normal opacity-70">({{ gross_margin|floatformat:1 }}%)</span></span>
+        </div>
+
+        <!-- OpEx -->
+        <div class="flex justify-between py-2.5 border-b border-white/5 mt-3">
+          <span class="font-semibold text-amber-300 uppercase tracking-wider text-xs">Operating Expenses</span>
+          <span></span>
+        </div>
+        <div class="flex justify-between py-2 text-gray-300 pl-3">
+          <span>Daily / Variable Expenses</span>
+          <span class="font-mono">₹{{ daily_opex|floatformat:2 }}</span>
+        </div>
+        <div class="flex justify-between py-2 text-gray-300 pl-3">
+          <span>Fixed Expenses</span>
+          <span class="font-mono">₹{{ fixed_opex|floatformat:2 }}</span>
+        </div>
+        <div class="flex justify-between py-2.5 bg-amber-500/10 rounded-lg px-3 mb-1 font-bold text-amber-200">
+          <span>Total OpEx</span>
+          <span class="font-mono">₹{{ total_opex|floatformat:2 }}</span>
+        </div>
+
+        <!-- Net Profit -->
+        <div class="flex justify-between py-3.5 border-t-2 border-white/20 mt-3 font-extrabold text-xl
+          {% if net_profit >= 0 %}text-emerald-300{% else %}text-rose-400{% endif %}">
+          <span>NET PROFIT</span>
+          <span class="font-mono">₹{{ net_profit|floatformat:2 }} &nbsp;<span class="text-sm font-normal opacity-70">({{ net_margin|floatformat:1 }}%)</span></span>
+        </div>
+
+        <!-- Cash Position -->
+        <div class="mt-4 pt-4 border-t border-white/5 space-y-2">
+          <div class="flex justify-between text-gray-400 text-sm">
+            <span>Payments Received (Cash In)</span>
+            <span class="font-mono text-emerald-400">₹{{ payments_in|floatformat:2 }}</span>
+          </div>
+          <div class="flex justify-between text-gray-400 text-sm">
+            <span>Outstanding Receivables</span>
+            <span class="font-mono text-amber-400">₹{{ outstanding_receivables|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Breakdown + Donut Chart -->
+    <div class="space-y-6">
+      <div class="glass p-6 rounded-2xl">
+        <h2 class="text-base font-bold text-white mb-4 tracking-tight">Expense Breakdown (Approved)</h2>
+        {% if expense_breakdown %}
+        <div class="relative h-48 mb-4">
+          <canvas id="expenseDonut"></canvas>
+        </div>
+        <div class="space-y-2">
+          {% for row in expense_breakdown %}
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-300 truncate mr-2">{{ row.expense_type }}</span>
+            <span class="font-mono text-white whitespace-nowrap">₹{{ row.total|floatformat:0 }}
+              <span class="text-gray-500 text-xs">({{ row.count }})</span>
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-500 py-8">No approved expenses in this period</div>
+        {% endif %}
+      </div>
+
+      <!-- Pipeline Reference -->
+      <div class="glass p-5 rounded-2xl">
+        <h2 class="text-base font-bold text-white mb-3">Reference — Other Documents</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between text-gray-300">
+            <span>Quotations (Approved)</span>
+            <span class="font-mono">₹{{ qtn_amount|floatformat:0 }}</span>
+          </div>
+          <div class="flex justify-between text-gray-300">
+            <span>Proforma Invoices (Approved)</span>
+            <span class="font-mono">₹{{ pi_amount|floatformat:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend Chart -->
+  <div class="glass p-6 rounded-2xl">
+    <h2 class="text-base font-bold text-white mb-4 tracking-tight">12-Month Trend — Revenue vs COGS vs OpEx vs Net Profit</h2>
+    <div class="relative h-72">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Chart.js -->
+<script>
+const monthlyData = {{ monthly_trend_json|safe }};
+{% if expense_breakdown %}
+const expenseLabels = [{% for e in expense_breakdown %}"{{ e.expense_type }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+const expenseValues = [{% for e in expense_breakdown %}{{ e.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
+{% endif %}
+
+// Palette
+const COLORS = {
+  revenue: 'rgba(99,102,241,0.9)',
+  cogs:    'rgba(239,68,68,0.8)',
+  opex:    'rgba(245,158,11,0.8)',
+  profit:  'rgba(16,185,129,0.9)',
+};
+
+// Trend Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+  type: 'bar',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [
+      { label: 'Revenue', data: monthlyData.map(d => d.revenue), backgroundColor: COLORS.revenue, borderRadius: 4, order: 2 },
+      { label: 'COGS',    data: monthlyData.map(d => d.cogs),    backgroundColor: COLORS.cogs,    borderRadius: 4, order: 2 },
+      { label: 'OpEx',    data: monthlyData.map(d => d.opex),    backgroundColor: COLORS.opex,    borderRadius: 4, order: 2 },
+      {
+        label: 'Net Profit',
+        data: monthlyData.map(d => d.profit),
+        type: 'line',
+        borderColor: COLORS.profit,
+        backgroundColor: 'rgba(16,185,129,0.1)',
+        borderWidth: 2.5,
+        pointBackgroundColor: COLORS.profit,
+        pointRadius: 4,
+        tension: 0.3,
+        fill: false,
+        order: 1,
+      },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#94a3b8', font: { size: 12 } } },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ₹${ctx.parsed.y.toLocaleString('en-IN', {minimumFractionDigits: 0})}`,
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { ticks: { color: '#64748b', callback: v => '₹' + (v/100000).toFixed(0) + 'L' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+    },
+  },
+});
+
+// Expense Donut
+{% if expense_breakdown %}
+const donutCtx = document.getElementById('expenseDonut').getContext('2d');
+new Chart(donutCtx, {
+  type: 'doughnut',
+  data: {
+    labels: expenseLabels,
+    datasets: [{
+      data: expenseValues,
+      backgroundColor: ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6'],
+      borderColor: 'rgba(0,0,0,0.3)',
+      borderWidth: 2,
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ₹${ctx.parsed.toLocaleString('en-IN')}` } },
+    },
+  },
+});
+{% endif %}
+</script>
+
+{% endblock %}

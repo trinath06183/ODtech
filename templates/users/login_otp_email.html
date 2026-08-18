@@ -1,48 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Verification OTP — ODtech ERP</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background-color: #EFF6FF;
             padding: 40px 20px;
             color: #1e293b;
         }
-        .wrapper { max-width: 600px; margin: 0 auto; }
+
+        .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
         .card {
             background: #ffffff;
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 4px 24px rgba(37, 99, 235, 0.10);
         }
+
         .header {
             background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
             padding: 36px 40px;
             text-align: center;
         }
+
         .header-logo {
             font-size: 26px;
             font-weight: 700;
             color: #ffffff;
             letter-spacing: -0.5px;
         }
-        .header-logo span { color: #bfdbfe; }
+
+        .header-logo span {
+            color: #bfdbfe;
+        }
+
         .header-sub {
             font-size: 13px;
             color: #bfdbfe;
             margin-top: 4px;
         }
-        .body { padding: 40px; }
+
+        .body {
+            padding: 40px;
+        }
+
         .greeting {
             font-size: 16px;
             color: #334155;
             margin-bottom: 24px;
             line-height: 1.6;
         }
+
         .otp-label {
             font-size: 13px;
             font-weight: 600;
@@ -52,6 +74,7 @@
             text-align: center;
             margin-bottom: 16px;
         }
+
         .otp-box {
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             border: 2px solid #93c5fd;
@@ -60,6 +83,7 @@
             padding: 28px 20px;
             margin: 0 auto 28px;
         }
+
         .otp-code {
             font-size: 48px;
             font-weight: 800;
@@ -68,6 +92,7 @@
             font-family: 'Courier New', monospace;
             display: block;
         }
+
         .expiry-badge {
             display: inline-block;
             background: #fef3c7;
@@ -79,12 +104,14 @@
             color: #92400e;
             margin-top: 16px;
         }
+
         .info-text {
             font-size: 14px;
             color: #475569;
             line-height: 1.7;
             margin-bottom: 20px;
         }
+
         .warning-box {
             background: #fff1f2;
             border-left: 4px solid #f43f5e;
@@ -92,22 +119,38 @@
             padding: 14px 18px;
             margin: 24px 0;
         }
+
         .warning-box p {
             font-size: 13px;
             color: #9f1239;
             font-weight: 600;
         }
-        .divider { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 28px 0;
+        }
+
         .footer {
             background: #f8fafc;
             border-top: 1px solid #e2e8f0;
             padding: 24px 40px;
             text-align: center;
         }
-        .footer p { font-size: 12px; color: #94a3b8; line-height: 1.8; }
-        .footer strong { color: #64748b; }
+
+        .footer p {
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.8;
+        }
+
+        .footer strong {
+            color: #64748b;
+        }
     </style>
 </head>
+
 <body>
     <div class="wrapper">
         <div class="card">
@@ -139,14 +182,15 @@
                     Once used, it cannot be reused.
                 </p>
 
-                <div class="warning-box">
+                <!-- <div class="warning-box">
                     <p>Never share this code with anyone. ODtech ERP staff will never ask for your OTP.</p>
-                </div>
+                </div> -->
 
                 <hr class="divider">
 
                 <p class="info-text">
-                    If you did not attempt to log in, please reset your password immediately or contact your administrator, as someone might be trying to access your account.
+                    If you did not attempt to log in, please reset your password immediately or contact your
+                    administrator, as someone might be trying to access your account.
                 </p>
             </div>
 
@@ -161,4 +205,5 @@
         </div>
     </div>
 </body>
+
 </html>

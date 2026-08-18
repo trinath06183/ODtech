@@ -1,10 +1,9 @@
 """
 Management Command: backup_db
 ==============================
-Runs pg_dump directly (DB only — no media files) and emails the resulting
-.sql.gz file to the admin_backup_email configured in Company Settings.
-
-A direct download link to the Backup & Restore panel is also included.
+Runs pg_dump and creates backup archives (.sql.gz for email/DB-only,
+and a complete system archive .tar.gz / .zip containing DB + all media files for Google Drive).
+Emails the DB dump to the admin_backup_email and uploads the complete system backup to Google Drive.
 
 Scheduled by APScheduler daily at 23:30 IST via users/scheduler.py.
 """
@@ -14,6 +13,7 @@ import gzip
 import glob
 import shutil
 import subprocess
+import tarfile
 import logging
 
 from django.conf import settings
@@ -27,7 +27,7 @@ BACKUP_DIR = "/home/server_admin/backups"
 
 
 class Command(BaseCommand):
-    help = "Dump the PostgreSQL database and email it to the admin (DB only)."
+    help = "Dump the PostgreSQL database, create complete backup with media, email DB dump and upload complete backup to Google Drive."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,11 +36,17 @@ class Command(BaseCommand):
             choices=['schedule', 'manual'],
             help='Who triggered this backup: schedule (nightly) or manual (user clicked Generate Now)',
         )
+        parser.add_argument(
+            '--full',
+            action='store_true',
+            default=True,
+            help='Include media folder in Google Drive backup package (default: True)',
+        )
 
     def handle(self, *args, **options):
         triggered_by = options.get('triggered_by', 'schedule')
         is_manual = triggered_by == 'manual'
-        self.stdout.write("backup_db: Starting DB-only backup...")
+        self.stdout.write("backup_db: Starting backup process...")
 
         # ── 1. Get admin backup email ─────────────────────────────────────────
         try:
@@ -255,6 +261,138 @@ class Command(BaseCommand):
         except Exception as e:
             logger.error("backup_db: Failed to send email: %s", e, exc_info=True)
             self.stderr.write(f"ERROR: Could not send email: {e}")
+
+        # ── 7. Optional Google Drive upload (Complete Backup: DB + Media) ────
+        self._upload_complete_backup_to_google_drive(dump_path, timestamp)
+
+    def _upload_complete_backup_to_google_drive(self, dump_path: str, timestamp: str):
+        """
+        Package the database dump AND all media files into a complete archive
+        (.tar.gz) and upload it directly to Google Drive.
+
+        Required environment variables:
+          GOOGLE_DRIVE_ENABLED=true
+          GOOGLE_DRIVE_FOLDER_ID=<folder_id>
+          GOOGLE_DRIVE_CREDENTIALS_PATH=/path/to/service_account.json
+        """
+        import os
+        import tarfile
+
+        drive_enabled = os.environ.get('GOOGLE_DRIVE_ENABLED', 'false').lower() == 'true'
+        if not drive_enabled:
+            return
+
+        creds_path = os.environ.get(
+            'GOOGLE_DRIVE_CREDENTIALS_PATH',
+            '/home/server_admin/ODtech/google_drive_credentials.json'
+        )
+        folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '').strip()
+
+        if not folder_id:
+            logger.warning("backup_db: GOOGLE_DRIVE_FOLDER_ID not set. Skipping Drive upload.")
+            return
+
+        if not os.path.exists(creds_path):
+            logger.warning(
+                "backup_db: Google Drive credentials not found at %s. Skipping.", creds_path
+            )
+            return
+
+        # ── 1. Create complete system archive (.tar.gz with DB + media) ──────
+        complete_filename = f"odtech_complete_backup_{timestamp}.tar.gz"
+        complete_archive_path = os.path.join(BACKUP_DIR, complete_filename)
+        media_dir = getattr(settings, 'MEDIA_ROOT', '')
+
+        self.stdout.write(f"backup_db: Packaging complete backup (DB + media) into {complete_filename}...")
+        try:
+            with tarfile.open(complete_archive_path, "w:gz") as tar:
+                # Add database dump
+                if os.path.exists(dump_path):
+                    tar.add(dump_path, arcname=os.path.join("database", os.path.basename(dump_path)))
+                # Add all media files if directory exists
+                if media_dir and os.path.exists(media_dir):
+                    tar.add(media_dir, arcname="media")
+
+            complete_size_mb = os.path.getsize(complete_archive_path) / (1024 * 1024)
+            self.stdout.write(f"backup_db: Complete archive created ({complete_size_mb:.1f} MB). Uploading to Google Drive...")
+        except Exception as arc_err:
+            logger.error("backup_db: Failed to create complete archive: %s", arc_err, exc_info=True)
+            self.stderr.write(f"backup_db: Archive error: {arc_err}. Falling back to DB-only upload.")
+            complete_archive_path = dump_path
+            complete_filename = os.path.basename(dump_path)
+
+        # ── 2. Upload to Google Drive via Service Account ─────────────────────
+        try:
+            from google.oauth2 import service_account
+            from googleapiclient.discovery import build
+            from googleapiclient.http import MediaFileUpload
+
+            SCOPES = ['https://www.googleapis.com/auth/drive.file']
+            credentials = service_account.Credentials.from_service_account_file(
+                creds_path, scopes=SCOPES
+            )
+            service = build('drive', 'v3', credentials=credentials)
+
+            # Upload the complete archive
+            file_metadata = {
+                'name': complete_filename,
+                'parents': [folder_id],
+            }
+            media = MediaFileUpload(complete_archive_path, mimetype='application/gzip', resumable=True)
+            uploaded = service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id,name,size'
+            ).execute()
+            file_id = uploaded.get('id')
+            size_mb = int(uploaded.get('size', 0)) / (1024 * 1024)
+            logger.info(
+                "backup_db: Uploaded COMPLETE backup %s to Google Drive (id=%s, %.1f MB)",
+                complete_filename, file_id, size_mb
+            )
+            self.stdout.write(
+                self.style.SUCCESS(f"backup_db: Google Drive COMPLETE backup upload done — {complete_filename} ({size_mb:.1f} MB)")
+            )
+
+            # ── Prune old Drive complete backups (keep latest 7) ──────────────
+            results = service.files().list(
+                q=f"(name contains 'odtech_complete_backup_' or name contains 'odtech_db_') and '{folder_id}' in parents and trashed=false",
+                fields="files(id, name, createdTime)",
+                orderBy="createdTime desc",
+            ).execute()
+            all_files = results.get('files', [])
+            for old_file in all_files[7:]:
+                try:
+                    service.files().delete(fileId=old_file['id']).execute()
+                    logger.info(
+                        "backup_db: Deleted old Drive backup %s (id=%s)",
+                        old_file['name'], old_file['id']
+                    )
+                except Exception as del_err:
+                    logger.warning("backup_db: Could not delete %s: %s", old_file['name'], del_err)
+
+        except ImportError:
+            logger.error(
+                "backup_db: google-api-python-client not installed. "
+                "Run: pip install google-api-python-client google-auth"
+            )
+        except Exception as e:
+            logger.error("backup_db: Google Drive upload failed: %s", e, exc_info=True)
+            self.stderr.write(f"backup_db: Google Drive upload error: {e}")
+        finally:
+            # Clean up local complete tar.gz if separate from dump to save server disk space (keep latest 3 local complete archives)
+            try:
+                all_local_complete = sorted(
+                    glob.glob(os.path.join(BACKUP_DIR, "odtech_complete_backup_*.tar.gz")),
+                    reverse=True
+                )
+                for old_local in all_local_complete[3:]:
+                    try:
+                        os.remove(old_local)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
     def _send_failure_email(self, admin_email: str, reason: str, panel_url: str):
         """Send a failure notification email to the admin."""

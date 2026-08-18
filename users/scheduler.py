@@ -7,6 +7,9 @@ No extra services (Redis, Celery) needed.
 Jobs scheduled:
   • send_payment_reminders  — daily at 08:00 IST (configurable)
   • cleanup_expired_otps    — hourly cleanup of expired OTP tokens
+  • morning_digest_job      — daily at 09:00 IST (executive digest email)
+  • fy_rollover_job         — 1 Apr 00:01 IST (document sequence reset)
+  • prune_logs_job          — daily at 02:00 IST (log pruning)
 """
 
 import logging
@@ -75,6 +78,28 @@ def prune_logs_job():
         logger.info("APScheduler: prune_logs complete.")
     except Exception as exc:
         logger.error(f"APScheduler: prune_logs failed: {exc}", exc_info=True)
+
+
+def morning_digest_job():
+    """APScheduler wrapper for the morning_digest management command."""
+    from django.core.management import call_command
+    try:
+        logger.info("APScheduler: Running morning_digest...")
+        call_command('morning_digest')
+        logger.info("APScheduler: morning_digest complete.")
+    except Exception as exc:
+        logger.error(f"APScheduler: morning_digest failed: {exc}", exc_info=True)
+
+
+def fy_rollover_job():
+    """APScheduler wrapper for the fy_rollover management command."""
+    from django.core.management import call_command
+    try:
+        logger.info("APScheduler: Running fy_rollover...")
+        call_command('fy_rollover')
+        logger.info("APScheduler: fy_rollover complete.")
+    except Exception as exc:
+        logger.error(f"APScheduler: fy_rollover failed: {exc}", exc_info=True)
 
 
 def start():
@@ -159,10 +184,32 @@ def start():
         max_instances=1,
     )
 
+    # Daily executive morning digest (at 09:00 AM IST)
+    _scheduler.add_job(
+        morning_digest_job,
+        trigger=CronTrigger(hour=9, minute=0, timezone=timezone_str),
+        id="morning_digest_job",
+        name="Daily executive morning digest email",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=600,
+    )
+
+    # Annual FY sequence rollover (April 1st at 00:01 AM IST)
+    _scheduler.add_job(
+        fy_rollover_job,
+        trigger=CronTrigger(month=4, day=1, hour=0, minute=1, timezone=timezone_str),
+        id="fy_rollover_job",
+        name="Annual FY document sequence rollover",
+        replace_existing=True,
+        max_instances=1,
+    )
+
     try:
         _scheduler.start()
         logger.info(
-            f"APScheduler started. Payment reminders scheduled at {reminder_hour:02d}:{reminder_minute:02d} {timezone_str}."
+            f"APScheduler started. Payment reminders at {reminder_hour:02d}:{reminder_minute:02d} {timezone_str}. "
+            f"Morning digest at 09:00 {timezone_str}. FY rollover on Apr 1 00:01 {timezone_str}."
         )
     except Exception as exc:
         logger.error(f"APScheduler failed to start: {exc}", exc_info=True)
