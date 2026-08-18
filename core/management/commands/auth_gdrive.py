@@ -56,9 +56,12 @@ class Command(BaseCommand):
             ))
 
             try:
-                # Try running local server flow on port 8085
+                # Google OAuth requires host to be 'localhost' or '127.0.0.1'
+                self.stdout.write(self.style.WARNING(
+                    "NOTE: If you are connecting over SSH, make sure you forwarded port 8085, or simply visit the link below:\n"
+                ))
                 creds = flow.run_local_server(
-                    host='0.0.0.0',
+                    host='localhost',
                     port=8085,
                     open_browser=False,
                     authorization_prompt_message=(
