@@ -204,7 +204,7 @@
             // Generate session via API
             const resp = await fetch("{% url 'mobile_generate_session' %}", {
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                headers: { 'X-CSRFToken': getCookie('odtech_bom_csrftoken') || getCookie('csrftoken') },
             });
             const data = await resp.json();
 
