@@ -78,14 +78,7 @@ class Command(BaseCommand):
         db_host = env.get('POSTGRES_HOST', settings.DATABASES['default'].get('HOST', 'localhost'))
         db_port = env.get('POSTGRES_PORT', str(settings.DATABASES['default'].get('PORT', '5432')))
 
-        if not db_name or not db_user:
-            msg = "Database credentials not found in environment."
-            logger.error("backup_db: %s", msg)
-            self._send_failure_email(admin_email, msg, "http://192.168.1.106/admin-config/backup/")
-            return
-
         # ── 2. Build site URL for the download link ───────────────────────────
-        # Priority: SITE_URL env var → first non-localhost CSRF origin → LAN IP fallback
         site_url = env.get('SITE_URL', '').rstrip('/')
         if not site_url:
             trusted_origins = getattr(settings, 'CSRF_TRUSTED_ORIGINS', [])
@@ -96,8 +89,14 @@ class Command(BaseCommand):
                 None
             )
         if not site_url:
-            site_url = "http://192.168.1.106"  # LAN IP fallback
-        backup_panel_url = f"{site_url}/admin-config/backup/"
+            site_url = "http://192.168.1.106"
+        backup_panel_url = f"{site_url}/settings/backup/"
+
+        if not db_name or not db_user:
+            msg = "Database credentials not found in environment."
+            logger.error("backup_db: %s", msg)
+            self._send_failure_email(admin_email, msg, backup_panel_url)
+            return
 
         # ── 4. Run pg_dump ────────────────────────────────────────────────────
         os.makedirs(BACKUP_DIR, exist_ok=True)
