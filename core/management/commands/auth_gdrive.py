@@ -38,10 +38,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        import socket
         client_secret_path = options['credentials']
         out_path = options['out']
-        specified_port = options['port']
 
         if not os.path.exists(client_secret_path):
             self.stderr.write(
@@ -50,38 +48,48 @@ class Command(BaseCommand):
             )
             return
 
-        # Find an open port if port is 0
-        if specified_port == 0:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('localhost', 0))
-                port = s.getsockname()[1]
-        else:
-            port = specified_port
-
         try:
-            from google_auth_oauthlib.flow import InstalledAppFlow
+            from google_auth_oauthlib.flow import Flow
 
             SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
-            flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, SCOPES)
             
-            # Use redirect URI for local or oob
+            # Use redirect URI http://localhost:8088/
+            redirect_uri = "http://localhost:8088/"
+            flow = Flow.from_client_secrets_file(
+                client_secret_path,
+                scopes=SCOPES,
+                redirect_uri=redirect_uri
+            )
+
+            auth_url, _ = flow.authorization_url(
+                access_type='offline',
+                include_granted_scopes='true',
+                prompt='consent'
+            )
+
             self.stdout.write(self.style.NOTICE(
                 "\n=======================================================\n"
                 "           Google Drive 1-Time Authorization           \n"
                 "=======================================================\n"
             ))
-
-            creds = flow.run_local_server(
-                port=port,
-                open_browser=False,
-                authorization_prompt_message=(
-                    "\n1. Open this URL in your web browser:\n\n{url}\n\n"
-                    "2. Sign in and grant permission.\n\n"
-                    f"   (If you are using an SSH tunnel from your PC, forward port {port}:\n"
-                    f"    ssh -L {port}:localhost:{port} server_admin@192.168.1.106)\n"
-                ),
-                success_message="Authorization successful! You may close this browser tab."
+            self.stdout.write("1. Open this URL in your web browser:\n")
+            self.stdout.write(self.style.WARNING(f"\n{auth_url}\n"))
+            self.stdout.write(
+                "\n2. Sign in and grant permission.\n"
+                "3. After clicking Allow, your browser will redirect to a page like:\n"
+                "   http://localhost:8088/?state=...&code=4/0A...\n"
+                "   (Even if the page says 'Site can't be reached', that is completely normal!)\n\n"
+                "4. Copy the ENTIRE URL from your browser address bar and paste it below:\n"
             )
+
+            callback_url = input("\nPaste Full Redirect URL here: ").strip()
+
+            if not callback_url:
+                self.stderr.write("ERROR: No URL provided. Aborted.")
+                return
+
+            flow.fetch_token(authorization_response=callback_url)
+            creds = flow.credentials
 
             os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
             with open(out_path, 'w', encoding='utf-8') as f:
