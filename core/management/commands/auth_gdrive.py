@@ -55,24 +55,17 @@ class Command(BaseCommand):
                 "=======================================================\n"
             ))
 
-            try:
-                # Google OAuth requires host to be 'localhost' or '127.0.0.1'
-                self.stdout.write(self.style.WARNING(
-                    "NOTE: If you are connecting over SSH, make sure you forwarded port 8085, or simply visit the link below:\n"
-                ))
-                creds = flow.run_local_server(
-                    host='localhost',
-                    port=8085,
-                    open_browser=False,
-                    authorization_prompt_message=(
-                        "1. Open the following URL in your web browser:\n\n{url}\n\n"
-                        "2. Log in and grant permissions.\n"
-                    ),
-                    success_message="Authorization successful! You may close this tab."
-                )
-            except Exception as srv_err:
-                self.stdout.write(f"Local server listener notice ({srv_err}). Using console flow...\n")
-                creds = flow.run_console()
+            creds = flow.run_local_server(
+                port=8088,
+                open_browser=False,
+                authorization_prompt_message=(
+                    "\n1. Open this link in your browser to sign in:\n\n{url}\n\n"
+                    "2. Sign in and grant permission.\n"
+                    "   (If you are using SSH, ensure you forwarded port 8088 using:\n"
+                    "    ssh -L 8088:localhost:8088 server_admin@192.168.1.106)\n"
+                ),
+                success_message="Authorization successful! You may close this browser tab."
+            )
 
             os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
             with open(out_path, 'w', encoding='utf-8') as f:
