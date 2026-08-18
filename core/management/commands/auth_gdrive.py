@@ -38,6 +38,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Allow HTTP for local OAuth redirect URL parsing
+        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
         client_secret_path = options['credentials']
         out_path = options['out']
 
