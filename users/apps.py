@@ -21,43 +21,7 @@ class UsersConfig(AppConfig):
         if running_command in skip_commands:
             return
 
-        try:
-            from .models import User
-            for user in User.objects.all():
-                if user.empid and user.username != user.empid:
-                    user.username = user.empid
-                    user.save(update_fields=['username'])
-                elif not user.empid:
-                    user.empid = user.username
-                    user.save(update_fields=['empid'])
-        except Exception as e:
-            print("DB sync failed:", str(e))
-
-        try:
-            import os
-            import re
-            template_dir = r"d:\ODtech\Main_work\Deployment\ODtech\templates"
-            replacements = [
-                (r'get_full_name(?:\|default:[^\}]+)?', 'username'),
-                (r'\bfirst_name\b', 'username'),
-                (r'Submitted By', 'Employee Code'),
-                (r'Employee Name', 'Employee Code'),
-                (r'User Name', 'Employee Code'),
-            ]
-            for root, dirs, files in os.walk(template_dir):
-                for file in files:
-                    if file.endswith('.html'):
-                        path = os.path.join(root, file)
-                        with open(path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                        new_content = content
-                        for pattern, repl in replacements:
-                            new_content = re.sub(pattern, repl, new_content)
-                        if new_content != content:
-                            with open(path, 'w', encoding='utf-8') as f:
-                                f.write(new_content)
-        except Exception as e:
-            pass
+        pass
 
         # In dev, Django's auto-reloader launches a child process with RUN_MAIN=true.
         # We only start the scheduler in that child process (or in production).
