@@ -48,13 +48,28 @@ class Command(BaseCommand):
             SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
             flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, SCOPES)
             
+            # Use redirect URI for local or oob
             self.stdout.write(self.style.NOTICE(
-                "\nStarting Google Drive authorization...\n"
-                "Please follow the URL in your browser to sign in and grant permission:\n"
+                "\n=======================================================\n"
+                "           Google Drive 1-Time Authorization           \n"
+                "=======================================================\n"
             ))
 
-            # Run local server auth or console flow
-            creds = flow.run_local_server(port=0, open_browser=False)
+            try:
+                # Try running local server flow on port 8085
+                creds = flow.run_local_server(
+                    host='0.0.0.0',
+                    port=8085,
+                    open_browser=False,
+                    authorization_prompt_message=(
+                        "1. Open the following URL in your web browser:\n\n{url}\n\n"
+                        "2. Log in and grant permissions.\n"
+                    ),
+                    success_message="Authorization successful! You may close this tab."
+                )
+            except Exception as srv_err:
+                self.stdout.write(f"Local server listener notice ({srv_err}). Using console flow...\n")
+                creds = flow.run_console()
 
             os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
             with open(out_path, 'w', encoding='utf-8') as f:
