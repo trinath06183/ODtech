@@ -66,6 +66,17 @@ def cleanup_old_executions_job():
         logger.error(f"APScheduler: Execution cleanup failed: {exc}", exc_info=True)
 
 
+def prune_logs_job():
+    """APScheduler wrapper for the prune_logs management command."""
+    from django.core.management import call_command
+    try:
+        logger.info("APScheduler: Running prune_logs...")
+        call_command('prune_logs', '--days', '90')
+        logger.info("APScheduler: prune_logs complete.")
+    except Exception as exc:
+        logger.error(f"APScheduler: prune_logs failed: {exc}", exc_info=True)
+
+
 def start():
     """Start the background scheduler. Call once from users.apps.UsersConfig.ready()."""
     global _scheduler, _lock_file
@@ -134,6 +145,16 @@ def start():
         trigger=CronTrigger(hour=23, minute=30),
         id="backup_db_job",
         name="Daily database backup to admin email",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    # Daily system log pruning (at 02:00 AM - keeps last 90 days)
+    _scheduler.add_job(
+        prune_logs_job,
+        trigger=CronTrigger(hour=2, minute=0, timezone=timezone_str),
+        id="prune_logs_job",
+        name="Daily system log pruning (older than 90 days)",
         replace_existing=True,
         max_instances=1,
     )

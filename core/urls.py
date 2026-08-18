@@ -10,6 +10,10 @@ urlpatterns = [
     path('system-logs/unlock/', views.LogUnlockView.as_view(), name='log_unlock'),
     path('system-logs/', views.SystemActivityLogView.as_view(), name='system_logs'),
     
+    # Health Check API
+    path('api/health/', views.health_check, name='health_check'),
+    path('health/', views.health_check, name='health_check_root'),
+    
     # Global Search API
     path('api/global-search/', search_views.global_search, name='global_search'),
     

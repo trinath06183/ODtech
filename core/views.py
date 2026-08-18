@@ -791,3 +791,33 @@ class SystemActivityLogView(ListView):
             qs = qs.filter(method=method.upper())
             
         return qs.select_related('user')
+
+
+def health_check(request):
+    """
+    Lightweight health check endpoint for uptime monitors / load balancers.
+    Accessible publicly without authentication.
+    Returns HTTP 200 with JSON if database is connected, 503 if disconnected.
+    """
+    from django.db import connection
+
+    db_ok = True
+    db_error = None
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+    except Exception as e:
+        db_ok = False
+        db_error = str(e)
+
+    status_code = 200 if db_ok else 503
+    payload = {
+        'status': 'healthy' if db_ok else 'unhealthy',
+        'database': 'connected' if db_ok else 'disconnected',
+        'timestamp': timezone.now().isoformat(),
+        'version': '1.0',
+    }
+    if db_error:
+        payload['database_error'] = db_error
+
+    return JsonResponse(payload, status=status_code)
