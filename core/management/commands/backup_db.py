@@ -321,16 +321,35 @@ class Command(BaseCommand):
             complete_archive_path = dump_path
             complete_filename = os.path.basename(dump_path)
 
-        # ── 2. Upload to Google Drive via Service Account ─────────────────────
+        # ── 2. Upload to Google Drive (Supports Service Account & OAuth 2.0) ──
         try:
+            import json
             from google.oauth2 import service_account
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
             from googleapiclient.discovery import build
             from googleapiclient.http import MediaFileUpload
 
-            SCOPES = ['https://www.googleapis.com/auth/drive.file']
-            credentials = service_account.Credentials.from_service_account_file(
-                creds_path, scopes=SCOPES
-            )
+            SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
+
+            # Inspect credentials file format (Service Account vs User OAuth Token)
+            with open(creds_path, 'r', encoding='utf-8') as f:
+                creds_data = json.load(f)
+
+            if creds_data.get('type') == 'service_account':
+                # Standard Service Account
+                credentials = service_account.Credentials.from_service_account_file(
+                    creds_path, scopes=SCOPES
+                )
+            else:
+                # OAuth 2.0 User Token (refreshable)
+                credentials = Credentials.from_authorized_user_file(creds_path, SCOPES)
+                if credentials and credentials.expired and credentials.refresh_token:
+                    credentials.refresh(Request())
+                    # Persist refreshed token
+                    with open(creds_path, 'w', encoding='utf-8') as f:
+                        f.write(credentials.to_json())
+
             service = build('drive', 'v3', credentials=credentials)
 
             # Upload the complete archive
