@@ -1054,15 +1054,15 @@ function shareOnWhatsApp(phone, docNumber, docType, customerName, grandTotal, pu
 
     const msg = 
 `*${docType.toUpperCase()} DETAILS — ODTECH SOLUTIONS*
-━━━━━━━━━━━━━━━━━━━━━
+---------------------------------------
 Dear *${customerName}*,
 
 Greetings from *ODtech Solutions*! Please find the summary of your ${docType.toLowerCase()} below:
 
-📄 *Document No:* ${docNumber}
-💰 *Total Amount:* ₹${totalFormatted}
+* Document No: *${docNumber}*
+* Total Amount: *₹${totalFormatted}*
 
-🔗 *View & Download Official Document (PDF):*
+* View & Download Official Document (PDF):
 ${publicUrl}
 
 If you have any questions or require modifications, feel free to reply to this message.
