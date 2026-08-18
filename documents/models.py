@@ -124,6 +124,12 @@ class Document(TimeStampedModel):
     def total_discount(self):
         return sum(item.discount for item in self.items.all())
 
+    def get_access_token(self):
+        """Generate a cryptographically signed unguessable access token for public sharing without login."""
+        from django.core.signing import Signer
+        signer = Signer(salt="document-public-view-salt")
+        return signer.sign(str(self.id))
+
     @classmethod
     def get_default_terms(cls, document_type):
         DEFAULT_TERMS_QTN = (

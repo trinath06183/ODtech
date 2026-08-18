@@ -34,6 +34,12 @@ urlpatterns = [
     # Final PDF download
     path('<int:document_id>/pdf/',     views.generate_pdf,           name='generate_pdf'),
 
+    # Public Secure Document Viewer & PDF Download (Signed Token, No Login Needed)
+    path('v/<str:token>/',             views.public_document_view,   name='public_document_view'),
+
+    # Email document directly with PDF attachment API
+    path('api/<int:document_id>/send-email/', views.email_document_api,  name='email_document_api'),
+
     # Product search API
     path('api/search-products/',       views.search_products,        name='search_products'),
 

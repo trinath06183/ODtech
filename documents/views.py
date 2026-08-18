@@ -210,8 +210,27 @@ def document_preview_data(request, document_id):
 
 
 # ─── PDF Generation ───────────────────────────────────────────────────────────
-@require_permission('DOCUMENTS', 'write')
 def generate_pdf(request, document_id):
+    """
+    Generate and serve document PDF.
+    Accessible with authenticated user permission OR via cryptographically signed token.
+    """
+    token = request.GET.get('token')
+    if token:
+        from django.core.signing import Signer, BadSignature
+        signer = Signer(salt="document-public-view-salt")
+        try:
+            signed_id = signer.unsign(token)
+            if str(signed_id) != str(document_id):
+                return HttpResponse("Invalid access token.", status=403)
+        except BadSignature:
+            return HttpResponse("Invalid or expired document link.", status=403)
+    else:
+        # Require user authentication and permission
+        if not request.user.is_authenticated or not request.user.has_permission('DOCUMENTS', 'read'):
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(request.get_full_path())
+
     doc = get_object_or_404(Document, id=document_id)
     try:
         pdf_file = PDFService.render_pdf(doc, request=request)
@@ -238,7 +257,161 @@ def generate_pdf(request, document_id):
         return HttpResponse(warning_msg + PDFService.render_html(doc, request=request))
 
 
-# ─── Delete Document ─────────────────────────────────────────────────────────
+# ─── Public Customer Document View (Secure Signed Token / No Login Needed) ────
+def public_document_view(request, token):
+    """
+    Publicly view/download a commercial document securely using a cryptographically signed token.
+    Customers CANNOT change the URL number to view other documents.
+    No login required for the customer.
+    """
+    from django.core.signing import Signer, BadSignature
+    signer = Signer(salt="document-public-view-salt")
+    try:
+        doc_id = signer.unsign(token)
+    except BadSignature:
+        return HttpResponse("<h1>403 Forbidden</h1><p>Invalid or expired document link.</p>", status=403)
+
+    doc = get_object_or_404(Document, id=doc_id)
+    
+    # If ?pdf=1 is requested, serve PDF directly
+    if request.GET.get('pdf') == '1':
+        return generate_pdf(request, doc.id)
+
+    # Render branded public viewer page
+    return render(request, 'documents/public_document_view.html', {
+        'doc': doc,
+        'token': token,
+        'preview_html': PDFService.render_html(doc, request=request),
+    })
+
+
+# ─── Email Document API (Auto-Attaches PDF + Secure Link) ─────────────────────
+@require_POST
+@require_permission('DOCUMENTS', 'write')
+def email_document_api(request, document_id):
+    """
+    Sends the commercial document directly to the client's email.
+    Auto-attaches the rendered PDF and provides the secure token link.
+    """
+    import json
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+    from config.models import CompanyProfile
+
+    doc = get_object_or_404(Document, id=document_id)
+    try:
+        data = json.loads(request.body) if request.body else {}
+    except Exception:
+        data = {}
+
+    recipient_email = (data.get('email') or (doc.contact.email if doc.contact else '')).strip()
+    if not recipient_email:
+        return JsonResponse({'success': False, 'error': 'Recipient email address is required.'}, status=400)
+
+    company = CompanyProfile.objects.first()
+    company_name = company.name if company else "ODtech Solutions"
+    doc_type_name = doc.get_type_display()
+    
+    # Generate public secure token link
+    token = doc.get_access_token()
+    site_url = request.build_absolute_uri('/')[:-1]
+    public_url = f"{site_url}/documents/v/{token}/"
+    total_formatted = f"₹{doc.grand_total:,.2f}"
+
+    subject = f"[{company_name}] {doc_type_name}: {doc.number}"
+
+    # Plain text body
+    text_body = f"""Dear {doc.contact.name},
+
+Greetings from {company_name}! Please find the details of your {doc_type_name.lower()} attached:
+
+• Document No: {doc.number}
+• Total Amount: {total_formatted}
+
+You can also view and download the official digital document online at:
+{public_url}
+
+The official PDF document has been attached to this email for your reference.
+If you have any questions or require modifications, feel free to reply directly to this email.
+
+Best Regards,
+{company_name}
+"""
+
+    # Rich responsive HTML body
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;color:#e2e8f0;">
+<div style="max-width:600px;margin:32px auto;border-radius:16px;overflow:hidden;border:1px solid #1e293b;background:#111827;">
+  <div style="background:linear-gradient(135deg,#1e3a5f,#1e293b);padding:28px 32px;">
+    <div style="font-size:12px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px;">{company_name}</div>
+    <div style="font-size:24px;font-weight:800;color:#ffffff;margin-top:4px;">{doc_type_name} #{doc.number}</div>
+  </div>
+
+  <div style="padding:28px 32px;border-bottom:1px solid #1e293b;">
+    <p style="font-size:15px;color:#cbd5e1;margin-top:0;">Dear <strong>{doc.contact.name}</strong>,</p>
+    <p style="font-size:14px;color:#94a3b8;line-height:1.6;">
+      Greetings from <strong>{company_name}</strong>! Please find your <strong>{doc_type_name.lower()}</strong> summary below:
+    </p>
+
+    <table width="100%" style="margin:20px 0;background:#1e293b;border-radius:12px;border-collapse:collapse;overflow:hidden;">
+      <tr>
+        <td style="padding:12px 18px;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;">Document Number</td>
+        <td style="padding:12px 18px;color:#f8fafc;font-weight:700;font-size:13px;border-bottom:1px solid #334155;text-align:right;">{doc.number}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 18px;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;">Date</td>
+        <td style="padding:12px 18px;color:#f8fafc;font-weight:600;font-size:13px;border-bottom:1px solid #334155;text-align:right;">{doc.date.strftime('%d %b %Y') if doc.date else '—'}</td>
+      </tr>
+      <tr>
+        <td style="padding:14px 18px;color:#e2e8f0;font-size:14px;font-weight:700;">Total Amount</td>
+        <td style="padding:14px 18px;color:#34d399;font-weight:800;font-size:18px;text-align:right;">{total_formatted}</td>
+      </tr>
+    </table>
+
+    <div style="text-align:center;margin:28px 0 16px;">
+      <a href="{public_url}" style="display:inline-block;padding:12px 28px;background:#4f46e5;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;border-radius:10px;box-shadow:0 4px 14px rgba(79,70,229,0.4);">
+        View & Download Document
+      </a>
+    </div>
+
+    <p style="font-size:13px;color:#64748b;text-align:center;margin-bottom:0;">
+      📎 The official PDF document is also attached directly to this email.
+    </p>
+  </div>
+
+  <div style="padding:20px 32px;background:#0f172a;text-align:center;color:#475569;font-size:12px;">
+    {company_name} &bull; Official Digital Commercial Document
+  </div>
+</div>
+</body>
+</html>"""
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[recipient_email],
+    )
+    msg.attach_alternative(html_body, "text/html")
+
+    # Render & Attach the PDF
+    try:
+        pdf_content = PDFService.render_pdf(doc, request=request)
+        safe_number = doc.number.replace('-', '_').replace('/', '_')
+        safe_contact = str(doc.contact.name).replace(' ', '_')
+        pdf_filename = f"{safe_number}_{safe_contact}.pdf"
+        msg.attach(pdf_filename, pdf_content, 'application/pdf')
+    except Exception as pdf_err:
+        logger.warning("email_document_api: Could not attach PDF: %s", pdf_err)
+
+    try:
+        msg.send(fail_silently=False)
+        return JsonResponse({'success': True, 'message': f'Document successfully emailed to {recipient_email}.'})
+    except Exception as err:
+        logger.error("email_document_api: Failed to send email: %s", err, exc_info=True)
+        return JsonResponse({'success': False, 'error': f'Failed to send email: {str(err)}'}, status=500)
 @require_permission('DOCUMENTS', 'write')
 def delete_document(request, document_id):
     company = CompanyProfile.objects.first()
