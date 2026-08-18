@@ -30,10 +30,18 @@ class Command(BaseCommand):
             default='/home/server_admin/ODtech/google_drive_credentials.json',
             help='Output path for authorized user token JSON file.',
         )
+        parser.add_argument(
+            '--port',
+            type=int,
+            default=0,
+            help='Port to listen on for OAuth callback (default: 0 = dynamic free port).',
+        )
 
     def handle(self, *args, **options):
+        import socket
         client_secret_path = options['credentials']
         out_path = options['out']
+        specified_port = options['port']
 
         if not os.path.exists(client_secret_path):
             self.stderr.write(
@@ -41,6 +49,14 @@ class Command(BaseCommand):
                 f"Download OAuth client ID JSON from Google Cloud Console (APIs & Services -> Credentials)."
             )
             return
+
+        # Find an open port if port is 0
+        if specified_port == 0:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('localhost', 0))
+                port = s.getsockname()[1]
+        else:
+            port = specified_port
 
         try:
             from google_auth_oauthlib.flow import InstalledAppFlow
@@ -56,13 +72,13 @@ class Command(BaseCommand):
             ))
 
             creds = flow.run_local_server(
-                port=8088,
+                port=port,
                 open_browser=False,
                 authorization_prompt_message=(
-                    "\n1. Open this link in your browser to sign in:\n\n{url}\n\n"
-                    "2. Sign in and grant permission.\n"
-                    "   (If you are using SSH, ensure you forwarded port 8088 using:\n"
-                    "    ssh -L 8088:localhost:8088 server_admin@192.168.1.106)\n"
+                    "\n1. Open this URL in your web browser:\n\n{url}\n\n"
+                    "2. Sign in and grant permission.\n\n"
+                    f"   (If you are using an SSH tunnel from your PC, forward port {port}:\n"
+                    f"    ssh -L {port}:localhost:{port} server_admin@192.168.1.106)\n"
                 ),
                 success_message="Authorization successful! You may close this browser tab."
             )
