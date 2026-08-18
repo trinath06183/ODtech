@@ -4,6 +4,32 @@ All notable changes are documented here in reverse chronological order.
 
 ---
 
+## [Phase 8] — 2026-08-18
+
+### Features & Automation
+- **Live Profit & Loss (P&L) Statement:**
+  - Added dedicated Live P&L page at `/reporting/pl/` with JSON API at `/reporting/pl/api/`.
+  - Computes complete income statement: Net Revenue (Gross Invoices $\pm$ Credit/Debit Notes) $\rightarrow$ COGS (Purchase Orders + EDMS Vendor Invoices) $\rightarrow$ Gross Profit & Margin $\rightarrow$ Operating Expenses (Daily & Fixed) $\rightarrow$ Net Profit & Margin.
+  - Interactive 12-month bar+line trend chart and expense breakdown donut chart powered by Chart.js.
+- **Kanban / Pipeline Board for Orders:**
+  - Added visual pipeline board at `/tracker/kanban/` with drag-and-drop swimlanes (Open $\rightarrow$ Sourcing $\rightarrow$ Procured $\rightarrow$ Shipped $\rightarrow$ Closed).
+  - Dragging cards dynamically updates order status in the background via `tracker:api_update_order_status` with toast notifications.
+- **WhatsApp Share on Quotations & Invoices:**
+  - Added "Share on WhatsApp" action button on document previews (`templates/documents/document_preview.html`).
+  - Generates formatted `wa.me` links pre-filled with document number, type, party name, total amount in INR format, and direct PDF view link.
+- **Daily Executive Morning Digest (09:00 AM IST):**
+  - Added management command `morning_digest` (`core/management/commands/morning_digest.py`).
+  - Scheduled daily via APScheduler at 09:00 AM IST. Sends a rich HTML executive summary of today's, MTD, and FYTD revenue, order pipeline count, payments received, pending expense claims, and overdue invoices.
+- **Automatic Financial Year (FY) Sequence Rollover:**
+  - Added management command `fy_rollover` (`core/management/commands/fy_rollover.py`) with `--dry-run` safety flag.
+  - Scheduled annually on April 1st at 00:01 AM IST to reset document sequence counters (`seq_qtn`, `seq_inv`, `seq_pro`, `seq_chl`, `seq_po`, `seq_crn`, `seq_dbn`) to `0` and notify the administrator.
+- **Complete System Cloud Backup to Google Drive:**
+  - Enhanced `backup_db` (`core/management/commands/backup_db.py`) to package both the PostgreSQL database dump and the entire uploaded media files folder into a single timestamped archive (`odtech_complete_backup_<timestamp>.tar.gz`).
+  - Automatically uploads the complete archive to Google Drive with 7-backup retention management.
+  - Added `auth_gdrive` helper command supporting both Service Account keys and headless OAuth 2.0 User authorization.
+
+---
+
 ## [Phase 7] — 2026-08-17
 
 ### Features & Infrastructure

@@ -286,7 +286,15 @@ class Command(BaseCommand):
             'GOOGLE_DRIVE_CREDENTIALS_PATH',
             '/home/server_admin/ODtech/google_drive_credentials.json'
         )
-        folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '').strip()
+        raw_folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '').strip()
+
+        # Automatically extract folder ID if a full Google Drive URL was pasted
+        if 'folders/' in raw_folder_id:
+            folder_id = raw_folder_id.split('folders/')[-1].split('?')[0].strip('/')
+        elif '/' in raw_folder_id:
+            folder_id = raw_folder_id.rstrip('/').split('/')[-1]
+        else:
+            folder_id = raw_folder_id.strip()
 
         if not folder_id:
             logger.warning("backup_db: GOOGLE_DRIVE_FOLDER_ID not set. Skipping Drive upload.")

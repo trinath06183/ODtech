@@ -121,32 +121,28 @@
 
 ---
 
-## Phase 8 — Reporting & Analytics 🔲 PLANNED
+## Phase 8 — Advanced Reporting & Enterprise Operations ✅ COMPLETE (2026-08-18)
 
-**Goal:** Comprehensive reporting for management and finance.
+**Goal:** Comprehensive financial reporting, operations tracking, and cloud automation.
 
-- [ ] Profit & Loss statement (FY / custom date range)
-- [ ] Customer-wise revenue report with drill-down
-- [ ] Product-wise sales analysis
-- [ ] Expense summary report by category
-- [ ] Inventory valuation report
-- [ ] Receivables aging report (export to Excel/PDF)
-- [ ] Order fulfillment rate tracking
-- [ ] Export all reports to PDF and Excel
+- [x] **Live Profit & Loss (P&L) Statement:** Full Income Statement (/reporting/pl/) with Revenue, COGS, OpEx, Net Profit, and Chart.js 12-month trend
+- [x] **Kanban Pipeline Board for Orders:** Drag-and-drop swimlane pipeline (/tracker/kanban/) with real-time status updates
+- [x] **WhatsApp Share Link:** 1-click sharing of Quotations and Invoices with pre-formatted text and PDF link
+- [x] **Daily Executive Morning Digest:** 09:00 AM IST scheduled email with daily/MTD/FYTD revenue, order pipeline, payments, and alerts
+- [x] **Automatic FY Sequence Rollover:** Scheduled April 1st 00:01 AM sequence reset command with dry-run support
+- [x] **Complete Cloud Backup to Google Drive:** Automated full package (.tar.gz with DB + media) sync to Google Drive with 7-backup retention
 
 ---
 
-## Phase 9 — Integrations & Automation 🔲 PLANNED
+## Phase 9 — Tax Compliance & External Integrations 🔲 PLANNED
 
-**Goal:** Reduce manual work with automation.
+**Goal:** Automated compliance and third-party accounting handover.
 
-- [ ] GST return data export (GSTR-1 format)
-- [ ] Automated payment reminder emails to clients
-- [ ] Low stock email alerts (already flagged in dashboard; needs email)
-- [ ] Scheduled daily summary email to MD/Director
-- [ ] Automated document numbering reset at FY start
-- [ ] WhatsApp / SMS notification for order status changes
-- [ ] Tally export for accounting handover
+- [ ] **GSTR-1 GST Return Export:** One-click B2B / B2C invoice data export matching GST portal Excel format
+- [ ] **Tally XML/Excel Bridge:** Export sales, purchase, and payment vouchers formatted for Tally Prime import
+- [ ] **Receivables Aging & Dunning Dashboard:** Automated 30/60/90 days client reminder escalation
+- [ ] **Printable Barcode/QR Inventory Labels:** Sticker printing sheet for warehouse products and lots
+- [ ] **Vendor Portal / RFQ Link:** Direct link for vendors to submit quotes against requirement inquiries
 
 ---
 
@@ -156,3 +152,4 @@
 |------|---------|---------|
 | 2026-08-14 | Pre-Phase 7 | Last stable pre-hardening release |
 | 2026-08-17 | Phase 7 | Security + performance fixes (17 issues resolved) |
+| 2026-08-18 | Phase 8 | Live P&L, Order Kanban, WhatsApp Share, Morning Digest, FY Rollover, Google Drive Complete Backup |
