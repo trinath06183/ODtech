@@ -19,6 +19,7 @@ from django_apscheduler.models import DjangoJobExecution
 logger = logging.getLogger(__name__)
 
 _scheduler = None  # module-level singleton guard
+_lock_file = None  # keeps process file lock open for the lifetime of the worker
 
 
 def send_payment_reminders_job():
@@ -67,9 +68,26 @@ def cleanup_old_executions_job():
 
 def start():
     """Start the background scheduler. Call once from users.apps.UsersConfig.ready()."""
-    global _scheduler
+    global _scheduler, _lock_file
     if _scheduler is not None:
         return  # already started
+
+    # Use file locking on Linux/Unix so ONLY ONE Gunicorn worker starts the scheduler.
+    # Without this, all 3 Gunicorn workers start duplicate schedulers and send duplicate emails.
+    try:
+        import fcntl
+        import tempfile
+        import os
+        lock_path = os.path.join(tempfile.gettempdir(), 'odtech_apscheduler.lock')
+        _lock_file = open(lock_path, 'wb')
+        fcntl.flock(_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (BlockingIOError, IOError):
+        logger.info("APScheduler: Another worker process already owns the scheduler lock. Skipping.")
+        return
+    except ImportError:
+        pass  # Windows development environment
+    except Exception as exc:
+        logger.warning(f"APScheduler: File lock check skipped: {exc}")
 
     # Read reminder schedule from settings (default 08:00 IST)
     reminder_hour = getattr(settings, 'REMINDER_HOUR', 8)
