@@ -3086,6 +3086,12 @@ def public_vendor_rfq_portal(request, token):
     Suppliers view items, enter base prices, GST %, delivery lead times,
     and attach quotation documents.
     """
+    from decimal import Decimal
+    from django.utils import timezone
+    from django.db import transaction
+    import logging
+    _logger = logging.getLogger(__name__)
+
     from .models import VendorRFQ, SupplierCostOption
     from config.models import CompanyProfile
 
@@ -3144,17 +3150,19 @@ def public_vendor_rfq_portal(request, token):
                                 opt.save()
 
                         except Exception as parse_err:
-                            logger.warning("Error parsing item price: %s", parse_err)
+                            _logger.warning("Error parsing item price: %s", parse_err)
 
                 # Send in-app notification & alert
                 from .models import Notification
                 try:
-                    Notification.objects.create(
-                        user=rfq.created_by or User.objects.filter(is_superuser=True).first(),
-                        title=f"Quote Received: {rfq.supplier_name}",
-                        message=f"Supplier {rfq.supplier_name} submitted quotation for Order {rfq.order.order_number}.",
-                        link=reverse('tracker:order_detail', args=[rfq.order.id])
-                    )
+                    target_user = rfq.created_by or User.objects.filter(is_superuser=True).first()
+                    if target_user:
+                        Notification.objects.create(
+                            user=target_user,
+                            title=f"Quote Received: {rfq.supplier_name}",
+                            message=f"Supplier {rfq.supplier_name} submitted quotation for Order {rfq.order.order_number}.",
+                            link=reverse('tracker:order_detail', args=[rfq.order.id])
+                        )
                 except Exception:
                     pass
 
@@ -3164,7 +3172,7 @@ def public_vendor_rfq_portal(request, token):
             })
 
         except Exception as e:
-            logger.error("public_vendor_rfq_portal POST error: %s", e, exc_info=True)
+            _logger.error("public_vendor_rfq_portal POST error: %s", e, exc_info=True)
             messages.error(request, f"Error saving your quotation: {e}")
 
     return render(request, 'tracker/public_rfq_portal.html', {
