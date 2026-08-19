@@ -576,39 +576,22 @@
 
                 {% if request.user|has_read_perm:'REPORTING' or request.user|has_read_perm:'DOCUMENTS' %}
                 <!-- Other Office Tools -->
-                <div x-data="{ open: false }" class="mb-1">
-                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors focus:outline-none"
-                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Other Office Tools">
-                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        <div x-show="sidebarOpen" style="display: none;"
-                            class="flex-1 flex items-center justify-between ml-3">
-                            <span class="whitespace-nowrap font-medium">Other Office Tools</span>
-                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </button>
-                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
-                        <a href="{% url 'statement_of_account' %}"
-                            class="block text-sm text-gray-500 hover:text-amber-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
-                            📑 Statement of Account
-                        </a>
-                        <a href="{% url 'profit_and_loss' %}"
-                            class="block text-sm text-gray-500 hover:text-amber-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
-                            📊 Profit & Loss (P&L)
-                        </a>
-                        <a href="{% url 'financial_dashboard' %}"
-                            class="block text-sm text-gray-500 hover:text-amber-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
-                            📈 Financial Overview
-                        </a>
-                    </div>
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Other Office Tools</div>
+                <div x-show="!sidebarOpen" style="display: none;" class="pt-6 pb-2 flex justify-center">
+                    <div class="h-px w-8 bg-gray-200"></div>
                 </div>
+
+                <a href="{% url 'statement_of_account' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Statement of Account">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Statement of Account</span>
+                </a>
                 {% endif %}
 
                 {% if request.user|has_read_perm:'USERS' %}
