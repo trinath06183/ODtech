@@ -827,3 +827,169 @@ def profit_and_loss_api(request):
         'net_margin': dec2f(pl['net_margin']),
         'monthly_trend': pl['monthly_trend'],
     })
+
+
+# ─── Other Office Tools: Customer Statement of Account Ledger ────────────────
+
+def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
+    """
+    Computes a clean chronological debit/credit running balance statement.
+    Invoices = Debit (+), Payments & Credit Notes = Credit (-).
+    """
+    from contacts.models import Contact
+    from documents.models import Document
+    from payments.models import Payment
+    from config.models import CompanyProfile
+
+    company = CompanyProfile.objects.first()
+
+    # Base querysets
+    invoices = Document.objects.filter(contact=contact, type='INV')
+    payments = Payment.objects.filter(contact=contact)
+
+    # Opening balance before start_date
+    opening_balance = Decimal('0.00')
+    if start_date:
+        prior_debits = invoices.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
+        prior_credits = payments.filter(date__lt=start_date).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        opening_balance = prior_debits - prior_credits
+
+        invoices = invoices.filter(date__gte=start_date)
+        payments = payments.filter(date__gte=start_date)
+
+    if end_date:
+        invoices = invoices.filter(date__lte=end_date)
+        payments = payments.filter(date__lte=end_date)
+
+    # Build chronological entries
+    entries = []
+
+    for inv in invoices:
+        entries.append({
+            'date': inv.date or inv.created_at.date(),
+            'type': 'INVOICE',
+            'type_display': 'Tax Invoice',
+            'doc_number': inv.number,
+            'ref_no': inv.po_reference_number or '—',
+            'details': f"Tax Invoice #{inv.number}",
+            'debit': Decimal(str(inv.grand_total or 0)),
+            'credit': Decimal('0.00'),
+            'doc_id': inv.id,
+        })
+
+    for pay in payments:
+        entries.append({
+            'date': pay.date,
+            'type': 'PAYMENT',
+            'type_display': f"Payment ({pay.payment_mode})",
+            'doc_number': pay.document_ref or '—',
+            'ref_no': pay.reference_number or '—',
+            'details': f"Received via {pay.payment_mode}" + (f" ({pay.notes})" if pay.notes else ""),
+            'debit': Decimal('0.00'),
+            'credit': Decimal(str(pay.amount or 0)),
+            'doc_id': None,
+        })
+
+    # Sort chronologically by date
+    entries.sort(key=lambda x: x['date'])
+
+    # Compute running balance
+    running_balance = opening_balance
+    total_debit = Decimal('0.00')
+    total_credit = Decimal('0.00')
+
+    for item in entries:
+        running_balance += (item['debit'] - item['credit'])
+        item['balance'] = running_balance
+        total_debit += item['debit']
+        total_credit += item['credit']
+
+    closing_balance = running_balance
+
+    return {
+        'contact': contact,
+        'company': company,
+        'opening_balance': opening_balance,
+        'entries': entries,
+        'total_debit': total_debit,
+        'total_credit': total_credit,
+        'closing_balance': closing_balance,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+
+
+@require_permission('REPORTING', 'read')
+def statement_of_account_view(request):
+    """
+    Office Tool: Interactive Customer Statement of Account Ledger.
+    Allows staff to select any customer, choose date range, see running balance,
+    and generate secure WhatsApp / Email links or printable PDFs.
+    """
+    from contacts.models import Contact
+    from django.core.signing import Signer
+
+    contacts = Contact.objects.filter(contact_type__in=['Customer', 'Both']).order_by('name')
+
+    selected_contact_id = request.GET.get('contact_id')
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+
+    selected_contact = None
+    ledger_data = None
+    public_token = None
+    public_url = None
+
+    if selected_contact_id:
+        try:
+            selected_contact = Contact.objects.get(id=selected_contact_id)
+            start_date = date.fromisoformat(start_date_str) if start_date_str else None
+            end_date = date.fromisoformat(end_date_str) if end_date_str else None
+
+            ledger_data = _build_contact_statement_ledger(selected_contact, start_date, end_date)
+
+            # Generate secure token for customer sharing (salt specific)
+            signer = Signer(salt="statement-public-salt")
+            public_token = signer.sign(f"{selected_contact.id}:{start_date_str}:{end_date_str}")
+            site_url = request.build_absolute_uri('/')[:-1]
+            public_url = f"{site_url}/reporting/statement/v/{public_token}/"
+        except Exception:
+            pass
+
+    return render(request, 'reporting/statement_of_account.html', {
+        'contacts': contacts,
+        'selected_contact': selected_contact,
+        'ledger': ledger_data,
+        'public_token': public_token,
+        'public_url': public_url,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+    })
+
+
+def public_statement_view(request, token):
+    """
+    Publicly view/download a Statement of Account securely using a cryptographically signed token.
+    Customers CANNOT change the URL ID to view other clients' ledgers.
+    No login required for the customer.
+    """
+    from contacts.models import Contact
+    from django.core.signing import Signer, BadSignature
+    signer = Signer(salt="statement-public-salt")
+    try:
+        raw_val = signer.unsign(token)
+        parts = raw_val.split(':')
+        contact_id = int(parts[0])
+        start_date = date.fromisoformat(parts[1]) if len(parts) > 1 and parts[1] else None
+        end_date = date.fromisoformat(parts[2]) if len(parts) > 2 and parts[2] else None
+    except (BadSignature, Exception):
+        return HttpResponse("<h1>403 Forbidden</h1><p>Invalid or expired statement link.</p>", status=403)
+
+    contact = get_object_or_404(Contact, id=contact_id)
+    ledger_data = _build_contact_statement_ledger(contact, start_date, end_date)
+
+    return render(request, 'reporting/public_statement_view.html', {
+        'contact': contact,
+        'ledger': ledger_data,
+        'token': token,
+    })

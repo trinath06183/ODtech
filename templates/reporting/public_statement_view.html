@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statement of Account — {{ contact.name }} | {{ ledger.company.name|default:'ODtech Solutions' }}</title>
+    
+    <meta property="og:title" content="Statement of Account: {{ contact.name }} — {{ ledger.company.name|default:'ODtech Solutions' }}">
+    <meta property="og:description" content="Statement of Account for {{ contact.name }} &bull; Outstanding Balance: ₹{{ ledger.closing_balance|floatformat:2 }}">
+    <meta property="og:type" content="website">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .print-shadow-none { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Top Action Bar (No Print) -->
+    <header class="no-print bg-slate-900 border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-40 shadow-lg text-white">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center font-black text-xs text-white">
+                SOA
+            </div>
+            <div>
+                <div class="text-xs text-amber-400 font-semibold uppercase tracking-wider">{{ ledger.company.name|default:'ODtech Solutions' }}</div>
+                <div class="text-sm font-bold text-white">Customer Statement of Account</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Print / Save PDF
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 space-y-6">
+
+        <!-- Statement Document Header -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm print-shadow-none">
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-slate-200 pb-6">
+                <div>
+                    <h1 class="text-2xl font-black text-slate-900">{{ ledger.company.name|default:'ODtech Solutions' }}</h1>
+                    <div class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        {{ ledger.company.address|default:'Plot No. 123, Industrial Area, Bhubaneswar, Odisha' }}<br>
+                        GSTIN: <strong>{{ ledger.company.gstin|default:'21AAHFO5846M1ZY' }}</strong> &bull; Phone: {{ ledger.company.phone|default:'+91 9876543210' }}<br>
+                        Email: {{ ledger.company.email|default:'info@odtechsolutions.com' }}
+                    </div>
+                </div>
+
+                <div class="sm:text-right">
+                    <span class="inline-block px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                        Statement of Account
+                    </span>
+                    <div class="text-xs text-slate-500">Statement Date: <strong class="text-slate-800">{% now "d M Y" %}</strong></div>
+                    <div class="text-xs text-slate-500">Period: <strong class="text-slate-800">{{ ledger.start_date|default:'All Time' }} to {{ ledger.end_date|default:'Present' }}</strong></div>
+                </div>
+            </div>
+
+            <!-- Customer Details & Net Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 items-center">
+                <div>
+                    <div class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Statement For:</div>
+                    <div class="text-lg font-extrabold text-slate-900">{{ contact.name }}</div>
+                    {% if contact.address %}
+                    <div class="text-xs text-slate-600 mt-1">{{ contact.address|linebreaksbr }}</div>
+                    {% endif %}
+                    <div class="text-xs text-slate-500 mt-1">
+                        GSTIN: <strong>{{ contact.gstin|default:'N/A' }}</strong> &bull; Phone: {{ contact.phone|default:'N/A' }}
+                    </div>
+                </div>
+
+                <div class="bg-amber-50/80 rounded-2xl p-5 border border-amber-200 sm:text-right">
+                    <div class="text-xs font-bold text-amber-900 uppercase tracking-wider">Total Outstanding Balance</div>
+                    <div class="text-3xl font-black text-amber-950 font-mono mt-1">₹{{ ledger.closing_balance|floatformat:2 }}</div>
+                    <div class="text-[11px] text-amber-700 mt-1">
+                        Invoiced: ₹{{ ledger.total_debit|floatformat:2 }} &bull; Paid: ₹{{ ledger.total_credit|floatformat:2 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ledger Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm print-shadow-none overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-900 text-sm">
+                Transaction Details & Running Balance
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                    <thead class="bg-slate-100/75 text-slate-700 font-bold uppercase tracking-wider">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Date</th>
+                            <th class="py-3 px-4 text-left">Particulars</th>
+                            <th class="py-3 px-4 text-left">Doc / Ref No.</th>
+                            <th class="py-3 px-4 text-right">Debit (₹)</th>
+                            <th class="py-3 px-4 text-right">Credit (₹)</th>
+                            <th class="py-3 px-4 text-right">Balance (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-800">
+                        <tr class="bg-amber-50/40 font-semibold">
+                            <td class="py-2.5 px-4 font-mono">{{ ledger.start_date|default:'—' }}</td>
+                            <td class="py-2.5 px-4" colspan="4">OPENING BALANCE</td>
+                            <td class="py-2.5 px-4 text-right font-mono font-bold">₹{{ ledger.opening_balance|floatformat:2 }}</td>
+                        </tr>
+                        {% for row in ledger.entries %}
+                        <tr>
+                            <td class="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">{{ row.date|date:"d M Y" }}</td>
+                            <td class="py-3 px-4">
+                                <div class="font-bold {% if row.type == 'INVOICE' %}text-indigo-950{% else %}text-emerald-950{% endif %}">
+                                    {{ row.type_display }}
+                                </div>
+                                <div class="text-[11px] text-slate-500">{{ row.details }}</div>
+                            </td>
+                            <td class="py-3 px-4 font-mono">{{ row.doc_number }}</td>
+                            <td class="py-3 px-4 text-right font-mono {% if row.debit > 0 %}text-rose-600 font-bold{% else %}text-slate-400{% endif %}">
+                                {% if row.debit > 0 %}₹{{ row.debit|floatformat:2 }}{% else %}—{% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono {% if row.credit > 0 %}text-emerald-600 font-bold{% else %}text-slate-400{% endif %}">
+                                {% if row.credit > 0 %}₹{{ row.credit|floatformat:2 }}{% else %}—{% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                                ₹{{ row.balance|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400">No transactions recorded for this period.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-slate-100 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
+                        <tr>
+                            <td class="py-3 px-4" colspan="3">TOTALS</td>
+                            <td class="py-3 px-4 text-right font-mono text-rose-600">₹{{ ledger.total_debit|floatformat:2 }}</td>
+                            <td class="py-3 px-4 text-right font-mono text-emerald-600">₹{{ ledger.total_credit|floatformat:2 }}</td>
+                            <td class="py-3 px-4 text-right font-mono font-extrabold text-amber-950 text-sm">₹{{ ledger.closing_balance|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bank Details Card for Payment -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 text-xs text-slate-600 space-y-2 print-shadow-none">
+            <div class="font-bold text-slate-900 uppercase tracking-wider text-xs">Bank Details for Direct Settlement:</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+                <div>Bank Name: <strong class="text-slate-800">HDFC BANK, SHAHID NAGAR</strong></div>
+                <div>Account No: <strong class="text-slate-800">50200062534076</strong></div>
+                <div>IFSC Code: <strong class="text-slate-800">HDFC0001080</strong></div>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-2">
+                Please mention your company name and invoice number in the transfer remarks for prompt reconciliation.
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="py-6 text-center text-xs text-slate-400 border-t border-slate-200 mt-auto no-print">
+        &copy; {% now "Y" %} {{ ledger.company.name|default:'ODtech Solutions' }} &bull; Official Customer Statement of Account
+    </footer>
+
+</body>
+</html>
