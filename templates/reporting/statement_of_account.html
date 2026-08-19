@@ -4,10 +4,35 @@
 {% block title %}Statement of Account — Other Office Tools | ODtech{% endblock %}
 
 {% block content %}
+<style>
+    @media print {
+        /* Hide entire ERP chrome: sidebar, top navbar, headers, filter forms, and buttons */
+        aside, nav, header, #sidebar, .nav-link, form, .no-print, button, a.px-4 {
+            display: none !important;
+        }
+        body, main, #main-content, .max-w-7xl {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl {
+            box-shadow: none !important;
+        }
+        .border {
+            border-color: #cbd5e1 !important;
+        }
+        .print-break-inside-avoid {
+            break-inside: avoid;
+        }
+    }
+</style>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     <!-- Header & Breadcrumbs -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 text-xs text-amber-600 font-semibold uppercase tracking-wider">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
@@ -19,10 +44,11 @@
 
         {% if selected_contact and ledger %}
         <div class="flex items-center gap-2">
-            <button type="button" onclick="window.print()" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+            <a href="{% if public_url %}{{ public_url }}{% else %}#{% endif %}" target="_blank"
+               class="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                Print / Save PDF
-            </button>
+                Print Document
+            </a>
             <button type="button" onclick="shareStatementWhatsApp('{{ selected_contact.phone|default:''|escapejs }}', '{{ selected_contact.name|escapejs }}', '{{ ledger.closing_balance|floatformat:2 }}', '{{ public_url|escapejs }}')"
                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl shadow-md shadow-green-500/20 transition-all flex items-center gap-1.5">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -39,7 +65,7 @@
     </div>
 
     <!-- Filter Card -->
-    <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
+    <div class="no-print bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
         <form method="GET" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
             <div class="sm:col-span-2">
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Select Customer <span class="text-rose-500">*</span></label>

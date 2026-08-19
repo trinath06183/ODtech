@@ -948,11 +948,16 @@ def statement_of_account_view(request):
 
             ledger_data = _build_contact_statement_ledger(selected_contact, start_date, end_date)
 
-            # Generate secure token for customer sharing (salt specific)
-            signer = Signer(salt="statement-public-salt")
-            public_token = signer.sign(f"{selected_contact.id}:{start_date_str}:{end_date_str}")
+            # Generate secure URL-safe token for customer sharing
+            from django.core import signing
+            payload = {
+                'c': selected_contact.id,
+                's': start_date_str,
+                'e': end_date_str,
+            }
+            public_token = signing.dumps(payload, salt="statement-public-salt")
             site_url = request.build_absolute_uri('/')[:-1]
-            public_url = f"{site_url}/reporting/statement/v/{public_token}/"
+            public_url = f"{site_url}/reports/statement/v/{public_token}/"
         except Exception:
             pass
 
@@ -974,15 +979,15 @@ def public_statement_view(request, token):
     No login required for the customer.
     """
     from contacts.models import Contact
-    from django.core.signing import Signer, BadSignature
-    signer = Signer(salt="statement-public-salt")
+    from django.core import signing
     try:
-        raw_val = signer.unsign(token)
-        parts = raw_val.split(':')
-        contact_id = int(parts[0])
-        start_date = date.fromisoformat(parts[1]) if len(parts) > 1 and parts[1] else None
-        end_date = date.fromisoformat(parts[2]) if len(parts) > 2 and parts[2] else None
-    except (BadSignature, Exception):
+        data = signing.loads(token, salt="statement-public-salt")
+        contact_id = data.get('c')
+        start_date_str = data.get('s', '')
+        end_date_str = data.get('e', '')
+        start_date = date.fromisoformat(start_date_str) if start_date_str else None
+        end_date = date.fromisoformat(end_date_str) if end_date_str else None
+    except (signing.BadSignature, Exception):
         return HttpResponse("<h1>403 Forbidden</h1><p>Invalid or expired statement link.</p>", status=403)
 
     contact = get_object_or_404(Contact, id=contact_id)
