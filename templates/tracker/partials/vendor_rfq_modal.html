@@ -118,33 +118,37 @@ async function loadOrderRfqs() {
         const data = await res.json();
         if (data.success && data.rfqs.length > 0) {
             container.innerHTML = data.rfqs.map(r => `
-                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <div>
-                        <div class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                            ${r.supplier_name}
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.status === 'SUBMITTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                                ${r.status_display}
-                            </span>
+                <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs hover:border-gray-300 transition-colors">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                ${r.supplier_name}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.status === 'SUBMITTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                    ${r.status_display}
+                                </span>
+                            </div>
+                            <div class="text-gray-500 mt-1">
+                                Created: ${r.created_at} &bull; ${r.item_count} items
+                                ${r.submitted_at !== '—' ? `&bull; <span class="text-emerald-600 font-semibold">Submitted: ${r.submitted_at}</span>` : ''}
+                            </div>
+                            ${r.delivery_timeline !== '—' ? `<div class="text-indigo-600 font-medium mt-1">Lead Time: <strong>${r.delivery_timeline}</strong> ${r.quote_reference_no !== '—' ? `| Ref: ${r.quote_reference_no}` : ''}</div>` : ''}
                         </div>
-                        <div class="text-gray-500 mt-0.5">
-                            Created: ${r.created_at} &bull; ${r.item_count} items
-                            ${r.submitted_at !== '—' ? `&bull; <span class="text-emerald-600 font-semibold">Submitted: ${r.submitted_at}</span>` : ''}
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button type="button" onclick="copyToClipboard('${r.rfq_url}')" class="px-2.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium shadow-sm transition-colors" title="Copy RFQ Link">
+                                📋 Copy Link
+                            </button>
+                            <button type="button" onclick="shareRfqWhatsApp('${r.supplier_phone}', '${r.supplier_name}', '${r.rfq_url}', {{ products|length }})" class="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm transition-colors flex items-center gap-1" title="Share via WhatsApp">
+                                WhatsApp
+                            </button>
+                            <a href="${r.rfq_url}" target="_blank" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm transition-colors" title="Preview Portal">
+                                Open ↗
+                            </a>
+                            <button type="button" onclick="deleteRfq('${r.id}', '${r.supplier_name.replace(/'/g, "\\'")}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-semibold shadow-sm transition-colors" title="Delete RFQ">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
                         </div>
-                        ${r.delivery_timeline !== '—' ? `<div class="text-indigo-600 font-medium mt-0.5">Lead Time: ${r.delivery_timeline} ${r.quote_reference_no !== '—' ? `| Ref: ${r.quote_reference_no}` : ''}</div>` : ''}
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button type="button" onclick="copyToClipboard('${r.rfq_url}')" class="px-2.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium shadow-sm transition-colors" title="Copy RFQ Link">
-                            📋 Copy Link
-                        </button>
-                        <button type="button" onclick="shareRfqWhatsApp('${r.supplier_phone}', '${r.supplier_name}', '${r.rfq_url}', {{ products|length }})" class="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm transition-colors flex items-center gap-1" title="Share via WhatsApp">
-                            WhatsApp
-                        </button>
-                        <a href="${r.rfq_url}" target="_blank" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm transition-colors" title="Preview Portal">
-                            Open ↗
-                        </a>
-                        <button type="button" onclick="deleteRfq('${r.id}', '${r.supplier_name.replace(/'/g, "\\'")}')" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-semibold shadow-sm transition-colors flex items-center" title="Delete RFQ">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
                     </div>
                 </div>
             `).join('');
