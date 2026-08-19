@@ -9,26 +9,24 @@
         <div class="text-red mb-1" style="font-size: 11px;">Invoice To:</div>
         <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.contact.name }}</div>
 
-        {% if doc.contact.address %}
+        {% if doc.contact.address and doc.contact.address != 'N/A' %}
         <div style="font-size: 9.5px; margin-bottom: 4px; max-width: 95%;">
             {{ doc.contact.address|linebreaksbr }}
         </div>
-        {% else %}
-        <div style="font-size: 9.5px; margin-bottom: 4px;">N/A</div>
         {% endif %}
 
+        {% if doc.contact.gstin and doc.contact.gstin != 'N/A' %}
         <table style="font-size: 9.5px; border: none; margin-top: 3px;">
             <tr>
                 <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 2px;">GSTIN:</td>
-                <td style="border:none; padding-bottom: 2px;">{{ doc.contact.gstin|default:"N/A" }}</td>
+                <td style="border:none; padding-bottom: 2px;">{{ doc.contact.gstin }}</td>
             </tr>
-            {% if doc.contact.gstin %}
             <tr>
                 <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 2px;">State:</td>
                 <td style="border:none; padding-bottom: 2px;">{{ doc.contact.gstin|gst_state }}</td>
             </tr>
-            {% endif %}
         </table>
+        {% endif %}
     </div>
 
     <div class="info-col" style="width: 35%; padding-left: 15px; border-left: 1px solid #ddd;">
@@ -78,26 +76,24 @@
         <div class="text-red mb-1" style="font-size: 12px;">Invoice To:</div>
         <div style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">{{ doc.contact.name }}</div>
 
-        {% if doc.contact.address %}
+        {% if doc.contact.address and doc.contact.address != 'N/A' %}
         <div style="font-size: 10px; margin-bottom: 5px; max-width: 80%;">
             {{ doc.contact.address|linebreaksbr }}
         </div>
-        {% else %}
-        <div style="font-size: 10px; margin-bottom: 5px;">N/A</div>
         {% endif %}
 
+        {% if doc.contact.gstin and doc.contact.gstin != 'N/A' %}
         <table style="font-size: 10px; border: none; margin-top: 5px;">
             <tr>
-                <td class="bold" style="padding-right: 10px; border:none;">GSTIN Number:</td>
-                <td style="border:none;">{{ doc.contact.gstin|default:"N/A" }}</td>
+                <td class="bold" style="padding-right: 10px; border:none;">GSTIN:</td>
+                <td style="border:none;">{{ doc.contact.gstin }}</td>
             </tr>
-            {% if doc.contact.gstin %}
             <tr>
                 <td class="bold" style="padding-right: 10px; border:none;">State:</td>
                 <td style="border:none;">{{ doc.contact.gstin|gst_state }}</td>
             </tr>
-            {% endif %}
         </table>
+        {% endif %}
     </div>
 
     <div class="info-col" style="width: 55%; padding-left: 15%;">
