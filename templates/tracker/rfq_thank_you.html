@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You — Quotation Received | {{ company.name|default:'ODtech Solutions' }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
+        <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+
+        <div class="space-y-2">
+            <h1 class="text-2xl font-black text-white">Quotation Submitted!</h1>
+            <p class="text-sm text-slate-300">
+                Thank you, <strong>{{ rfq.supplier_name }}</strong>. Your price quotation for Enquiry <strong>#{{ rfq.order.order_number }}</strong> has been directly received by our procurement team.
+            </p>
+        </div>
+
+        <div class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 text-left text-xs space-y-2 font-mono">
+            <div class="flex justify-between text-slate-400">
+                <span>Enquiry Ref:</span>
+                <span class="text-white font-bold">{{ rfq.order.order_number }}</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+                <span>Quotation Ref:</span>
+                <span class="text-amber-400 font-bold">{{ rfq.quote_reference_no|default:'Standard' }}</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+                <span>Lead Time:</span>
+                <span class="text-white">{{ rfq.delivery_timeline|default:'Immediate' }}</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+                <span>Submission Time:</span>
+                <span class="text-slate-300">{{ rfq.submitted_at|date:"d M Y, h:i A" }}</span>
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-500">
+            Our purchase department will review your quotation and reach out regarding purchase order placement.
+        </p>
+    </div>
+
+    <footer class="mt-8 text-center text-xs text-slate-600">
+        &copy; {{ company.name|default:'ODtech Solutions' }} &bull; Procurement & Sourcing Division
+    </footer>
+
+</body>
+</html>

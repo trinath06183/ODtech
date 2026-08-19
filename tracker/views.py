@@ -2988,3 +2988,188 @@ def kanban_board_view(request):
         'open_count': all_orders.filter(order_status='OPEN').count(),
     }
     return render(request, 'tracker/kanban_board.html', context)
+
+
+# ─── Vendor Request for Quotation (RFQ) System ────────────────────────────────
+
+@require_permission('TRACKER', 'write')
+@require_POST
+def create_vendor_rfq_api(request, order_id):
+    """
+    Generate a secure tokenized Vendor RFQ link for an order.
+    Optionally filters specific products and notifies the vendor.
+    """
+    from .models import VendorRFQ
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+        supplier_name = data.get('supplier_name', '').strip()
+        if not supplier_name:
+            return JsonResponse({'success': False, 'error': 'Supplier name is required.'}, status=400)
+
+        supplier_email = data.get('supplier_email', '').strip()
+        supplier_phone = data.get('supplier_phone', '').strip()
+        notes = data.get('notes', '').strip()
+        product_ids = data.get('product_ids', [])
+
+        products = list(Product.objects.filter(id__in=product_ids, order=order)) if product_ids else list(order.products.all())
+
+        rfq = VendorRFQ.create_rfq(
+            order=order,
+            supplier_name=supplier_name,
+            supplier_email=supplier_email,
+            supplier_phone=supplier_phone,
+            products=products,
+            notes=notes,
+            user=request.user
+        )
+
+        site_url = request.build_absolute_uri('/')[:-1]
+        rfq_url = f"{site_url}/tracker/rfq/v/{rfq.token}/"
+
+        # Formatted WhatsApp message for sending to supplier
+        whatsapp_msg = (
+            f"*REQUEST FOR QUOTATION (RFQ) — ODTECH SOLUTIONS*\n"
+            f"---------------------------------------\n"
+            f"Dear *{supplier_name}*,\n\n"
+            f"Please submit your best price and delivery time for our enquiry (*{order.order_number}*):\n\n"
+            f"🔗 *Open RFQ & Submit Price:* \n{rfq_url}\n\n"
+            f"Total Items: {len(products)}\n\n"
+            f"Best Regards,\n"
+            f"*ODtech Solutions*"
+        )
+
+        return JsonResponse({
+            'success': True,
+            'rfq_id': str(rfq.id),
+            'rfq_url': rfq_url,
+            'whatsapp_msg': whatsapp_msg,
+            'supplier_phone': supplier_phone,
+        })
+    except Exception as e:
+        logger.error("create_vendor_rfq_api error: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('TRACKER', 'read')
+def list_vendor_rfqs_api(request, order_id):
+    """List all RFQs generated for a given order."""
+    from .models import VendorRFQ
+    order = get_object_or_404(Order, id=order_id)
+    rfqs = order.rfqs.prefetch_related('products').all()
+    
+    site_url = request.build_absolute_uri('/')[:-1]
+    data = []
+    for r in rfqs:
+        data.append({
+            'id': str(r.id),
+            'supplier_name': r.supplier_name,
+            'supplier_email': r.supplier_email or '',
+            'supplier_phone': r.supplier_phone or '',
+            'status': r.status,
+            'status_display': r.get_status_display(),
+            'item_count': r.products.count(),
+            'created_at': r.created_at.strftime('%d %b %Y, %I:%M %p'),
+            'submitted_at': r.submitted_at.strftime('%d %b %Y, %I:%M %p') if r.submitted_at else '—',
+            'delivery_timeline': r.delivery_timeline or '—',
+            'quote_reference_no': r.quote_reference_no or '—',
+            'rfq_url': f"{site_url}/tracker/rfq/v/{r.token}/",
+        })
+    return JsonResponse({'success': True, 'rfqs': data})
+
+
+# ─── Public Supplier Quoting Portal (No Login Required) ──────────────────────
+
+def public_vendor_rfq_portal(request, token):
+    """
+    Public web portal for suppliers to submit their quotations securely.
+    Suppliers view items, enter base prices, GST %, delivery lead times,
+    and attach quotation documents.
+    """
+    from .models import VendorRFQ, SupplierCostOption
+    from config.models import CompanyProfile
+
+    rfq = get_object_or_404(VendorRFQ, token=token)
+    company = CompanyProfile.objects.first()
+    products = rfq.products.all()
+
+    if request.method == 'POST':
+        if rfq.status == 'EXPIRED':
+            messages.error(request, 'This RFQ has expired.')
+            return redirect('tracker:public_vendor_rfq_portal', token=token)
+
+        try:
+            with transaction.atomic():
+                quote_ref = request.POST.get('quote_reference_no', '').strip()
+                lead_time = request.POST.get('delivery_timeline', '').strip()
+                vendor_notes = request.POST.get('supplier_notes', '').strip()
+                location = request.POST.get('location', '').strip()
+
+                rfq.quote_reference_no = quote_ref
+                rfq.delivery_timeline = lead_time
+                rfq.supplier_notes = vendor_notes
+                rfq.submitted_at = timezone.now()
+                rfq.status = 'SUBMITTED'
+                rfq.save()
+
+                # Process per-item prices
+                for p in products:
+                    base_price_val = request.POST.get(f'price_{p.id}', '').strip()
+                    gst_val = request.POST.get(f'gst_{p.id}', '18').strip()
+                    item_desc = request.POST.get(f'desc_{p.id}', '').strip()
+
+                    if base_price_val:
+                        try:
+                            base_price = Decimal(base_price_val)
+                            gst_pct = Decimal(gst_val or '18')
+                            total_inc = base_price * (Decimal('1') + gst_pct / Decimal('100'))
+
+                            # Save as SupplierCostOption under this Product
+                            opt = SupplierCostOption.objects.create(
+                                product=p,
+                                supplier_name=rfq.supplier_name,
+                                contact_number=rfq.supplier_phone,
+                                contact_email=rfq.supplier_email,
+                                location=location or None,
+                                base_price=base_price,
+                                gst_percentage=gst_pct,
+                                total_inc_gst=total_inc,
+                                description=f"Submitted via RFQ {quote_ref or ''}: {item_desc}".strip(),
+                            )
+
+                            # Handle uploaded quotation file if provided for this item or order
+                            uploaded_file = request.FILES.get(f'doc_{p.id}') or request.FILES.get('quote_document')
+                            if uploaded_file:
+                                opt.photo_or_document = uploaded_file
+                                opt.save()
+
+                        except Exception as parse_err:
+                            logger.warning("Error parsing item price: %s", parse_err)
+
+                # Send in-app notification & alert
+                from .models import Notification
+                try:
+                    Notification.objects.create(
+                        user=rfq.created_by or User.objects.filter(is_superuser=True).first(),
+                        title=f"Quote Received: {rfq.supplier_name}",
+                        message=f"Supplier {rfq.supplier_name} submitted quotation for Order {rfq.order.order_number}.",
+                        link=reverse('tracker:order_detail', args=[rfq.order.id])
+                    )
+                except Exception:
+                    pass
+
+            return render(request, 'tracker/rfq_thank_you.html', {
+                'rfq': rfq,
+                'company': company,
+            })
+
+        except Exception as e:
+            logger.error("public_vendor_rfq_portal POST error: %s", e, exc_info=True)
+            messages.error(request, f"Error saving your quotation: {e}")
+
+    return render(request, 'tracker/public_rfq_portal.html', {
+        'rfq': rfq,
+        'order': rfq.order,
+        'products': products,
+        'company': company,
+    })

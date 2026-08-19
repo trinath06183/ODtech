@@ -101,6 +101,11 @@ urlpatterns = [
     path('api/my/todos/', views.api_todos_list_create, name='api_todos_list_create'),
     path('api/my/todos/<uuid:todo_id>/', views.api_todo_detail, name='api_todo_detail'),
 
+    # Vendor Request for Quotation (RFQ)
+    path('api/order/<uuid:order_id>/rfq/create/', views.create_vendor_rfq_api, name='api_create_vendor_rfq'),
+    path('api/order/<uuid:order_id>/rfqs/', views.list_vendor_rfqs_api, name='api_list_vendor_rfqs'),
+    path('rfq/v/<str:token>/', views.public_vendor_rfq_portal, name='public_vendor_rfq_portal'),
+
     # System Backup and Restore
     path('api/reference-document/<uuid:doc_id>/delete/', views.api_delete_reference_document, name='api_delete_reference_document'),
     path('system/admin/backup/', views.system_admin_backup_view, name='system_admin_backup'),

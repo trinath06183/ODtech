@@ -478,3 +478,63 @@ class SystemSetting(models.Model):
     def __str__(self):
         return self.key
 
+
+class VendorRFQ(models.Model):
+    """
+    Request for Quotation (RFQ) tokenized link sent to external suppliers.
+    Suppliers can open the secure link without login, view required items,
+    and submit their item prices, availability, and delivery lead times.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending Quote'),
+        ('SUBMITTED', 'Quote Submitted'),
+        ('EXPIRED', 'Expired'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='rfqs')
+    supplier_name = models.CharField(max_length=255, help_text="Target supplier name or company")
+    supplier_email = models.EmailField(blank=True, null=True)
+    supplier_phone = models.CharField(max_length=50, blank=True, null=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    notes_to_supplier = models.TextField(blank=True, null=True, help_text="Instructions, delivery address or terms for the vendor")
+    
+    # Specific products requested in this RFQ (if blank, all products in order)
+    products = models.ManyToManyField(Product, blank=True, related_name='rfqs')
+
+    # Supplier submission response
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    supplier_notes = models.TextField(blank=True, null=True, help_text="Vendor comments, payment terms, or remarks")
+    delivery_timeline = models.CharField(max_length=150, blank=True, null=True, help_text="Delivery lead time e.g., 2-3 weeks")
+    quote_reference_no = models.CharField(max_length=100, blank=True, null=True, help_text="Vendor quotation number")
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='rfqs_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"RFQ {self.supplier_name} - {self.order.order_number}"
+
+    @classmethod
+    def create_rfq(cls, order, supplier_name, supplier_email=None, supplier_phone=None, products=None, notes=None, user=None):
+        import secrets
+        token = secrets.token_urlsafe(32)
+        rfq = cls.objects.create(
+            order=order,
+            supplier_name=supplier_name.strip(),
+            supplier_email=supplier_email.strip() if supplier_email else None,
+            supplier_phone=supplier_phone.strip() if supplier_phone else None,
+            token=token,
+            notes_to_supplier=notes.strip() if notes else None,
+            created_by=user
+        )
+        if products:
+            rfq.products.set(products)
+        else:
+            rfq.products.set(order.products.all())
+        return rfq
+

@@ -61,6 +61,13 @@
             </a>
 
             {% else %}
+            <button type="button" onclick="openVendorRfqModal()"
+                class="inline-flex items-center px-3 py-2 border border-amber-500/30 shadow-sm text-sm font-semibold rounded-md text-amber-900 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 mr-2 transition-colors">
+                <svg class="h-4 w-4 mr-1.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                </svg>
+                Vendor RFQ Links
+            </button>
             <a href="{% url 'create_invoice' %}?source_order={{ order.id }}"
                 class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 mr-2">
                 <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4381,11 +4388,9 @@
                     });
                 });
 
-                // Wrap table in a rounded container (avoids overflow:hidden clipping)
                 const tableWrap = document.createElement('div');
                 tableWrap.style.cssText = 'border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)';
                 tableWrap.appendChild(clonedTable);
-
                 wrapper.appendChild(headerBar);
                 wrapper.appendChild(tableWrap);
                 document.body.appendChild(wrapper);
@@ -4590,5 +4595,7 @@ function qrUploadWidget(widgetId) {
 
 <!-- qrcodejs library for QR generation -->
 <script src="{% static 'vendor/js/qrcode.min.js' %}"></script>
+
+{% include 'tracker/partials/vendor_rfq_modal.html' %}
 
 {% endblock %}

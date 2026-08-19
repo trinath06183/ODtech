@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request for Quotation — {{ order.order_number }} | {{ company.name|default:'ODtech Solutions' }}</title>
+    
+    <meta property="og:title" content="RFQ: {{ order.order_number }} — {{ company.name|default:'ODtech Solutions' }}">
+    <meta property="og:description" content="Request for Quotation for {{ rfq.supplier_name }} &bull; Order #{{ order.order_number }}">
+    <meta property="og:type" content="website">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/80 sticky top-0 z-40 backdrop-blur px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 text-sm">
+                RFQ
+            </div>
+            <div>
+                <div class="text-xs font-semibold text-amber-400 uppercase tracking-wider">{{ company.name|default:'ODtech Solutions' }}</div>
+                <div class="text-sm font-bold text-white">Vendor Quotation Request</div>
+            </div>
+        </div>
+        <div class="text-right">
+            <div class="text-xs text-slate-400">Enquiry Ref</div>
+            <div class="text-sm font-mono font-bold text-white">#{{ order.order_number }}</div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Welcome Banner -->
+        <div class="glass-panel rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                    <span class="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-semibold uppercase tracking-wider">
+                        Quotation Request
+                    </span>
+                    <span class="text-xs text-slate-400">Date: {{ rfq.created_at|date:"d M Y" }}</span>
+                </div>
+                <h1 class="text-2xl font-extrabold text-white mb-2">Hello, {{ rfq.supplier_name }}!</h1>
+                <p class="text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    We invite your best competitive price quotation and estimated delivery timeline for the item(s) listed below. Please fill in your unit rates, GST %, and submit your quote.
+                </p>
+
+                {% if rfq.notes_to_supplier %}
+                <div class="mt-4 p-3.5 bg-slate-800/80 rounded-xl border border-slate-700 text-xs text-slate-300">
+                    <strong class="text-amber-400 block mb-1">📝 Notes & Requirements from ODtech:</strong>
+                    {{ rfq.notes_to_supplier|linebreaksbr }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if rfq.status == 'SUBMITTED' %}
+        <!-- Already Submitted Notice -->
+        <div class="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3 shadow-xl">
+            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h2 class="text-lg font-bold text-white">Quotation Already Submitted</h2>
+            <p class="text-xs text-slate-300">
+                Thank you! Your quotation (Ref: <strong>{{ rfq.quote_reference_no|default:'—' }}</strong>) was successfully submitted on <strong>{{ rfq.submitted_at|date:"d M Y, h:i A" }}</strong>.
+            </p>
+            <p class="text-xs text-slate-400">If you wish to revise your quote, you may update the details below and re-submit.</p>
+        </div>
+        {% endif %}
+
+        <!-- RFQ Submission Form -->
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Items Table Card -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    Items to Quote ({{ products|length }})
+                </h2>
+
+                <div class="space-y-4">
+                    {% for product in products %}
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700">
+                        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+                            <div>
+                                <span class="text-xs font-bold text-slate-500 font-mono">#{{ forloop.counter }}</span>
+                                <h3 class="text-base font-bold text-white">{{ product.item_name }}</h3>
+                                {% if product.make_or_model %}
+                                <div class="text-xs text-indigo-400 mt-0.5">Make/Model: <strong>{{ product.make_or_model }}</strong></div>
+                                {% endif %}
+                                {% if product.description %}
+                                <div class="text-xs text-slate-400 mt-1 max-w-xl">{{ product.description }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400 uppercase font-semibold">Required Qty</div>
+                                <div class="text-lg font-black text-amber-400 font-mono">{{ product.quantity }} <span class="text-xs font-normal text-slate-400">{{ product.uom }}</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Price Entry Inputs -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800/80">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Unit Base Price (₹ ex-GST) <span class="text-rose-400">*</span></label>
+                                <input type="number" step="0.01" min="0" required name="price_{{ product.id }}" id="price_{{ product.id }}"
+                                       placeholder="e.g. 1250.00"
+                                       class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">GST Rate (%)</label>
+                                <select name="gst_{{ product.id }}" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500">
+                                    <option value="18" selected>18% (Standard)</option>
+                                    <option value="12">12%</option>
+                                    <option value="28">28%</option>
+                                    <option value="5">5%</option>
+                                    <option value="0">0% (Exempt)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Remarks / Brand Offered</label>
+                                <input type="text" name="desc_{{ product.id }}" placeholder="e.g. Ready stock / Equivalent brand"
+                                       class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Commercial Details Card -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Quotation Reference & Terms
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Your Quotation Number / Ref</label>
+                        <input type="text" name="quote_reference_no" value="{{ rfq.quote_reference_no|default:'' }}"
+                               placeholder="e.g. QTN-2026-884"
+                               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Estimated Delivery Lead Time <span class="text-rose-400">*</span></label>
+                        <input type="text" name="delivery_timeline" required value="{{ rfq.delivery_timeline|default:'' }}"
+                               placeholder="e.g. 7-10 Days / Immediate Ex-Stock"
+                               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Dispatch Location / City</label>
+                        <input type="text" name="location" placeholder="e.g. Cuttack / Bhubaneswar / Pune"
+                               class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Upload Quotation File (PDF/Image - optional)</label>
+                        <input type="file" name="quote_document" accept=".pdf,.jpg,.jpeg,.png"
+                               class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-900/50 file:text-indigo-300 hover:file:bg-indigo-900 cursor-pointer">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Additional Terms / Payment Remarks</label>
+                    <textarea name="supplier_notes" rows="3" placeholder="Enter warranty, payment terms, or freight terms..."
+                              class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">{{ rfq.supplier_notes|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="submit"
+                        class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-sm rounded-xl shadow-xl shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Submit Price Quotation</span>
+                </button>
+            </div>
+        </form>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-800/80 mt-auto">
+        &copy; {{ order.created_at|date:"Y" }} {{ company.name|default:'ODtech Solutions' }} &bull; Official Request for Quotation
+    </footer>
+
+</body>
+</html>

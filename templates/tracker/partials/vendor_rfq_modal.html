@@ -1,0 +1,214 @@
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Vendor RFQ Management Modal                              -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="vendorRfqModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeVendorRfqModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white leading-6" id="modal-title">Vendor Request for Quotation (RFQ)</h3>
+                        <p class="text-xs text-amber-100">Generate secure web quotation links for suppliers</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeVendorRfqModal()" class="text-white/80 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div class="bg-amber-50/60 rounded-xl p-4 border border-amber-200/60 space-y-3">
+                    <h4 class="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Create New RFQ Link for Supplier
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Supplier Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="rfq_supplier_name" placeholder="e.g. Balaji Toolings" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Supplier WhatsApp / Phone</label>
+                            <input type="text" id="rfq_supplier_phone" placeholder="e.g. 9876543210" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Special Notes / Instructions for Vendor (Optional)</label>
+                            <input type="text" id="rfq_notes" placeholder="e.g. Quote CIF Bhubaneswar with test certificate" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="button" onclick="submitCreateRfq()" id="btnCreateRfq"
+                            class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            Generate RFQ Link
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Active RFQs for this Order</h4>
+                    <div id="rfq_list_container" class="space-y-2 max-h-60 overflow-y-auto">
+                        <div class="text-center py-6 text-xs text-gray-400">Loading RFQs...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-end">
+                <button type="button" onclick="closeVendorRfqModal()" class="px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openVendorRfqModal() {
+    document.getElementById('vendorRfqModal').classList.remove('hidden');
+    loadOrderRfqs();
+}
+
+function closeVendorRfqModal() {
+    document.getElementById('vendorRfqModal').classList.add('hidden');
+}
+
+async function loadOrderRfqs() {
+    const container = document.getElementById('rfq_list_container');
+    {% if order %}
+    try {
+        const res = await fetch("{% url 'tracker:api_list_vendor_rfqs' order.id %}");
+        const data = await res.json();
+        if (data.success && data.rfqs.length > 0) {
+            container.innerHTML = data.rfqs.map(r => `
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div>
+                        <div class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                            ${r.supplier_name}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.status === 'SUBMITTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                ${r.status_display}
+                            </span>
+                        </div>
+                        <div class="text-gray-500 mt-0.5">
+                            Created: ${r.created_at} &bull; ${r.item_count} items
+                            ${r.submitted_at !== '—' ? `&bull; <span class="text-emerald-600 font-semibold">Submitted: ${r.submitted_at}</span>` : ''}
+                        </div>
+                        ${r.delivery_timeline !== '—' ? `<div class="text-indigo-600 font-medium mt-0.5">Lead Time: ${r.delivery_timeline} ${r.quote_reference_no !== '—' ? `| Ref: ${r.quote_reference_no}` : ''}</div>` : ''}
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="copyToClipboard('${r.rfq_url}')" class="px-2.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium shadow-sm transition-colors" title="Copy RFQ Link">
+                            📋 Copy Link
+                        </button>
+                        <button type="button" onclick="shareRfqWhatsApp('${r.supplier_phone}', '${r.supplier_name}', '${r.rfq_url}', {{ products|length }})" class="px-2.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow-sm transition-colors flex items-center gap-1" title="Share via WhatsApp">
+                            WhatsApp
+                        </button>
+                        <a href="${r.rfq_url}" target="_blank" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm transition-colors" title="Preview Portal">
+                            Open ↗
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `<div class="text-center py-6 text-xs text-gray-400">No RFQs generated yet for this order. Fill the form above to create one.</div>`;
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="text-center py-4 text-xs text-red-500">Failed to load RFQs: ${e.message}</div>`;
+    }
+    {% endif %}
+}
+
+async function submitCreateRfq() {
+    const name = document.getElementById('rfq_supplier_name').value.trim();
+    const phone = document.getElementById('rfq_supplier_phone').value.trim();
+    const notes = document.getElementById('rfq_notes').value.trim();
+
+    if (!name) {
+        alert("Please enter supplier name.");
+        return;
+    }
+
+    const btn = document.getElementById('btnCreateRfq');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerText = "Generating...";
+
+    try {
+        const csrfToken = (document.cookie.match(/(?:^|;\s*)(?:odtech_bom_csrftoken|csrftoken)=([^;]*)/) || [])[1] || '{{ csrf_token }}';
+        {% if order %}
+        const res = await fetch("{% url 'tracker:api_create_vendor_rfq' order.id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
+            body: JSON.stringify({
+                supplier_name: name,
+                supplier_phone: phone,
+                notes: notes,
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('rfq_supplier_name').value = '';
+            document.getElementById('rfq_supplier_phone').value = '';
+            document.getElementById('rfq_notes').value = '';
+            loadOrderRfqs();
+
+            if (phone) {
+                if (confirm(`✅ RFQ generated!\n\nWould you like to open WhatsApp now to send the enquiry to ${name}?`)) {
+                    shareRfqWhatsApp(phone, name, data.rfq_url, {{ products|length }});
+                }
+            } else {
+                alert(`✅ RFQ Link created:\n${data.rfq_url}\n\nLink copied to clipboard!`);
+                copyToClipboard(data.rfq_url);
+            }
+        } else {
+            alert("❌ " + (data.error || "Failed to generate RFQ."));
+        }
+        {% endif %}
+    } catch (err) {
+        alert("❌ Error: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+}
+
+function shareRfqWhatsApp(phone, supplierName, rfqUrl, itemCount) {
+    let cleanPhone = (phone || '').replace(/[\s\-\(\)]/g, '');
+    if (cleanPhone && !cleanPhone.startsWith('+') && !cleanPhone.startsWith('91')) {
+        cleanPhone = '91' + cleanPhone;
+    }
+    const msg = `*REQUEST FOR QUOTATION (RFQ) — ODTECH SOLUTIONS*
+---------------------------------------
+Dear *${supplierName}*,
+
+Greetings from *ODtech Solutions*! Please find our quotation enquiry for *{{ order.order_number }}* (${itemCount} items).
+
+* Open RFQ & Submit Price Quotation:
+${rfqUrl}
+
+Please provide your best unit price and estimated delivery timeline directly via the link above.
+
+Best Regards,
+*ODtech Solutions*`;
+
+    const waUrl = cleanPhone
+        ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`
+        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert("📋 Copied RFQ link to clipboard!");
+    }).catch(() => {
+        prompt("Copy this RFQ URL:", text);
+    });
+}
+</script>
