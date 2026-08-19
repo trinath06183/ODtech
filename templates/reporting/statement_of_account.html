@@ -211,13 +211,19 @@ function shareStatementWhatsApp(phone, customerName, balance, statementUrl) {
     if (cleanPhone && !cleanPhone.startsWith('+') && !cleanPhone.startsWith('91')) {
         cleanPhone = '91' + cleanPhone;
     }
-    const msg = `*STATEMENT OF ACCOUNT — ODTECH SOLUTIONS*
+    
+    // Format balance cleanly
+    const numBal = parseFloat(balance) || 0;
+    const formattedBalance = numBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const msg = 
+`*STATEMENT OF ACCOUNT — ODTECH SOLUTIONS*
 ---------------------------------------
 Dear *${customerName}*,
 
 Greetings from *ODtech Solutions*! Please find your Statement of Account summary below:
 
-* Total Outstanding Balance: *₹${balance}*
+* Total Outstanding Balance: *₹${formattedBalance}*
 
 * View & Download Full Statement Ledger Online:
 ${statementUrl}
@@ -230,6 +236,7 @@ Best Regards,
     const waUrl = cleanPhone
         ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`
         : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    
     window.open(waUrl, '_blank', 'noopener,noreferrer');
 }
 </script>
