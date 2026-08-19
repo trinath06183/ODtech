@@ -861,8 +861,23 @@ def document_form(request, doc=None, default_type='QTN'):
             try:
                 from tracker.models import Order
                 source_order = Order.objects.prefetch_related('products').get(id=source_order_id)
+                selected_prod_ids = request.GET.get('product_ids', '').strip()
+                selected_set = set(selected_prod_ids.split(',')) if selected_prod_ids else None
+                
+                # Check for custom dispatch quantities encoded in query (e.g. qty_PROD_ID=5)
                 for prod in source_order.products.all():
-                    qty = float(prod.quantity) if prod.quantity else 1.0
+                    if selected_set and str(prod.id) not in selected_set:
+                        continue
+                    
+                    custom_qty_val = request.GET.get(f'qty_{prod.id}')
+                    if custom_qty_val:
+                        try:
+                            qty = float(custom_qty_val)
+                        except Exception:
+                            qty = float(prod.quantity) if prod.quantity else 1.0
+                    else:
+                        qty = float(prod.quantity) if prod.quantity else 1.0
+
                     rate = float(prod.selling_price_ex_gst) if prod.selling_price_ex_gst else 0.0
                     tax = float(prod.gst_percentage) if prod.gst_percentage else 18.0
                     
