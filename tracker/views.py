@@ -3110,10 +3110,16 @@ def public_vendor_rfq_portal(request, token):
                 lead_time = request.POST.get('delivery_timeline', '').strip()
                 vendor_notes = request.POST.get('supplier_notes', '').strip()
                 location = request.POST.get('location', '').strip()
+                contact_phone = (request.POST.get('supplier_phone') or rfq.supplier_phone or '').strip()
+                contact_email = (request.POST.get('supplier_email') or rfq.supplier_email or '').strip()
 
                 rfq.quote_reference_no = quote_ref
                 rfq.delivery_timeline = lead_time
                 rfq.supplier_notes = vendor_notes
+                if contact_phone:
+                    rfq.supplier_phone = contact_phone
+                if contact_email:
+                    rfq.supplier_email = contact_email
                 rfq.submitted_at = timezone.now()
                 rfq.status = 'SUBMITTED'
                 rfq.save()
@@ -3134,8 +3140,8 @@ def public_vendor_rfq_portal(request, token):
                             opt = SupplierCostOption.objects.create(
                                 product=p,
                                 supplier_name=rfq.supplier_name,
-                                contact_number=rfq.supplier_phone,
-                                contact_email=rfq.supplier_email,
+                                contact_number=contact_phone or None,
+                                contact_email=contact_email or None,
                                 location=location or None,
                                 base_price=base_price,
                                 gst_percentage=gst_pct,
