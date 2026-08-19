@@ -104,6 +104,7 @@ urlpatterns = [
     # Vendor Request for Quotation (RFQ)
     path('api/order/<uuid:order_id>/rfq/create/', views.create_vendor_rfq_api, name='api_create_vendor_rfq'),
     path('api/order/<uuid:order_id>/rfqs/', views.list_vendor_rfqs_api, name='api_list_vendor_rfqs'),
+    path('api/rfq/<uuid:rfq_id>/delete/', views.delete_vendor_rfq_api, name='api_delete_vendor_rfq'),
     path('rfq/v/<str:token>/', views.public_vendor_rfq_portal, name='public_vendor_rfq_portal'),
 
     # System Backup and Restore

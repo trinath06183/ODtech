@@ -142,6 +142,9 @@ async function loadOrderRfqs() {
                         <a href="${r.rfq_url}" target="_blank" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm transition-colors" title="Preview Portal">
                             Open ↗
                         </a>
+                        <button type="button" onclick="deleteRfq('${r.id}', '${r.supplier_name.replace(/'/g, "\\'")}')" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg font-semibold shadow-sm transition-colors flex items-center" title="Delete RFQ">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -152,6 +155,33 @@ async function loadOrderRfqs() {
         container.innerHTML = `<div class="text-center py-4 text-xs text-red-500">Failed to load RFQs: ${e.message}</div>`;
     }
     {% endif %}
+}
+
+async function deleteRfq(rfqId, supplierName) {
+    if (!confirm(`Are you sure you want to delete the quotation/RFQ for "${supplierName}"?\n\nThis will remove the RFQ link and any submitted prices from this order.`)) {
+        return;
+    }
+
+    try {
+        const csrfToken = (document.cookie.match(/(?:^|;\s*)(?:odtech_bom_csrftoken|csrftoken)=([^;]*)/) || [])[1] || '{{ csrf_token }}';
+        const res = await fetch(`/tracker/api/rfq/${rfqId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            }
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadOrderRfqs();
+            // Refresh main product list prices if open
+            if (typeof refreshProductList === 'function') refreshProductList();
+        } else {
+            alert('❌ ' + (data.error || 'Failed to delete RFQ.'));
+        }
+    } catch (err) {
+        alert('❌ Error: ' + err.message);
+    }
 }
 
 function toggleAllRfqProducts(check) {

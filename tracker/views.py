@@ -3078,6 +3078,41 @@ def list_vendor_rfqs_api(request, order_id):
     return JsonResponse({'success': True, 'rfqs': data})
 
 
+@require_permission('TRACKER', 'write')
+@require_POST
+def delete_vendor_rfq_api(request, rfq_id):
+    """
+    Delete an RFQ record.
+    Also removes corresponding SupplierCostOption quotes submitted under this RFQ.
+    """
+    from .models import VendorRFQ, SupplierCostOption
+    rfq = get_object_or_404(VendorRFQ, id=rfq_id)
+    order_id = rfq.order_id
+    supplier_name = rfq.supplier_name
+
+    try:
+        # Clean up any cost options created with this RFQ quote reference or supplier
+        if rfq.quote_reference_no:
+            SupplierCostOption.objects.filter(
+                product__order_id=order_id,
+                supplier_name=supplier_name,
+                description__icontains=rfq.quote_reference_no
+            ).delete()
+        elif rfq.status == 'SUBMITTED':
+            # Fallback delete for submitted options matching supplier and RFQ description
+            SupplierCostOption.objects.filter(
+                product__order_id=order_id,
+                supplier_name=supplier_name,
+                description__icontains="Submitted via RFQ"
+            ).delete()
+
+        rfq.delete()
+        return JsonResponse({'success': True, 'message': f'RFQ for {supplier_name} deleted successfully.'})
+    except Exception as e:
+        logger.error("delete_vendor_rfq_api error: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 # ─── Public Supplier Quoting Portal (No Login Required) ──────────────────────
 
 def public_vendor_rfq_portal(request, token):
