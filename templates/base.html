@@ -94,12 +94,48 @@
             font-weight: 500;
             color: #334155;
             font-size: 0.875rem;
+            transition: all 0.2s ease;
+            position: relative;
         }
 
         .nav-link:hover {
             background: rgba(59, 130, 246, 0.08);
             border-color: rgba(59, 130, 246, 0.15);
             color: #2563eb;
+        }
+
+        /* ── Active Module / Active Navigation Item Highlighting ── */
+        .nav-link.active-nav,
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.18)) !important;
+            border-color: rgba(37, 99, 235, 0.35) !important;
+            color: #1d4ed8 !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12) !important;
+        }
+        .nav-link.active-nav svg,
+        .nav-link.active svg {
+            color: #1d4ed8 !important;
+            stroke-width: 2.2 !important;
+        }
+        /* Active left indicator pill */
+        .nav-link.active-nav::before,
+        .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20%;
+            bottom: 20%;
+            width: 4px;
+            background: #2563eb;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Submenu active item */
+        .nav-sublink.active-sublink {
+            background: rgba(37, 99, 235, 0.1) !important;
+            color: #1d4ed8 !important;
+            font-weight: 700 !important;
         }
 
         .nav-link .icon {
@@ -1806,5 +1842,68 @@
         {% endfor %}
     </div>
     {% endif %}
+    <!-- Automatic Active Sidebar Module Highlighter -->
+    <script>
+        (function() {
+            function highlightActiveNav() {
+                const currentPath = window.location.pathname;
+                const sidebar = document.getElementById('main-sidebar');
+                if (!sidebar) return;
+
+                const links = sidebar.querySelectorAll('a[href]');
+                let bestMatch = null;
+                let bestMatchLen = 0;
+
+                links.forEach(a => {
+                    const href = a.getAttribute('href');
+                    if (!href || href === '#' || href.startsWith('javascript:')) return;
+
+                    try {
+                        const url = new URL(href, window.location.origin);
+                        const path = url.pathname;
+
+                        // Exact match or prefix match
+                        if (currentPath === path) {
+                            if (path.length > bestMatchLen) {
+                                bestMatch = a;
+                                bestMatchLen = path.length;
+                            }
+                        } else if (path !== '/' && currentPath.startsWith(path)) {
+                            if (path.length > bestMatchLen) {
+                                bestMatch = a;
+                                bestMatchLen = path.length;
+                            }
+                        }
+                    } catch (e) {}
+                });
+
+                if (bestMatch) {
+                    if (bestMatch.classList.contains('nav-link')) {
+                        bestMatch.classList.add('active-nav');
+                    } else {
+                        bestMatch.classList.add('active-sublink', 'bg-blue-50', 'text-blue-700', 'font-bold');
+                        // Find parent accordion container button
+                        const parentAccordion = bestMatch.closest('div[x-data]');
+                        if (parentAccordion) {
+                            const parentBtn = parentAccordion.querySelector('button.nav-link');
+                            if (parentBtn) {
+                                parentBtn.classList.add('active-nav');
+                            }
+                            // Auto open accordion if Alpine is loaded
+                            if (parentAccordion._x_dataStack && parentAccordion._x_dataStack[0]) {
+                                parentAccordion._x_dataStack[0].open = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', highlightActiveNav);
+            } else {
+                highlightActiveNav();
+            }
+        })();
+    </script>
 </body>
 </html>
