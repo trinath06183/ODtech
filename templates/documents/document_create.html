@@ -336,6 +336,12 @@
                 <input type="hidden" name="enable_warranty" :value="enableWarranty ? 'true' : 'false'">
                 <input type="hidden" name="shipping_address" :value="enableShippingAddress ? shippingAddress : ''">
                 <input type="hidden" name="shipping_name" :value="enableShippingAddress ? shippingName : ''">
+                <input type="hidden" name="bill_from_name" :value="enableBillFrom ? billFromName : ''">
+                <input type="hidden" name="bill_from_address" :value="enableBillFrom ? billFromAddress : ''">
+                <input type="hidden" name="bill_from_gstin" :value="enableBillFrom ? billFromGstin : ''">
+                <input type="hidden" name="ship_from_name" :value="enableShipFrom ? shipFromName : ''">
+                <input type="hidden" name="ship_from_address" :value="enableShipFrom ? shipFromAddress : ''">
+                <input type="hidden" name="ship_from_gstin" :value="enableShipFrom ? shipFromGstin : ''">
                 <input type="hidden" name="repeat_header" :value="repeatHeader ? 'true' : 'false'">
                 <input type="hidden" name="show_payment_summary" :value="sections.payment_summary ? 'true' : 'false'">
             </form>
@@ -523,6 +529,66 @@
                                     placeholder="e.g. Refilling only, No Commercial involvement.">
                             </div>
                         </div>
+                        <div class="pt-3 border-t border-slate-700/50 space-y-3">
+                            <!-- Bill From / Seller Billing Details Toggle -->
+                            <div>
+                                <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                    <input type="checkbox" x-model="enableBillFrom"
+                                        class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                    <span class="text-sm text-gray-600 group-hover:text-gray-900 transition font-medium">Custom Bill From (Seller Billing Address)</span>
+                                </label>
+                                <div x-show="enableBillFrom" x-transition class="pt-2 space-y-2 pl-7">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bill From Company / Unit</label>
+                                        <input type="text" name="bill_from_name" form="document-main-form" x-model="billFromName"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="e.g. ODtech Solutions (Bhubaneswar Office)">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bill From Address</label>
+                                        <textarea name="bill_from_address" form="document-main-form" x-model="billFromAddress" rows="2"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="Seller billing address / HO address..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bill From GSTIN</label>
+                                        <input type="text" name="bill_from_gstin" form="document-main-form" x-model="billFromGstin"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500 font-mono"
+                                            placeholder="e.g. 21AAHFO5846M1ZY">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ship From / Dispatch Warehouse Details Toggle -->
+                            <div class="pt-2 border-t border-slate-700/30">
+                                <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                    <input type="checkbox" x-model="enableShipFrom"
+                                        class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                    <span class="text-sm text-gray-600 group-hover:text-gray-900 transition font-medium">Custom Ship From (Dispatch Location / Warehouse)</span>
+                                </label>
+                                <div x-show="enableShipFrom" x-transition class="pt-2 space-y-2 pl-7">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Ship From Facility / Warehouse Name</label>
+                                        <input type="text" name="ship_from_name" form="document-main-form" x-model="shipFromName"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="e.g. ODtech Central Warehouse (Pune / Jaripada)">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Ship From Address</label>
+                                        <textarea name="ship_from_address" form="document-main-form" x-model="shipFromAddress" rows="2"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="Plant / warehouse dispatch address..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Ship From GSTIN (if different)</label>
+                                        <input type="text" name="ship_from_gstin" form="document-main-form" x-model="shipFromGstin"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500 font-mono"
+                                            placeholder="e.g. 27AAHFO5846M1ZZ">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="pt-3 border-t border-slate-700/50">
                             <label class="flex items-center gap-3 cursor-pointer group py-1">
                                 <input type="checkbox" x-model="enableShippingAddress"
@@ -532,11 +598,11 @@
                         </div>
                         <div x-show="enableShippingAddress" x-transition class="pt-2">
                             <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Ship To Name</label>
-                            <input type="text" x-model="shippingName"
+                            <input type="text" name="shipping_name" form="document-main-form" x-model="shippingName"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500 mb-2"
                                 placeholder="e.g. ODtech Solutions (leave empty to use Customer Name)">
                             <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Ship To Address</label>
-                            <textarea x-model="shippingAddress" rows="3"
+                            <textarea name="shipping_address" form="document-main-form" x-model="shippingAddress" rows="3"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
                                 placeholder="Type or paste shipping address here..."></textarea>
                         </div>
@@ -1396,9 +1462,17 @@ function documentForm() {
         forceIGST: {% if doc and doc.force_igst %}true{% else %}(lastSettings ? lastSettings.force_igst : false){% endif %},
         enableWarranty: {% if doc and doc.enable_warranty %}true{% else %}(lastSettings ? lastSettings.enable_warranty : false){% endif %},
         enableShippingAddress: {% if doc and doc.shipping_address %}true{% else %}false{% endif %},
+        enableBillFrom: {% if doc and doc.bill_from_name or doc.bill_from_address or doc.bill_from_gstin %}true{% else %}false{% endif %},
+        enableShipFrom: {% if doc and doc.ship_from_name or doc.ship_from_address or doc.ship_from_gstin %}true{% else %}false{% endif %},
         repeatHeader: {% if doc %}{{ doc.repeat_header|yesno:"true,false" }}{% else %}(lastSettings && lastSettings.repeat_header !== undefined ? lastSettings.repeat_header : true){% endif %},
         shippingAddress: '{{ doc.shipping_address|default_if_none:""|escapejs }}',
         shippingName: '{{ doc.shipping_name|default_if_none:""|escapejs }}',
+        billFromName: '{{ doc.bill_from_name|default_if_none:""|escapejs }}',
+        billFromAddress: '{{ doc.bill_from_address|default_if_none:""|escapejs }}',
+        billFromGstin: '{{ doc.bill_from_gstin|default_if_none:""|escapejs }}',
+        shipFromName: '{{ doc.ship_from_name|default_if_none:""|escapejs }}',
+        shipFromAddress: '{{ doc.ship_from_address|default_if_none:""|escapejs }}',
+        shipFromGstin: '{{ doc.ship_from_gstin|default_if_none:""|escapejs }}',
         transporterDetails: '{{ doc.transporter_details|default:"Local Transportation"|escapejs }}',
         vehicleNumber: '{{ doc.vehicle_number|default_if_none:""|escapejs }}',
         transportDocNo: '{{ doc.transport_doc_no|default_if_none:""|escapejs }}',

@@ -374,6 +374,12 @@ class DocumentService:
             enable_warranty=kwargs.get("enable_warranty", False),
             shipping_address=kwargs.get("shipping_address") or None,
             shipping_name=kwargs.get("shipping_name") or None,
+            bill_from_name=kwargs.get("bill_from_name") or None,
+            bill_from_address=kwargs.get("bill_from_address") or None,
+            bill_from_gstin=kwargs.get("bill_from_gstin") or None,
+            ship_from_name=kwargs.get("ship_from_name") or None,
+            ship_from_address=kwargs.get("ship_from_address") or None,
+            ship_from_gstin=kwargs.get("ship_from_gstin") or None,
             repeat_header=kwargs.get("repeat_header", False),
             source_document=kwargs.get("source_document"),
         )
@@ -463,6 +469,18 @@ class DocumentService:
             document.shipping_address = kwargs.get("shipping_address") or None
         if "shipping_name" in kwargs:
             document.shipping_name = kwargs.get("shipping_name") or None
+        if "bill_from_name" in kwargs:
+            document.bill_from_name = kwargs.get("bill_from_name") or None
+        if "bill_from_address" in kwargs:
+            document.bill_from_address = kwargs.get("bill_from_address") or None
+        if "bill_from_gstin" in kwargs:
+            document.bill_from_gstin = kwargs.get("bill_from_gstin") or None
+        if "ship_from_name" in kwargs:
+            document.ship_from_name = kwargs.get("ship_from_name") or None
+        if "ship_from_address" in kwargs:
+            document.ship_from_address = kwargs.get("ship_from_address") or None
+        if "ship_from_gstin" in kwargs:
+            document.ship_from_gstin = kwargs.get("ship_from_gstin") or None
         if "repeat_header" in kwargs:
             document.repeat_header = kwargs.get("repeat_header")
         document.save()

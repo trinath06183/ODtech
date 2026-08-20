@@ -598,6 +598,12 @@ def document_form(request, doc=None, default_type='QTN'):
         enable_warranty = request.POST.get('enable_warranty') in ('on', 'true', True)
         shipping_address = request.POST.get('shipping_address', '').strip()
         shipping_name = request.POST.get('shipping_name', '').strip()
+        bill_from_name = request.POST.get('bill_from_name', '').strip()
+        bill_from_address = request.POST.get('bill_from_address', '').strip()
+        bill_from_gstin = request.POST.get('bill_from_gstin', '').strip()
+        ship_from_name = request.POST.get('ship_from_name', '').strip()
+        ship_from_address = request.POST.get('ship_from_address', '').strip()
+        ship_from_gstin = request.POST.get('ship_from_gstin', '').strip()
         repeat_header = request.POST.get('repeat_header') in ('on', 'true', True)
         
         # Transporter Details POST parameters (For Delivery Challans)
@@ -740,6 +746,12 @@ def document_form(request, doc=None, default_type='QTN'):
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
                 shipping_name=shipping_name,
+                bill_from_name=bill_from_name,
+                bill_from_address=bill_from_address,
+                bill_from_gstin=bill_from_gstin,
+                ship_from_name=ship_from_name,
+                ship_from_address=ship_from_address,
+                ship_from_gstin=ship_from_gstin,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
                 show_payment_summary=show_payment_summary,
@@ -779,6 +791,12 @@ def document_form(request, doc=None, default_type='QTN'):
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
                 shipping_name=shipping_name,
+                bill_from_name=bill_from_name,
+                bill_from_address=bill_from_address,
+                bill_from_gstin=bill_from_gstin,
+                ship_from_name=ship_from_name,
+                ship_from_address=ship_from_address,
+                ship_from_gstin=ship_from_gstin,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
                 show_payment_summary=show_payment_summary,

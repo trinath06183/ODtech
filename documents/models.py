@@ -106,6 +106,14 @@ class Document(TimeStampedModel):
     shipping_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Shipping Name")
     repeat_header = models.BooleanField(default=False)
     
+    # Seller / Dispatch Location Details (Bill From & Ship From)
+    bill_from_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Bill From Name")
+    bill_from_address = models.TextField(blank=True, null=True, verbose_name="Bill From Address")
+    bill_from_gstin = models.CharField(max_length=15, blank=True, null=True, verbose_name="Bill From GSTIN")
+    ship_from_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Ship From Name / Dispatch Location")
+    ship_from_address = models.TextField(blank=True, null=True, verbose_name="Ship From Address / Warehouse")
+    ship_from_gstin = models.CharField(max_length=15, blank=True, null=True, verbose_name="Ship From GSTIN")
+    
     DISCOUNT_TYPES = (
         ('none', 'No Discount'),
         ('fixed', 'Global Fixed'),
