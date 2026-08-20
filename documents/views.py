@@ -227,7 +227,7 @@ def generate_pdf(request, document_id):
             return HttpResponse("Invalid or expired document link.", status=403)
     else:
         # Require user authentication and permission
-        if not request.user.is_authenticated or not request.user.has_permission('DOCUMENTS', 'read'):
+        if not request.user.is_authenticated or not request.user.has_section_perm('DOCUMENTS', 'read'):
             from django.contrib.auth.views import redirect_to_login
             return redirect_to_login(request.get_full_path())
 
