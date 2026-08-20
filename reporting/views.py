@@ -999,3 +999,81 @@ def public_statement_view(request, token):
         'ledger': ledger_data,
         'token': token,
     })
+
+
+@require_permission('REPORTING', 'read')
+def daily_digest_view(request):
+    """
+    Day-End Business Digest — Daily summary of invoices generated, payments collected,
+    goods dispatched (Delivery Challans), quotations issued, and current outstanding receivables.
+    """
+    target_date_str = request.GET.get('date', '').strip()
+    if target_date_str:
+        try:
+            target_date = date.fromisoformat(target_date_str)
+        except ValueError:
+            target_date = timezone.localdate()
+    else:
+        target_date = timezone.localdate()
+
+    # Previous and Next day for quick navigation
+    prev_date = target_date - timedelta(days=1)
+    next_date = target_date + timedelta(days=1)
+    is_today = (target_date == timezone.localdate())
+
+    # 1. Documents generated on target_date
+    day_docs = Document.objects.filter(date=target_date).select_related('contact').order_by('-id')
+    invoices = day_docs.filter(type__in=['INV', 'PRO'])
+    challans = day_docs.filter(type='CHL')
+    quotes = day_docs.filter(type='QTN')
+    pos = day_docs.filter(type='PO')
+
+    total_billed = invoices.aggregate(total=Coalesce(Sum('grand_total'), Value(0, output_field=DecimalField())))['total']
+    total_quotes_val = quotes.aggregate(total=Coalesce(Sum('grand_total'), Value(0, output_field=DecimalField())))['total']
+
+    # 2. Payments collected on target_date
+    day_payments = Payment.objects.filter(date=target_date).select_related('contact').order_by('-id')
+    total_collected = day_payments.aggregate(total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField())))['total']
+
+    # Breakdown by payment mode
+    payment_modes = day_payments.values('payment_mode').annotate(total=Sum('amount'), count=Count('id')).order_by('-total')
+
+    # 3. Key business metrics summary
+    from contacts.models import Contact
+    # Top 5 Outstanding Customer Balances
+    customers = Contact.objects.filter(contact_type__in=['Customer', 'Both']).annotate(
+        total_inv=Coalesce(Sum('documents__grand_total', filter=Q(documents__type__in=['INV', 'PRO'])), Value(0, output_field=DecimalField())),
+        total_paid=Coalesce(Sum('payments__amount'), Value(0, output_field=DecimalField()))
+    )
+    overdue_customers = []
+    total_receivable = Decimal('0.00')
+    for c in customers:
+        due = c.total_inv - c.total_paid
+        if due > 0:
+            total_receivable += due
+            overdue_customers.append({
+                'id': c.id,
+                'name': c.name,
+                'phone': c.phone,
+                'due': due
+            })
+    overdue_customers.sort(key=lambda x: x['due'], reverse=True)
+    top_receivables = overdue_customers[:5]
+
+    return render(request, 'reporting/daily_digest.html', {
+        'target_date': target_date,
+        'prev_date': prev_date,
+        'next_date': next_date,
+        'is_today': is_today,
+        'invoices': invoices,
+        'challans': challans,
+        'quotes': quotes,
+        'pos': pos,
+        'payments': day_payments,
+        'payment_modes': payment_modes,
+        'total_billed': total_billed,
+        'total_quotes_val': total_quotes_val,
+        'total_collected': total_collected,
+        'total_receivable': total_receivable,
+        'top_receivables': top_receivables,
+    })

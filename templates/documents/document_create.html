@@ -229,63 +229,59 @@
         background: rgba(227,24,55,0.15);
     }
 
-    /* ── Modal Isolation: override base.html theme overrides inside modals ─ */
-    /* Ensure the modal backdrop and containers keep their dark look */
-    [x-show="showProductModal"] .bg-slate-900,
-    [x-show="showCustomerModal"] .bg-slate-900,
-    .modal-dark {
-        background-color: #0f172a !important;
-        border-color: #334155 !important;
-        color: #f1f5f9 !important;
+    /* ── Modal Isolation: Light Theme WebApp Style ─ */
+    .modal-light-card {
+        background-color: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #1e293b !important;
     }
-    /* Fix inputs inside dark modals */
-    [x-show="showProductModal"] input,
-    [x-show="showProductModal"] textarea,
-    [x-show="showCustomerModal"] input,
-    [x-show="showCustomerModal"] textarea {
-        background-color: #1e293b !important;
-        border-color: #475569 !important;
-        color: #f1f5f9 !important;
+    .modal-light-card input,
+    .modal-light-card textarea,
+    .modal-light-card select {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
     }
-    [x-show="showProductModal"] input:focus,
-    [x-show="showProductModal"] textarea:focus,
-    [x-show="showCustomerModal"] input:focus,
-    [x-show="showCustomerModal"] textarea:focus {
+    .modal-light-card input:focus,
+    .modal-light-card textarea:focus,
+    .modal-light-card select:focus {
         border-color: #e31837 !important;
-        box-shadow: 0 0 0 2px rgba(227,24,55,0.18) !important;
-        background-color: #1e293b !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 3px rgba(227,24,55,0.15) !important;
+        outline: none !important;
     }
-    [x-show="showProductModal"] input::placeholder,
-    [x-show="showProductModal"] textarea::placeholder,
-    [x-show="showCustomerModal"] input::placeholder,
-    [x-show="showCustomerModal"] textarea::placeholder {
-        color: #64748b !important;
-    }
-    /* Fix labels inside dark modals — they must be light-colored */
-    [x-show="showProductModal"] label,
-    [x-show="showCustomerModal"] label {
+    .modal-light-card input::placeholder,
+    .modal-light-card textarea::placeholder {
         color: #94a3b8 !important;
-        font-size: 0.7rem !important;
-        font-weight: 600 !important;
+    }
+    .modal-light-card label {
+        color: #475569 !important;
+    }
+    .modal-light-card label,
+    [x-show="showCustomerModal"] label,
+    [x-show="showProductModal"] label {
+        color: #475569 !important;
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.05em !important;
         display: block !important;
         margin-bottom: 0.3rem !important;
     }
-    /* Fix headings inside dark modals */
+    /* Headings inside light modals */
     [x-show="showProductModal"] h3,
     [x-show="showCustomerModal"] h3 {
-        color: #f1f5f9 !important;
+        color: #0f172a !important;
     }
-    /* Fix close button */
+    /* Close button */
     [x-show="showProductModal"] button.absolute,
     [x-show="showCustomerModal"] button.absolute {
-        color: #64748b !important;
+        color: #94a3b8 !important;
         background: transparent !important;
     }
     [x-show="showProductModal"] button.absolute:hover,
     [x-show="showCustomerModal"] button.absolute:hover {
-        color: #f1f5f9 !important;
+        color: #0f172a !important;
     }
     /* Scrollable modal content */
     .modal-scrollable-body {
@@ -737,6 +733,36 @@
                 {# ──────── TAB: TERMS ──────── #}
                 <div class="tab-pane" :class="activeTab==='terms'?'active':''">
                     <div class="glass p-5 rounded-2xl space-y-3">
+                        <div class="border-b border-slate-700/60 pb-3 space-y-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-200">Preset Terms &amp; Conditions</label>
+                                    <p class="text-[11px] text-gray-400">Apply or manage your custom pre-configured terms.</p>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <select x-model="selectedTermsTemplate" @change="applyTermsPreset($event.target.value)"
+                                        class="bg-slate-800 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs text-white focus:ring-red-500 focus:border-red-500 max-w-[180px]">
+                                        <option value="custom">-- Choose Preset --</option>
+                                        <template x-for="(tpl, idx) in (termsTemplates[docType] || [])" :key="idx">
+                                            <option :value="idx" x-text="tpl.label"></option>
+                                        </template>
+                                    </select>
+                                    <template x-if="selectedTermsTemplate !== 'custom' && selectedTermsTemplate >= 0 && (termsTemplates[docType] || [])[selectedTermsTemplate] && (termsTemplates[docType] || [])[selectedTermsTemplate].custom">
+                                        <button type="button" @click="deleteCurrentPreset()"
+                                            class="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs transition"
+                                            title="Delete this custom preset">
+                                            🗑️
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-1">
+                                <button type="button" @click="promptSaveNewPreset()"
+                                    class="text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition flex items-center gap-1">
+                                    <span>💾 Save As New Preset</span>
+                                </button>
+                            </div>
+                        </div>
                         <p class="text-xs text-gray-500 mb-1">Select and fill in the relevant terms for this document.</p>
                         <template x-for="(term, idx) in termsList" :key="idx">
                             <div class="space-y-1">
@@ -1093,63 +1119,76 @@
     {# ══════════════════════ MODALS ══════════════════════════════ #}
 
     {# Customer Modal #}
-    <div x-show="showCustomerModal" style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+    <div x-show="showCustomerModal" style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
         <div @click.away="showCustomerModal = false"
-            style="background:#0f172a; border:1px solid #334155; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; width:100%; max-width:440px; padding:1.5rem; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column;">
+            style="background:#ffffff; border:1px solid #e2e8f0; border-radius:1rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); position:relative; width:100%; max-width:440px; padding:1.5rem; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column;">
 
-            <button type="button" @click="showCustomerModal = false" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#64748b; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px;"
-                onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'">&times;</button>
+            <button type="button" @click="showCustomerModal = false" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:6px;"
+                onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">&times;</button>
 
-            <div style="font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:1.25rem; padding-right:2rem;">Add New Customer</div>
+            <div style="font-size:1.15rem; font-weight:800; color:#0f172a; margin-bottom:1.25rem; padding-right:2rem; display:flex; align-items:center; gap:0.5rem;">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:#fee2e2; color:#dc2626; font-size:1rem;">👤</span>
+                Add New Customer
+            </div>
 
             <div style="display:flex; flex-direction:column; gap:0.875rem; flex:1; overflow-y:auto;">
                 <div>
-                    <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Name *</label>
-                    <input type="text" x-model="newCustomer.name" placeholder="Company or person name"
-                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
-                        onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
-                        onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Customer / Company Name *</label>
+                    <input type="text" x-model="newCustomer.name" placeholder="e.g. Acme Industries Ltd."
+                        style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                        onfocus="this.style.borderColor='#e31837'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(227,24,55,0.15)'"
+                        onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Email</label>
-                        <input type="email" x-model="newCustomer.email" placeholder="email@company.com"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
-                            onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
-                            onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Email</label>
+                        <input type="email" x-model="newCustomer.email" placeholder="accounts@company.com"
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#e31837'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(227,24,55,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                     <div>
-                        <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Phone</label>
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Phone</label>
                         <input type="text" x-model="newCustomer.phone" placeholder="+91 98765 43210"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
-                            onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
-                            onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#e31837'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(227,24,55,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                 </div>
                 <div>
-                    <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">GSTIN</label>
-                    <input type="text" x-model="newCustomer.gstin" placeholder="22AAAAA0000A1Z5"
-                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
-                        onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
-                        onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                        <label style="font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin:0;">GSTIN</label>
+                        <button type="button" @click="fetchCustomerGstin()" :disabled="fetchingGstin || !newCustomer.gstin || newCustomer.gstin.trim().length !== 15"
+                            style="font-size:0.72rem; font-weight:700; color:#ffffff; background:linear-gradient(135deg, #9333ea, #7e22ce); border:none; padding:4px 10px; border-radius:0.5rem; cursor:pointer; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(147,51,234,0.35); transition:all 0.15s;"
+                            :style="(fetchingGstin || !newCustomer.gstin || newCustomer.gstin.trim().length !== 15) ? 'opacity:0.45; cursor:not-allowed; box-shadow:none;' : ''"
+                            onmouseover="if(!this.disabled) this.style.opacity='0.9'" onmouseout="if(!this.disabled) this.style.opacity='1'">
+                            <span x-show="!fetchingGstin">⚡ Auto-Fetch</span>
+                            <span x-show="fetchingGstin">Fetching...</span>
+                        </button>
+                    </div>
+                    <input type="text" x-model="newCustomer.gstin" @input="newCustomer.gstin = newCustomer.gstin.toUpperCase()" placeholder="e.g. 21AAHFO5846M1ZY" maxlength="15"
+                        style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:monospace; box-sizing:border-box; outline:none; text-transform:uppercase;"
+                        onfocus="this.style.borderColor='#e31837'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(227,24,55,0.15)'"
+                        onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                 </div>
                 <div>
-                    <label style="display:block; font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Address</label>
-                    <textarea x-model="newCustomer.address" rows="2" placeholder="Full address..."
-                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none; resize:none; height:4rem;"
-                        onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'"
-                        onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'"></textarea>
+                    <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.35rem;">Billing Address</label>
+                    <textarea x-model="newCustomer.address" rows="2" placeholder="Registered office / billing address..."
+                        style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none; resize:none; height:4.2rem;"
+                        onfocus="this.style.borderColor='#e31837'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(227,24,55,0.15)'"
+                        onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'"></textarea>
                 </div>
-                <hr style="border:none; border-top:1px solid #1e293b; margin:0.25rem 0;">
+                <hr style="border:none; border-top:1px solid #e2e8f0; margin:0.35rem 0;">
                 <div style="display:flex; justify-content:flex-end; gap:0.75rem; padding-top:0.25rem; flex-shrink:0;">
                     <button type="button" @click="showCustomerModal = false"
-                        style="padding:0.55rem 1.25rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; border-radius:0.625rem; font-size:0.875rem; cursor:pointer; font-family:inherit;"
-                        onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">
+                        style="padding:0.6rem 1.25rem; background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; border-radius:0.625rem; font-size:0.875rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s;"
+                        onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a'" onmouseout="this.style.background='#f1f5f9'; this.style.color='#475569'">
                         Cancel
                     </button>
                     <button type="button" @click="createCustomer()"
-                        style="padding:0.55rem 1.4rem; background:#e31837; border:none; color:#fff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit;"
-                        onmouseover="this.style.background='#c01230'" onmouseout="this.style.background='#e31837'">
+                        style="padding:0.6rem 1.4rem; background:linear-gradient(135deg, #e31837, #b91c3a); border:none; color:#ffffff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:0 4px 12px rgba(227,24,55,0.3); transition:all 0.15s;"
+                        onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(227,24,55,0.4)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(227,24,55,0.3)'">
                         Save Customer
                     </button>
                 </div>
@@ -1195,15 +1234,16 @@
 
     {# Product Modal #}
     <div x-show="showProductModal"
-        style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+        style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
         <div @click.away="showProductModal = false"
-            style="background:#0f172a; border:1px solid #334155; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; width:100%; max-width:460px; padding:1.5rem; max-height:92vh; overflow-y:auto; display:flex; flex-direction:column;">
+            style="background:#ffffff; border:1px solid #e2e8f0; border-radius:1rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); position:relative; width:100%; max-width:460px; padding:1.5rem; max-height:92vh; overflow-y:auto; display:flex; flex-direction:column;">
 
             <button type="button" @click="showProductModal = false"
-                style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#64748b; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px;"
-                onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#64748b'">&times;</button>
+                style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:6px;"
+                onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">&times;</button>
 
-            <div style="font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-bottom:1.1rem; padding-right:2rem; flex-shrink:0;">
+            <div style="font-size:1.15rem; font-weight:800; color:#0f172a; margin-bottom:1.1rem; padding-right:2rem; flex-shrink:0; display:flex; align-items:center; gap:0.5rem;">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:#dcfce7; color:#15803d; font-size:1rem;">📦</span>
                 Add New Product
             </div>
 
@@ -1211,71 +1251,88 @@
 
                 <!-- Product Name -->
                 <div>
-                    <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Product Name *</label>
+                    <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Product Name *</label>
                     <input type="text" x-model="newProduct.name" placeholder="e.g. Welding Machine 400A"
-                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                        style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                        onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                        onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                 </div>
 
                 <!-- SKU + Unit -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">SKU *</label>
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">SKU / Code *</label>
                         <input type="text" x-model="newProduct.sku" placeholder="e.g. WM-400A"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Unit</label>
-                        <input type="text" x-model="newProduct.unit" placeholder="Nos / Kg / Set"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Unit</label>
+                        <input type="text" x-model="newProduct.unit" placeholder="Nos / Set / Kg"
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                 </div>
 
                 <!-- Price + GST -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Base Price (₹)</label>
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Base Price (₹)</label>
                         <input type="number" step="0.01" x-model="newProduct.price" placeholder="0.00"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">GST Rate (%)</label>
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">GST Rate (%)</label>
                         <input type="number" step="0.5" x-model="newProduct.tax_rate" placeholder="18"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                 </div>
 
                 <!-- HSN + Warranty -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">HSN Code</label>
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">HSN Code</label>
                         <input type="text" x-model="newProduct.hsn_code" placeholder="e.g. 8515"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Warranty (Months)</label>
+                        <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Warranty (Months)</label>
                         <input type="number" min="0" step="1" x-model="newProduct.warranty_months" placeholder="12"
-                            style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'">
+                            style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none;"
+                            onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'">
                     </div>
                 </div>
 
                 <!-- Description -->
                 <div>
-                    <label style="display:block; font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Description</label>
-                    <textarea x-model="newProduct.description" rows="2" placeholder="Optional product description"
-                        style="width:100%; background:#1e293b; border:1px solid #334155; border-radius:0.5rem; padding:0.6rem 0.85rem; color:#f1f5f9; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none; resize:none;" onfocus="this.style.borderColor='#e31837'; this.style.boxShadow='0 0 0 2px rgba(227,24,55,0.18)'" onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'"></textarea>
+                    <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem;">Description</label>
+                    <textarea x-model="newProduct.description" rows="2" placeholder="Optional product specifications / notes..."
+                        style="width:100%; background:#f8fafc; border:1px solid #cbd5e1; border-radius:0.625rem; padding:0.65rem 0.85rem; color:#0f172a; font-size:0.875rem; font-family:inherit; box-sizing:border-box; outline:none; resize:none;"
+                        onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)'"
+                        onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none'"></textarea>
                 </div>
 
                 <!-- Actions -->
-                <div style="border-top:1px solid #1e293b; padding-top:0.875rem; display:flex; justify-content:flex-end; gap:0.75rem; flex-shrink:0;">
+                <div style="border-top:1px solid #e2e8f0; padding-top:0.875rem; display:flex; justify-content:flex-end; gap:0.75rem; flex-shrink:0;">
                     <button type="button" @click="showProductModal = false"
-                        style="padding:0.55rem 1.25rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; border-radius:0.625rem; font-size:0.875rem; cursor:pointer; font-family:inherit;"
-                        onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">
+                        style="padding:0.6rem 1.25rem; background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; border-radius:0.625rem; font-size:0.875rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s;"
+                        onmouseover="this.style.background='#e2e8f0'; this.style.color='#0f172a'" onmouseout="this.style.background='#f1f5f9'; this.style.color='#475569'">
                         Cancel
                     </button>
                     <button type="button" @click="createProduct()"
-                        style="padding:0.55rem 1.4rem; background:#059669; border:none; color:#fff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit;"
-                        onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
-                        Save &amp; Add
+                        style="padding:0.6rem 1.4rem; background:linear-gradient(135deg, #059669, #047857); border:none; color:#ffffff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:0 4px 12px rgba(5,150,105,0.3); transition:all 0.15s;"
+                        onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(5,150,105,0.4)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(5,150,105,0.3)'">
+                        Save &amp; Add Product
                     </button>
                 </div>
             </div>
@@ -1597,6 +1654,7 @@ function documentForm() {
         filteredCustomers: [],
         showCustomerDropdown: false,
         showCustomerModal: false,
+        fetchingGstin: false,
         newCustomer: { name: '', email: '', phone: '', gstin: '', address: '' },
 
         showProductModal: false,
@@ -1645,6 +1703,8 @@ function documentForm() {
                 ...it
             }));
             if (this.items.length > 0) this.calculateTotals();
+
+            this.loadCustomTermsPresets();
 
             const isEditMode = {% if doc and not is_conversion %}true{% else %}false{% endif %};
             const isConversion = {% if doc and is_conversion %}true{% else %}false{% endif %};
@@ -1804,7 +1864,79 @@ function documentForm() {
             this.calculateTotals();
         },
 
+        loadCustomTermsPresets() {
+            try {
+                const saved = localStorage.getItem('odtech_custom_terms_presets');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    ['QTN', 'INV', 'PRO', 'PO', 'CHL'].forEach(type => {
+                        if (parsed[type] && Array.isArray(parsed[type])) {
+                            // Filter out duplicates if any
+                            const defaults = this.termsTemplates[type].filter(t => !t.custom);
+                            this.termsTemplates[type] = [...defaults, ...parsed[type]];
+                        }
+                    });
+                }
+            } catch (e) {}
+        },
+
+        saveCustomTermsPresets() {
+            try {
+                const customOnly = {};
+                ['QTN', 'INV', 'PRO', 'PO', 'CHL'].forEach(type => {
+                    customOnly[type] = (this.termsTemplates[type] || []).filter(t => t.custom);
+                });
+                localStorage.setItem('odtech_custom_terms_presets', JSON.stringify(customOnly));
+            } catch (e) {}
+        },
+
+        promptSaveNewPreset() {
+            const currentTerms = (this.terms || '').trim();
+            if (!currentTerms) {
+                alert('Please select and configure terms before saving as a preset.');
+                return;
+            }
+            const presetName = prompt('Enter a name for this custom Terms & Conditions preset:');
+            if (!presetName || !presetName.trim()) return;
+
+            if (!this.termsTemplates[this.docType]) {
+                this.termsTemplates[this.docType] = [];
+            }
+            const newPreset = {
+                label: presetName.trim(),
+                value: currentTerms,
+                custom: true
+            };
+            this.termsTemplates[this.docType].push(newPreset);
+            this.saveCustomTermsPresets();
+            this.selectedTermsTemplate = String(this.termsTemplates[this.docType].length - 1);
+            alert(`✅ Preset "${presetName.trim()}" saved successfully!`);
+        },
+
+        deleteCurrentPreset() {
+            const idx = parseInt(this.selectedTermsTemplate);
+            const list = this.termsTemplates[this.docType] || [];
+            if (list[idx] && list[idx].custom) {
+                if (confirm(`Delete custom preset "${list[idx].label}"?`)) {
+                    list.splice(idx, 1);
+                    this.saveCustomTermsPresets();
+                    this.selectedTermsTemplate = 'custom';
+                }
+            }
+        },
+
+        applyTermsPreset(idx) {
+            if (idx === 'custom') return;
+            const list = this.termsTemplates[this.docType];
+            if (list && list[idx]) {
+                this.terms = list[idx].value;
+                this.parseExistingTerms(this.terms);
+                this.selectedTermsTemplate = String(idx);
+            }
+        },
+
         loadDefaultTerms() {
+            this.loadCustomTermsPresets();
             const list = this.termsTemplates[this.docType];
             if (list && list.length > 0) {
                 this.terms = list[0].value;
@@ -2199,6 +2331,33 @@ function documentForm() {
                 warranty_start_date: ''
             });
             this.calculateTotals();
+        },
+
+        // ── fetch customer GSTIN details ────────────────────────────
+        async fetchCustomerGstin() {
+            const gstin = (this.newCustomer.gstin || '').trim();
+            if (!gstin || gstin.length !== 15) return;
+            this.fetchingGstin = true;
+            try {
+                const res = await fetch(`/contacts/api/gstin-lookup/?gstin=${encodeURIComponent(gstin)}`);
+                const data = await res.json();
+                if (data.success) {
+                    if (data.name && !this.newCustomer.name) {
+                        this.newCustomer.name = data.name;
+                    } else if (data.name) {
+                        this.newCustomer.name = data.name;
+                    }
+                    if (data.address) {
+                        this.newCustomer.address = data.address;
+                    }
+                } else {
+                    alert(data.error || 'Could not fetch GSTIN details.');
+                }
+            } catch (e) {
+                alert('Network error fetching GSTIN details.');
+            } finally {
+                this.fetchingGstin = false;
+            }
         },
 
         // ── create customer via API ──────────────────────────────────

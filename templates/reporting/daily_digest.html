@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Day-End Business Digest — Other Office Tools | ODtech{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        aside, nav, header, #sidebar, .nav-link, form, .no-print, button, a.px-4 {
+            display: none !important;
+        }
+        body, main, #main-content, .max-w-7xl {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl {
+            box-shadow: none !important;
+        }
+        .border {
+            border-color: #cbd5e1 !important;
+        }
+        .print-break-inside-avoid {
+            break-inside: avoid;
+        }
+    }
+</style>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Header & Date Navigation -->
+    <div class="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-emerald-600 font-semibold uppercase tracking-wider">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                Other Office Tools
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mt-1">Day-End Business Digest</h1>
+            <p class="text-xs text-gray-500">Comprehensive daily executive summary of billing, collections, dispatches, and outstanding receivables.</p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="?date={{ prev_date|date:'Y-m-d' }}"
+               class="px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1">
+                &larr; Prev Day
+            </a>
+            
+            <form method="get" class="flex items-center gap-2 m-0">
+                <input type="date" name="date" value="{{ target_date|date:'Y-m-d' }}" onchange="this.form.submit()"
+                       class="bg-white border border-gray-300 text-gray-800 text-xs font-bold rounded-xl px-3 py-2 shadow-sm focus:ring-emerald-500 focus:border-emerald-500">
+            </form>
+
+            {% if not is_today %}
+            <a href="?date={{ next_date|date:'Y-m-d' }}"
+               class="px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1">
+                Next Day &rarr;
+            </a>
+            <a href="{% url 'daily_digest' %}"
+               class="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 text-xs font-bold rounded-xl shadow-sm transition">
+                Today
+            </a>
+            {% endif %}
+
+            <button type="button" onclick="window.print()"
+               class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Print / Save PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Print-Only Letterhead Header -->
+    <div class="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">ODTECH SOLUTIONS</h2>
+                <div class="text-xs text-slate-600 font-medium">Daily Executive Business &amp; Dispatch Digest</div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs font-bold text-slate-900">Date: {{ target_date|date:"d M Y" }} ({{ target_date|date:"l" }})</div>
+                <div class="text-[10px] text-slate-500">Generated: {% now "d/m/Y h:i A" %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Key Daily KPI Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Invoiced Today -->
+        <div class="bg-white border border-gray-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Invoiced Today</span>
+                <span class="p-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold">📄 {{ invoices|length }} Bills</span>
+            </div>
+            <div class="text-2xl font-black text-slate-900">₹ {{ total_billed|floatformat:2 }}</div>
+            <div class="text-[11px] text-gray-500 mt-1 font-medium">Tax Invoices &amp; Proforma</div>
+        </div>
+
+        <!-- Collections Today -->
+        <div class="bg-white border border-gray-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Payments Collected</span>
+                <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold">💰 {{ payments|length }} Txns</span>
+            </div>
+            <div class="text-2xl font-black text-emerald-600">₹ {{ total_collected|floatformat:2 }}</div>
+            <div class="text-[11px] text-gray-500 mt-1 font-medium">Bank, UPI, Cash &amp; Cheque</div>
+        </div>
+
+        <!-- Goods Dispatched (Challans) -->
+        <div class="bg-white border border-gray-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Deliveries / Dispatches</span>
+                <span class="p-2 bg-cyan-50 text-cyan-700 rounded-xl text-xs font-bold">🚚 {{ challans|length }} Challans</span>
+            </div>
+            <div class="text-2xl font-black text-cyan-800">{{ challans|length }} Shipments</div>
+            <div class="text-[11px] text-gray-500 mt-1 font-medium">Delivery Challans generated</div>
+        </div>
+
+        <!-- Total Outstanding Market Due -->
+        <div class="bg-white border border-gray-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Market Due</span>
+                <span class="p-2 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold">📊 All Active</span>
+            </div>
+            <div class="text-2xl font-black text-amber-600">₹ {{ total_receivable|floatformat:2 }}</div>
+            <div class="text-[11px] text-gray-500 mt-1 font-medium">Across all customers</div>
+        </div>
+    </div>
+
+    <!-- Dual Layout: Left (Invoices & Challans), Right (Collections & Overdue) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column (8 cols): Invoices & Challans -->
+        <div class="lg:col-span-7 space-y-6">
+
+            <!-- Invoices Section -->
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden print-break-inside-avoid">
+                <div class="px-5 py-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                        Tax Invoices &amp; Proforma ({{ invoices|length }})
+                    </h3>
+                    <span class="text-xs font-black text-slate-800">Total: ₹ {{ total_billed|floatformat:2 }}</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-100/70 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="py-2.5 px-4">Doc #</th>
+                                <th class="py-2.5 px-4">Customer</th>
+                                <th class="py-2.5 px-4">Type</th>
+                                <th class="py-2.5 px-4 text-right">Amount (₹)</th>
+                                <th class="py-2.5 px-4 text-center no-print">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">
+                            {% for inv in invoices %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-3 px-4 font-mono font-bold text-slate-900">{{ inv.number }}</td>
+                                <td class="py-3 px-4">{{ inv.contact.name }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if inv.type == 'INV' %}bg-rose-100 text-rose-800{% else %}bg-purple-100 text-purple-800{% endif %}">
+                                        {{ inv.get_type_display }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-slate-900">₹ {{ inv.grand_total|floatformat:2 }}</td>
+                                <td class="py-3 px-4 text-center no-print">
+                                    <a href="{% url 'document_preview' inv.id %}" target="_blank" class="text-emerald-600 hover:text-emerald-800 font-bold">View &rarr;</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-6 text-gray-400">No invoices or proformas created on this date.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Delivery Challans / Dispatches Section -->
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden print-break-inside-avoid">
+                <div class="px-5 py-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                        Dispatches &amp; Delivery Challans ({{ challans|length }})
+                    </h3>
+                    <span class="text-xs font-bold text-gray-500">{{ challans|length }} Shipments</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-100/70 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="py-2.5 px-4">Challan #</th>
+                                <th class="py-2.5 px-4">Recipient / Site</th>
+                                <th class="py-2.5 px-4">Vehicle #</th>
+                                <th class="py-2.5 px-4">E-Way Bill</th>
+                                <th class="py-2.5 px-4 text-center no-print">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">
+                            {% for chl in challans %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-3 px-4 font-mono font-bold text-slate-900">{{ chl.number }}</td>
+                                <td class="py-3 px-4">{{ chl.shipping_name|default:chl.contact.name }}</td>
+                                <td class="py-3 px-4 font-mono">{{ chl.vehicle_number|default:"—" }}</td>
+                                <td class="py-3 px-4 font-mono">{{ chl.eway_bill|default:"—" }}</td>
+                                <td class="py-3 px-4 text-center no-print">
+                                    <a href="{% url 'document_preview' chl.id %}" target="_blank" class="text-cyan-600 hover:text-cyan-800 font-bold">View &rarr;</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-6 text-gray-400">No delivery challans issued on this date.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quotations Section (If any) -->
+            {% if quotes %}
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden print-break-inside-avoid">
+                <div class="px-5 py-4 bg-slate-50 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                        Quotations / Estimates ({{ quotes|length }})
+                    </h3>
+                    <span class="text-xs font-black text-slate-800">Total: ₹ {{ total_quotes_val|floatformat:2 }}</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-100/70 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="py-2.5 px-4">Quote #</th>
+                                <th class="py-2.5 px-4">Prospect / Client</th>
+                                <th class="py-2.5 px-4 text-right">Value (₹)</th>
+                                <th class="py-2.5 px-4 text-center no-print">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">
+                            {% for q in quotes %}
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-3 px-4 font-mono font-bold text-slate-900">{{ q.number }}</td>
+                                <td class="py-3 px-4">{{ q.contact.name }}</td>
+                                <td class="py-3 px-4 text-right font-bold text-slate-900">₹ {{ q.grand_total|floatformat:2 }}</td>
+                                <td class="py-3 px-4 text-center no-print">
+                                    <a href="{% url 'document_preview' q.id %}" target="_blank" class="text-blue-600 hover:text-blue-800 font-bold">View &rarr;</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Right Column (5 cols): Collections & Top Receivables -->
+        <div class="lg:col-span-5 space-y-6">
+
+            <!-- Payments Collected Section -->
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden print-break-inside-avoid">
+                <div class="px-5 py-4 bg-emerald-50/60 border-b border-emerald-100 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Collections Received ({{ payments|length }})
+                    </h3>
+                    <span class="text-xs font-black text-emerald-700">₹ {{ total_collected|floatformat:2 }}</span>
+                </div>
+
+                {% if payment_modes %}
+                <div class="p-4 bg-emerald-50/20 border-b border-gray-100 flex flex-wrap gap-2">
+                    {% for m in payment_modes %}
+                    <span class="px-2.5 py-1 bg-white border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-800 shadow-sm">
+                        {{ m.payment_mode }}: ₹ {{ m.total|floatformat:2 }} <span class="text-emerald-500 font-normal">({{ m.count }})</span>
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="divide-y divide-gray-100">
+                    {% for p in payments %}
+                    <div class="p-4 hover:bg-slate-50 transition flex justify-between items-start">
+                        <div>
+                            <div class="font-bold text-slate-800 text-xs">{{ p.contact.name }}</div>
+                            <div class="text-[11px] text-gray-500 flex items-center gap-2 mt-0.5">
+                                <span class="px-1.5 py-0.2 rounded bg-gray-100 font-semibold text-[10px]">{{ p.payment_mode }}</span>
+                                {% if p.reference_number %}<span class="font-mono text-gray-400 text-[10px]">{{ p.reference_number }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-black text-emerald-600">₹ {{ p.amount|floatformat:2 }}</div>
+                            {% if p.document_ref %}<div class="text-[10px] text-gray-400 font-mono">Doc: {{ p.document_ref }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-400 text-xs">No payment receipts logged on this date.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top Overdue Receivables Section -->
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden print-break-inside-avoid">
+                <div class="px-5 py-4 bg-amber-50/60 border-b border-amber-100 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-amber-900 uppercase tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Top Pending Receivables
+                    </h3>
+                    <a href="{% url 'statement_of_account' %}" class="text-[11px] font-bold text-amber-700 hover:text-amber-800 no-print">Statements &rarr;</a>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for c in top_receivables %}
+                    <div class="p-4 hover:bg-slate-50 transition flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-slate-800 text-xs">{{ c.name }}</div>
+                            <div class="text-[11px] text-gray-400">{{ c.phone|default:'No phone' }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-black text-rose-600">₹ {{ c.due|floatformat:2 }}</div>
+                            <a href="{% url 'statement_of_account' %}?contact_id={{ c.id }}" class="text-[10px] text-indigo-600 hover:underline font-bold no-print">Ledger &rarr;</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-400 text-xs">All accounts are settled! No overdue balances.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

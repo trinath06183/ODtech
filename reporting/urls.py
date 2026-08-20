@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/pl/', views.profit_and_loss_api, name='profit_and_loss_api'),
     path('statement/', views.statement_of_account_view, name='statement_of_account'),
     path('statement/v/<str:token>/', views.public_statement_view, name='public_statement_view'),
+    path('daily-digest/', views.daily_digest_view, name='daily_digest'),
 ]
