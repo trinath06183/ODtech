@@ -610,3 +610,220 @@ class DocumentService:
                             reference_document=doc.number,
                         )
         return doc
+
+
+class DocumentBundleService:
+    """
+    Handles exporting and importing complete, exact document packages (.oddoc JSON bundles)
+    across local and production environments without altering any fields, dates, or sequences.
+    """
+
+    @classmethod
+    def export_document_bundle(cls, document_id):
+        doc = Document.objects.select_related('contact').prefetch_related('items__product').get(id=document_id)
+        
+        items_data = []
+        for it in doc.items.all():
+            items_data.append({
+                'product_sku': it.product.sku if it.product else '',
+                'product_name': it.product.name if it.product else it.name,
+                'name': it.name or (it.product.name if it.product else ''),
+                'description': it.description or '',
+                'part_number': it.part_number or '',
+                'serial_number': it.serial_number or '',
+                'has_warranty': it.has_warranty,
+                'model': it.model or '',
+                'warranty_period': it.warranty_period or '',
+                'warranty_start_date': it.warranty_start_date.isoformat() if it.warranty_start_date else None,
+                'unit': it.unit or 'EA',
+                'hsn_code': it.hsn_code or '',
+                'quantity': str(it.quantity),
+                'unit_price': str(it.unit_price),
+                'discount': str(it.discount),
+                'tax_rate': str(it.tax_rate),
+                'tax_amount': str(it.tax_amount),
+                'total': str(it.total),
+            })
+
+        bundle = {
+            'oddoc_version': '1.0',
+            'exported_at': timezone.now().isoformat(),
+            'document': {
+                'type': doc.type,
+                'currency': doc.currency,
+                'status': doc.status,
+                'number': doc.number,
+                'date': doc.date.isoformat() if doc.date else None,
+                'project_name': doc.project_name,
+                'site_address': doc.site_address,
+                'eway_bill': doc.eway_bill,
+                'eway_bill_date': doc.eway_bill_date.isoformat() if doc.eway_bill_date else None,
+                'po_reference_number': doc.po_reference_number,
+                'po_date': doc.po_date.isoformat() if doc.po_date else None,
+                'place_of_supply': doc.place_of_supply,
+                'transporter_details': doc.transporter_details,
+                'vehicle_number': doc.vehicle_number,
+                'transport_doc_no': doc.transport_doc_no,
+                'transport_doc_date': doc.transport_doc_date.isoformat() if doc.transport_doc_date else None,
+                'transport_reason': doc.transport_reason,
+                'shipping_address': doc.shipping_address,
+                'shipping_name': doc.shipping_name,
+                'bill_from_name': doc.bill_from_name,
+                'bill_from_address': doc.bill_from_address,
+                'bill_from_gstin': doc.bill_from_gstin,
+                'ship_from_name': doc.ship_from_name,
+                'ship_from_address': doc.ship_from_address,
+                'ship_from_gstin': doc.ship_from_gstin,
+                'terms_and_conditions': doc.terms_and_conditions,
+                'subtotal': str(doc.subtotal),
+                'tax_total': str(doc.tax_total),
+                'grand_total': str(doc.grand_total),
+                'show_gst': doc.show_gst,
+                'split_gst': doc.split_gst,
+                'force_igst': doc.force_igst,
+                'show_payment_summary': doc.show_payment_summary,
+                'repeat_header': doc.repeat_header,
+                'discount_type': doc.discount_type,
+                'discount_value': str(doc.discount_value),
+                'payment_milestones': doc.payment_milestones,
+                'table_columns': doc.table_columns,
+                'enable_warranty': doc.enable_warranty,
+            },
+            'contact': {
+                'name': doc.contact.name,
+                'contact_type': doc.contact.contact_type,
+                'email': doc.contact.email,
+                'phone': doc.contact.phone,
+                'address': doc.contact.address,
+                'gstin': doc.contact.gstin,
+                'pan': doc.contact.pan,
+            },
+            'items': items_data
+        }
+        return bundle
+
+    @classmethod
+    @transaction.atomic
+    def import_document_bundle(cls, bundle_data):
+        from contacts.models import Contact
+        from inventory.models import Product
+
+        if not isinstance(bundle_data, dict) or 'document' not in bundle_data:
+            raise ValueError("Invalid .oddoc package format.")
+
+        doc_dict = bundle_data['document']
+        contact_dict = bundle_data.get('contact', {})
+        items_data = bundle_data.get('items', [])
+
+        # 1. Resolve Contact (Match by GSTIN or Name)
+        contact = None
+        if contact_dict.get('gstin'):
+            contact = Contact.objects.filter(gstin=contact_dict['gstin'].strip()).first()
+        if not contact and contact_dict.get('name'):
+            contact = Contact.objects.filter(name__iexact=contact_dict['name'].strip()).first()
+        
+        if not contact and contact_dict.get('name'):
+            contact = Contact.objects.create(
+                name=contact_dict['name'],
+                contact_type=contact_dict.get('contact_type', 'Customer'),
+                email=contact_dict.get('email') or None,
+                phone=contact_dict.get('phone') or None,
+                address=contact_dict.get('address') or None,
+                gstin=contact_dict.get('gstin') or None,
+                pan=contact_dict.get('pan') or None,
+            )
+
+        if not contact:
+            raise ValueError("Could not create or resolve contact for this document.")
+
+        # 2. Update or Create Document exactly as specified
+        doc_num = doc_dict['number']
+        doc, created = Document.objects.update_or_create(
+            number=doc_num,
+            defaults={
+                'type': doc_dict.get('type', 'INV'),
+                'currency': doc_dict.get('currency', 'INR'),
+                'status': doc_dict.get('status', 'Draft'),
+                'date': doc_dict.get('date') or timezone.localdate(),
+                'contact': contact,
+                'project_name': doc_dict.get('project_name'),
+                'site_address': doc_dict.get('site_address'),
+                'eway_bill': doc_dict.get('eway_bill'),
+                'eway_bill_date': doc_dict.get('eway_bill_date'),
+                'po_reference_number': doc_dict.get('po_reference_number'),
+                'po_date': doc_dict.get('po_date'),
+                'place_of_supply': doc_dict.get('place_of_supply', '21-Odisha'),
+                'transporter_details': doc_dict.get('transporter_details', 'Local Transportation'),
+                'vehicle_number': doc_dict.get('vehicle_number'),
+                'transport_doc_no': doc_dict.get('transport_doc_no'),
+                'transport_doc_date': doc_dict.get('transport_doc_date'),
+                'transport_reason': doc_dict.get('transport_reason'),
+                'shipping_address': doc_dict.get('shipping_address'),
+                'shipping_name': doc_dict.get('shipping_name'),
+                'bill_from_name': doc_dict.get('bill_from_name'),
+                'bill_from_address': doc_dict.get('bill_from_address'),
+                'bill_from_gstin': doc_dict.get('bill_from_gstin'),
+                'ship_from_name': doc_dict.get('ship_from_name'),
+                'ship_from_address': doc_dict.get('ship_from_address'),
+                'ship_from_gstin': doc_dict.get('ship_from_gstin'),
+                'terms_and_conditions': doc_dict.get('terms_and_conditions'),
+                'subtotal': Decimal(str(doc_dict.get('subtotal', '0.00'))),
+                'tax_total': Decimal(str(doc_dict.get('tax_total', '0.00'))),
+                'grand_total': Decimal(str(doc_dict.get('grand_total', '0.00'))),
+                'show_gst': doc_dict.get('show_gst', False),
+                'split_gst': doc_dict.get('split_gst', False),
+                'force_igst': doc_dict.get('force_igst', False),
+                'show_payment_summary': doc_dict.get('show_payment_summary', True),
+                'repeat_header': doc_dict.get('repeat_header', True),
+                'discount_type': doc_dict.get('discount_type', 'none'),
+                'discount_value': Decimal(str(doc_dict.get('discount_value', '0.00'))),
+                'payment_milestones': doc_dict.get('payment_milestones'),
+                'table_columns': doc_dict.get('table_columns'),
+                'enable_warranty': doc_dict.get('enable_warranty', False),
+            }
+        )
+
+        # 3. Replace Line Items cleanly
+        doc.items.all().delete()
+
+        for it in items_data:
+            # Resolve Product by SKU or Name
+            prod = None
+            sku = (it.get('product_sku') or '').strip()
+            name = (it.get('product_name') or it.get('name') or '').strip()
+            if sku:
+                prod = Product.objects.filter(sku=sku).first()
+            if not prod and name:
+                prod = Product.objects.filter(name__iexact=name).first()
+            if not prod:
+                prod = Product.objects.create(
+                    name=name or 'Imported Product',
+                    sku=sku or f"SKU-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                    selling_price=Decimal(str(it.get('unit_price', '0.00'))),
+                    unit=it.get('unit', 'EA'),
+                    tax_rate=Decimal(str(it.get('tax_rate', '18.00'))),
+                    hsn_code=it.get('hsn_code', '')
+                )
+
+            DocumentItem.objects.create(
+                document=doc,
+                product=prod,
+                name=it.get('name') or prod.name,
+                description=it.get('description', ''),
+                part_number=it.get('part_number', ''),
+                serial_number=it.get('serial_number', ''),
+                has_warranty=it.get('has_warranty', False),
+                model=it.get('model', ''),
+                warranty_period=it.get('warranty_period', ''),
+                warranty_start_date=it.get('warranty_start_date') or None,
+                unit=it.get('unit', 'EA'),
+                hsn_code=it.get('hsn_code', ''),
+                quantity=Decimal(str(it.get('quantity', '1.00'))),
+                unit_price=Decimal(str(it.get('unit_price', '0.00'))),
+                discount=Decimal(str(it.get('discount', '0.00'))),
+                tax_rate=Decimal(str(it.get('tax_rate', '18.00'))),
+                tax_amount=Decimal(str(it.get('tax_amount', '0.00'))),
+                total=Decimal(str(it.get('total', '0.00'))),
+            )
+
+        return doc, created

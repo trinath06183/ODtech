@@ -40,6 +40,10 @@ urlpatterns = [
     # Email document directly with PDF attachment API
     path('api/<int:document_id>/send-email/', views.email_document_api,  name='email_document_api'),
 
+    # Document Bundle Transfer (Mode B: Export / Import .oddoc)
+    path('<int:document_id>/export-bundle/', views.export_document_bundle_view, name='export_document_bundle'),
+    path('import-bundle/',                   views.import_document_bundle_view, name='import_document_bundle'),
+
     # Product search API
     path('api/search-products/',       views.search_products,        name='search_products'),
 
