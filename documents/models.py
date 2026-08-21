@@ -347,6 +347,15 @@ class Document(TimeStampedModel):
             Q(target_type=doc_ct, target_id=str(self.id))
         ).order_by('-created_at')
 
+    class Meta:
+        ordering = ['-date', '-id']
+        indexes = [
+            models.Index(fields=['number']),
+            models.Index(fields=['type', 'date']),
+            models.Index(fields=['contact', 'date']),
+            models.Index(fields=['status']),
+        ]
+
     def __str__(self):
         return f"{self.type} - {self.number} ({self.status})"
 

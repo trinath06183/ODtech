@@ -118,6 +118,10 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 # Security settings from BOM
 CSRF_COOKIE_NAME = 'odtech_bom_csrftoken'
 SESSION_COOKIE_NAME = 'odtech_bom_sessionid'
+CSRF_COOKIE_HTTPONLY = False  # Allows JS to read for AJAX headers
+SESSION_COOKIE_HTTPONLY = True  # Protects session from XSS extraction
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_HSTS_SECONDS = 31536000          # 1 year — required for HSTS to take effect

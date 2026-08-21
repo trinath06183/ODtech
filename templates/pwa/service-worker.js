@@ -1,8 +1,9 @@
 const CACHE_NAME = 'odtech-erp-cache-v1';
 const urlsToCache = [
   '/',
-  '/static/css/tailwind.min.css',
-  '/static/img/logo.png'
+  '/static/img/logo.png',
+  '/static/vendor/css/fonts.css',
+  '/static/vendor/js/tailwindcss.js'
 ];
 
 self.addEventListener('install', function(event) {

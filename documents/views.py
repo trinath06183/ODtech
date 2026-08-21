@@ -1123,7 +1123,26 @@ def all_products_api(request):
         }
         for p in products
     ]
-    return JsonResponse(data, safe=False)
+# ─── Customer Recent Bills API ───────────────────────────────────────────────
+@require_permission('DOCUMENTS', 'read')
+def customer_recent_bills_api(request, customer_id):
+    recent_docs = Document.objects.filter(
+        contact_id=customer_id,
+        type__in=['INV', 'QTN', 'CHL', 'PRO']
+    ).order_by('-date', '-id')[:5]
+
+    bills = [
+        {
+            'id': doc.id,
+            'number': doc.number,
+            'type': doc.get_type_display(),
+            'date': doc.date.strftime('%d-%b-%Y') if doc.date else '',
+            'grand_total': str(doc.grand_total),
+            'status': doc.status
+        }
+        for doc in recent_docs
+    ]
+    return JsonResponse({'bills': bills})
 
 
 @require_permission('DOCUMENTS', 'write')

@@ -25,6 +25,15 @@ class Payment(TimeStampedModel):
         from documents.models import Document
         return Document.objects.filter(number=self.document_ref).first()
 
+    class Meta:
+        ordering = ['-date', '-id']
+        indexes = [
+            models.Index(fields=['date']),
+            models.Index(fields=['contact', 'date']),
+            models.Index(fields=['document_ref']),
+            models.Index(fields=['payment_mode']),
+        ]
+
     def __str__(self):
         return f"{self.contact.name} - {self.amount} ({self.date})"
 

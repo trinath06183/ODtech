@@ -25,6 +25,15 @@ class Contact(TimeStampedModel):
         self.pan = normalize_tax_identifier(self.pan) or None
         super().save(*args, **kwargs)
 
+    class Meta:
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['gstin']),
+            models.Index(fields=['phone']),
+            models.Index(fields=['contact_type']),
+        ]
+
     def __str__(self):
         return f"{self.name} ({self.contact_type})"
 

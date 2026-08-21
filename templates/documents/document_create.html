@@ -307,6 +307,42 @@
     </div>
     {% endif %}
 
+    {# ── Draft Recovery Banner ─────────────────────────────────────────────── #}
+    <div x-show="hasSavedDraft && !isEditMode" x-cloak
+        class="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center justify-between shadow-sm animate-pulse">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">⚡</span>
+            <div>
+                <div class="font-bold text-amber-900 text-sm">Unsaved Document Draft Detected</div>
+                <div class="text-xs text-amber-700">You have an unfinished document draft from earlier. Would you like to restore it?</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="restoreDraft()"
+                class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow transition">
+                ↺ Restore Draft
+            </button>
+            <button type="button" @click="discardDraft()"
+                class="px-3 py-2 bg-white hover:bg-gray-100 text-gray-600 border border-gray-300 font-semibold rounded-xl text-xs transition">
+                ✕ Discard
+            </button>
+        </div>
+    </div>
+
+    {# ── Keyboard Shortcuts Legend Pill ────────────────────────────────────── #}
+    <div class="hidden sm:flex items-center justify-between text-xs text-gray-500 bg-white/70 border border-slate-200 px-4 py-2 rounded-xl shadow-xs">
+        <div class="flex items-center gap-4">
+            <span class="font-bold text-slate-700 uppercase tracking-wider text-[10px]">⌨️ Keyboard Shortcuts:</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono font-bold text-slate-700">Ctrl + S</kbd> Save Document</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono font-bold text-slate-700">Alt + N</kbd> Add Custom Item</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono font-bold text-slate-700">Esc</kbd> Close Modals</span>
+        </div>
+        <div class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            Auto-Save Active
+        </div>
+    </div>
+
     {# ── Two-column layout ────────────────────────────────────────────────── #}
     <div class="doc-grid">
 
@@ -1672,6 +1708,9 @@ function documentForm() {
         // ── global portal dropdown ────────────────────────────────
         activeItemUid: null,
         activeItemRef: null,     // the actual item object in focus
+        isEditMode: {% if doc and not is_conversion %}true{% else %}false{% endif %},
+        hasSavedDraft: false,
+        autoSaveTimer: null,
         activeDropdownSuggestions: [],
         dropdownPos: { bottom: 0, left: 0, width: 280 },
 
@@ -1814,6 +1853,115 @@ function documentForm() {
 
             // Load all products once for client-side autocomplete
             this.initProducts();
+
+            // ── Draft Recovery Check (Only for new documents) ──
+            if (!this.isEditMode) {
+                this.checkSavedDraft();
+                // Auto-save draft every 10 seconds
+                this.autoSaveTimer = setInterval(() => {
+                    this.saveDraft();
+                }, 10000);
+            }
+
+            // ── Global Keyboard Shortcuts ──
+            window.addEventListener('keydown', (e) => {
+                // 1. Ctrl + S / Cmd + S -> Quick Save Document
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                    e.preventDefault();
+                    if (this.isEditMode) {
+                        this.submitForm('update');
+                    } else {
+                        this.submitForm('save_as_new');
+                    }
+                }
+                // 2. Alt + N -> Add Custom Item Row
+                if (e.altKey && e.key.toLowerCase() === 'n') {
+                    e.preventDefault();
+                    this.addCustomRow();
+                }
+                // 3. Esc -> Close any open modals
+                if (e.key === 'Escape') {
+                    this.showCustomerModal = false;
+                    this.showProductModal = false;
+                    this.showBrowseModal = false;
+                    this.showGlobalResults = false;
+                    this.closeItemDropdown();
+                }
+            });
+        },
+
+        saveDraft() {
+            if (this.isEditMode) return;
+            // Only save if there's at least a customer or 1 non-empty item
+            const hasData = this.selectedCustomer || (this.items.length > 0 && this.items.some(i => i.name || i.unit_price > 0));
+            if (!hasData) return;
+
+            const draft = {
+                docType: this.docType,
+                selectedCustomer: this.selectedCustomer,
+                customerSearch: this.customerSearch,
+                items: this.items,
+                terms: this.terms,
+                discountType: this.discountType,
+                discountValue: this.discountValue,
+                enableDiscount: this.enableDiscount,
+                sections: this.sections,
+                columns: this.columns,
+                savedAt: new Date().toISOString()
+            };
+            try {
+                localStorage.setItem('odtech_document_draft', JSON.stringify(draft));
+                this.hasSavedDraft = true;
+            } catch (e) {}
+        },
+
+        checkSavedDraft() {
+            try {
+                const saved = localStorage.getItem('odtech_document_draft');
+                if (saved) {
+                    const draft = JSON.parse(saved);
+                    if (draft && draft.items && (draft.selectedCustomer || draft.items.length > 0)) {
+                        this.hasSavedDraft = true;
+                    }
+                }
+            } catch (e) {}
+        },
+
+        restoreDraft() {
+            try {
+                const saved = localStorage.getItem('odtech_document_draft');
+                if (!saved) return;
+                const draft = JSON.parse(saved);
+                if (draft.docType) this.docType = draft.docType;
+                if (draft.selectedCustomer) {
+                    this.selectedCustomer = draft.selectedCustomer;
+                    this.customer_id = draft.selectedCustomer;
+                    this.customerSearch = draft.customerSearch || '';
+                }
+                if (draft.items && Array.isArray(draft.items) && draft.items.length > 0) {
+                    this.items = draft.items;
+                    this.calculateTotals();
+                }
+                if (draft.terms) {
+                    this.terms = draft.terms;
+                    this.parseExistingTerms(draft.terms);
+                }
+                if (draft.discountType) this.discountType = draft.discountType;
+                if (draft.discountValue) this.discountValue = draft.discountValue;
+                if (draft.enableDiscount !== undefined) this.enableDiscount = draft.enableDiscount;
+                if (draft.sections) this.sections = { ...this.sections, ...draft.sections };
+                if (draft.columns) this.columns = { ...this.columns, ...draft.columns };
+
+                this.hasSavedDraft = false;
+                alert('✅ Unfinished draft restored successfully!');
+            } catch (e) {
+                alert('Could not restore draft.');
+            }
+        },
+
+        discardDraft() {
+            localStorage.removeItem('odtech_document_draft');
+            this.hasSavedDraft = false;
         },
 
         async initProducts() {
@@ -2443,6 +2591,10 @@ function documentForm() {
                     }
                 }
             }
+
+            // Clear saved draft on intentional submission
+            localStorage.removeItem('odtech_document_draft');
+            if (this.autoSaveTimer) clearInterval(this.autoSaveTimer);
 
             this.formAction = action;
             this.$nextTick(() => document.getElementById('document-main-form').submit());
