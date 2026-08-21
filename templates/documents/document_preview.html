@@ -86,13 +86,6 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     Download
                 </a>
-                <a href="{% url 'export_document_bundle' doc.id %}"
-                   class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold rounded-xl flex items-center transition-all border border-cyan-500/30 text-sm shadow-sm"
-                   title="Export full document package (.oddoc) for instant transfer to live server"
-                   style="color: #67e8f9 !important;">
-                    <svg class="w-4 h-4 mr-1.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    Export .oddoc
-                </a>
                 <a href="{% url 'document_html_preview' doc.id %}?print=1" target="_blank"
                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl flex items-center transition-all text-sm"
                    style="color: #ffffff !important;">
@@ -120,6 +113,13 @@
                     Email PDF
                 </button>
                 {% endif %}
+                <a href="{% url 'export_document_bundle' doc.id %}"
+                   class="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-teal-500/25 text-sm"
+                   title="Export full document package for instant transfer to live server"
+                   style="color: #ffffff !important;">
+                    <svg class="w-4 h-4 mr-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    Export Document
+                </a>
             </div>
         </div>
 
