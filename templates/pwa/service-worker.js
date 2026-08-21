@@ -1,36 +1,50 @@
-const CACHE_NAME = 'odtech-erp-cache-v1';
+const CACHE_NAME = 'odtech-erp-cache-v2';
 const urlsToCache = [
   '/',
+  '/documents/offline/',
   '/static/img/logo.png',
   '/static/vendor/css/fonts.css',
   '/static/vendor/js/tailwindcss.js'
 ];
 
 self.addEventListener('install', function(event) {
-  // Perform install steps
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache.map(url => new Request(url, { mode: 'no-cors' })));
       })
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('fetch', function(event) {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(function(response) {
-        // Cache hit - return response
-        if (response) {
-          return response;
+        if (event.request.url.includes('/documents/offline/')) {
+          const resClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
         }
-        return fetch(event.request).catch(() => {
-          // If network fails (offline) and it's a navigation request, we could show an offline page
-          // For now, it will just use the standard browser offline page
-        });
-      }
-    )
+        return response;
+      })
+      .catch(async function() {
+        // When offline / server down:
+        // 1. If requesting exact resource from cache
+        const cached = await caches.match(event.request);
+        if (cached && !event.request.url.endsWith('/') && event.request.mode !== 'navigate') {
+          return cached;
+        }
+
+        // 2. If navigating or loading root while server is down -> Route directly to Offline Document Creator!
+        if (event.request.mode === 'navigate' || event.request.url.endsWith(':8000/') || event.request.url.endsWith(':8000')) {
+          const offlinePage = await caches.match('/documents/offline/');
+          if (offlinePage) return offlinePage;
+        }
+
+        return cached || new Response('Offline. Please visit /documents/offline/', { status: 503 });
+      })
   );
 });
 

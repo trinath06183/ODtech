@@ -8,6 +8,7 @@ urlpatterns = [
 
     # New document form
     path('new/', views.create_document, name='create_document'),
+    path('offline/', views.offline_document_view, name='document_offline'),
     
     # New quotation / invoice form
     path('cost-sheet/',    views.cost_sheet,       name='cost_sheet'),

@@ -1,75 +1,68 @@
-// ODtech BOM Tracker — Service Worker
-// Caches core static assets for fast offline/repeat loads
-
-const CACHE_NAME = 'odtech-bom-v1';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'odtech-offline-v1';
+const OFFLINE_URLS = [
   '/',
-  '/static/manifest.json',
+  '/documents/offline/',
+  '/static/img/logo.png',
+  '/static/img/stamp.png',
+  '/static/img/sign.png',
+  '/static/img/phone.png',
+  '/static/img/email.png',
+  '/static/img/location.png',
+  'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js',
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'
 ];
 
-// Install: cache core assets
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Don't fail install if some assets are unavailable
-      });
-    })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(OFFLINE_URLS.map(url => new Request(url, { mode: 'no-cors' })));
+    }).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// Activate: clean up old caches
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim();
-});
-
-// Fetch: Network-first strategy for HTML (always fresh),
-// Cache-first for static assets (fast repeat loads)
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // Skip non-GET, cross-origin, and API requests
-  if (
-    event.request.method !== 'GET' ||
-    !url.origin.startsWith(self.location.origin) ||
-    url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/admin/')
-  ) {
-    return;
-  }
-
-  // Static assets: cache-first
-  if (
-    url.pathname.startsWith('/static/') ||
-    url.pathname.startsWith('/media/')
-  ) {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
           }
-          return response;
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // If online and loading offline page, cache the latest version
+        if (event.request.url.includes('/documents/offline/')) {
+          const resClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+        }
+        return response;
+      })
+      .catch(async () => {
+        // Network failed (server offline / no internet)
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) return cachedResponse;
+
+        // If it's a page navigation, return the cached offline document generator
+        if (event.request.mode === 'navigate') {
+          const offlinePage = await caches.match('/documents/offline/');
+          if (offlinePage) return offlinePage;
+        }
+
+        return new Response('Server Offline. Please open /documents/offline/ from your browser cache.', {
+          status: 503,
+          statusText: 'Service Unavailable'
         });
       })
-    );
-    return;
-  }
-
-  // Everything else: network-first (always fresh data)
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
   );
 });

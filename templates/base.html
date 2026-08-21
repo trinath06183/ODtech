@@ -639,6 +639,20 @@
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-medium">Day-End Digest</span>
                 </a>
+
+                <a href="{% url 'document_offline' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Offline Document Generator (Works without server)">
+                    <svg class="w-6 h-6 flex-shrink-0 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824-2.174a8.953 8.953 0 013.58 1.414M3 3l18 18" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium flex items-center gap-1.5">
+                        Offline Generator
+                        <span class="px-1.5 py-0.5 text-[9px] font-bold bg-cyan-100 text-cyan-700 rounded-md">Offline</span>
+                    </span>
+                </a>
                 {% endif %}
 
                 {% if request.user|has_read_perm:'USERS' %}
@@ -1902,6 +1916,12 @@
                 document.addEventListener('DOMContentLoaded', highlightActiveNav);
             } else {
                 highlightActiveNav();
+            }
+
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+                });
             }
         })();
     </script>

@@ -1338,3 +1338,13 @@ def import_document_bundle_view(request):
     except Exception as e:
         messages.error(request, f"❌ Failed to import document bundle: {str(e)}")
         return redirect('document_list')
+
+
+# ─── Offline Standalone Document Generator ──────────────────────────────────
+def offline_document_view(request):
+    company = CompanyProfile.objects.first()
+    contacts = Contact.objects.all().order_by('name')
+    return render(request, 'documents/document_offline.html', {
+        'company': company,
+        'contacts': contacts,
+    })
