@@ -95,9 +95,17 @@ class Expense(TimeStampedModel):
             return {}
         formatted = {}
         for key, value in self.payload.items():
-            formatted_key = key.replace('_', ' ').title()
-            if isinstance(value, list):
-                formatted[formatted_key] = ", ".join(str(v) for v in value)
+            if not value:
+                continue
+            formatted_key = key.replace('petrol_', '').replace('travel_', '').replace('courier_', '').replace('transport_', '').replace('_', ' ').title()
+            if key == 'petrol_rate_per_km':
+                formatted[formatted_key] = f"₹{value} / KM"
+            elif key == 'petrol_total_distance':
+                formatted[formatted_key] = f"{value} KM"
+            elif key == 'petrol_calculated_cost':
+                formatted[formatted_key] = f"₹{value}"
+            elif isinstance(value, list):
+                formatted[formatted_key] = ", ".join(str(v) for v in value if v)
             else:
                 formatted[formatted_key] = value
         return formatted

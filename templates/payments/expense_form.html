@@ -120,19 +120,27 @@
                                 </button>
                             </div>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Start Meter Reading</label>
-                                    <input type="number" name="payload_petrol_start_meter" x-model="payload.petrol_start_meter" @input="calcDistance()" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <input type="number" step="any" name="payload_petrol_start_meter" x-model="payload.petrol_start_meter" @input="calcDistance()" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">End Meter Reading</label>
-                                    <input type="number" name="payload_petrol_end_meter" x-model="payload.petrol_end_meter" @input="calcDistance()" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <input type="number" step="any" name="payload_petrol_end_meter" x-model="payload.petrol_end_meter" @input="calcDistance()" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium text-indigo-700 mb-1">Total Distance</label>
-                                    <input type="number" name="payload_petrol_total_distance" x-model="payload.petrol_total_distance" readonly class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100 shadow-sm sm:text-sm text-indigo-700 font-semibold cursor-not-allowed">
+                                    <label class="block text-xs font-medium text-indigo-700 mb-1">Total Distance (KM)</label>
+                                    <input type="number" step="any" name="payload_petrol_total_distance" x-model="payload.petrol_total_distance" @input="calcAmountFromKm()" class="mt-1 block w-full rounded-md border border-indigo-200 px-3 py-2 bg-indigo-50/50 shadow-sm sm:text-sm text-indigo-700 font-bold">
                                 </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-emerald-700 mb-1">Rate per KM (₹)</label>
+                                    <input type="number" step="0.01" name="payload_petrol_rate_per_km" x-model="payload.petrol_rate_per_km" @input="calcAmountFromKm()" placeholder="e.g. 3.50" class="mt-1 block w-full rounded-md border border-emerald-300 px-3 py-2 bg-emerald-50/40 shadow-sm sm:text-sm text-emerald-800 font-bold focus:border-emerald-500 focus:ring-emerald-500">
+                                </div>
+                            </div>
+                            <div x-show="payload.petrol_rate_per_km && payload.petrol_total_distance" class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs text-emerald-800 font-medium">
+                                <span>⚡ Calculated Fuel Amount: <strong><span x-text="payload.petrol_total_distance"></span> KM</strong> &times; <strong>₹<span x-text="payload.petrol_rate_per_km"></span>/KM</strong></span>
+                                <span class="text-sm font-bold text-emerald-700" x-text="'= ₹' + (parseFloat(payload.petrol_calculated_cost) || 0).toFixed(2)"></span>
                             </div>
                         </div>
                     </template>
@@ -290,9 +298,27 @@
                 let start = parseFloat(this.payload.petrol_start_meter) || 0;
                 let end = parseFloat(this.payload.petrol_end_meter) || 0;
                 if (start > 0 && end > 0 && end > start) {
-                    this.payload.petrol_total_distance = end - start;
-                } else {
+                    this.payload.petrol_total_distance = Math.round((end - start) * 100) / 100;
+                } else if (end <= start && end > 0) {
                     this.payload.petrol_total_distance = '';
+                }
+                this.calcAmountFromKm();
+            },
+
+            calcAmountFromKm() {
+                let dist = parseFloat(this.payload.petrol_total_distance) || 0;
+                let rate = parseFloat(this.payload.petrol_rate_per_km) || 0;
+                if (dist > 0 && rate > 0) {
+                    let totalCost = Math.round((dist * rate) * 100) / 100;
+                    this.payload.petrol_calculated_cost = totalCost;
+                    const amountInput = document.getElementById('id_amount');
+                    if (amountInput) {
+                        amountInput.value = totalCost.toFixed(2);
+                        // Trigger input event to update any listeners
+                        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                } else {
+                    this.payload.petrol_calculated_cost = '';
                 }
             }
         }));
