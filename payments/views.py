@@ -393,6 +393,49 @@ def expense_approve(request, pk, status):
         messages.success(request, f'Expense {status.lower()} successfully.')
     return redirect('expense_list')
 
+@require_permission('PAYMENTS', 'write')
+@user_passes_test(lambda u: u.is_superuser)
+def bulk_expense_action(request):
+    if request.method != 'POST':
+        return redirect('expense_list')
+
+    action = request.POST.get('action')
+    expense_ids = request.POST.getlist('selected_expenses')
+
+    if not expense_ids:
+        messages.warning(request, 'No expenses selected.')
+        return redirect('expense_list')
+
+    expenses = Expense.objects.filter(pk__in=expense_ids)
+
+    if action == 'approve':
+        updated = expenses.filter(status='Pending').update(
+            status='Approved',
+            approved_by=request.user,
+            approved_at=timezone.now(),
+        )
+        messages.success(request, f'✅ {updated} expense(s) approved successfully.')
+
+    elif action == 'reject':
+        updated = expenses.filter(status='Pending').update(
+            status='Rejected',
+            approved_by=request.user,
+            approved_at=timezone.now(),
+        )
+        messages.success(request, f'❌ {updated} expense(s) rejected.')
+
+    elif action == 'mark_paid':
+        updated = expenses.filter(status='Approved', is_paid=False).update(
+            is_paid=True,
+            paid_at=timezone.now(),
+        )
+        messages.success(request, f'💰 {updated} expense(s) marked as Paid.')
+
+    else:
+        messages.error(request, 'Invalid bulk action.')
+
+    return redirect('expense_list')
+
 @require_permission('PAYMENTS', 'read')
 def employee_code_autocomplete(request):
     query = request.GET.get('q', '').strip()

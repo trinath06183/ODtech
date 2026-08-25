@@ -1,5 +1,12 @@
 {% for expense in expenses %}
-<tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location='{% url 'expense_detail' expense.id %}'">
+<tr class="hover:bg-gray-50 transition-colors cursor-pointer expense-row" onclick="window.location='{% url 'expense_detail' expense.id %}'">
+    {% if request.user.is_superuser %}
+    <td class="px-4 py-4 w-10" onclick="event.stopPropagation();">
+        <input type="checkbox" name="selected_expenses" value="{{ expense.id }}"
+            class="expense-checkbox w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            form="bulk-expense-form">
+    </td>
+    {% endif %}
     <td class="px-6 py-4">
         <div class="text-sm font-bold text-gray-900">{{ expense.title }}</div>
         {% if expense.receipt %}

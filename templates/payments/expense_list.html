@@ -103,11 +103,47 @@
     </form>
 </div>
 
+{% if request.user.is_superuser %}
+<!-- Floating Bulk Action Bar -->
+<div id="bulk-action-bar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-3 border border-white/10 min-w-max">
+    <span class="text-sm font-semibold" id="bulk-count-label">0 selected</span>
+    <div class="h-4 w-px bg-white/20"></div>
+    <button type="submit" form="bulk-expense-form" name="action" value="approve"
+        class="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        Approve
+    </button>
+    <button type="submit" form="bulk-expense-form" name="action" value="mark_paid"
+        class="px-4 py-1.5 bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Mark Paid
+    </button>
+    <button type="submit" form="bulk-expense-form" name="action" value="reject"
+        class="px-4 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        Reject
+    </button>
+    <button type="button" onclick="clearSelection()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-xs font-medium rounded-xl transition-colors">
+        ✕ Clear
+    </button>
+</div>
+
+<form id="bulk-expense-form" method="post" action="{% url 'bulk_expense_action' %}">
+    {% csrf_token %}
+{% endif %}
+
 <div class="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
     <div class="overflow-x-auto">
         <table class="w-full text-left whitespace-nowrap">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr class="text-gray-500 text-xs uppercase tracking-wider">
+                    {% if request.user.is_superuser %}
+                    <th class="px-4 py-4 w-10">
+                        <input type="checkbox" id="select-all-checkbox"
+                            class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            title="Select All">
+                    </th>
+                    {% endif %}
                     <th class="px-6 py-4 font-medium">
                         <a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={% if request.GET.sort == 'name_asc' %}name_desc{% else %}name_asc{% endif %}" class="hover:text-indigo-600 flex items-center">
                             Title & Details
@@ -143,6 +179,11 @@
         </table>
     </div>
 </div>
+
+{% if request.user.is_superuser %}
+</form>
+{% endif %}
+
 <div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{{ next_page }}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
         <svg class="animate-spin w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -232,4 +273,56 @@
         }
     });
 </script>
+
+{% if request.user.is_superuser %}
+<script>
+(function() {
+    const bar = document.getElementById('bulk-action-bar');
+    const countLabel = document.getElementById('bulk-count-label');
+    const selectAll = document.getElementById('select-all-checkbox');
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.expense-checkbox:checked');
+        const n = checked.length;
+        if (n > 0) {
+            countLabel.textContent = n + ' selected';
+            bar.classList.remove('hidden');
+        } else {
+            bar.classList.add('hidden');
+        }
+    }
+
+    // Select-All toggle
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.expense-checkbox').forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateBulkBar();
+        });
+    }
+
+    // Individual checkboxes - use event delegation on tbody so it works with infinite scroll
+    document.getElementById('expense-tbody').addEventListener('change', function(e) {
+        if (e.target.classList.contains('expense-checkbox')) {
+            updateBulkBar();
+            // Update select-all state
+            if (selectAll) {
+                const all = document.querySelectorAll('.expense-checkbox');
+                const allChecked = [...all].every(cb => cb.checked);
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = !allChecked && [...all].some(cb => cb.checked);
+            }
+        }
+    });
+
+    window.clearSelection = function() {
+        document.querySelectorAll('.expense-checkbox').forEach(cb => cb.checked = false);
+        if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+        bar.classList.add('hidden');
+    };
+})();
+</script>
+{% endif %}
+
 {% endblock %}
