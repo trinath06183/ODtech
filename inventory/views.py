@@ -1,6 +1,7 @@
+from decimal import Decimal
 from core.decorators import require_permission
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.core.paginator import Paginator
@@ -770,26 +771,39 @@ def inventory_export_csv(request):
         )
         
     products = products.annotate(
-        total_in=Coalesce(Sum('transactions__quantity', filter=Q(transactions__transaction_type='IN')), 0),
-        total_out=Coalesce(Sum('transactions__quantity', filter=Q(transactions__transaction_type='OUT')), 0)
+        total_in=Coalesce(Sum('stock_transactions__quantity', filter=Q(stock_transactions__transaction_type='IN')), Value(0, output_field=DecimalField())),
+        total_out=Coalesce(Sum('stock_transactions__quantity', filter=Q(stock_transactions__transaction_type='OUT')), Value(0, output_field=DecimalField()))
     )
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="inventory_export.csv"'
-    
+
     writer = csv.writer(response)
-    writer.writerow(['SKU', 'Name', 'Category', 'Unit Price', 'Selling Price', 'Stock Quantity', 'Status'])
-    
+    writer.writerow(['SKU', 'Name', 'Category', 'Brand', 'HSN Code', 'Unit', 'Purchase Price', 'Selling Price', 'Tax Rate (%)', 'Stock (IN)', 'Stock (OUT)', 'Net Stock', 'Reorder Level', 'Status'])
+
     for p in products:
-        status = 'Out of Stock' if p.stock_quantity == 0 else ('Low Stock' if p.stock_quantity <= p.reorder_level else 'In Stock')
+        net_stock = (p.total_in or 0) - (p.total_out or 0)
+        if net_stock <= 0:
+            status = 'Out of Stock'
+        elif p.reorder_level and net_stock <= p.reorder_level:
+            status = 'Low Stock'
+        else:
+            status = 'In Stock'
         writer.writerow([
             p.sku,
             p.name,
-            p.category,
-            p.unit_price,
+            p.category or '',
+            p.brand or '',
+            p.hsn_code or '',
+            p.unit,
+            p.purchase_price,
             p.selling_price,
-            p.stock_quantity,
-            status
+            p.tax_rate,
+            p.total_in,
+            p.total_out,
+            net_stock,
+            p.reorder_level,
+            status,
         ])
-        
+
     return response
