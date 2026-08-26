@@ -323,6 +323,12 @@ class EDMSDocument(TimeStampedModel):
         null=True, blank=True,
         related_name='documents',
     )
+    party_name = models.CharField(
+        max_length=255, blank=True,
+        verbose_name='Party Name',
+        help_text='Counter-party / client / vendor name (free text)',
+        db_index=True,
+    )
 
     # ── Purchase Details ──────────────────────────────────────────────────────
     po_number      = models.CharField(max_length=100, blank=True, verbose_name='PO Number', db_index=True)
