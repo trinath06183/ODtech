@@ -33,7 +33,14 @@
         {% endif %}
     </td>
     <td class="px-6 py-4 text-sm text-gray-500">{{ expense.date|date:"d M Y" }}</td>
-    <td class="px-6 py-4 text-sm text-gray-600">{{ expense.submitted_by.empid|default:"N/A" }}</td>
+    <td class="px-6 py-4">
+        <div class="text-sm font-semibold text-gray-800">{{ expense.submitted_by.empid|default:"N/A" }}</div>
+        {% if expense.submitted_by %}
+        <div class="text-xs text-gray-400 mt-0.5">
+            {{ expense.submitted_by.get_full_name|default:expense.submitted_by.first_name }}
+        </div>
+        {% endif %}
+    </td>
     <td class="px-6 py-4 text-center">
         <span class="px-2.5 py-1 rounded-full text-xs font-semibold
             {% if expense.status == 'Approved' %}bg-green-100 text-green-700

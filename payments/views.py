@@ -258,8 +258,14 @@ def print_unpaid_expenses(request):
     grouped_expenses = []
     for emp_code, exp_list in grouped_dict.items():
         emp_total = sum(e.amount for e in exp_list)
+        # Get employee full name from the first expense's submitted_by
+        first_user = exp_list[0].submitted_by if exp_list else None
+        full_name = ''
+        if first_user:
+            full_name = first_user.get_full_name().strip() or first_user.first_name or ''
         grouped_expenses.append({
             'employee_code': emp_code,
+            'employee_name': full_name,
             'expenses': exp_list,
             'subtotal': emp_total,
             'count': len(exp_list),

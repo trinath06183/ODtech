@@ -130,7 +130,7 @@
     {% for group in grouped_expenses %}
     <div class="emp-section">
         <div class="emp-header">
-            <span>👤 Employee ID: <strong>{{ group.employee_code }}</strong></span>
+            <span>👤 Employee ID: <strong>{{ group.employee_code }}</strong>{% if group.employee_name %} &nbsp;—&nbsp; <span style="font-weight:400; color:#4338ca;">{{ group.employee_name }}</span>{% endif %}</span>
             <span class="emp-badge">{{ group.count }} Expense{{ group.count|pluralize }}</span>
         </div>
 
@@ -157,7 +157,7 @@
                 </tr>
                 {% endfor %}
                 <tr class="emp-subtotal-row">
-                    <td colspan="4" style="text-align: right;">Total Unpaid for {{ group.employee_code }}:</td>
+                    <td colspan="4" style="text-align: right;">Total Unpaid for {{ group.employee_code }}{% if group.employee_name %} ({{ group.employee_name }}){% endif %}:</td>
                     <td class="amount">₹ {{ group.subtotal|floatformat:2 }}</td>
                 </tr>
             </tbody>

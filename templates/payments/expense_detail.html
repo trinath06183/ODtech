@@ -48,7 +48,12 @@
             
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-500 mb-1">Employee Code</label>
-                <div class="text-gray-900 font-semibold">{{ expense.employee_code|default:"N/A" }}</div>
+                <div class="text-gray-900 font-semibold">{{ expense.employee_code|default:expense.submitted_by.empid|default:"N/A" }}</div>
+                {% if expense.submitted_by %}
+                <div class="text-sm text-gray-500 mt-0.5">
+                    {{ expense.submitted_by.get_full_name|default:expense.submitted_by.first_name }}
+                </div>
+                {% endif %}
             </div>
             
             <div>
