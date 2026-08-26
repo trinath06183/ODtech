@@ -19,11 +19,12 @@ class ExpenseForm(forms.ModelForm):
         if not self.instance.pk:
             self.initial['date'] = datetime.date.today()
             
-        standard_choices = list(Expense.EXPENSE_TYPES)
+        standard_choices = [('', '-- Select Category --')] + list(Expense.EXPENSE_TYPES)
         standard_choices.append(('Custom', (('__custom__', '➕ Add Custom Category...'),)))
         
         self.fields['expense_type'] = forms.ChoiceField(
             choices=standard_choices,
+            required=True,
             widget=forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
                 'x-model': 'category',

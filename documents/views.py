@@ -1123,26 +1123,7 @@ def all_products_api(request):
         }
         for p in products
     ]
-# ─── Customer Recent Bills API ───────────────────────────────────────────────
-@require_permission('DOCUMENTS', 'read')
-def customer_recent_bills_api(request, customer_id):
-    recent_docs = Document.objects.filter(
-        contact_id=customer_id,
-        type__in=['INV', 'QTN', 'CHL', 'PRO']
-    ).order_by('-date', '-id')[:5]
-
-    bills = [
-        {
-            'id': doc.id,
-            'number': doc.number,
-            'type': doc.get_type_display(),
-            'date': doc.date.strftime('%d-%b-%Y') if doc.date else '',
-            'grand_total': str(doc.grand_total),
-            'status': doc.status
-        }
-        for doc in recent_docs
-    ]
-    return JsonResponse({'bills': bills})
+    return JsonResponse(data, safe=False)
 
 
 @require_permission('DOCUMENTS', 'write')
@@ -1305,46 +1286,3 @@ def document_export_csv(request):
         ])
         
     return response
-
-
-# ─── Document Bundle Transfer (Mode B: Export / Import .oddoc) ───────────────
-@require_permission('DOCUMENTS', 'read')
-def export_document_bundle_view(request, document_id):
-    from .services import DocumentBundleService
-    doc = get_object_or_404(Document, id=document_id)
-    bundle = DocumentBundleService.export_document_bundle(document_id)
-    
-    filename = f"{doc.number.replace('/', '_')}.oddoc"
-    response = HttpResponse(json.dumps(bundle, indent=2), content_type='application/json')
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    return response
-
-
-@require_permission('DOCUMENTS', 'write')
-@require_POST
-def import_document_bundle_view(request):
-    from .services import DocumentBundleService
-    if 'oddoc_file' not in request.FILES:
-        messages.error(request, "Please select an .oddoc file to import.")
-        return redirect('document_list')
-
-    file = request.FILES['oddoc_file']
-    try:
-        data = json.loads(file.read().decode('utf-8'))
-        doc, created = DocumentBundleService.import_document_bundle(data)
-        action_str = "imported as new" if created else "updated with exact match"
-        messages.success(request, f"✅ Document {doc.number} successfully {action_str}!")
-        return redirect('document_preview', document_id=doc.id)
-    except Exception as e:
-        messages.error(request, f"❌ Failed to import document bundle: {str(e)}")
-        return redirect('document_list')
-
-
-# ─── Offline Standalone Document Generator ──────────────────────────────────
-def offline_document_view(request):
-    company = CompanyProfile.objects.first()
-    contacts = Contact.objects.all().order_by('name')
-    return render(request, 'documents/document_offline.html', {
-        'company': company,
-        'contacts': contacts,
-    })
