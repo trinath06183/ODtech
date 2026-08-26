@@ -14,6 +14,75 @@ from config.models import CompanyProfile
 from django.views.decorators.http import require_POST
 import json
 
+# ─── Offline Document Generator ───────────────────────────────────────────────
+def offline_document_view(request):
+    """Standalone offline document generator - works without server connection via PWA cache."""
+    return render(request, 'documents/document_offline.html')
+
+# ─── Document Bundle Export (.oddoc) ──────────────────────────────────────────
+import zipfile, io
+from django.views.decorators.csrf import csrf_exempt
+
+@require_permission('DOCUMENTS', 'read')
+def export_document_bundle_view(request, document_id):
+    """Export a document as a .oddoc bundle (zip containing JSON + meta)."""
+    import json as _json
+    doc = get_object_or_404(Document, id=document_id)
+    items = list(doc.items.values(
+        'id', 'name', 'description', 'quantity', 'unit', 'unit_price',
+        'tax_rate', 'discount', 'total'
+    ))
+    payload = {
+        'version': '1.0',
+        'exported_at': doc.updated_at.isoformat() if doc.updated_at else '',
+        'document': {
+            'type': doc.type,
+            'number': doc.number,
+            'date': str(doc.date),
+            'status': doc.status,
+            'currency': doc.currency,
+            'subtotal': str(doc.subtotal),
+            'tax_total': str(doc.tax_total),
+            'grand_total': str(doc.grand_total),
+            'terms_and_conditions': doc.terms_and_conditions or '',
+            'contact_name': doc.contact.name if doc.contact else '',
+            'items': items,
+        }
+    }
+    json_bytes = _json.dumps(payload, indent=2).encode('utf-8')
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr('document.json', json_bytes)
+    buf.seek(0)
+    safe_number = doc.number.replace('/', '-').replace(' ', '_')
+    response = HttpResponse(buf.read(), content_type='application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{safe_number}.oddoc"'
+    return response
+
+
+@require_permission('DOCUMENTS', 'write')
+def import_document_bundle_view(request):
+    """Import a .oddoc bundle file and show the contained document data."""
+    import json as _json
+    if request.method != 'POST':
+        return render(request, 'documents/document_list.html', {})
+
+    uploaded = request.FILES.get('bundle_file')
+    if not uploaded:
+        messages.error(request, 'No file uploaded.')
+        return redirect('document_list')
+
+    try:
+        buf = io.BytesIO(uploaded.read())
+        with zipfile.ZipFile(buf, 'r') as zf:
+            with zf.open('document.json') as jf:
+                payload = _json.load(jf)
+        messages.success(request, f"Bundle imported: {payload['document'].get('number', 'N/A')}")
+    except Exception as e:
+        messages.error(request, f'Failed to read bundle: {e}')
+
+    return redirect('document_list')
+
 # ─── Document List ────────────────────────────────────────────────────────────
 @require_permission('DOCUMENTS', 'read')
 def document_list(request):
