@@ -81,6 +81,11 @@ class Document(TimeStampedModel):
     po_date = models.DateField(blank=True, null=True, verbose_name="PO Reference Date")
     place_of_supply = models.CharField(max_length=100, default='21-Odisha', blank=True, null=True, verbose_name="Place of Supply")
     source_document = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='converted_documents')
+    created_by = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_documents',
+        verbose_name='Created By',
+    )
     
     # Transporter Details (For Delivery Challan)
     transporter_details = models.CharField(max_length=255, blank=True, null=True, default='Local Transportation', verbose_name="Transporter Details")

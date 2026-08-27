@@ -831,6 +831,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 eway_bill=eway_bill,
                 eway_bill_date=eway_bill_date,
                 transport_reason=transport_reason,
+                created_by=request.user,
             )
         else:
             source_doc = None
@@ -876,6 +877,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 eway_bill=eway_bill,
                 eway_bill_date=eway_bill_date,
                 transport_reason=transport_reason,
+                created_by=request.user,
             )
 
         # Optional payment tracking

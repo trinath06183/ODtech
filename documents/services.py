@@ -382,6 +382,7 @@ class DocumentService:
             ship_from_gstin=kwargs.get("ship_from_gstin") or None,
             repeat_header=kwargs.get("repeat_header", False),
             source_document=kwargs.get("source_document"),
+            created_by=kwargs.get("created_by"),
         )
         DocumentService.replace_items(document, items)
 

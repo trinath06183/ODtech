@@ -148,9 +148,11 @@ def sync_commercial_doc_to_edms(sender, instance, created, **kwargs):
         from edms.models import EDMSDocument
 
         category  = _get_or_create_category(instance.type)
-        sys_user  = _get_system_user()
 
-        if sys_user is None:
+        # Use the actual document creator as the EDMS uploader; fall back to first superuser
+        uploader = getattr(instance, 'created_by', None) or _get_system_user()
+
+        if uploader is None:
             logger.warning("[EDMS SYNC] No user found — cannot sync document %s", instance.number)
             return
 
@@ -172,8 +174,8 @@ def sync_commercial_doc_to_edms(sender, instance, created, **kwargs):
         except EDMSDocument.DoesNotExist:
             # Create a fresh EDMS record (no file — it's a virtual/commercial doc)
             edms_doc = EDMSDocument(
-                owner=sys_user,
-                uploaded_by=sys_user,
+                owner=uploader,
+                uploaded_by=uploader,
                 category=category,
                 commercial_doc=instance,
                 # No file fields — the document is rendered on-the-fly as PDF
