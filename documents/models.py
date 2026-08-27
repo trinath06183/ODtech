@@ -1,3 +1,4 @@
+from django.conf import settings
 from decimal import Decimal
 from django.db import models
 from core.models import TimeStampedModel
@@ -82,7 +83,7 @@ class Document(TimeStampedModel):
     place_of_supply = models.CharField(max_length=100, default='21-Odisha', blank=True, null=True, verbose_name="Place of Supply")
     source_document = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='converted_documents')
     created_by = models.ForeignKey(
-        'auth.User', on_delete=models.SET_NULL,
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='created_documents',
         verbose_name='Created By',
     )
