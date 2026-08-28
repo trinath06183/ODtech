@@ -382,10 +382,15 @@ def contact_detail(request, contact_id):
     documents = contact.documents.all().order_by('-date')
     payments  = contact.payments.all().order_by('-date')
 
-    invoiced_total  = contact.documents.filter(
-        type__in=['INV', 'PRO'], status='Approved').aggregate(t=Sum('grand_total'))['t'] or 0
-    payments_total  = payments.aggregate(t=Sum('amount'))['t'] or 0
-    outstanding     = invoiced_total - payments_total
+    inv_total = contact.documents.filter(
+        type='INV', status='Approved').aggregate(t=Sum('grand_total'))['t'] or Decimal('0.00')
+    unlinked_pi_total = sum(
+        Decimal(str(pi.grand_total or 0)) for pi in contact.documents.filter(type='PRO', status='Approved')
+        if not pi.has_linked_invoice
+    )
+    invoiced_total = inv_total + unlinked_pi_total
+    payments_total = payments.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+    outstanding    = invoiced_total - payments_total
 
     return render(request, 'contacts/contact_detail.html', {
         'contact': contact,

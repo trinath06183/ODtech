@@ -342,6 +342,16 @@ class Document(TimeStampedModel):
             
         return 'N/A'
 
+    @property
+    def has_linked_invoice(self):
+        """
+        Returns True if this document is an Invoice or is linked to at least one Tax Invoice.
+        """
+        if self.type == 'INV':
+            return True
+        doc_numbers = self.get_all_linked_document_numbers()
+        return Document.objects.filter(number__in=doc_numbers, type='INV').exclude(id=self.id).exists()
+
     def get_linked_documents(self):
         from django.contrib.contenttypes.models import ContentType
         from django.db.models import Q

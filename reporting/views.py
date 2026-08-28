@@ -835,7 +835,7 @@ def profit_and_loss_api(request):
 def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
     """
     Computes a clean chronological debit/credit running balance statement.
-    Invoices = Debit (+), Payments & Credit Notes = Credit (-).
+    Invoices & Unlinked Proforma Invoices = Debit (+), Payments = Credit (-).
     """
     from contacts.models import Contact
     from documents.models import Document
@@ -845,21 +845,30 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
     company = CompanyProfile.objects.first()
 
     # Base querysets
-    invoices = Document.objects.filter(contact=contact, type='INV')
+    invoices = Document.objects.filter(contact=contact, type='INV').exclude(status='Cancelled')
+    
+    # Proforma Invoices: only include PIs that are NOT linked to any Tax Invoice
+    all_pis = Document.objects.filter(contact=contact, type='PRO').exclude(status='Cancelled')
+    unlinked_pi_ids = [pi.id for pi in all_pis if not pi.has_linked_invoice]
+    unlinked_pis = Document.objects.filter(id__in=unlinked_pi_ids)
+    
     payments = Payment.objects.filter(contact=contact)
 
     # Opening balance before start_date
     opening_balance = Decimal('0.00')
     if start_date:
-        prior_debits = invoices.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
+        prior_inv_debits = invoices.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
+        prior_pi_debits = unlinked_pis.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
         prior_credits = payments.filter(date__lt=start_date).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-        opening_balance = prior_debits - prior_credits
+        opening_balance = (prior_inv_debits + prior_pi_debits) - prior_credits
 
         invoices = invoices.filter(date__gte=start_date)
+        unlinked_pis = unlinked_pis.filter(date__gte=start_date)
         payments = payments.filter(date__gte=start_date)
 
     if end_date:
         invoices = invoices.filter(date__lte=end_date)
+        unlinked_pis = unlinked_pis.filter(date__lte=end_date)
         payments = payments.filter(date__lte=end_date)
 
     # Build chronological entries
@@ -876,6 +885,19 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'debit': Decimal(str(inv.grand_total or 0)),
             'credit': Decimal('0.00'),
             'doc_id': inv.id,
+        })
+
+    for pi in unlinked_pis:
+        entries.append({
+            'date': pi.date or pi.created_at.date(),
+            'type': 'PROFORMA',
+            'type_display': 'Proforma Invoice',
+            'doc_number': pi.number,
+            'ref_no': pi.po_reference_number or '—',
+            'details': f"Proforma Invoice #{pi.number}",
+            'debit': Decimal(str(pi.grand_total or 0)),
+            'credit': Decimal('0.00'),
+            'doc_id': pi.id,
         })
 
     for pay in payments:
@@ -906,6 +928,7 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
         total_credit += item['credit']
 
     closing_balance = running_balance
+
 
     return {
         'contact': contact,

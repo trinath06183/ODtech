@@ -118,7 +118,7 @@
                         <tr>
                             <td class="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">{{ row.date|date:"d M Y" }}</td>
                             <td class="py-3 px-4">
-                                <div class="font-bold {% if row.type == 'INVOICE' %}text-indigo-950{% else %}text-emerald-950{% endif %}">
+                                <div class="font-bold {% if row.type == 'INVOICE' %}text-indigo-950{% elif row.type == 'PROFORMA' %}text-purple-950{% else %}text-emerald-950{% endif %}">
                                     {{ row.type_display }}
                                 </div>
                                 <div class="text-[11px] text-slate-500">{{ row.details }}</div>

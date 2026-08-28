@@ -156,7 +156,7 @@
                     <tr class="hover:bg-gray-50/80 transition-colors">
                         <td class="py-3 px-4 font-mono text-gray-600 whitespace-nowrap">{{ row.date|date:"d M Y" }}</td>
                         <td class="py-3 px-4">
-                            <div class="font-bold {% if row.type == 'INVOICE' %}text-indigo-900{% else %}text-emerald-900{% endif %}">
+                            <div class="font-bold {% if row.type == 'INVOICE' %}text-indigo-900{% elif row.type == 'PROFORMA' %}text-purple-900{% else %}text-emerald-900{% endif %}">
                                 {{ row.type_display }}
                             </div>
                             <div class="text-[11px] text-gray-500">{{ row.details }}</div>
