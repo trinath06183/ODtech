@@ -2346,7 +2346,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import user_passes_test
 from .models import SystemSetting
 
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_authenticated and (u.is_superuser or u.is_staff or getattr(u, 'role', '') == 'Superadmin'))
 def system_backup(request):
     """Generates a zip file containing database_backup.json and media/ directory."""
     from django.core.management import call_command
@@ -2362,9 +2362,12 @@ def system_backup(request):
         media_root = settings.MEDIA_ROOT
 
         # Update last backup date
-        setting, created = SystemSetting.objects.get_or_create(key='last_backup_date')
-        setting.value = timezone.now().isoformat()
-        setting.save()
+        try:
+            setting, created = SystemSetting.objects.get_or_create(key='last_backup_date')
+            setting.value = timezone.now().isoformat()
+            setting.save()
+        except Exception:
+            pass
 
         # Create temporary zip file on disk
         with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp_zip:
@@ -2376,13 +2379,10 @@ def system_backup(request):
                 tmp_dump_path = tmp_dump.name
                 call_command(
                     'dumpdata',
-                    '--natural-foreign',
-                    '--natural-primary',
-                    '--exclude', 'contenttypes',
-                    '--exclude', 'auth.permission',
-                    '--exclude', 'sessions',
-                    '--exclude', 'admin.logentry',
                     format='json',
+                    natural_foreign=True,
+                    natural_primary=True,
+                    exclude=['contenttypes', 'auth.permission', 'sessions', 'admin.logentry'],
                     stdout=tmp_dump
                 )
                 tmp_dump.flush()
@@ -2495,7 +2495,7 @@ def system_restore(request):
         return redirect('tracker:system_admin_backup')
     return redirect('tracker:dashboard')
 
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_authenticated and (u.is_superuser or u.is_staff or getattr(u, 'role', '') == 'Superadmin'))
 def system_admin_backup_view(request):
     """Renders the backup and restore page."""
     return render(request, 'tracker/backup.html')
