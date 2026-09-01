@@ -111,4 +111,8 @@ urlpatterns = [
     ),
     path('api/check-invoice/', views.CheckInvoiceNumberView.as_view(), name='api_check_invoice'),
     path('api/extract-invoice-pdf/', views.ExtractInvoicePDFView.as_view(), name='api_extract_invoice_pdf'),
+
+    # ── Contact APIs (for searchable vendor dropdown) ─────────────────────────
+    path('api/contacts/search/', views.ContactSearchAPIView.as_view(), name='api_contact_search'),
+    path('api/contacts/quick-create/', views.ContactQuickCreateAPIView.as_view(), name='api_contact_quick_create'),
 ]

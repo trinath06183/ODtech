@@ -373,10 +373,31 @@
                             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Expiry Date</label>
                             {{ meta_form.expiry_date }}
                         </div>
-                        <!-- Vendor -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Vendor</label>
-                            {{ meta_form.vendor }}
+                        <!-- Vendor / Customer (Searchable) -->
+                        <div class="relative" id="vendor-search-wrapper">
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Vendor / Customer</label>
+                            <!-- Hidden input that holds the selected contact ID for form submission -->
+                            <input type="hidden" name="contact_vendor" id="id_contact_vendor" value="">
+                            <!-- Selected vendor chip -->
+                            <div id="vendor-selected-chip" class="hidden items-center gap-2 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 text-sm mb-2">
+                                <span id="vendor-chip-text" class="flex-1 font-medium text-indigo-800"></span>
+                                <button type="button" onclick="clearVendorSelection()" class="text-indigo-400 hover:text-red-500 transition-colors" title="Remove">✕</button>
+                            </div>
+                            <!-- Search input -->
+                            <div id="vendor-search-box" class="relative">
+                                <input type="text" id="vendor-search-input"
+                                       class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm pr-20"
+                                       placeholder="Search by name, GST, phone..."
+                                       autocomplete="off">
+                                <button type="button" onclick="openAddVendorModal()"
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors shadow-sm"
+                                        title="Add new customer/supplier">
+                                    + Add New
+                                </button>
+                            </div>
+                            <!-- Search results dropdown -->
+                            <div id="vendor-search-results" class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto hidden">
+                            </div>
                         </div>
                         <!-- Company -->
                         <div>
@@ -432,6 +453,79 @@
                     </div>
                 </div>
             </form>
+
+            <!-- ── Add New Vendor/Customer Modal ─────────────────────────── -->
+            <div id="add-vendor-modal" class="fixed inset-0 z-[9999] hidden">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAddVendorModal()"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between mb-5">
+                        <h3 class="text-lg font-bold text-slate-800">➕ Add New Vendor / Customer</h3>
+                        <button type="button" onclick="closeAddVendorModal()" class="text-slate-400 hover:text-red-500 text-xl transition-colors">✕</button>
+                    </div>
+                    <!-- GST Fetch Section -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                        <label class="block text-xs font-semibold text-amber-700 uppercase mb-1.5">🔍 Auto-Fetch by GST Number</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="modal-gst-input"
+                                   class="flex-1 px-3 py-2 rounded-lg border border-amber-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                   placeholder="e.g. 21AAAC0000A1Z5" maxlength="15">
+                            <button type="button" onclick="fetchGSTDetails()"
+                                    id="gst-fetch-btn"
+                                    class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                                Fetch
+                            </button>
+                        </div>
+                        <p id="gst-fetch-status" class="text-xs mt-1.5 text-amber-600 hidden"></p>
+                    </div>
+                    <!-- Form Fields -->
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Name *</label>
+                            <input type="text" id="modal-vendor-name" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Company / Person Name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
+                            <select id="modal-vendor-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <option value="Vendor">Vendor (Supplier)</option>
+                                <option value="Customer">Customer</option>
+                                <option value="Both">Both</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Phone</label>
+                                <input type="text" id="modal-vendor-phone" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Phone number">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
+                                <input type="email" id="modal-vendor-email" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Email address">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">GSTIN</label>
+                                <input type="text" id="modal-vendor-gstin" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-gray-50" placeholder="Auto-filled" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">PAN</label>
+                                <input type="text" id="modal-vendor-pan" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-gray-50" placeholder="Auto-filled" readonly>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Address</label>
+                            <textarea id="modal-vendor-address" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" placeholder="Address"></textarea>
+                        </div>
+                    </div>
+                    <p id="modal-vendor-error" class="text-red-500 text-xs mt-2 hidden"></p>
+                    <div class="flex gap-3 mt-5">
+                        <button type="button" onclick="closeAddVendorModal()" class="px-5 py-2.5 border border-slate-200 text-slate-600 font-medium rounded-xl hover:bg-slate-50 transition-all text-sm">Cancel</button>
+                        <button type="button" onclick="saveNewVendor()" id="save-vendor-btn"
+                                class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow hover:shadow-lg transition-all text-sm">
+                            ✓ Save & Select
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div><!-- /upload-left -->
 
         <!-- RIGHT: Live Document Preview -->
@@ -1109,5 +1203,235 @@
             btn.disabled = false;
         }, 'image/jpeg', quality);
     }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       VENDOR / CUSTOMER SEARCHABLE DROPDOWN
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    let vendorSearchTimer = null;
+    const vendorSearchInput   = document.getElementById('vendor-search-input');
+    const vendorSearchResults = document.getElementById('vendor-search-results');
+    const vendorChip          = document.getElementById('vendor-selected-chip');
+    const vendorChipText      = document.getElementById('vendor-chip-text');
+    const vendorHiddenInput   = document.getElementById('id_contact_vendor');
+    const vendorSearchBox     = document.getElementById('vendor-search-box');
+
+    // Debounced search
+    if (vendorSearchInput) {
+        vendorSearchInput.addEventListener('input', function() {
+            clearTimeout(vendorSearchTimer);
+            const q = this.value.trim();
+            if (q.length < 1) {
+                vendorSearchResults.classList.add('hidden');
+                vendorSearchResults.innerHTML = '';
+                return;
+            }
+            vendorSearchTimer = setTimeout(() => searchVendors(q), 250);
+        });
+
+        vendorSearchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 1) {
+                searchVendors(this.value.trim());
+            }
+        });
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function(e) {
+        const w = document.getElementById('vendor-search-wrapper');
+        if (w && !e.target.closest('#vendor-search-wrapper')) {
+            vendorSearchResults.classList.add('hidden');
+        }
+    });
+
+    function searchVendors(q) {
+        fetch(`{% url 'edms:api_contact_search' %}?q=${encodeURIComponent(q)}&limit=15`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.contacts || data.contacts.length === 0) {
+                    vendorSearchResults.innerHTML = `
+                        <div class="px-4 py-3 text-sm text-slate-400 text-center">
+                            No contacts found. <button type="button" onclick="openAddVendorModal()" class="text-emerald-600 font-semibold hover:underline">+ Add New</button>
+                        </div>`;
+                    vendorSearchResults.classList.remove('hidden');
+                    return;
+                }
+                let html = '';
+                data.contacts.forEach(c => {
+                    const typeColor = c.contact_type === 'Customer' ? 'bg-blue-100 text-blue-700'
+                                    : c.contact_type === 'Vendor' ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-purple-100 text-purple-700';
+                    const safeName = c.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const safeGstin = (c.gstin||'').replace(/'/g, "\\'");
+                    html += `
+                        <div class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 border-b border-gray-50 last:border-0 transition-colors"
+                             onclick="selectVendor(${c.id}, '${safeName}', '${c.contact_type}', '${safeGstin}')">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-800 truncate">${c.name}</p>
+                                <p class="text-xs text-slate-400 truncate">${c.gstin ? 'GST: ' + c.gstin : ''} ${c.phone ? '📞 ' + c.phone : ''}</p>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${typeColor} whitespace-nowrap">${c.contact_type}</span>
+                        </div>`;
+                });
+                vendorSearchResults.innerHTML = html;
+                vendorSearchResults.classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error('Vendor search error:', err);
+                vendorSearchResults.innerHTML = '<div class="px-4 py-3 text-sm text-red-400 text-center">Search failed</div>';
+                vendorSearchResults.classList.remove('hidden');
+            });
+    }
+
+    function selectVendor(id, name, type, gstin) {
+        vendorHiddenInput.value = id;
+        vendorChipText.textContent = name + ' (' + type + ')' + (gstin ? ' — ' + gstin : '');
+        vendorChip.classList.remove('hidden');
+        vendorChip.classList.add('flex');
+        vendorSearchBox.classList.add('hidden');
+        vendorSearchResults.classList.add('hidden');
+        vendorSearchInput.value = '';
+    }
+
+    function clearVendorSelection() {
+        vendorHiddenInput.value = '';
+        vendorChip.classList.add('hidden');
+        vendorChip.classList.remove('flex');
+        vendorSearchBox.classList.remove('hidden');
+        vendorSearchInput.value = '';
+        vendorSearchInput.focus();
+    }
+
+    /* ── Add New Vendor Modal ──────────────────────────────────────────── */
+
+    function openAddVendorModal() {
+        document.getElementById('add-vendor-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('modal-vendor-name').focus(), 100);
+        // Reset fields
+        document.getElementById('modal-gst-input').value = '';
+        document.getElementById('modal-vendor-name').value = '';
+        document.getElementById('modal-vendor-type').value = 'Vendor';
+        document.getElementById('modal-vendor-phone').value = '';
+        document.getElementById('modal-vendor-email').value = '';
+        document.getElementById('modal-vendor-gstin').value = '';
+        document.getElementById('modal-vendor-pan').value = '';
+        document.getElementById('modal-vendor-address').value = '';
+        document.getElementById('modal-vendor-error').classList.add('hidden');
+        document.getElementById('gst-fetch-status').classList.add('hidden');
+    }
+
+    function closeAddVendorModal() {
+        document.getElementById('add-vendor-modal').classList.add('hidden');
+    }
+
+    /* ── GST Fetch ─────────────────────────────────────────────────────── */
+
+    function fetchGSTDetails() {
+        const gstin = document.getElementById('modal-gst-input').value.trim().toUpperCase();
+        const statusEl = document.getElementById('gst-fetch-status');
+        const btn = document.getElementById('gst-fetch-btn');
+
+        if (!gstin || gstin.length !== 15) {
+            statusEl.textContent = '⚠ Enter a valid 15-character GSTIN.';
+            statusEl.classList.remove('hidden', 'text-emerald-600');
+            statusEl.classList.add('text-red-500');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Fetching…';
+        statusEl.textContent = '⏳ Looking up GST details…';
+        statusEl.classList.remove('hidden', 'text-red-500', 'text-emerald-600');
+        statusEl.classList.add('text-amber-600');
+
+        fetch(`/contacts/api/gstin-lookup/?gstin=${encodeURIComponent(gstin)}`)
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Fetch';
+
+                if (data.name || data.trade_name || data.legal_name) {
+                    const displayName = data.trade_name || data.legal_name || data.name || '';
+                    document.getElementById('modal-vendor-name').value = displayName;
+                    document.getElementById('modal-vendor-gstin').value = gstin;
+                    document.getElementById('modal-vendor-pan').value = data.pan || '';
+                    document.getElementById('modal-vendor-address').value = data.address || '';
+                    statusEl.textContent = '✅ Details fetched — ' + displayName;
+                    statusEl.classList.remove('text-amber-600', 'text-red-500');
+                    statusEl.classList.add('text-emerald-600');
+                } else {
+                    statusEl.textContent = '⚠ Could not fetch details. Please fill manually.';
+                    statusEl.classList.remove('text-amber-600', 'text-emerald-600');
+                    statusEl.classList.add('text-red-500');
+                    document.getElementById('modal-vendor-gstin').value = gstin;
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.textContent = 'Fetch';
+                statusEl.textContent = '❌ Fetch failed: ' + err.message;
+                statusEl.classList.remove('text-amber-600', 'text-emerald-600');
+                statusEl.classList.add('text-red-500');
+            });
+    }
+
+    /* ── Save New Vendor ───────────────────────────────────────────────── */
+
+    function saveNewVendor() {
+        const name = document.getElementById('modal-vendor-name').value.trim();
+        const errorEl = document.getElementById('modal-vendor-error');
+        const btn = document.getElementById('save-vendor-btn');
+
+        if (!name) {
+            errorEl.textContent = 'Name is required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        errorEl.classList.add('hidden');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(`{% url 'edms:api_contact_quick_create' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                name: name,
+                contact_type: document.getElementById('modal-vendor-type').value,
+                phone: document.getElementById('modal-vendor-phone').value.trim(),
+                email: document.getElementById('modal-vendor-email').value.trim(),
+                gstin: document.getElementById('modal-vendor-gstin').value.trim(),
+                pan: document.getElementById('modal-vendor-pan').value.trim(),
+                address: document.getElementById('modal-vendor-address').value.trim(),
+            }),
+        })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = '✓ Save & Select';
+
+                if (data.error) {
+                    errorEl.textContent = data.error;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                // Auto-select the newly created contact
+                selectVendor(data.id, data.name, data.contact_type, data.gstin || '');
+                closeAddVendorModal();
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.textContent = '✓ Save & Select';
+                errorEl.textContent = 'Error: ' + err.message;
+                errorEl.classList.remove('hidden');
+            });
+    }
+
 </script>
 {% endblock %}

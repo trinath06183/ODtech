@@ -323,6 +323,13 @@ class EDMSDocument(TimeStampedModel):
         null=True, blank=True,
         related_name='documents',
     )
+    contact_vendor = models.ForeignKey(
+        'contacts.Contact', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='edms_documents',
+        verbose_name='Vendor / Customer',
+        help_text='Linked contact from Customer/Supplier master',
+    )
     party_name = models.CharField(
         max_length=255, blank=True,
         verbose_name='Party Name',

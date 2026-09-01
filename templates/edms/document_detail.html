@@ -102,7 +102,16 @@
                 <p class="font-semibold {{ document.expiry_date|expiry_color }}">{{ document.expiry_date|date:"d M Y" }}</p>
             </div>
             {% endif %}
-            {% if document.vendor %}
+            {% if document.contact_vendor %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Vendor / Customer</p>
+                <p class="font-medium text-slate-700">
+                    <a href="{% url 'contact_detail' contact_id=document.contact_vendor.id %}" class="text-violet-600 hover:underline">
+                        {{ document.contact_vendor.name }} <span class="text-xs text-slate-400">({{ document.contact_vendor.contact_type }})</span>
+                    </a>
+                </p>
+            </div>
+            {% elif document.vendor %}
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Vendor</p>
                 <p class="font-medium text-slate-700">{{ document.vendor.name }}</p>

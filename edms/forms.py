@@ -12,6 +12,7 @@ from edms.models import (
     EDMSDocumentVersion, EDMSVendor, EDMSCompanyProfile,
     Department, EDMSDocumentAccess, EDMSSavedSearch,
 )
+from contacts.models import Contact
 
 
 # ── Shared Widgets ────────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ class DocumentMetadataForm(forms.ModelForm):
             'document_type', 'keywords', 'reference_number',
             'issue_date', 'expiry_date', 'access_level',
             'is_confidential', 'approval_status',
-            'company', 'vendor', 'party_name',
+            'company', 'contact_vendor', 'party_name',
             'po_number', 'invoice_number', 'invoice_date',
             'bill_number', 'amount', 'tax_amount', 'currency',
             'payment_status', 'tags',
@@ -91,7 +92,7 @@ class DocumentMetadataForm(forms.ModelForm):
             'is_confidential':  forms.CheckboxInput(attrs={'class': 'h-4 w-4 rounded text-blue-600'}),
             'approval_status':  forms.Select(attrs={'class': TAILWIND_SELECT}),
             'company':          forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'vendor':           forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'contact_vendor':   forms.Select(attrs={'class': TAILWIND_SELECT, 'id': 'id_contact_vendor'}),
             'party_name':       forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'e.g. Tata Steel Ltd, HDFC Bank...'}),
             'po_number':        forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'invoice_number':   forms.TextInput(attrs={'class': TAILWIND_INPUT}),

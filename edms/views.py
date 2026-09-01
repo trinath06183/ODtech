@@ -924,6 +924,86 @@ class ExtractInvoicePDFView(EDMSLoginRequiredMixin, View):
             
         return JsonResponse(result)
 
+# ─── Contact Search & Quick-Create APIs (for Vendor dropdown) ─────────────────
+
+class ContactSearchAPIView(EDMSLoginRequiredMixin, View):
+    """JSON API: search contacts.Contact by name, GSTIN, or phone."""
+
+    def get(self, request):
+        from contacts.models import Contact
+        from django.db.models import Q
+
+        q = request.GET.get('q', '').strip()
+        contact_type = request.GET.get('type', '')  # optional: Customer, Vendor, Both
+        limit = min(int(request.GET.get('limit', 20)), 50)
+
+        qs = Contact.objects.all().order_by('name')
+        if q:
+            qs = qs.filter(
+                Q(name__icontains=q) |
+                Q(gstin__icontains=q) |
+                Q(phone__icontains=q) |
+                Q(email__icontains=q)
+            )
+        if contact_type:
+            qs = qs.filter(contact_type=contact_type)
+
+        contacts = qs[:limit]
+        data = [
+            {
+                'id': c.id,
+                'name': c.name,
+                'contact_type': c.contact_type,
+                'gstin': c.gstin or '',
+                'phone': c.phone or '',
+                'email': c.email or '',
+                'address': c.address or '',
+                'display': f"{c.name} ({c.contact_type})" + (f" — {c.gstin}" if c.gstin else ''),
+            }
+            for c in contacts
+        ]
+        return JsonResponse({'contacts': data, 'count': len(data)})
+
+
+class ContactQuickCreateAPIView(EDMSLoginRequiredMixin, View):
+    """JSON API: create a new Contact (Customer/Vendor/Both) inline from upload form."""
+
+    def post(self, request):
+        import json as _json
+        from contacts.models import Contact
+
+        try:
+            body = _json.loads(request.body)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        name = (body.get('name') or '').strip()
+        if not name:
+            return JsonResponse({'error': 'Name is required.'}, status=400)
+
+        contact_type = body.get('contact_type', 'Vendor')
+        if contact_type not in ('Customer', 'Vendor', 'Both'):
+            contact_type = 'Vendor'
+
+        contact = Contact.objects.create(
+            name=name,
+            contact_type=contact_type,
+            email=(body.get('email') or '').strip(),
+            phone=(body.get('phone') or '').strip(),
+            gstin=(body.get('gstin') or '').strip() or None,
+            pan=(body.get('pan') or '').strip() or None,
+            address=(body.get('address') or '').strip(),
+        )
+
+        return JsonResponse({
+            'success': True,
+            'id': contact.id,
+            'name': contact.name,
+            'contact_type': contact.contact_type,
+            'gstin': contact.gstin or '',
+            'display': f"{contact.name} ({contact.contact_type})",
+        })
+
 
 # ─── Download Center ──────────────────────────────────────────────────────────
 
