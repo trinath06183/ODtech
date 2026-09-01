@@ -1,14 +1,18 @@
 from core.decorators import require_permission
 import csv
 import io
+import os
 import re
+import shutil
+import zipfile
+from datetime import datetime
 from django.db.models import Prefetch, Q, Sum, F, ExpressionWrapper, DecimalField
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.contrib import messages
 from .models import Order, Lot, Product, SupplierCostOption, ProductBookmark, Notification, InternalNote, AuditLog, PriceApprovalRequest, Task, OrderExpense
 from .forms import OrderForm, LotForm, ProductForm, SupplierCostOptionForm, CSVUploadForm, ProductPricingForm
@@ -2347,40 +2351,75 @@ def system_backup(request):
     """Generates a zip file containing database_backup.json and media/ directory."""
     from django.core.management import call_command
     import tempfile
-    
-    media_root = settings.MEDIA_ROOT
-    
-    # Update last backup date
-    setting, created = SystemSetting.objects.get_or_create(key='last_backup_date')
-    setting.value = timezone.now().isoformat()
-    setting.save()
+    import logging
 
-    # Create zip file in memory
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        # Dump database to JSON
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json', encoding='utf-8') as tmp_dump:
-            call_command('dumpdata', '--natural-foreign', '--natural-primary', '--exclude', 'contenttypes', '--exclude', 'auth.Permission', format='json', stdout=tmp_dump)
-            tmp_dump_path = tmp_dump.name
-            
-        zip_file.write(tmp_dump_path, 'database_backup.json')
-        os.remove(tmp_dump_path)
-            
-        # Add media files
-        if os.path.exists(media_root):
-            for root, dirs, files in os.walk(media_root):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.join('media', os.path.relpath(file_path, media_root))
-                    zip_file.write(file_path, arcname)
-                    
-    zip_buffer.seek(0)
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    filename = f"backup_{current_date}.zip"
-    
-    response = HttpResponse(zip_buffer, content_type='application/zip')
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    return response
+    logger = logging.getLogger(__name__)
+
+    tmp_dump_path = None
+    tmp_zip_path = None
+
+    try:
+        media_root = settings.MEDIA_ROOT
+
+        # Update last backup date
+        setting, created = SystemSetting.objects.get_or_create(key='last_backup_date')
+        setting.value = timezone.now().isoformat()
+        setting.save()
+
+        # Create temporary zip file on disk
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp_zip:
+            tmp_zip_path = tmp_zip.name
+
+        with zipfile.ZipFile(tmp_zip_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zip_file:
+            # Dump database to JSON
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json', encoding='utf-8') as tmp_dump:
+                tmp_dump_path = tmp_dump.name
+                call_command(
+                    'dumpdata',
+                    '--natural-foreign',
+                    '--natural-primary',
+                    '--exclude', 'contenttypes',
+                    '--exclude', 'auth.permission',
+                    '--exclude', 'sessions',
+                    '--exclude', 'admin.logentry',
+                    format='json',
+                    stdout=tmp_dump
+                )
+                tmp_dump.flush()
+
+            zip_file.write(tmp_dump_path, 'database_backup.json')
+
+            # Add media files
+            if os.path.exists(media_root):
+                for root, dirs, files in os.walk(media_root):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.join('media', os.path.relpath(file_path, media_root))
+                        zip_file.write(file_path, arcname)
+
+        current_date = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+        filename = f"backup_{current_date}.zip"
+
+        response = FileResponse(open(tmp_zip_path, 'rb'), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Length'] = os.path.getsize(tmp_zip_path)
+        return response
+
+    except Exception as e:
+        logger.exception("System backup failed")
+        messages.error(request, f"Backup failed: {str(e)}")
+        referer = request.META.get('HTTP_REFERER', '')
+        if 'system/admin/backup' in referer:
+            return redirect('tracker:system_admin_backup')
+        return redirect('tracker:dashboard')
+
+    finally:
+        if tmp_dump_path and os.path.exists(tmp_dump_path):
+            try:
+                os.remove(tmp_dump_path)
+            except Exception:
+                pass
+
 
 @user_passes_test(lambda u: u.is_superuser)
 def system_restore(request):
@@ -2389,22 +2428,22 @@ def system_restore(request):
         if 'backup_file' not in request.FILES:
             messages.error(request, 'No backup file provided.')
             return redirect('tracker:dashboard')
-            
+
         backup_file = request.FILES['backup_file']
         if not backup_file.name.endswith('.zip'):
             messages.error(request, 'Please upload a valid .zip backup file.')
             return redirect('tracker:dashboard')
-            
+
         try:
             from django.core.management import call_command
             import tempfile
             from django.contrib.auth import get_user_model
             from django.db.models.signals import post_save
             from tracker.signals import create_user_field_visibility
-            
+
             media_root = settings.MEDIA_ROOT
             User = get_user_model()
-            
+
             with zipfile.ZipFile(backup_file, 'r') as zip_ref:
                 # Extract database
                 if 'database_backup.json' in zip_ref.namelist():
@@ -2412,24 +2451,24 @@ def system_restore(request):
                         with zip_ref.open('database_backup.json') as source:
                             shutil.copyfileobj(source, tmp_dump)
                         tmp_dump_path = tmp_dump.name
-                    
+
                     try:
                         post_save.disconnect(create_user_field_visibility, sender=User)
                     except Exception:
                         pass
-                        
+
                     call_command('flush', interactive=False)
                     call_command('loaddata', tmp_dump_path)
-                    
+
                     try:
                         post_save.connect(create_user_field_visibility, sender=User)
                     except Exception:
                         pass
-                        
+
                     os.remove(tmp_dump_path)
                 elif 'db.sqlite3' in zip_ref.namelist():
                     raise Exception("This backup uses the old SQLite format, which cannot be directly restored into PostgreSQL.")
-                        
+
                 # Extract media files
                 # Clear existing media
                 if os.path.exists(media_root):
@@ -2441,15 +2480,15 @@ def system_restore(request):
                             shutil.rmtree(item_path)
                 else:
                     os.makedirs(media_root)
-                    
+
                 for file_info in zip_ref.filelist:
                     if file_info.filename.startswith('media/'):
                         zip_ref.extract(file_info, settings.BASE_DIR)
-                        
+
             messages.success(request, 'System restored successfully. Please MANUALLY RESTART the server to ensure all connections are refreshed.')
         except Exception as e:
             messages.error(request, f'Restore failed: {str(e)}')
-            
+
     # If the request comes from the new backup tab, redirect there. Otherwise dashboard.
     referer = request.META.get('HTTP_REFERER', '')
     if 'system/admin/backup' in referer:
