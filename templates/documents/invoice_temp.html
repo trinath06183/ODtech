@@ -1,0 +1,330 @@
+﻿{% extends 'documents/base_print.html' %}
+{% load static %}
+{% load document_filters %}
+
+{% block document_body %}
+
+<div class="info-grid">
+    {% if doc.shipping_address %}
+    <div class="info-col" style="width: 35%;">
+        <div class="text-red mb-1" style="font-size: 11px;">Invoice To (Bill To):</div>
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.contact.name }}</div>
+
+        {% if doc.contact.address and doc.contact.address != 'N/A' %}
+        <div style="font-size: 9.5px; margin-bottom: 4px; max-width: 95%;">
+            {{ doc.contact.address|linebreaksbr }}
+        </div>
+        {% endif %}
+
+        {% if doc.contact.gstin and doc.contact.gstin != 'N/A' %}
+        <table style="font-size: 9.5px; border: none; margin-top: 3px;">
+            <tr>
+                <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 2px;">GSTIN:</td>
+                <td style="border:none; padding-bottom: 2px;">{{ doc.contact.gstin }}</td>
+            </tr>
+            <tr>
+                <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 2px;">State:</td>
+                <td style="border:none; padding-bottom: 2px;">{{ doc.contact.gstin|gst_state }}</td>
+            </tr>
+        </table>
+        {% endif %}
+    </div>
+
+    <div class="info-col" style="width: 35%; padding-left: 15px; border-left: 1px solid #ddd;">
+        <div class="text-red mb-1" style="font-size: 11px;">Ship To:</div>
+        <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.shipping_name|default:doc.contact.name }}</div>
+        <div style="font-size: 9.5px; margin-bottom: 4px; max-width: 95%;">
+            {{ doc.shipping_address|linebreaksbr }}
+        </div>
+    </div>
+
+    <div class="info-col" style="width: 30%; padding-left: 15px;">
+        <div style="font-size: 18px; margin-bottom: 8px; font-weight: bold;">
+            {% if doc.type == 'PRO' %}Proforma Invoice{% else %}Tax Invoice{% endif %}
+        </div>
+
+        <table style="width: 100%; font-size: 9.5px; border: none;">
+            <tr>
+                <td class="bold" style="width: 50%; padding-bottom: 3px; border:none;">
+                    {% if doc.type == 'PRO' %}Proforma Invoice No.:{% else %}Invoice No.:{% endif %}
+                </td>
+                <td style="padding-bottom: 3px; border:none;">{{ doc.number }}</td>
+            </tr>
+            <tr>
+                <td class="bold" style="padding-bottom: 3px; border:none;">Date:</td>
+                <td style="padding-bottom: 3px; border:none;">{{ doc.date|date:"d/m/Y" }}</td>
+            </tr>
+            {% if doc.po_reference_number %}
+            <tr>
+                <td class="bold" style="padding-bottom: 3px; border:none;">PO Ref. Number:</td>
+                <td style="padding-bottom: 3px; border:none;">{{ doc.po_reference_number }}</td>
+            </tr>
+            {% endif %}
+            {% if doc.po_date %}
+            <tr>
+                <td class="bold" style="padding-bottom: 3px; border:none;">PO Ref. Date:</td>
+                <td style="padding-bottom: 3px; border:none;">{{ doc.po_date|date:"d/m/Y" }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="bold" style="padding-bottom: 3px; border:none;">Place of Supply:</td>
+                <td style="padding-bottom: 3px; border:none;">{{ doc.place_of_supply|default:"21-Odisha" }}</td>
+            </tr>
+        </table>
+    </div>
+    {% else %}
+    <div class="info-col" style="width: 45%;">
+        <div class="text-red mb-1" style="font-size: 12px;">Invoice To:</div>
+        <div style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">{{ doc.contact.name }}</div>
+
+        {% if doc.contact.address and doc.contact.address != 'N/A' %}
+        <div style="font-size: 10px; margin-bottom: 5px; max-width: 80%;">
+            {{ doc.contact.address|linebreaksbr }}
+        </div>
+        {% endif %}
+
+        {% if doc.contact.gstin and doc.contact.gstin != 'N/A' %}
+        <table style="font-size: 10px; border: none; margin-top: 5px;">
+            <tr>
+                <td class="bold" style="padding-right: 10px; border:none;">GSTIN:</td>
+                <td style="border:none;">{{ doc.contact.gstin }}</td>
+            </tr>
+            <tr>
+                <td class="bold" style="padding-right: 10px; border:none;">State:</td>
+                <td style="border:none;">{{ doc.contact.gstin|gst_state }}</td>
+            </tr>
+        </table>
+        {% endif %}
+    </div>
+
+    <div class="info-col" style="width: 55%; padding-left: 15%;">
+        <div style="font-size: 22px; margin-bottom: 10px;">
+            {% if doc.type == 'PRO' %}Proforma Invoice{% else %}Tax Invoice{% endif %}
+        </div>
+
+        <table style="width: 100%; font-size: 10px; border: none;">
+            <tr>
+                <td class="bold" style="width: 45%; padding-bottom: 4px; border:none;">
+                    {% if doc.type == 'PRO' %}Proforma Invoice No.:{% else %}Invoice No.:{% endif %}
+                </td>
+                <td style="padding-bottom: 4px; border:none;">{{ doc.number }}</td>
+            </tr>
+            <tr>
+                <td class="bold" style="padding-bottom: 4px; border:none;">Date:</td>
+                <td style="padding-bottom: 4px; border:none;">{{ doc.date|date:"d/m/Y" }}</td>
+            </tr>
+            {% if doc.po_reference_number %}
+            <tr>
+                <td class="bold" style="padding-bottom: 4px; border:none;">PO Ref. Number:</td>
+                <td style="padding-bottom: 4px; border:none;">{{ doc.po_reference_number }}</td>
+            </tr>
+            {% endif %}
+            {% if doc.po_date %}
+            <tr>
+                <td class="bold" style="padding-bottom: 4px; border:none;">PO Ref. Date:</td>
+                <td style="padding-bottom: 4px; border:none;">{{ doc.po_date|date:"d/m/Y" }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="bold" style="padding-bottom: 4px; border:none;">Place of Supply:</td>
+                <td style="padding-bottom: 4px; border:none;">{{ doc.place_of_supply|default:"21-Odisha" }}</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+{% if doc.bill_from_name or doc.bill_from_address or doc.ship_from_name or doc.ship_from_address %}
+<div style="width:100%; display:table; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; margin-top:6px; margin-bottom:8px; font-size:9.5px; page-break-inside:avoid;">
+    <div style="display:table-row;">
+        {% if doc.bill_from_name or doc.bill_from_address %}
+        <div style="display:table-cell; width:50%; vertical-align:top; padding-right:10px;">
+            <div style="color:#b91c1c; font-weight:bold; font-size:10px; text-transform:uppercase; margin-bottom:2px;">Bill From (Seller):</div>
+            <div style="font-weight:bold; font-size:10.5px;">{{ doc.bill_from_name|default:'ODtech Solutions' }}</div>
+            {% if doc.bill_from_address %}<div style="color:#334155; margin-top:2px;">{{ doc.bill_from_address|linebreaksbr }}</div>{% endif %}
+            {% if doc.bill_from_gstin %}<div style="font-weight:bold; color:#475569; margin-top:2px;">GSTIN: {{ doc.bill_from_gstin }}</div>{% endif %}
+        </div>
+        {% endif %}
+        {% if doc.ship_from_name or doc.ship_from_address %}
+        <div style="display:table-cell; width:50%; vertical-align:top; padding-left:10px; {% if doc.bill_from_name or doc.bill_from_address %}border-left:1px dashed #cbd5e1;{% endif %}">
+            <div style="color:#0891b2; font-weight:bold; font-size:10px; text-transform:uppercase; margin-bottom:2px;">Ship From (Dispatch Location):</div>
+            <div style="font-weight:bold; font-size:10.5px;">{{ doc.ship_from_name|default:'Central Warehouse' }}</div>
+            {% if doc.ship_from_address %}<div style="color:#334155; margin-top:2px;">{{ doc.ship_from_address|linebreaksbr }}</div>{% endif %}
+            {% if doc.ship_from_gstin %}<div style="font-weight:bold; color:#475569; margin-top:2px;">GSTIN: {{ doc.ship_from_gstin }}</div>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% include 'documents/print_items_table.html' %}
+
+{# -- Warranty Information Section (Invoice only, conditional) -- #}
+{% with warranty_items=doc.items.all %}
+
+{% if doc.enable_warranty %}
+{% for item in warranty_items %}{% if item.product.warranty_months > 0 and item.has_warranty %}{% if forloop.first %}
+<table style="width:100%; border-collapse:collapse; margin-top:14px; margin-bottom:4px; font-size:10px;">
+    <thead>
+        <tr class="bg-red">
+            <th colspan="4" style="padding:6px 8px; text-align:left; font-size:11px; letter-spacing:0.04em;">
+                Warranty Information
+            </th>
+        </tr>
+        <tr style="background:#1a1a2e; color:#fff;">
+            <th style="padding:5px 8px; text-align:left;  border:1px solid #c0392b; width:4%;">#</th>
+            <th style="padding:5px 8px; text-align:left;  border:1px solid #c0392b;">Product</th>
+            <th style="padding:5px 8px; text-align:center;border:1px solid #c0392b; width:22%;">Serial Number</th>
+            <th style="padding:5px 8px; text-align:center;border:1px solid #c0392b; width:30%;">Warranty Period</th>
+        </tr>
+    </thead>
+    <tbody>
+{% endif %}{% endif %}{% endfor %}
+
+{% for item in warranty_items %}
+{% if item.product.warranty_months > 0 and item.has_warranty %}
+        <tr>
+            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; text-align:center; vertical-align:top;">{{ forloop.counter }}</td>
+            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; vertical-align:top;">
+                <strong>{% if item.product.sku == 'CUSTOM' %}{{ item.name|default:item.description }}{% else %}{{ item.name|default:item.product.name }}{% endif %}</strong>
+                {% if item.model %}
+                <div style="font-size:8.5px; color:#555; margin-top:2px;">Model: {{ item.model }}</div>
+                {% endif %}
+
+            </td>
+            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; text-align:center; vertical-align:top; font-family:monospace;">
+                {% if item.serial_number %}{{ item.serial_number }}{% else %}<span style="color:#aaa; font-family:inherit;">&#8212;</span>{% endif %}
+            </td>
+            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; text-align:center; vertical-align:top;">
+                <strong>{% if item.warranty_period %}{{ item.warranty_period }}{% else %}{{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}{% endif %}</strong>
+                <div style="font-size:8.5px; color:#555; margin-top:2px;">
+                    From: {% if item.warranty_start_date %}{{ item.warranty_start_date|date:"d M Y" }}{% else %}{{ doc.date|date:"d M Y" }}{% endif %}
+                </div>
+            </td>
+        </tr>
+{% endif %}
+{% endfor %}
+
+{% for item in warranty_items %}{% if item.product.warranty_months > 0 and item.has_warranty %}{% if forloop.first %}
+    </tbody>
+    <tfoot>
+        <tr style="background:#f8f8f8; font-size:8.5px; color:#666;">
+            <td colspan="4" style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; font-style:italic;">
+                Warranty is valid from the invoice date. Serial number recorded at time of dispatch.
+                Warranty excludes wear parts, consumables, and accessories unless stated otherwise.
+            </td>
+        </tr>
+    </tfoot>
+</table>
+{% endif %}{% endif %}{% endfor %}
+{% endif %}
+
+{% endwith %}
+
+{# ── Unified Bottom: Left=BankDetails+AmtInWords+Terms | Right=Totals+Signature ── #}
+<table style="width: 100%; table-layout: fixed; border: none; margin-top: 4px; border-spacing: 0; border-collapse: collapse; page-break-inside: avoid;">
+    <tr>
+        {# ─ LEFT COLUMN: Pay To + Amount in Words + Terms ─ #}
+        <td style="width: 55%; border: none; vertical-align: top; padding-right: 18px; padding-top: 2px;">
+            <div class="text-red" style="font-size: 10.5px; font-weight: bold; margin-bottom: 3px;">Pay To:</div>
+            <div style="font-size: 8.5px; line-height: 1.35; color: #222; margin-bottom: 8px;">
+                Bank Name : HDFC BANK, SHAHID NAGAR - ORISSA<br>
+                Bank Account No. : 50200062534076<br>
+                Bank IFSC code : HDFC0001080<br>
+                Account Holder Name : OD TECH SOLUTIONS
+            </div>
+            <div class="text-red" style="font-size: 10.5px; font-weight: bold; margin-bottom: 2px; line-height: 1.3;">
+                {% if doc.type == 'PRO' %}Proforma Invoice Amount In Words:{% else %}Invoice Amount In Words:{% endif %}
+            </div>
+            <div style="font-size: 8.5px; font-style: italic; font-weight: bold; color: #222; line-height: 1.35; margin-bottom: 10px; word-wrap: break-word;">{{ doc.amount_in_words }}</div>
+            {% if doc.terms_list %}
+            <div class="text-red" style="font-size: 10.5px; font-weight: bold; margin-bottom: 3px;">Terms And Conditions</div>
+            <ol style="font-size: 8.5px; line-height: 1.35; padding-left: 14px; margin: 0;">
+                {% for term in doc.terms_list %}
+                <li style="margin-bottom: 2px;">{{ term }}</li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+        </td>
+
+        {# ─ RIGHT COLUMN: Totals + Seal & Signature ─ #}
+        <td style="width: 45%; border: none; vertical-align: top; padding: 0;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                {% if doc.discount_type != 'none' %}
+                <tr>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; width: 52%; font-weight: bold;">Gross Sub Total</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.gross_subtotal|indian_currency }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">
+                        Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% endif %}
+                    </td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold;">-{{ doc.currency_symbol }} {{ doc.total_discount|indian_currency }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} width: 52%; font-weight: bold;">{% if doc.discount_type != 'none' %}Taxable Sub Total{% else %}Sub Total{% endif %}</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.subtotal|indian_currency }}</td>
+                </tr>
+                {% if doc.show_gst %}
+                    {% if doc.is_igst %}
+                    <tr>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">IGST</td>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.tax_total|indian_currency }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: CGST</td>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.cgst_amount|indian_currency }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: SGST</td>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.sgst_amount|indian_currency }}</td>
+                    </tr>
+                    {% endif %}
+                {% endif %}
+                <tr>
+                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
+                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">{{ doc.currency_symbol }} <span>{{ doc.grand_total|indian_currency }}</span></td>
+                </tr>
+                {% if doc.show_payment_summary %}
+                <tr>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; color: #047857;">Amount Paid</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857;">{{ doc.currency_symbol }} {% if doc.amount_paid %}{{ doc.amount_paid|indian_currency }}{% else %}0.00{% endif %}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; background: #fff1f2; color: #be123c;">Balance Remaining</td>
+                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; background: #fff1f2; color: #be123c;">{{ doc.currency_symbol }} {{ doc.balance_due|indian_currency }}</td>
+                </tr>
+                {% endif %}
+                {% if doc.type == 'PRO' and doc.payment_milestones_list %}
+                    {% for m in doc.payment_milestones_list %}
+                    <tr>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-size: 9px; color: #444;">{{ m.label }} = @ {{ m.percentage }}%</td>
+                        <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-size: 9px; color: #444;">{{ doc.currency_symbol }} {{ m.amount|indian_currency }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </table>
+
+            {# ─ Seal & Signature (bigger) ─ #}
+            <div style="text-align: right; margin-top: 14px;">
+                <div style="font-size: 9px; display: inline-block; text-align: center;">
+                    For : ODtech Solutions<br>
+                    <div style="position: relative; height: 95px; margin-top: 4px; margin-bottom: 4px; width: 170px; display: inline-block;">
+                        <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
+                            alt="Stamp"
+                            style="height: 95px; opacity: 0.85; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
+                        <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
+                            alt="Signature"
+                            style="height: 44px; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                    </div>
+                    <br>
+                    <strong>Authorized Signatory</strong>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+{% endblock %}

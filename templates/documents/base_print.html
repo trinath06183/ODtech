@@ -219,14 +219,17 @@
         .info-grid {
             width: 100%;
             display: table;
+            table-layout: fixed;
             margin-bottom: 5px;
             margin-top: 5px;
             page-break-inside: avoid;
+            box-sizing: border-box;
         }
 
         .info-col {
             display: table-cell;
             vertical-align: top;
+            box-sizing: border-box;
         }
 
         .bold {
