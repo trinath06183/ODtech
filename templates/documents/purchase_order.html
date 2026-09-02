@@ -126,99 +126,91 @@
 
 {% include 'documents/print_items_table.html' %}
 
-{# ── Totals row: right-aligned, below items table ── #}
-<table style="width: 100%; table-layout: fixed; border: none; margin-top: 4px; border-spacing: 0; border-collapse: collapse;">
-    <tr>
-        <td style="width: 55%; border: none;"></td>
-        <td style="width: 45%; border: none; vertical-align: top; padding: 0;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                {% if doc.discount_type != 'none' %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; width: 52%; font-weight: bold;">Gross Sub Total</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.gross_subtotal|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">
-                        Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% endif %}
-                    </td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold;">-{{ doc.currency_symbol }} {{ doc.total_discount|indian_currency }}</td>
-                </tr>
-                {% endif %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} width: 52%; font-weight: bold;">{% if doc.discount_type != 'none' %}Taxable Sub Total{% else %}Sub Total{% endif %}</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.subtotal|indian_currency }}</td>
-                </tr>
-                {% if doc.is_igst %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">IGST</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.tax_total|indian_currency }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: CGST</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.cgst_amount|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: SGST</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold;">{{ doc.currency_symbol }} {{ doc.sgst_amount|indian_currency }}</td>
-                </tr>
-                {% endif %}
-                <tr>
-                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
-                    <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right;">{{ doc.currency_symbol }} {{ doc.grand_total|indian_currency }}</td>
-                </tr>
-                {% if doc.show_payment_summary and doc.amount_paid > 0 %}
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; color: #047857;">Amount Paid</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857;">{{ doc.currency_symbol }} {{ doc.amount_paid|indian_currency }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; background: #fff1f2; color: #be123c;">Balance Remaining</td>
-                    <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; background: #fff1f2; color: #be123c;">{{ doc.currency_symbol }} {{ doc.balance_due|indian_currency }}</td>
-                </tr>
-                {% endif %}
-
-            </table>
-        </td>
-    </tr>
-</table>
-
-{# ── Amount In Words row ── #}
-<table style="width: 100%; table-layout: fixed; border: none; margin-top: 10px; border-spacing: 0; border-collapse: collapse;">
-    <tr>
-        <td style="border: none; vertical-align: top; padding: 0 15px 0 0;">
-            <div class="text-red mb-1" style="font-size: 11px; font-weight: bold;">Amount In Words:</div>
-            <div style="font-size: 9px; font-style: italic; font-weight: bold; color: #222; line-height: 1.3;">{{ doc.amount_in_words }}</div>
-        </td>
-    </tr>
-</table>
-
-{# ── Terms & Signature row ── #}
-<div class="info-grid" style="margin-top: 15px; margin-bottom: 10px;">
-    <div class="info-col" style="width: 55%; padding-right: 20px;">
+{# ── Unified Bottom: Left=AmtInWords+Terms | Right=Totals+Signature ── #}
+<div class="info-grid" style="margin-top: 6px; page-break-inside: avoid;">
+    {# ─ LEFT COLUMN: Amount in Words + Terms ─ #}
+    <div class="info-col" style="width: 55%; padding-right: 18px;">
+        <div class="text-red" style="font-size: 10.5px; font-weight: bold; margin-bottom: 2px;">Amount In Words:</div>
+        <div style="font-size: 8.5px; font-style: italic; font-weight: bold; color: #222; line-height: 1.35; margin-bottom: 10px; word-wrap: break-word;">{{ doc.amount_in_words }}</div>
         {% if doc.terms_list %}
-        <div class="text-red mb-1" style="font-size: 12px; font-weight: bold;">Terms And Conditions</div>
-        <ol style="font-size: 9px; line-height: 1.4; padding-left: 14px; margin: 0;">
+        <div class="text-red" style="font-size: 10.5px; font-weight: bold; margin-bottom: 3px;">Terms And Conditions</div>
+        <ol style="font-size: 8.5px; line-height: 1.35; padding-left: 14px; margin: 0;">
             {% for term in doc.terms_list %}
             <li style="margin-bottom: 2px;">{{ term }}</li>
             {% endfor %}
         </ol>
         {% endif %}
     </div>
-    <div class="info-col" style="width: 45%; text-align: right; vertical-align: top;">
-        <div style="font-size: 9px; display: inline-block; position: relative; text-align: center;">
-            For : ODtech Solutions<br>
-            <div
-                style="position: relative; height: 75px; margin-top: 2px; margin-bottom: 2px; width: 150px; display: inline-block;">
-                <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
-                    alt="Stamp"
-                    style="height: 75px; opacity: 0.8; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
-                <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
-                    alt="Signature"
-                    style="height: 35px; position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 2;">
+
+    {# ─ RIGHT COLUMN: Totals + Seal & Signature ─ #}
+    <div class="info-col" style="width: 45%;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed;">
+            <colgroup>
+                <col style="width: 48%;">
+                <col style="width: 52%;">
+            </colgroup>
+            {% if doc.discount_type != 'none' %}
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; font-weight: bold;">Gross Sub Total</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; text-align: right; font-weight: bold; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.gross_subtotal|indian_currency }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">
+                    Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% endif %}
+                </td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold; white-space: nowrap;">-{{ doc.currency_symbol }} {{ doc.total_discount|indian_currency }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} font-weight: bold;">{% if doc.discount_type != 'none' %}Taxable Sub Total{% else %}Sub Total{% endif %}</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; {% if doc.discount_type != 'none' %}border-top: none;{% endif %} text-align: right; font-weight: bold; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.subtotal|indian_currency }}</td>
+            </tr>
+            {% if doc.is_igst %}
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">IGST</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.tax_total|indian_currency }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: CGST</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.cgst_amount|indian_currency }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">Add: SGST</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.sgst_amount|indian_currency }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="bg-red bold" style="padding: 4px 6px; border-top: none;">Grand Total</td>
+                <td class="bg-red bold" style="padding: 4px 6px; border-top: none; text-align: right; white-space: nowrap;">{{ doc.currency_symbol }} <span>{{ doc.grand_total|indian_currency }}</span></td>
+            </tr>
+            {% if doc.show_payment_summary and doc.amount_paid > 0 %}
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; color: #047857;">Amount Paid</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; color: #047857; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.amount_paid|indian_currency }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold; background: #fff1f2; color: #be123c;">Balance Remaining</td>
+                <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; font-weight: bold; background: #fff1f2; color: #be123c; white-space: nowrap;">{{ doc.currency_symbol }} {{ doc.balance_due|indian_currency }}</td>
+            </tr>
+            {% endif %}
+        </table>
+
+        {# ─ Seal & Signature (bigger) ─ #}
+        <div style="text-align: right; margin-top: 14px;">
+            <div style="font-size: 9px; display: inline-block; text-align: center;">
+                For : ODtech Solutions<br>
+                <div style="position: relative; height: 95px; margin-top: 4px; margin-bottom: 4px; width: 170px; display: inline-block;">
+                    <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
+                        alt="Stamp"
+                        style="height: 95px; opacity: 0.85; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
+                    <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
+                        alt="Signature"
+                        style="height: 44px; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                </div>
+                <br>
+                <strong>Authorized Signatory</strong>
             </div>
-            <br>
-            <strong>Authorized Signatory</strong>
         </div>
     </div>
 </div>
