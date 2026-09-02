@@ -136,9 +136,16 @@ def payment_create(request):
 def payment_delete(request, payment_id):
     payment = get_object_or_404(Payment, id=payment_id)
     if request.method == 'POST':
-        payment.delete()
-        messages.success(request, 'Payment deleted.')
-    next_url = request.GET.get('next')
+        action_type = request.POST.get('action_type', 'delete')
+        if action_type == 'delink':
+            doc_ref = payment.document_ref
+            payment.document_ref = None
+            payment.save()
+            messages.success(request, f'Payment of ₹{payment.amount:,.2f} delinked from document {doc_ref or ""}. Payment record remains saved in ledger.')
+        else:
+            payment.delete()
+            messages.success(request, 'Payment record permanently deleted.')
+    next_url = request.GET.get('next') or request.POST.get('next')
     if next_url:
         return redirect(next_url)
     return redirect('payment_list')
