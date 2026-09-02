@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.db.models import Q, Sum, Count
 from .models import Document, DocumentItem
 from .services import DocumentService, PDFService, NumberingService
-from core.decorators import require_permission
+from core.decorators import login_required, require_permission
 from inventory.models import Product
 from contacts.models import Contact
 from config.models import CompanyProfile
