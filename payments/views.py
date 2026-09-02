@@ -169,7 +169,8 @@ def expense_list(request):
     sort = request.GET.get('sort', '').strip()
 
     if search:
-        expenses = expenses.filter(
+        import re
+        search_q = (
             Q(title__icontains=search) | 
             Q(notes__icontains=search) |
             Q(submitted_by__empid__icontains=search) |
@@ -178,6 +179,11 @@ def expense_list(request):
             Q(submitted_by__last_name__icontains=search) |
             Q(expense_type__icontains=search)
         )
+        # Check if search is an expense ID like e-0000023, e-23, or a raw number
+        clean_id = re.sub(r'^[eE]-?0*', '', search)
+        if clean_id.isdigit():
+            search_q |= Q(id=int(clean_id))
+        expenses = expenses.filter(search_q)
     if category:
         expenses = expenses.filter(expense_type=category)
     if start_date:
@@ -248,7 +254,7 @@ def expense_list(request):
         'total_unpaid': total_unpaid,
         'total_count': total_count,
         'has_next': page_obj.has_next(),
-        'next_page': 2 if page_obj.has_next() else None,
+        'next_page': 2 if page_obj.has_next() else '',
     })
 
 @require_permission('PAYMENTS', 'read')
@@ -581,7 +587,7 @@ def expense_export_csv(request):
     response['Content-Disposition'] = 'attachment; filename="expenses_export.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Category', 'Description', 'Vendor/Employee', 'Amount', 'Status', 'Recorded By', 'Paid Status', 'Product Link', 'Product Details', 'Order Details'])
+    writer.writerow(['Expense ID', 'Date', 'Category', 'Description', 'Vendor/Employee', 'Amount', 'Status', 'Recorded By', 'Paid Status', 'Product Link', 'Product Details', 'Order Details'])
     
     product_ids = [e.payload.get('product_id') for e in expenses if e.payload and e.payload.get('product_id')]
     order_ids = [e.payload.get('order_id') for e in expenses if e.payload and e.payload.get('order_id')]
@@ -611,6 +617,7 @@ def expense_export_csv(request):
                 order_detail = f"{orders[ord_id].order_number} ({orders[ord_id].customer_name})"
 
         writer.writerow([
+            e.expense_id,
             e.date.strftime('%d-%b-%Y') if e.date else '',
             e.expense_type,
             e.title,

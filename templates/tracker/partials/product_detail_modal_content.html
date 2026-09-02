@@ -1,104 +1,16 @@
 <!-- Product Modal Content Layout -->
-<div x-data="{
-    tab: 'details',
+<div x-data="productModalApp({
     productId: '{{ product.id }}',
-    showCreateSupplier: false,
-    
-    // Pricing Calculator fields
     gstPercent: {% if selected_supplier %}{{ selected_supplier.gst_percentage|default:18 }}{% else %}{{ product.gst_percentage|default:18 }}{% endif %},
     buyingPriceExGst: {% if selected_supplier %}{{ selected_supplier.base_price|default:0.00 }}{% else %}{{ product.buying_price_ex_gst|default:0.00 }}{% endif %},
     buyingPriceIncGst: {% if selected_supplier %}{{ selected_supplier.total_inc_gst|default:0.00 }}{% else %}{{ product.buying_price_inc_gst|default:0.00 }}{% endif %},
     sellingPriceExGst: {{ product.selling_price_ex_gst|default:0.00 }},
     sellingPriceIncGst: {{ product.selling_price_inc_gst|default:0.00 }},
-    profitAmount: 0.00,
-    totalProfitAmount: 0.00,
-    profitPercent: 0.00,
     minProfitMargin: {{ product.order.minimum_profit_margin|default:25.00 }},
     quantity: {{ product.quantity|default:0 }},
-    
-    expenses: JSON.parse('{{ product_expenses_json|escapejs|default:" []" }}'), totalExpenses: 0.00, init() {
-    this.recalcExpenses(); this.calcBuyingForward(); this.calcSellingForward(); this.updateProfits(); }, addExpense() {
-    this.expenses.push({id: '' , desc: '' , amount: '0.00', type: 'PER_UNIT', is_linked: false }); this.recalcExpenses(); }, removeExpense(index) {
-    this.expenses.splice(index, 1); this.recalcExpenses(); }, recalcExpenses() {
-    let total = 0; let qty = parseInt(this.quantity) || 1; if (qty === 0) qty = 1;
-    this.expenses.forEach(exp => { let amt = parseFloat(exp.amount) || 0; if (exp.type === 'TOTAL') { total += amt / qty; } else { total += amt; } });
-    this.totalExpenses = total;
-    this.updateProfits();
-    },
-
-    calcAllForward() {
-    this.calcBuyingForward();
-    this.calcSellingForward();
-    },
-
-    calcBuyingForward() {
-    let base = parseFloat(this.buyingPriceExGst) || 0;
-    let gst = parseFloat(this.gstPercent) || 0;
-    this.buyingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
-    this.updateProfits();
-    },
-
-    calcBuyingReverse() {
-    let total = parseFloat(this.buyingPriceIncGst) || 0;
-    let gst = parseFloat(this.gstPercent) || 0;
-    this.buyingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
-    this.updateProfits();
-    },
-
-    calcSellingForward(skipProfitAmount = false, skipProfitPercent = false) {
-    let base = parseFloat(this.sellingPriceExGst) || 0;
-    let gst = parseFloat(this.gstPercent) || 0;
-    this.sellingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
-    this.updateProfits(skipProfitAmount, skipProfitPercent);
-    },
-
-    calcSellingReverse(skipProfitAmount = false, skipProfitPercent = false) {
-    let total = parseFloat(this.sellingPriceIncGst) || 0;
-    let gst = parseFloat(this.gstPercent) || 0;
-    this.sellingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
-    this.updateProfits(skipProfitAmount, skipProfitPercent);
-    },
-
-    calcFromProfitAmount() {
-    let buy = parseFloat(this.buyingPriceExGst) || 0;
-    let expenses = parseFloat(this.totalExpenses) || 0;
-    let totalCost = buy + expenses;
-    let profit = parseFloat(this.profitAmount) || 0;
-    this.sellingPriceExGst = (totalCost + profit).toFixed(2);
-    this.calcSellingForward(true, false);
-    },
-
-    calcFromProfitPercent() {
-    let buy = parseFloat(this.buyingPriceExGst) || 0;
-    let expenses = parseFloat(this.totalExpenses) || 0;
-    let totalCost = buy + expenses;
-    let profitPct = parseFloat(this.profitPercent) || 0;
-    let profit = totalCost * (profitPct / 100);
-    this.sellingPriceExGst = (totalCost + profit).toFixed(2);
-    this.calcSellingForward(false, true);
-    },
-
-    updateProfits(skipProfitAmount = false, skipProfitPercent = false) {
-    let buy = parseFloat(this.buyingPriceExGst) || 0;
-    let expenses = parseFloat(this.totalExpenses) || 0;
-    let totalCost = buy + expenses;
-    let sell = parseFloat(this.sellingPriceExGst) || 0;
-    let qty = parseInt(this.quantity) || 1;
-    if (!skipProfitAmount) {
-    this.profitAmount = (sell - totalCost).toFixed(2);
-    }
-    this.totalProfitAmount = (parseFloat(this.profitAmount) * qty).toFixed(2);
-    if (!skipProfitPercent) {
-    if (totalCost > 0) {
-    this.profitPercent = (((sell - totalCost) / totalCost) * 100).toFixed(2);
-    } else if (sell > 0) {
-    this.profitPercent = '100.00';
-    } else {
-    this.profitPercent = '0.00';
-    }
-    }
-    }
-    }" class="h-full flex flex-col">
+    expenses: JSON.parse('{{ product_expenses_json|escapejs|default:"[]" }}')
+})" class="h-full flex flex-col">
+    {% csrf_token %}
     <!-- Header -->
     <div
         class="px-6 py-3 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 bg-gray-50 flex-shrink-0">
@@ -844,15 +756,15 @@
                                     <label class="block text-[11px] font-semibold text-gray-600">Additional
                                         Expenses</label>
                                     <div class="flex items-center gap-2">
-                                        <a href="{% url 'expense_create' %}?product_id={{ product.id }}&product_name={{ product.item_name|urlencode }}" target="_blank"
-                                            class="text-[10px] font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors">
+                                        <button type="button" @click="openLinkExpenseModal()"
+                                            class="text-[10px] font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded transition-colors cursor-pointer">
                                             <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                                             </svg>
                                             Link App Expense
-                                        </a>
+                                        </button>
                                         <button type="button" @click="addExpense()"
-                                            class="text-[10px] font-medium text-emerald-600 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-colors">
+                                            class="text-[10px] font-medium text-emerald-600 hover:text-emerald-800 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-colors cursor-pointer">
                                             <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 4v16m8-8H4"></path>
@@ -864,45 +776,56 @@
                                 <div class="space-y-2">
                                     <template x-for="(expense, index) in expenses" :key="index">
                                         <div
-                                            class="flex gap-2 items-center bg-white p-1.5 rounded border shadow-sm" :class="expense.is_linked ? 'border-gray-200 bg-gray-50' : 'border-emerald-100'">
+                                            class="flex gap-2 items-center bg-white p-1.5 rounded border shadow-sm" :class="expense.is_linked ? 'border-blue-200 bg-blue-50/40' : 'border-emerald-100'">
                                             <input type="hidden" name="expense_id[]" :value="expense.id" x-bind:disabled="expense.is_linked === true">
-                                            <div class="flex-1">
+                                            <div class="flex-1 flex items-center gap-1.5 min-w-0">
+                                                <template x-if="expense.is_linked">
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 shrink-0">
+                                                        🔗 Linked
+                                                    </span>
+                                                </template>
                                                 <input type="text" name="expense_desc[]" x-model="expense.desc"
                                                     placeholder="Expense description..."
-                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border"
-                                                    x-bind:readonly="expense.is_linked === true" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''">
+                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border truncate"
+                                                    x-bind:readonly="expense.is_linked === true" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-transparent border-transparent text-gray-800 font-medium' : ''">
                                             </div>
                                             <div class="w-24">
-                                                <select name="expense_type[]" x-model="expense.type" @change="recalcExpenses()" class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'">
+                                                <select name="expense_type[]" x-model="expense.type" @change="recalcExpenses()" class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-transparent border-transparent text-gray-600' : 'bg-white'">
                                                     <option value="PER_UNIT">Per Unit</option>
                                                     <option value="TOTAL">Total Qty</option>
                                                 </select>
                                             </div>
                                             <div class="w-24">
                                                 <div class="relative group">
-    <input type="number" name="expense_amount[]" step="0.01"
-                                                    x-model="expense.amount" @input="recalcExpenses()"
-                                                    placeholder="0.00"
-                                                    class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border pr-7" x-bind:readonly="expense.is_linked === true" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''">
-    
-<button type="button" x-data="{ copied: false }"
-    @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy(window.formatPriceForCopy($el.parentElement.querySelector('input').value))); copied = true; setTimeout(() => copied = false, 2000)"
-    class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
-    <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-    <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-</button>
-</div>
+                                                    <input type="number" name="expense_amount[]" step="0.01"
+                                                        x-model="expense.amount" @input="recalcExpenses()"
+                                                        placeholder="0.00"
+                                                        class="block w-full text-xs border-gray-300 rounded focus:ring-emerald-500 focus:border-emerald-500 p-1 border pr-7" x-bind:readonly="expense.is_linked === true" x-bind:disabled="expense.is_linked === true" :class="expense.is_linked ? 'bg-transparent border-transparent text-gray-900 font-bold' : ''">
+                                                    
+                                                    <button type="button" x-data="{ copied: false }"
+                                                        @click.prevent.stop="navigator.clipboard.writeText(window.formatPriceForCopy(window.formatPriceForCopy($el.parentElement.querySelector('input').value))); copied = true; setTimeout(() => copied = false, 2000)"
+                                                        class="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy">
+                                                        <svg x-show="!copied" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                                        <svg x-show="copied" x-cloak class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <button type="button" @click="if(!expense.is_linked) removeExpense(index)"
-                                                class="p-1 rounded transition-colors" :class="expense.is_linked ? 'text-gray-300 cursor-not-allowed bg-transparent' : 'text-red-400 hover:text-red-600 bg-gray-50 hover:bg-red-50'">
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                    </path>
-                                                </svg>
-                                            </button>
+                                            <template x-if="!expense.is_linked">
+                                                <button type="button" @click="removeExpense(index)"
+                                                    class="p-1 rounded transition-colors text-red-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 cursor-pointer" title="Remove Manual Expense">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </template>
+                                            <template x-if="expense.is_linked">
+                                                <button type="button" @click="unlinkAppExpense(expense, index)"
+                                                    class="p-1 rounded transition-colors text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 cursor-pointer" title="Unlink App Expense">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                                    </svg>
+                                                </button>
+                                            </template>
                                         </div>
                                     </template>
                                     <div x-show="expenses.length === 0" class="text-[10px] text-gray-400 italic py-1">No
@@ -1711,6 +1634,85 @@
             </div>
             <!-- ─── END HISTORY ─── -->
 
+    <!-- ─── Link Existing App Expense Modal ─── -->
+    <div x-show="linkExpenseModalOpen" style="display: none;" class="fixed z-[10000] inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+            <div x-show="linkExpenseModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="closeLinkExpenseModal()"></div>
+
+            <div x-show="linkExpenseModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full p-6 border border-slate-200 z-10 relative">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Link Existing App Expense</h3>
+                            <p class="text-xs text-gray-500">Select an existing expense recorded in Payments to link to this product</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="closeLinkExpenseModal()" class="text-gray-400 hover:text-gray-600 p-1 text-lg">✕</button>
+                </div>
+
+                <!-- Search & New Action -->
+                <div class="flex gap-2 mb-4">
+                    <div class="relative flex-1">
+                        <input type="text" x-model="appExpenseSearchQuery" @input.debounce.300ms="fetchAvailableAppExpenses()" placeholder="Search ID (e-0000023), title, category, employee..." class="w-full pl-9 pr-4 py-2 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <a href="{% url 'expense_create' %}?product_id={{ product.id }}&product_name={{ product.item_name|urlencode }}" target="_blank" class="inline-flex items-center px-3 py-2 border border-blue-200 text-xs font-semibold rounded-xl text-blue-700 bg-blue-50 hover:bg-blue-100 transition shrink-0">
+                        + Record New
+                    </a>
+                </div>
+
+                <!-- Expense List -->
+                <div class="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-xl">
+                    <template x-if="loadingAppExpenses">
+                        <div class="p-8 text-center text-xs text-gray-500">
+                            <svg class="animate-spin w-5 h-5 text-blue-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Loading expenses...
+                        </div>
+                    </template>
+
+                    <template x-if="!loadingAppExpenses && availableAppExpenses.length === 0">
+                        <div class="p-8 text-center text-xs text-gray-500 italic">
+                            No expenses found. Record a new expense using the button above.
+                        </div>
+                    </template>
+
+                    <template x-for="exp in availableAppExpenses" :key="exp.id">
+                        <div class="p-3 hover:bg-slate-50 flex items-center justify-between gap-3 transition">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-mono font-bold rounded" x-text="exp.expense_id"></span>
+                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded" x-text="exp.expense_type"></span>
+                                    <span class="text-[10px] text-gray-400" x-text="exp.date"></span>
+                                    <template x-if="exp.status">
+                                        <span class="text-[9px] px-1.5 py-0.2 rounded font-semibold" :class="exp.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : (exp.status === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700')" x-text="exp.status"></span>
+                                    </template>
+                                </div>
+                                <div class="font-semibold text-xs text-gray-900 truncate" x-text="exp.title"></div>
+                                <template x-if="exp.linked_product_name || exp.linked_order_number">
+                                    <div class="text-[10px] text-amber-700 font-medium mt-0.5">
+                                        Currently linked to: <span class="font-bold" x-text="exp.linked_product_name || ('Order ' + exp.linked_order_number)"></span>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-sm font-bold text-emerald-600">₹<span x-text="exp.amount.toFixed(2)"></span></div>
+                                <button type="button" @click="linkAppExpense(exp)" class="mt-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg shadow-sm transition cursor-pointer">
+                                    Link to Product
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <button type="button" @click="closeLinkExpenseModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition cursor-pointer">
+                        Close
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1813,4 +1815,196 @@ function modalStageCell(productId, initCust, initSupp) {
     };
 }
 
+window.productModalApp = function(config) {
+    return {
+        tab: 'details',
+        productId: config.productId,
+        showCreateSupplier: false,
+        gstPercent: config.gstPercent,
+        buyingPriceExGst: config.buyingPriceExGst,
+        buyingPriceIncGst: config.buyingPriceIncGst,
+        sellingPriceExGst: config.sellingPriceExGst,
+        sellingPriceIncGst: config.sellingPriceIncGst,
+        profitAmount: 0.00,
+        totalProfitAmount: 0.00,
+        profitPercent: 0.00,
+        minProfitMargin: config.minProfitMargin,
+        quantity: config.quantity,
+        expenses: config.expenses || [],
+        totalExpenses: 0.00,
+        linkExpenseModalOpen: false,
+        availableAppExpenses: [],
+        loadingAppExpenses: false,
+        appExpenseSearchQuery: '',
+
+        init() {
+            this.recalcExpenses();
+            this.calcBuyingForward();
+            this.calcSellingForward();
+            this.updateProfits();
+        },
+        addExpense() {
+            this.expenses.push({ id: '', desc: '', amount: '0.00', type: 'PER_UNIT', is_linked: false });
+            this.recalcExpenses();
+        },
+        removeExpense(index) {
+            this.expenses.splice(index, 1);
+            this.recalcExpenses();
+        },
+        async openLinkExpenseModal() {
+            this.linkExpenseModalOpen = true;
+            this.appExpenseSearchQuery = '';
+            await this.fetchAvailableAppExpenses();
+        },
+        closeLinkExpenseModal() {
+            this.linkExpenseModalOpen = false;
+        },
+        async fetchAvailableAppExpenses() {
+            this.loadingAppExpenses = true;
+            try {
+                const res = await fetch(`/tracker/api/expenses/search/?q=${encodeURIComponent(this.appExpenseSearchQuery)}`);
+                const data = await res.json();
+                if (data.success) {
+                    this.availableAppExpenses = data.expenses;
+                }
+            } catch(e) {
+                console.error('Error fetching expenses:', e);
+            } finally {
+                this.loadingAppExpenses = false;
+            }
+        },
+        async linkAppExpense(exp) {
+            try {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                                  (document.cookie.match(/(?:^|;\s*)(?:odtech_bom_csrftoken|csrftoken)=([^;]*)/) || [])[1] || '';
+                const res = await fetch(`/tracker/api/product/${this.productId}/link-expense/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ expense_id: exp.id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.expenses.push(data.expense);
+                    this.recalcExpenses();
+                    this.closeLinkExpenseModal();
+                } else {
+                    alert(data.error || 'Failed to link expense');
+                }
+            } catch(e) {
+                console.error('Error linking expense:', e);
+                alert('Error linking expense');
+            }
+        },
+        async unlinkAppExpense(expense, index) {
+            if (!confirm('Are you sure you want to unlink this expense "' + (expense.desc || '') + '" from this product? (The payment record will not be deleted)')) {
+                return;
+            }
+            try {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                                  (document.cookie.match(/(?:^|;\s*)(?:odtech_bom_csrftoken|csrftoken)=([^;]*)/) || [])[1] || '';
+                const res = await fetch(`/tracker/api/product/${this.productId}/unlink-expense/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ expense_id: expense.expense_pk || expense.id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.expenses.splice(index, 1);
+                    this.recalcExpenses();
+                } else {
+                    alert(data.error || 'Failed to unlink expense');
+                }
+            } catch(e) {
+                console.error('Error unlinking expense:', e);
+                alert('Error unlinking expense');
+            }
+        },
+        recalcExpenses() {
+            let total = 0;
+            let qty = parseInt(this.quantity) || 1;
+            if (qty === 0) qty = 1;
+            this.expenses.forEach(exp => {
+                let amt = parseFloat(exp.amount) || 0;
+                if (exp.type === 'TOTAL') {
+                    total += amt / qty;
+                } else {
+                    total += amt;
+                }
+            });
+            this.totalExpenses = total;
+            this.updateProfits();
+        },
+        calcAllForward() {
+            this.calcBuyingForward();
+            this.calcSellingForward();
+        },
+        calcBuyingForward() {
+            let base = parseFloat(this.buyingPriceExGst) || 0;
+            let gst = parseFloat(this.gstPercent) || 0;
+            this.buyingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
+            this.updateProfits();
+        },
+        calcBuyingReverse() {
+            let total = parseFloat(this.buyingPriceIncGst) || 0;
+            let gst = parseFloat(this.gstPercent) || 0;
+            this.buyingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
+            this.updateProfits();
+        },
+        calcSellingForward(skipProfitAmount = false, skipProfitPercent = false) {
+            let base = parseFloat(this.sellingPriceExGst) || 0;
+            let gst = parseFloat(this.gstPercent) || 0;
+            this.sellingPriceIncGst = (base * (1 + (gst / 100))).toFixed(2);
+            this.updateProfits(skipProfitAmount, skipProfitPercent);
+        },
+        calcSellingReverse(skipProfitAmount = false, skipProfitPercent = false) {
+            let total = parseFloat(this.sellingPriceIncGst) || 0;
+            let gst = parseFloat(this.gstPercent) || 0;
+            this.sellingPriceExGst = (total / (1 + (gst / 100))).toFixed(2);
+            this.updateProfits(skipProfitAmount, skipProfitPercent);
+        },
+        calcFromProfitAmount() {
+            let buy = parseFloat(this.buyingPriceExGst) || 0;
+            let expenses = parseFloat(this.totalExpenses) || 0;
+            let totalCost = buy + expenses;
+            let profit = parseFloat(this.profitAmount) || 0;
+            this.sellingPriceExGst = (totalCost + profit).toFixed(2);
+            this.calcSellingForward(true, false);
+        },
+        calcFromProfitPercent() {
+            let buy = parseFloat(this.buyingPriceExGst) || 0;
+            let expenses = parseFloat(this.totalExpenses) || 0;
+            let totalCost = buy + expenses;
+            let profitPct = parseFloat(this.profitPercent) || 0;
+            let profit = totalCost * (profitPct / 100);
+            this.sellingPriceExGst = (totalCost + profit).toFixed(2);
+            this.calcSellingForward(false, true);
+        },
+        updateProfits(skipProfitAmount = false, skipProfitPercent = false) {
+            let buy = parseFloat(this.buyingPriceExGst) || 0;
+            let expenses = parseFloat(this.totalExpenses) || 0;
+            let totalCost = buy + expenses;
+            let sell = parseFloat(this.sellingPriceExGst) || 0;
+            let qty = parseInt(this.quantity) || 1;
+            if (!skipProfitAmount) {
+                this.profitAmount = (sell - totalCost).toFixed(2);
+            }
+            this.totalProfitAmount = (parseFloat(this.profitAmount) * qty).toFixed(2);
+            if (!skipProfitPercent) {
+                if (totalCost > 0) {
+                    this.profitPercent = (((sell - totalCost) / totalCost) * 100).toFixed(2);
+                } else if (sell > 0) {
+                    this.profitPercent = '100.00';
+                } else {
+                    this.profitPercent = '0.00';
+                }
+            }
+        }
+    };
+};
 </script>

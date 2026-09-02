@@ -29,6 +29,16 @@
                     <input type="hidden" name="payload_product_name" value="{{ request.GET.product_name }}">
                 </div>
             </div>
+            {% elif request.GET.order_id %}
+            <div class="md:col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-start gap-3">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                    <span class="block font-semibold mb-1">Order Link Active</span>
+                    This expense will be automatically linked to Order: <strong>{{ request.GET.order_number }}</strong>. It will appear on the order expenses page.
+                    <input type="hidden" name="payload_order_id" value="{{ request.GET.order_id }}">
+                    <input type="hidden" name="payload_order_number" value="{{ request.GET.order_number }}">
+                </div>
+            </div>
             {% endif %}
 
             <div class="md:col-span-2">

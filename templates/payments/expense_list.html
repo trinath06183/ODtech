@@ -59,7 +59,7 @@
     <form method="get" class="grid grid-cols-1 lg:grid-cols-6 gap-4 items-end">
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
-            <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search title, notes..."
+            <input type="text" name="search" value="{{ request.GET.search }}" placeholder="ID (e-0000023), title, notes..."
                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
         </div>
         <div>
@@ -201,7 +201,7 @@
 </form>
 {% endif %}
 
-<div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{{ next_page }}">
+<div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{% if has_next %}{{ next_page }}{% endif %}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
         <svg class="animate-spin w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         Loading more expenses...
@@ -216,10 +216,18 @@
     const tbody = document.getElementById('expense-tbody');
     let loading = false;
     if (!sentinel) return;
+
+    const initialNext = (sentinel.dataset.nextPage || '').trim();
+    if (!initialNext || initialNext === 'None') {
+        if (endMsg) endMsg.classList.remove('hidden');
+        return;
+    }
+
     async function loadMore() {
-        const nextPage = sentinel.dataset.nextPage || null;
-        if (!nextPage || loading) return;
-        loading = true; spinner.classList.remove('hidden');
+        const nextPage = (sentinel.dataset.nextPage || '').trim();
+        if (!nextPage || nextPage === 'None' || loading) return;
+        loading = true; 
+        if (spinner) spinner.classList.remove('hidden');
         try {
             const qs = new URLSearchParams(window.location.search);
             qs.set('page', nextPage);
@@ -228,13 +236,24 @@
             const tmp = document.createElement('tbody');
             tmp.innerHTML = data.html;
             while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
-            if (data.has_next) { sentinel.dataset.nextPage = data.next_page; }
-            else { observer.unobserve(sentinel); spinner.classList.add('hidden'); endMsg.classList.remove('hidden'); loading = false; return; }
+            if (data.has_next && data.next_page) { 
+                sentinel.dataset.nextPage = data.next_page; 
+            } else { 
+                sentinel.dataset.nextPage = '';
+                observer.unobserve(sentinel); 
+                if (spinner) spinner.classList.add('hidden'); 
+                if (endMsg) endMsg.classList.remove('hidden'); 
+                loading = false; 
+                return; 
+            }
         } catch(e) { console.error(e); }
-        spinner.classList.add('hidden'); loading = false;
+        if (spinner) spinner.classList.add('hidden'); 
+        loading = false;
     }
-    const observer = new IntersectionObserver((e) => { if (e[0].isIntersecting) loadMore(); }, { rootMargin: '200px' });
-    if (sentinel.dataset.nextPage) { observer.observe(sentinel); } else { endMsg.classList.remove('hidden'); }
+    const observer = new IntersectionObserver((e) => { 
+        if (e[0].isIntersecting) loadMore(); 
+    }, { rootMargin: '200px' });
+    observer.observe(sentinel);
 })();
 </script>
 

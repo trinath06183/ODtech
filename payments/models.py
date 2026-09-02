@@ -86,8 +86,16 @@ class Expense(TimeStampedModel):
     notes = models.TextField(blank=True, null=True)
     payload = models.JSONField(blank=True, null=True, default=dict)
 
+    @property
+    def expense_id(self):
+        return f"e-{self.id:07d}" if self.id else ""
+
+    @property
+    def formatted_id(self):
+        return f"e-{self.id:07d}" if self.id else ""
+
     def __str__(self):
-        return f"{self.title} - {self.amount} ({self.status})"
+        return f"{self.expense_id} - {self.title} - {self.amount} ({self.status})"
 
     @property
     def get_formatted_payload(self):

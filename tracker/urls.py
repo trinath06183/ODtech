@@ -93,6 +93,13 @@ urlpatterns = [
     path('api/order/<uuid:order_id>/reorder-products/', views.api_reorder_products, name='api_reorder_products'),
     path('api/product/<uuid:product_id>/audit-log/', views.api_product_audit_log, name='api_product_audit_log'),
 
+    # App Expense Linking APIs
+    path('api/expenses/search/', views.api_search_app_expenses, name='api_search_app_expenses'),
+    path('api/product/<uuid:product_id>/link-expense/', views.api_link_product_expense, name='api_link_product_expense'),
+    path('api/product/<uuid:product_id>/unlink-expense/', views.api_unlink_product_expense, name='api_unlink_product_expense'),
+    path('api/order/<uuid:order_id>/link-expense/', views.api_link_order_expense, name='api_link_order_expense'),
+    path('api/order/<uuid:order_id>/unlink-expense/', views.api_unlink_order_expense, name='api_unlink_order_expense'),
+
     # Personal Notes API (private per-user)
     path('api/my/notes/', views.api_notes_list_create, name='api_notes_list_create'),
     path('api/my/notes/<uuid:note_id>/', views.api_note_detail, name='api_note_detail'),

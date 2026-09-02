@@ -26,7 +26,10 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2 flex items-center justify-between border-b border-gray-100 pb-4">
-                <div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {{ expense.expense_id }}
+                    </span>
                     <span class="px-2.5 py-1 rounded-full text-xs font-semibold
                         {% if expense.status == 'Approved' %}bg-green-100 text-green-700
                         {% elif expense.status == 'Rejected' %}bg-red-100 text-red-700
@@ -34,7 +37,7 @@
                         {{ expense.status }}
                     </span>
                     {% if expense.is_paid %}
-                    <span class="px-2.5 py-1 inline-block rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 ml-2">
+                    <span class="px-2.5 py-1 inline-block rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
                         Paid
                     </span>
                     {% endif %}

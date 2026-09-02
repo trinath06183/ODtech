@@ -6,6 +6,7 @@ import re
 import shutil
 import zipfile
 from datetime import datetime
+from decimal import Decimal
 from django.db.models import Prefetch, Q, Sum, F, ExpressionWrapper, DecimalField
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -125,11 +126,12 @@ def _build_product_list_context(request, products_qs, order, lot=None):
 
     # Fetch Linked Expenses from Payments
     linked_expenses = []
+    linked_order_expenses = []
     try:
         from payments.models import Expense
         import json
-        approved_expenses = Expense.objects.filter(status='Approved')
-        for le in approved_expenses:
+        all_app_expenses = Expense.objects.all()
+        for le in all_app_expenses:
             p_payload = le.payload or {}
             if isinstance(p_payload, str):
                 try:
@@ -137,20 +139,44 @@ def _build_product_list_context(request, products_qs, order, lot=None):
                 except Exception:
                     p_payload = {}
             prod_id = p_payload.get('product_id')
+            ord_id = p_payload.get('order_id')
+            
             if prod_id:
                 p_name = None
                 for p in products:
-                    if str(p.id) == prod_id:
+                    if str(p.id) == str(prod_id):
                         p_name = p.item_name
                         break
                 if p_name:
                     linked_expenses.append({
+                        'id': le.id,
+                        'expense_id': f"e-{le.id:07d}",
                         'product_name': p_name,
-                        'description': f"{le.expense_type or le.title} (Linked Payment Expense)",
+                        'description': f"e-{le.id:07d} - {le.title} ({le.expense_type})",
                         'type': 'TOTAL',
                         'amount': le.amount,
                     })
                     product_expenses_total += le.amount
+            elif ord_id and (str(ord_id) == str(order.id) or ord_id == order.order_number):
+                gst_amt = float(le.gst_amount or 0)
+                tot_amt = float(le.amount)
+                ex_gst = tot_amt - gst_amt
+                gst_pct = round((gst_amt / ex_gst * 100), 2) if ex_gst > 0 and gst_amt > 0 else 0
+                linked_order_expenses.append({
+                    'id': le.id,
+                    'expense_id': f"e-{le.id:07d}",
+                    'title': le.title,
+                    'expense_name': f"e-{le.id:07d} - {le.title} ({le.expense_type})",
+                    'amount_ex_gst': ex_gst,
+                    'gst_percentage': gst_pct,
+                    'amount_inc_gst': tot_amt,
+                    'remark': f"Linked App Expense ({le.status})",
+                    'is_linked_app_expense': True,
+                    'status': le.status,
+                    'date': le.date,
+                })
+                order_expenses_inc_gst += le.amount
+                order_expenses_ex_gst += Decimal(str(ex_gst)) if isinstance(order_expenses_ex_gst, Decimal) else ex_gst
     except Exception as e:
         pass
 
@@ -163,6 +189,7 @@ def _build_product_list_context(request, products_qs, order, lot=None):
         'suppliers': sorted(suppliers),
         'locations': locations,
         'order_expenses': order_expenses,
+        'linked_order_expenses': linked_order_expenses,
         'order_expenses_ex_gst': order_expenses_ex_gst,
         'order_expenses_inc_gst': order_expenses_inc_gst,
         'product_expenses': product_expenses,
@@ -460,8 +487,8 @@ def product_detail_view(request, product_id):
     # Fetch linked payments.Expense items
     try:
         from payments.models import Expense
-        approved_expenses = Expense.objects.filter(status='Approved')
-        for le in approved_expenses:
+        all_app_expenses = Expense.objects.all()
+        for le in all_app_expenses:
             p_payload = le.payload or {}
             if isinstance(p_payload, str):
                 import json
@@ -471,8 +498,10 @@ def product_detail_view(request, product_id):
                     p_payload = {}
             if p_payload.get('product_id') == str(product.id):
                 expenses_list.append({
-                    'id': f'linked_{le.id}', 
-                    'desc': f"{le.title} (Linked Expense)", 
+                    'id': f'linked_{le.id}',
+                    'expense_pk': le.id,
+                    'expense_id': f"e-{le.id:07d}",
+                    'desc': f"e-{le.id:07d} - {le.title} ({le.expense_type})", 
                     'amount': str(le.amount), 
                     'type': 'TOTAL',
                     'is_linked': True
@@ -690,8 +719,8 @@ def product_modal_detail_view(request, product_id):
     # Fetch linked payments.Expense items
     try:
         from payments.models import Expense
-        approved_expenses = Expense.objects.filter(status='Approved')
-        for le in approved_expenses:
+        all_app_expenses = Expense.objects.all()
+        for le in all_app_expenses:
             p_payload = le.payload or {}
             if isinstance(p_payload, str):
                 import json
@@ -701,8 +730,10 @@ def product_modal_detail_view(request, product_id):
                     p_payload = {}
             if p_payload.get('product_id') == str(product.id):
                 expenses_list.append({
-                    'id': f'linked_{le.id}', 
-                    'desc': f"{le.title} (Linked Expense)", 
+                    'id': f'linked_{le.id}',
+                    'expense_pk': le.id,
+                    'expense_id': f"e-{le.id:07d}",
+                    'desc': f"e-{le.id:07d} - {le.title} ({le.expense_type})", 
                     'amount': str(le.amount), 
                     'type': 'TOTAL',
                     'is_linked': True
@@ -1276,6 +1307,194 @@ def delete_order_expense_api(request, expense_id):
     expense = get_object_or_404(OrderExpense, id=expense_id)
     try:
         expense.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('TRACKER', 'read')
+def api_search_app_expenses(request):
+    """Search and return existing payments.Expense objects that can be linked to a Product or Order."""
+    from payments.models import Expense
+    q = request.GET.get('q', '').strip()
+    expenses = Expense.objects.all().order_by('-date', '-created_at')
+    if q:
+        import re
+        search_q = (
+            Q(title__icontains=q) |
+            Q(expense_type__icontains=q) |
+            Q(employee_code__icontains=q) |
+            Q(notes__icontains=q)
+        )
+        clean_id = re.sub(r'^[eE]-?0*', '', q)
+        if clean_id.isdigit():
+            search_q |= Q(id=int(clean_id))
+        expenses = expenses.filter(search_q)
+    
+    results = []
+    for e in expenses[:60]:
+        payload = e.payload or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        
+        results.append({
+            'id': e.id,
+            'expense_id': f"e-{e.id:07d}",
+            'title': e.title,
+            'expense_type': e.expense_type,
+            'amount': float(e.amount),
+            'gst_amount': float(e.gst_amount or 0),
+            'date': e.date.strftime('%d %b %Y') if e.date else '',
+            'employee_code': e.employee_code or '',
+            'status': e.status,
+            'is_paid': e.is_paid,
+            'linked_product_id': payload.get('product_id', ''),
+            'linked_product_name': payload.get('product_name', ''),
+            'linked_order_id': payload.get('order_id', ''),
+            'linked_order_number': payload.get('order_number', ''),
+        })
+    return JsonResponse({'success': True, 'expenses': results})
+
+
+@require_permission('TRACKER', 'write')
+@require_POST
+def api_link_product_expense(request, product_id):
+    """Link an existing payments.Expense to a Product."""
+    product = get_object_or_404(Product, id=product_id)
+    try:
+        data = json.loads(request.body)
+        expense_id = data.get('expense_id')
+        if not expense_id:
+            return JsonResponse({'success': False, 'error': 'expense_id is required'}, status=400)
+        
+        from payments.models import Expense
+        expense = get_object_or_404(Expense, id=expense_id)
+        payload = expense.payload or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        
+        payload['product_id'] = str(product.id)
+        payload['product_name'] = product.item_name
+        payload['order_id'] = str(product.order.id)
+        payload['order_number'] = product.order.order_number
+        expense.payload = payload
+        expense.save()
+        
+        return JsonResponse({
+            'success': True,
+            'expense': {
+                'id': f'linked_{expense.id}',
+                'expense_pk': expense.id,
+                'expense_id': f"e-{expense.id:07d}",
+                'desc': f"e-{expense.id:07d} - {expense.title} ({expense.expense_type})",
+                'amount': str(expense.amount),
+                'type': 'TOTAL',
+                'is_linked': True
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('TRACKER', 'write')
+@require_POST
+def api_unlink_product_expense(request, product_id):
+    """Unlink a payments.Expense from a Product."""
+    product = get_object_or_404(Product, id=product_id)
+    try:
+        data = json.loads(request.body)
+        expense_id = data.get('expense_id')
+        if not expense_id:
+            return JsonResponse({'success': False, 'error': 'expense_id is required'}, status=400)
+        
+        if isinstance(expense_id, str) and str(expense_id).startswith('linked_'):
+            expense_id = str(expense_id).replace('linked_', '')
+            
+        from payments.models import Expense
+        expense = get_object_or_404(Expense, id=expense_id)
+        payload = expense.payload or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        
+        payload.pop('product_id', None)
+        payload.pop('product_name', None)
+        expense.payload = payload
+        expense.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('TRACKER', 'write')
+@require_POST
+def api_link_order_expense(request, order_id):
+    """Link an existing payments.Expense to an Order."""
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+        expense_id = data.get('expense_id')
+        if not expense_id:
+            return JsonResponse({'success': False, 'error': 'expense_id is required'}, status=400)
+        
+        from payments.models import Expense
+        expense = get_object_or_404(Expense, id=expense_id)
+        payload = expense.payload or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        
+        payload['order_id'] = str(order.id)
+        payload['order_number'] = order.order_number
+        expense.payload = payload
+        expense.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('TRACKER', 'write')
+@require_POST
+def api_unlink_order_expense(request, order_id):
+    """Unlink a payments.Expense from an Order."""
+    order = get_object_or_404(Order, id=order_id)
+    try:
+        data = json.loads(request.body)
+        expense_id = data.get('expense_id')
+        if not expense_id:
+            return JsonResponse({'success': False, 'error': 'expense_id is required'}, status=400)
+        
+        if isinstance(expense_id, str) and str(expense_id).startswith('linked_'):
+            expense_id = str(expense_id).replace('linked_', '')
+            
+        from payments.models import Expense
+        expense = get_object_or_404(Expense, id=expense_id)
+        payload = expense.payload or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        
+        payload.pop('order_id', None)
+        payload.pop('order_number', None)
+        payload.pop('product_id', None)
+        payload.pop('product_name', None)
+        expense.payload = payload
+        expense.save()
+        
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
