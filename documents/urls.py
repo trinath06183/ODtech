@@ -35,6 +35,9 @@ urlpatterns = [
     # Final PDF download
     path('<int:document_id>/pdf/',     views.generate_pdf,           name='generate_pdf'),
 
+    # PDF Print (generates PDF server-side, embeds, auto-triggers print dialog)
+    path('<int:document_id>/print/',   views.print_pdf,              name='print_pdf'),
+
     # Public Secure Document Viewer & PDF Download (Signed Token, No Login Needed)
     path('v/<str:token>/',             views.public_document_view,   name='public_document_view'),
 

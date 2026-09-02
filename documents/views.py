@@ -326,6 +326,99 @@ def generate_pdf(request, document_id):
         return HttpResponse(warning_msg + PDFService.render_html(doc, request=request))
 
 
+# ─── PDF Print (Open PDF in popup → auto-trigger browser print dialog) ─────────
+@require_permission('DOCUMENTS', 'read')
+def print_pdf(request, document_id):
+    """
+    Serve a minimal HTML page that opens the real PDF URL in a popup/new tab
+    and auto-triggers the browser's native print dialog.
+    Because we open the actual PDF URL (not base64), the print output is
+    identical to a manually downloaded PDF.
+    """
+    doc = get_object_or_404(Document, id=document_id)
+    # Build the absolute PDF URL so JavaScript can open it
+    pdf_url = request.build_absolute_uri(f'/documents/{document_id}/pdf/')
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Print \u2013 {doc.number}</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        html, body {{
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            color: #333;
+        }}
+        .card {{
+            text-align: center;
+            padding: 40px 50px;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            background: white;
+        }}
+        .spinner {{
+            width: 44px; height: 44px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #e31837;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 18px auto;
+        }}
+        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+        h2 {{ font-size: 18px; font-weight: 600; margin-bottom: 6px; color: #111; }}
+        p {{ font-size: 13px; color: #666; }}
+        @media print {{ body {{ display: none; }} }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="spinner"></div>
+        <h2>Generating Print Preview</h2>
+        <p>Opening the PDF print dialog for <strong>{doc.number}</strong>&hellip;</p>
+    </div>
+    <script>
+        // Open the real PDF URL in a new window — browser renders it natively
+        // then trigger print() on that window.
+        var pdfWin = window.open('{pdf_url}', '_blank');
+
+        // Poll until the PDF window is ready (loaded), then trigger print.
+        // Most modern browsers open PDFs in their own viewer; we call print()
+        // on it which opens the native print dialog with perfect PDF quality.
+        var attempts = 0;
+        var checker = setInterval(function () {{
+            attempts++;
+            try {{
+                if (pdfWin && !pdfWin.closed) {{
+                    pdfWin.focus();
+                    pdfWin.print();
+                    clearInterval(checker);
+                    // Close this intermediary tab after a short delay
+                    setTimeout(function () {{ window.close(); }}, 1500);
+                }}
+            }} catch (e) {{
+                // Cross-origin / PDF-viewer restriction — just let user print manually
+                clearInterval(checker);
+                document.querySelector('h2').textContent = 'PDF Opened';
+                document.querySelector('p').textContent =
+                    'Use Ctrl+P (or Cmd+P on Mac) in the PDF tab to print.';
+                document.querySelector('.spinner').style.display = 'none';
+                setTimeout(function () {{ window.close(); }}, 3000);
+            }}
+            if (attempts > 20) {{ clearInterval(checker); }}
+        }}, 300);
+    </script>
+</body>
+</html>"""
+    return HttpResponse(html)
+
+
 # ─── Public Customer Document View (Secure Signed Token / No Login Needed) ────
 def public_document_view(request, token):
     """
