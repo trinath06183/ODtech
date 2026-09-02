@@ -184,21 +184,21 @@
 </table>
 
 {# ── Amount In Words row ── #}
-<table style="width: 100%; table-layout: fixed; border: none; margin-top: 6px; border-spacing: 0; border-collapse: collapse; page-break-inside: avoid;">
+<table style="width: 100%; table-layout: fixed; border: none; margin-top: 10px; border-spacing: 0; border-collapse: collapse;">
     <tr>
         <td style="border: none; vertical-align: top; padding: 0 15px 0 0;">
-            <div class="text-red mb-1" style="font-size: 10.5px; font-weight: bold;">Amount In Words:</div>
-            <div style="font-size: 8.5px; font-style: italic; font-weight: bold; color: #222; line-height: 1.3;">{{ doc.amount_in_words }}</div>
+            <div class="text-red mb-1" style="font-size: 11px; font-weight: bold;">Amount In Words:</div>
+            <div style="font-size: 9px; font-style: italic; font-weight: bold; color: #222; line-height: 1.3;">{{ doc.amount_in_words }}</div>
         </td>
     </tr>
 </table>
 
 {# ── Terms & Signature row ── #}
-<div class="info-grid" style="margin-top: 10px; margin-bottom: 4px; page-break-inside: avoid;">
+<div class="info-grid" style="margin-top: 15px; margin-bottom: 10px;">
     <div class="info-col" style="width: 55%; padding-right: 20px;">
         {% if doc.terms_list %}
-        <div class="text-red mb-1" style="font-size: 11px; font-weight: bold;">Terms And Conditions</div>
-        <ol style="font-size: 8.5px; line-height: 1.35; padding-left: 14px; margin: 0;">
+        <div class="text-red mb-1" style="font-size: 12px; font-weight: bold;">Terms And Conditions</div>
+        <ol style="font-size: 9px; line-height: 1.4; padding-left: 14px; margin: 0;">
             {% for term in doc.terms_list %}
             <li style="margin-bottom: 2px;">{{ term }}</li>
             {% endfor %}
@@ -209,13 +209,13 @@
         <div style="font-size: 9px; display: inline-block; position: relative; text-align: center;">
             For : ODtech Solutions<br>
             <div
-                style="position: relative; height: 68px; margin-top: 2px; margin-bottom: 2px; width: 140px; display: inline-block;">
+                style="position: relative; height: 75px; margin-top: 2px; margin-bottom: 2px; width: 150px; display: inline-block;">
                 <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
                     alt="Stamp"
-                    style="height: 68px; opacity: 0.8; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
+                    style="height: 75px; opacity: 0.8; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
                 <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
                     alt="Signature"
-                    style="height: 32px; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                    style="height: 35px; position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 2;">
             </div>
             <br>
             <strong>Authorized Signatory</strong>
