@@ -218,6 +218,19 @@
                 <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Date</div>
                 <div class="text-slate-800 font-bold">{{ doc.date|date:"d M Y" }}</div>
             </div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Place of Supply</span>
+                    <button type="button" onclick="openPlaceOfSupplyModal()"
+                        class="text-[11px] text-blue-600 hover:text-blue-700 font-bold hover:underline flex items-center gap-0.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        Change
+                    </button>
+                </div>
+                <div id="preview-place-of-supply-display" class="text-slate-800 font-bold text-sm bg-white/70 border border-slate-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+                    <span>{{ doc.place_of_supply|default:"21-Odisha" }}</span>
+                </div>
+            </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Grand Total</div>
                 <div class="text-emerald-600 font-bold text-xl">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
@@ -1149,6 +1162,255 @@ async function sendDocumentEmail(defaultEmail) {
         btn.innerHTML = originalHtml;
     }
 }
+
+/* ── Place of Supply Quick Edit Modal ── */
+const STATE_CODES_MAP = {
+    '01': '01-Jammu & Kashmir', '02': '02-Himachal Pradesh', '03': '03-Punjab', '04': '04-Chandigarh',
+    '05': '05-Uttarakhand', '06': '06-Haryana', '07': '07-Delhi', '08': '08-Rajasthan', '09': '09-Uttar Pradesh',
+    '10': '10-Bihar', '11': '11-Sikkim', '12': '12-Arunachal Pradesh', '13': '13-Nagaland', '14': '14-Manipur',
+    '15': '15-Mizoram', '16': '16-Tripura', '17': '17-Meghalaya', '18': '18-Assam', '19': '19-West Bengal',
+    '20': '20-Jharkhand', '21': '21-Odisha', '22': '22-Chhattisgarh', '23': '23-Madhya Pradesh', '24': '24-Gujarat',
+    '26': '26-Dadra & Nagar Haveli and Daman & Diu', '27': '27-Maharashtra', '29': '29-Karnataka', '30': '30-Goa',
+    '31': '31-Lakshadweep', '32': '32-Kerala', '33': '33-Tamil Nadu', '34': '34-Puducherry', '35': '35-Andaman & Nicobar Islands',
+    '36': '36-Telangana', '37': '37-Andhra Pradesh', '38': '38-Ladakh'
+};
+
+function openPlaceOfSupplyModal() {
+    const currentPos = (document.getElementById('preview-place-of-supply-display')?.innerText || '{{ doc.place_of_supply|default:"21-Odisha"|escapejs }}').trim();
+    const codeInput = document.getElementById('modal-pos-code-input');
+    const select = document.getElementById('modal-pos-select');
+    const customWrapper = document.getElementById('modal-pos-custom-wrapper');
+    const customInput = document.getElementById('modal-pos-custom-input');
+    const badge = document.getElementById('modal-pos-detected-badge');
+    const errorMsg = document.getElementById('pos-error-msg');
+    
+    errorMsg.classList.add('hidden');
+    let matched = false;
+    for (let opt of select.options) {
+        if (opt.value === currentPos) {
+            select.value = currentPos;
+            matched = true;
+            break;
+        }
+    }
+    
+    // Extract code if present
+    if (currentPos && currentPos.length >= 2 && /^\d{2}/.test(currentPos)) {
+        codeInput.value = currentPos.substring(0, 2);
+    } else {
+        codeInput.value = '';
+    }
+
+    if (!matched) {
+        select.value = 'custom';
+        customWrapper.classList.remove('hidden');
+        customInput.value = currentPos;
+        badge.textContent = currentPos;
+        badge.classList.remove('hidden');
+    } else {
+        customWrapper.classList.add('hidden');
+        customInput.value = '';
+        badge.textContent = currentPos;
+        badge.classList.remove('hidden');
+    }
+    document.getElementById('place-of-supply-modal').classList.remove('hidden');
+    setTimeout(() => codeInput.focus(), 50);
+}
+
+function closePlaceOfSupplyModal() {
+    document.getElementById('place-of-supply-modal').classList.add('hidden');
+}
+
+function onPosCodeInput(val) {
+    const v = val.trim();
+    const select = document.getElementById('modal-pos-select');
+    const customWrapper = document.getElementById('modal-pos-custom-wrapper');
+    const badge = document.getElementById('modal-pos-detected-badge');
+    
+    let code = v.length === 1 ? '0' + v : v;
+    if (STATE_CODES_MAP[code]) {
+        const fullState = STATE_CODES_MAP[code];
+        select.value = fullState;
+        customWrapper.classList.add('hidden');
+        badge.textContent = '✅ ' + fullState;
+        badge.className = 'text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg block mt-1.5';
+    } else if (v.length >= 2) {
+        badge.textContent = '⚠️ Unknown code: ' + v;
+        badge.className = 'text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg block mt-1.5';
+    }
+}
+
+function onPosSelectChange(val) {
+    const codeInput = document.getElementById('modal-pos-code-input');
+    const customWrapper = document.getElementById('modal-pos-custom-wrapper');
+    const customInput = document.getElementById('modal-pos-custom-input');
+    const badge = document.getElementById('modal-pos-detected-badge');
+    
+    if (val === 'custom') {
+        customWrapper.classList.remove('hidden');
+        customInput.focus();
+        codeInput.value = '';
+        badge.classList.add('hidden');
+    } else {
+        customWrapper.classList.add('hidden');
+        if (val.length >= 2 && /^\d{2}/.test(val)) {
+            codeInput.value = val.substring(0, 2);
+        }
+        badge.textContent = '✅ ' + val;
+        badge.className = 'text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg block mt-1.5';
+    }
+}
+
+async function savePlaceOfSupply() {
+    const codeInput = document.getElementById('modal-pos-code-input');
+    const select = document.getElementById('modal-pos-select');
+    const customInput = document.getElementById('modal-pos-custom-input');
+    const errorMsg = document.getElementById('pos-error-msg');
+    const btn = document.getElementById('btn-save-pos');
+    
+    let posVal = '';
+    const rawCode = (codeInput.value || '').trim();
+    if (rawCode && /^\d{1,2}$/.test(rawCode)) {
+        const code = rawCode.length === 1 ? '0' + rawCode : rawCode;
+        if (STATE_CODES_MAP[code]) {
+            posVal = STATE_CODES_MAP[code];
+        }
+    }
+    if (!posVal) {
+        posVal = select.value === 'custom' ? customInput.value.trim() : select.value;
+    }
+    
+    if (!posVal) {
+        errorMsg.textContent = 'Please enter a state code or select a place of supply.';
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    
+    try {
+        const csrfToken = (document.cookie.match(/(?:^|;\s*)(?:odtech_bom_csrftoken|csrftoken)=([^;]*)/) || [])[1] || '{{ csrf_token }}';
+        const res = await fetch("{% url 'update_place_of_supply_api' doc.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ place_of_supply: posVal }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            const displayEl = document.getElementById('preview-place-of-supply-display');
+            if (displayEl) displayEl.querySelector('span').textContent = data.place_of_supply;
+            closePlaceOfSupplyModal();
+            // Reload the preview iframe to reflect changes immediately
+            const iframe = document.getElementById('doc-preview-frame');
+            if (iframe) iframe.src = iframe.src;
+        } else {
+            errorMsg.textContent = data.error || 'Failed to update place of supply.';
+            errorMsg.classList.remove('hidden');
+        }
+    } catch (err) {
+        errorMsg.textContent = 'Network error: ' + err.message;
+        errorMsg.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Update & Refresh';
+    }
+}
 </script>
+
+<!-- ── Change Place of Supply Modal ── -->
+<div id="place-of-supply-modal" class="fixed inset-0 z-[9999] hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePlaceOfSupplyModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <span>📍</span> Change Place of Supply
+            </h3>
+            <button type="button" onclick="closePlaceOfSupplyModal()" class="text-slate-400 hover:text-red-500 text-lg">✕</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">
+            Enter the 2-digit GST state code (e.g. <strong>24</strong> for Gujarat, <strong>21</strong> for Odisha) or select from the list.
+        </p>
+        <div class="space-y-3.5">
+            <!-- 2-Digit State Code Quick Input -->
+            <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5">
+                <label class="block text-xs font-bold text-blue-900 uppercase tracking-wide mb-1">⚡ Quick Enter: 2-Digit State Code</label>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="modal-pos-code-input" maxlength="2"
+                        oninput="onPosCodeInput(this.value)"
+                        class="w-20 px-3 py-2 text-center font-mono font-bold text-lg bg-white border border-blue-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        placeholder="24" autocomplete="off">
+                    <span class="text-xs text-slate-500">e.g. 24 = Gujarat, 21 = Odisha, 27 = Maharashtra</span>
+                </div>
+                <div id="modal-pos-detected-badge" class="hidden"></div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Or Select State from List</label>
+                <select id="modal-pos-select" onchange="onPosSelectChange(this.value)"
+                    class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="01-Jammu & Kashmir">01-Jammu & Kashmir</option>
+                    <option value="02-Himachal Pradesh">02-Himachal Pradesh</option>
+                    <option value="03-Punjab">03-Punjab</option>
+                    <option value="04-Chandigarh">04-Chandigarh</option>
+                    <option value="05-Uttarakhand">05-Uttarakhand</option>
+                    <option value="06-Haryana">06-Haryana</option>
+                    <option value="07-Delhi">07-Delhi</option>
+                    <option value="08-Rajasthan">08-Rajasthan</option>
+                    <option value="09-Uttar Pradesh">09-Uttar Pradesh</option>
+                    <option value="10-Bihar">10-Bihar</option>
+                    <option value="11-Sikkim">11-Sikkim</option>
+                    <option value="12-Arunachal Pradesh">12-Arunachal Pradesh</option>
+                    <option value="13-Nagaland">13-Nagaland</option>
+                    <option value="14-Manipur">14-Manipur</option>
+                    <option value="15-Mizoram">15-Mizoram</option>
+                    <option value="16-Tripura">16-Tripura</option>
+                    <option value="17-Meghalaya">17-Meghalaya</option>
+                    <option value="18-Assam">18-Assam</option>
+                    <option value="19-West Bengal">19-West Bengal</option>
+                    <option value="20-Jharkhand">20-Jharkhand</option>
+                    <option value="21-Odisha">21-Odisha</option>
+                    <option value="22-Chhattisgarh">22-Chhattisgarh</option>
+                    <option value="23-Madhya Pradesh">23-Madhya Pradesh</option>
+                    <option value="24-Gujarat">24-Gujarat</option>
+                    <option value="26-Dadra & Nagar Haveli and Daman & Diu">26-Dadra & Nagar Haveli and Daman & Diu</option>
+                    <option value="27-Maharashtra">27-Maharashtra</option>
+                    <option value="29-Karnataka">29-Karnataka</option>
+                    <option value="30-Goa">30-Goa</option>
+                    <option value="31-Lakshadweep">31-Lakshadweep</option>
+                    <option value="32-Kerala">32-Kerala</option>
+                    <option value="33-Tamil Nadu">33-Tamil Nadu</option>
+                    <option value="34-Puducherry">34-Puducherry</option>
+                    <option value="35-Andaman & Nicobar Islands">35-Andaman & Nicobar Islands</option>
+                    <option value="36-Telangana">36-Telangana</option>
+                    <option value="37-Andhra Pradesh">37-Andhra Pradesh</option>
+                    <option value="38-Ladakh">38-Ladakh</option>
+                    <option value="custom">Custom Entry...</option>
+                </select>
+            </div>
+            <div id="modal-pos-custom-wrapper" class="hidden">
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Custom Place of Supply</label>
+                <input type="text" id="modal-pos-custom-input"
+                    class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. 24-Gujarat">
+            </div>
+            <p id="pos-error-msg" class="text-xs text-rose-500 hidden"></p>
+        </div>
+        <div class="flex gap-3 mt-5">
+            <button type="button" onclick="closePlaceOfSupplyModal()"
+                class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition">
+                Cancel
+            </button>
+            <button type="button" onclick="savePlaceOfSupply()" id="btn-save-pos"
+                class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-500/25 transition"
+                style="color: #ffffff !important;">
+                ✓ Update & Refresh
+            </button>
+        </div>
+    </div>
+</div>
 
 {% endblock content %}

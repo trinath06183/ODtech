@@ -63,4 +63,7 @@ urlpatterns = [
     # PO Goods Receiving APIs
     path('api/<int:document_id>/po-items/', views.get_po_items_api, name='get_po_items_api'),
     path('api/<int:document_id>/receive-po-items/', views.receive_po_items_api, name='receive_po_items_api'),
+
+    # Quick update Place of Supply API
+    path('api/<int:document_id>/update-place-of-supply/', views.update_place_of_supply_api, name='update_place_of_supply_api'),
 ]

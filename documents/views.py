@@ -663,7 +663,7 @@ def document_form(request, doc=None, default_type='QTN'):
         po_reference_number = request.POST.get('po_reference_number', '').strip()
         po_date = request.POST.get('po_date', '').strip() or None
         invoice_date = request.POST.get('invoice_date', '').strip() or None
-        place_of_supply = request.POST.get('place_of_supply', '21-Odisha').strip()
+        place_of_supply = normalize_place_of_supply(request.POST.get('place_of_supply', '21-Odisha'))
         enable_warranty = request.POST.get('enable_warranty') in ('on', 'true', True)
         shipping_address = request.POST.get('shipping_address', '').strip()
         shipping_name = request.POST.get('shipping_name', '').strip()
@@ -1357,3 +1357,51 @@ def document_export_csv(request):
         ])
         
     return response
+
+
+STATE_CODES = {
+    '01': '01-Jammu & Kashmir', '02': '02-Himachal Pradesh', '03': '03-Punjab', '04': '04-Chandigarh',
+    '05': '05-Uttarakhand', '06': '06-Haryana', '07': '07-Delhi', '08': '08-Rajasthan', '09': '09-Uttar Pradesh',
+    '10': '10-Bihar', '11': '11-Sikkim', '12': '12-Arunachal Pradesh', '13': '13-Nagaland', '14': '14-Manipur',
+    '15': '15-Mizoram', '16': '16-Tripura', '17': '17-Meghalaya', '18': '18-Assam', '19': '19-West Bengal',
+    '20': '20-Jharkhand', '21': '21-Odisha', '22': '22-Chhattisgarh', '23': '23-Madhya Pradesh', '24': '24-Gujarat',
+    '26': '26-Dadra & Nagar Haveli and Daman & Diu', '27': '27-Maharashtra', '29': '29-Karnataka', '30': '30-Goa',
+    '31': '31-Lakshadweep', '32': '32-Kerala', '33': '33-Tamil Nadu', '34': '34-Puducherry', '35': '35-Andaman & Nicobar Islands',
+    '36': '36-Telangana', '37': '37-Andhra Pradesh', '38': '38-Ladakh'
+}
+
+def normalize_place_of_supply(val):
+    if not val:
+        return '21-Odisha'
+    val = str(val).strip()
+    # If user puts only digits, e.g. "24" or "7"
+    if val.isdigit():
+        code = val.zfill(2)
+        return STATE_CODES.get(code, val)
+    # If code + hyphen without full name, e.g. "24-"
+    if len(val) >= 2 and val[:2].isdigit() and val[:2] in STATE_CODES:
+        if val.endswith('-') or len(val) == 2:
+            return STATE_CODES[val[:2]]
+    return val
+
+
+@login_required
+@require_permission('DOCUMENTS', 'edit')
+def update_place_of_supply_api(request, document_id):
+    """Quick API to update place of supply for a document."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            raw_pos = data.get('place_of_supply', '').strip()
+            if not raw_pos:
+                return JsonResponse({'success': False, 'error': 'Place of supply cannot be empty.'}, status=400)
+            place_of_supply = normalize_place_of_supply(raw_pos)
+            doc = get_object_or_404(Document, id=document_id)
+            doc.place_of_supply = place_of_supply
+            doc.save(update_fields=['place_of_supply', 'updated_at'])
+            return JsonResponse({'success': True, 'place_of_supply': doc.place_of_supply})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+
