@@ -6,84 +6,52 @@
     <meta charset="UTF-8">
     <title>{{ doc.type }} - {{ doc.number }}</title>
     <style>
-        {% if is_pdf %}
         @page {
-            size: A4;
-            margin: 20px 0;
+            size: A4 portrait;
+            margin: 0;
         }
 
-        .page-border {
-            position: fixed;
-            top: -30px;
-            left: -10px;
-            right: -10px;
-            bottom: -30px;
-            border: 20px solid #ffffff;
-            border-radius: 26px;
-            z-index: 9999;
-            pointer-events: none;
+        *, *::before, *::after {
             box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
         }
 
-        .header-area {
-            position: relative;
-            height: 270px;
-            width: 100%;
-            overflow: hidden;
-            color: white;
-            margin-top: -20px;
-        }
-        {% else %}
-        @page {
-            size: A4;
-            margin: 20px 0px 45px 0px;
-        }
-
-        .page-border {
-            position: fixed;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            border: 20px solid #ffffff;
-            border-radius: 26px;
-            z-index: 9999;
-            pointer-events: none;
-            box-sizing: border-box;
-        }
-
-        .header-area {
-            position: relative;
-            height: 270px;
-            width: 100%;
-            overflow: hidden;
-            color: white;
-        }
-
-        @media print {
-            .page-border {
-                top: -30px;
-                bottom: -55px;
-            }
-            .header-area {
-                margin-top: -20px;
-            }
-            .footer-area {
-                bottom: -35px !important;
-            }
-        }
-        {% endif %}
-
-
-        body {
-            font-family: "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
-            color: #111111;
-            background-color: white;
-            font-size: 10px;
+        html, body {
             margin: 0;
             padding: 0;
-            line-height: 1.4;
+            background-color: white;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #111111;
+            font-size: 9.5px;
+            line-height: 1.35;
             text-rendering: optimizeLegibility;
+            width: 100%;
+        }
+
+        /* Fixed border overlay giving clean rounded edge */
+        .page-border {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 12px solid #ffffff;
+            border-radius: 20px;
+            z-index: 9999;
+            pointer-events: none;
+            box-sizing: border-box;
+        }
+
+        .header-area {
+            position: relative;
+            height: 245px;
+            width: 100%;
+            overflow: hidden;
+            color: white;
+            margin: 0;
+            padding: 0;
         }
 
         .header-red {
@@ -91,9 +59,9 @@
             top: 0;
             right: 0;
             width: 65%;
-            height: 235px;
+            height: 215px;
             background-color: #e31837;
-            border-bottom-left-radius: 110px;
+            border-bottom-left-radius: 105px;
             z-index: 2;
         }
 
@@ -102,16 +70,16 @@
             top: 0;
             left: 0;
             width: 60%;
-            height: 270px;
+            height: 245px;
             background-color: #272c35;
-            border-bottom-right-radius: 110px;
+            border-bottom-right-radius: 105px;
             z-index: 1;
         }
 
         .header-content-left {
             position: absolute;
-            top: 22px;
-            bottom: 22px;
+            top: 18px;
+            bottom: 18px;
             left: 24px;
             z-index: 3;
             width: 33%;
@@ -122,14 +90,14 @@
 
         .header-content-right {
             position: absolute;
-            top: 15px;
+            top: 14px;
             right: 15px;
             z-index: 3;
             width: 62%;
         }
 
         .main-content {
-            padding: 10px 15px;
+            padding: 6px 24px 0 24px;
         }
 
         .text-red {
@@ -139,8 +107,6 @@
         .bg-red {
             background-color: #e31837 !important;
             color: white !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
         }
 
         .table-auto {
@@ -151,8 +117,8 @@
             border: 1px solid #ccc;
             border-radius: 6px;
             overflow: hidden;
-            margin-top: 10px;
-            margin-bottom: 10px;
+            margin-top: 8px;
+            margin-bottom: 6px;
             font-size: 9px;
         }
 
@@ -160,7 +126,7 @@
         .table-auto td {
             border-right: 1px solid #ccc;
             border-bottom: 1px solid #ccc;
-            padding: 4px 4px;
+            padding: 3.5px 4px;
         }
 
         .table-auto th:last-child,
@@ -173,7 +139,7 @@
             border-bottom: none;
         }
 
-        /* Explicit corner rounding for cells to prevent background/border overlap in Weasyprint */
+        /* Explicit corner rounding for cells */
         .table-auto>thead:first-child>tr:first-child>th:first-child,
         .table-auto>tbody:first-child>tr:first-child>td:first-child {
             border-top-left-radius: 6px;
@@ -196,7 +162,6 @@
 
         .table-auto tr {
             page-break-inside: avoid;
-            /* Prevent row breaking across pages */
         }
 
         .table-auto th {
@@ -219,8 +184,8 @@
         .info-grid {
             width: 100%;
             display: table;
-            margin-bottom: 5px;
-            margin-top: 5px;
+            margin-bottom: 4px;
+            margin-top: 4px;
             page-break-inside: avoid;
         }
 
@@ -233,41 +198,22 @@
             font-weight: bold;
         }
 
-        {% if is_pdf %}
-        /* In PDF: footer is fixed at bottom of page viewport */
         .footer-area {
             position: fixed;
-            bottom: -10px;
-            left: 10px;
-            right: 10px;
-            height: 30px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 26px;
             z-index: 9998;
+            pointer-events: none;
         }
-        {% else %}
-        /* In browser: footer is at the end of document by default */
-        .footer-area {
-            position: relative;
-            height: 30px;
-            z-index: 9998;
-            margin-top: 20px;
-        }
-
-        @media print {
-            .footer-area {
-                position: fixed;
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-            }
-        }
-        {% endif %}
 
         .footer-red {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 20px;
+            height: 16px;
             background-color: #e31837;
             border-bottom-left-radius: 6px;
         }
@@ -277,10 +223,32 @@
             bottom: 0;
             right: 0;
             width: 60%;
-            height: 30px;
+            height: 26px;
             background-color: #272c35;
-            border-top-left-radius: 45px;
+            border-top-left-radius: 38px;
             border-bottom-right-radius: 6px;
+        }
+
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .page-border {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+            .footer-area {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
         }
     </style>
 </head>
@@ -314,10 +282,10 @@
                 </td>
             </tr>
         </tbody>
-        {# 50px spacer so fixed footer doesn't overlap content #}
+        {# 30px spacer so fixed footer doesn't overlap content #}
         <tfoot style="display: table-footer-group;">
             <tr>
-                <td style="border: none; padding: 0; height: 50px;"></td>
+                <td style="border: none; padding: 0; height: 30px;"></td>
             </tr>
         </tfoot>
     </table>
