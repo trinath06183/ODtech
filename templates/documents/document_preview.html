@@ -67,12 +67,21 @@
             </div>
             <div class="flex items-center space-x-3">
                 {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
+                {% if doc.is_in_tracker %}
+                <button type="button" disabled
+                   class="px-4 py-2 bg-slate-700/60 text-slate-400 font-semibold rounded-xl flex items-center cursor-not-allowed text-sm border border-white/10 opacity-75 shadow-none"
+                   title="Order already present in Tracking Dashboard (Order: {{ doc.tracker_order.order_number }})">
+                    <svg class="w-4 h-4 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    In Tracker
+                </button>
+                {% else %}
                 <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-emerald-500/20 text-sm" title="Send to Tracking Dashboard"
                    style="color: #ffffff !important;">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     Send to Tracker
                 </button>
+                {% endif %}
                 {% endif %}
                 <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
                    class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-red-500/20 text-sm" title="Open PDF in a new tab"
@@ -305,16 +314,23 @@
             </div>
         </div>
         {% endif %}
-            <!-- Linked Payments -->
-        {% if all_linked_payments %}
+        <!-- Linked Payments -->
         <div class="glass p-5 rounded-2xl shadow-lg" style="position: relative; z-index: 10;">
-            <h3 class="text-slate-800 font-bold text-sm mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-200 pb-3">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Linked Payments
-            </h3>
+            <div class="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
+                <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2 uppercase tracking-wide">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Linked Payments
+                </h3>
+                <button type="button" onclick="openLinkPaymentModal()" class="text-[11px] bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-2 py-1 rounded font-bold transition flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Link Existing
+                </button>
+            </div>
+            
             <div class="flex flex-col gap-3">
-                <div class="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 mb-2">
-                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Total Payments (All Linked)</span>
+                {% if all_linked_payments %}
+                <div class="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 mb-1">
+                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Total (All Linked)</span>
                     <span class="text-emerald-700 font-bold text-sm">{{ doc.currency_symbol }} {{ total_paid_all|floatformat:2 }}</span>
                 </div>
                 
@@ -334,16 +350,23 @@
                     {% if request.user.role == 'Admin' %}
                     <button type="button" 
                         onclick="openDeletePaymentModal('{{ pmt.id }}', '{{ pmt.amount|floatformat:2 }}', '{{ pmt.date|date:'d M Y' }}', '{{ pmt.document_ref|default:doc.number }}', '{{ pmt.payment_mode }}')"
-                        class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg" 
+                        class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg cursor-pointer" 
                         title="Delete or Delink Payment">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
                     {% endif %}
                 </div>
                 {% endfor %}
+                {% else %}
+                <div class="text-center py-4 text-slate-400 text-xs italic">
+                    No payments linked to this document yet.
+                    <div class="mt-2 flex items-center justify-center gap-2">
+                        <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-medium hover:bg-emerald-500 transition">Record New Pay</a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
 
         <!-- Document Trail (Lifecycle & Links) -->
         <div class="glass p-5 rounded-2xl shadow-lg mt-4" style="position: relative; z-index: 10;">
@@ -515,7 +538,147 @@ async function submitTrackerModal() {
         btn.disabled = false;
     }
 }
+
+// ─── Link Existing Payment Modal ─────────────────────────────────────────────
+let paymentSearchTimeout = null;
+
+function openLinkPaymentModal() {
+    document.getElementById('linkPaymentModal').classList.remove('hidden');
+    document.getElementById('linkPaymentSearch').value = '{{ doc.contact.name|escapejs }}';
+    fetchLinkablePayments('{{ doc.contact.name|escapejs }}');
+}
+
+function closeLinkPaymentModal() {
+    document.getElementById('linkPaymentModal').classList.add('hidden');
+}
+
+function debouncePaymentSearch(query) {
+    clearTimeout(paymentSearchTimeout);
+    paymentSearchTimeout = setTimeout(() => {
+        fetchLinkablePayments(query);
+    }, 300);
+}
+
+async function fetchLinkablePayments(query) {
+    const listEl = document.getElementById('linkablePaymentsList');
+    listEl.innerHTML = '<div class="text-center py-8 text-gray-400">Searching payments...</div>';
+    
+    try {
+        const response = await fetch(`/documents/api/{{ doc.id }}/search-payments/?q=` + encodeURIComponent(query || ''));
+        const data = await response.json();
+        
+        if (!data.success || !data.payments || data.payments.length === 0) {
+            listEl.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <p class="text-sm">No matching payments found.</p>
+                    <p class="text-xs text-gray-500 mt-1">Try clearing or changing your search terms above.</p>
+                </div>`;
+            return;
+        }
+        
+        listEl.innerHTML = data.payments.map(p => `
+            <div class="p-3 bg-slate-800/80 border border-white/5 hover:border-emerald-500/40 rounded-xl flex items-center justify-between gap-3 transition">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <span class="font-bold text-emerald-400 text-sm">&#8377; ${p.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                        <span class="px-2 py-0.5 bg-slate-700 text-slate-300 text-[10px] rounded font-medium">${p.payment_mode}</span>
+                        <span class="text-xs text-gray-400">${p.date}</span>
+                    </div>
+                    <div class="text-xs text-white font-medium truncate">${p.contact_name}</div>
+                    <div class="flex items-center gap-3 text-[11px] text-gray-400 mt-0.5">
+                        ${p.reference_number ? `<span>Ref: ${p.reference_number}</span>` : ''}
+                        ${p.document_ref ? `<span class="text-blue-400 font-mono">Linked to: ${p.document_ref}</span>` : '<span class="text-amber-400/80">Unlinked</span>'}
+                    </div>
+                    ${p.notes ? `<div class="text-[10px] text-gray-400 italic mt-0.5 truncate">${p.notes}</div>` : ''}
+                </div>
+                <div>
+                    ${p.is_current_doc ? `
+                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-lg flex items-center gap-1">
+                            ✓ Linked
+                        </span>
+                    ` : `
+                        <button type="button" onclick="linkPaymentToDoc(${p.id}, this)"
+                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1 cursor-pointer">
+                            Link to {{ doc.number }}
+                        </button>
+                    `}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        listEl.innerHTML = '<div class="text-center py-8 text-red-400">Failed to load payments.</div>';
+    }
+}
+
+async function linkPaymentToDoc(paymentId, btn) {
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Linking...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/documents/api/{{ doc.id }}/link-payment/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ payment_id: paymentId })
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to link payment'));
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (e) {
+        alert('Network error while linking payment.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
 </script>
+
+<!-- Link Existing Payment Modal -->
+<div id="linkPaymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl p-6 shadow-2xl text-white">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
+                    💳
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Link Payment to Document</h3>
+                    <p class="text-xs text-slate-400 font-mono">{{ doc.get_type_display }} {{ doc.number }} &bull; {{ doc.contact.name }}</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeLinkPaymentModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1 cursor-pointer">✕</button>
+        </div>
+
+        <div class="mb-4">
+            <div class="relative">
+                <input type="text" id="linkPaymentSearch" oninput="debouncePaymentSearch(this.value)"
+                       placeholder="Search by party name, ref no, amount, doc number..."
+                       class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 pl-10 text-white text-sm focus:outline-none focus:border-emerald-500">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+        </div>
+
+        <div id="linkablePaymentsList" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            <!-- Loaded via JS -->
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center">
+            <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+                + Record Brand New Payment
+            </a>
+            <button type="button" onclick="closeLinkPaymentModal()" class="px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 text-sm transition">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- PO Goods Receiving Modal -->
 <div id="receiveGoodsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">

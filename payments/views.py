@@ -88,7 +88,7 @@ def payment_list(request):
 def payment_create(request):
     contacts  = Contact.objects.all().order_by('name')
     from documents.models import Document
-    documents = Document.objects.filter(type__in=['INV', 'PRO', 'QTN', 'PO']).order_by('-id')
+    documents = Document.objects.all().order_by('-date', '-id')
 
     # Pre-select contact and document if passed as query param
     preselect_contact = request.GET.get('contact', '')
@@ -121,6 +121,9 @@ def payment_create(request):
                 notes=notes,
             )
             messages.success(request, 'Payment recorded successfully.')
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('payment_list')
 
     return render(request, 'payments/payment_form.html', {
@@ -129,6 +132,60 @@ def payment_create(request):
         'payment_modes': Payment.PAYMENT_MODES,
         'preselect_contact': preselect_contact,
         'preselect_document': preselect_document,
+        'is_edit': False,
+    })
+
+
+@require_permission('PAYMENTS', 'write')
+def payment_edit(request, payment_id):
+    payment = get_object_or_404(Payment, id=payment_id)
+    contacts = Contact.objects.all().order_by('name')
+    from documents.models import Document
+    documents = Document.objects.all().order_by('-date', '-id')
+
+    if request.method == 'POST':
+        contact_id = request.POST.get('contact')
+        document_ref = request.POST.get('document_ref', '').strip() or None
+        amount = request.POST.get('amount', '').strip()
+        payment_mode = request.POST.get('payment_mode', 'Cash')
+        reference_number = request.POST.get('reference_number', '').strip() or None
+        notes = request.POST.get('notes', '').strip() or None
+
+        errors = []
+        if not contact_id:
+            errors.append('Please select a party.')
+        if not amount:
+            errors.append('Amount is required.')
+
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+        else:
+            payment.contact_id = contact_id
+            payment.document_ref = document_ref
+            payment.amount = amount
+            payment.payment_mode = payment_mode
+            payment.reference_number = reference_number
+            payment.notes = notes
+            payment.save()
+            messages.success(request, 'Payment updated successfully.')
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect('payment_list')
+
+    # Find linked doc id for preselection if available
+    linked_doc = payment.linked_document
+    preselect_document = str(linked_doc.id) if linked_doc else ''
+
+    return render(request, 'payments/payment_form.html', {
+        'payment': payment,
+        'contacts': contacts,
+        'documents': documents,
+        'payment_modes': Payment.PAYMENT_MODES,
+        'preselect_contact': str(payment.contact_id),
+        'preselect_document': preselect_document,
+        'is_edit': True,
     })
 
 

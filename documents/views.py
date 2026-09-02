@@ -1345,6 +1345,9 @@ def send_to_tracker_api(request, document_id):
         if not order_number or not customer_phone:
             return JsonResponse({'success': False, 'error': 'Order Number and Customer Phone are required.'})
 
+        if doc.is_in_tracker:
+            return JsonResponse({'success': False, 'error': f'This document is already linked to Tracker Order "{doc.tracker_order.order_number}".'})
+
         if TrackerOrder.objects.filter(order_number=order_number).exists():
             return JsonResponse({'success': False, 'error': f'Order Number "{order_number}" already exists in Tracking Dashboard.'})
 
@@ -1380,6 +1383,59 @@ def send_to_tracker_api(request, document_id):
             'success': True, 
             'url': reverse('tracker:order_detail', args=[tracker_order.id])
         })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_permission('DOCUMENTS', 'read')
+def search_payments_for_document_api(request, document_id):
+    """Search existing payments that can be linked to this document."""
+    from payments.models import Payment
+    doc = get_object_or_404(Document, id=document_id)
+    q = request.GET.get('q', '').strip()
+    
+    payments = Payment.objects.select_related('contact').all().order_by('-date', '-id')
+    if q:
+        payments = payments.filter(
+            Q(contact__name__icontains=q) |
+            Q(document_ref__icontains=q) |
+            Q(reference_number__icontains=q) |
+            Q(notes__icontains=q) |
+            Q(amount__icontains=q)
+        )
+    
+    results = []
+    for pmt in payments[:50]:
+        results.append({
+            'id': pmt.id,
+            'amount': float(pmt.amount),
+            'date': pmt.date.strftime('%d %b %Y') if pmt.date else '',
+            'payment_mode': pmt.payment_mode,
+            'reference_number': pmt.reference_number or '',
+            'document_ref': pmt.document_ref or '',
+            'contact_name': pmt.contact.name if pmt.contact else '',
+            'notes': pmt.notes or '',
+            'is_current_doc': pmt.document_ref == doc.number,
+        })
+    return JsonResponse({'success': True, 'payments': results})
+
+
+@require_POST
+@require_permission('DOCUMENTS', 'write')
+def link_payment_to_document_api(request, document_id):
+    """Link an existing payment to a document."""
+    from payments.models import Payment
+    doc = get_object_or_404(Document, id=document_id)
+    try:
+        data = json.loads(request.body)
+        payment_id = data.get('payment_id')
+        if not payment_id:
+            return JsonResponse({'success': False, 'error': 'payment_id is required'})
+        
+        payment = get_object_or_404(Payment, id=payment_id)
+        payment.document_ref = doc.number
+        payment.save()
+        return JsonResponse({'success': True, 'message': f'Payment of ₹{payment.amount:,.2f} linked to {doc.number}.'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 

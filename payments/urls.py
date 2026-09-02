@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.payment_list, name='payment_list'),
     path('export/', views.payment_export_csv, name='payment_export_csv'),
     path('new/', views.payment_create, name='payment_create'),
+    path('<int:payment_id>/edit/', views.payment_edit, name='payment_edit'),
     path('<int:payment_id>/delete/', views.payment_delete, name='payment_delete'),
     path('expenses/', views.expense_list, name='expense_list'),
     path('expenses/export/', views.expense_export_csv, name='expense_export_csv'),

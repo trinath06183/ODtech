@@ -363,6 +363,36 @@ class Document(TimeStampedModel):
             Q(target_type=doc_ct, target_id=str(self.id))
         ).order_by('-created_at')
 
+    @property
+    def tracker_order(self):
+        """
+        Returns the Tracker Order if this document (or its PO reference number)
+        is linked to or imported into the Tracking Dashboard.
+        """
+        try:
+            from tracker.models import Order as TrackerOrder
+            from django.db.models import Q
+            
+            all_numbers = self.get_all_linked_document_numbers() if hasattr(self, 'get_all_linked_document_numbers') else [self.number]
+            if self.number not in all_numbers:
+                all_numbers.append(self.number)
+            
+            q_filter = Q(order_number__in=all_numbers)
+            if self.po_reference_number:
+                q_filter |= Q(order_number=self.po_reference_number)
+            
+            for num in all_numbers:
+                if num:
+                    q_filter |= Q(remark__icontains=num)
+            
+            return TrackerOrder.objects.filter(q_filter).first()
+        except Exception:
+            return None
+
+    @property
+    def is_in_tracker(self):
+        return self.tracker_order is not None
+
     class Meta:
         ordering = ['-date', '-id']
         indexes = [
