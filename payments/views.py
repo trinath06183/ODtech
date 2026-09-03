@@ -230,6 +230,7 @@ def expense_list(request):
         search_q = (
             Q(title__icontains=search) | 
             Q(notes__icontains=search) |
+            Q(employee_code__icontains=search) |
             Q(submitted_by__empid__icontains=search) |
             Q(submitted_by__username__icontains=search) |
             Q(submitted_by__first_name__icontains=search) |
@@ -320,19 +321,43 @@ def print_unpaid_expenses(request):
     total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
 
     from collections import defaultdict
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    # Pre-map all users by empid, username, and full name
+    all_users = list(User.objects.all())
+    user_by_empid = {u.empid.strip().upper(): u for u in all_users if u.empid}
+    user_by_username = {u.username.strip().lower(): u for u in all_users if u.username}
+
     grouped_dict = defaultdict(list)
     for exp in unpaid_expenses:
-        emp_key = (exp.employee_code or getattr(exp.submitted_by, 'username', 'Unassigned') if exp.submitted_by else 'Unassigned').strip()
-        grouped_dict[emp_key].append(exp)
+        # Determine canonical employee code
+        emp_code = (exp.employee_code or '').strip()
+        if not emp_code and exp.submitted_by:
+            emp_code = (exp.submitted_by.empid or exp.submitted_by.username or 'Unassigned').strip()
+
+        # If code is a username that has an empid, map to the empid for consolidation
+        if emp_code.lower() in user_by_username and user_by_username[emp_code.lower()].empid:
+            emp_code = user_by_username[emp_code.lower()].empid
+
+        if not emp_code:
+            emp_code = 'Unassigned'
+
+        grouped_dict[emp_code].append(exp)
 
     grouped_expenses = []
     for emp_code, exp_list in grouped_dict.items():
         emp_total = sum(e.amount for e in exp_list)
-        # Get employee full name from the first expense's submitted_by
-        first_user = exp_list[0].submitted_by if exp_list else None
-        full_name = ''
-        if first_user:
-            full_name = first_user.get_full_name().strip() or first_user.first_name or ''
+        
+        # Look up employee full name by the assigned employee code / empid first
+        matched_user = user_by_empid.get(emp_code.upper()) or user_by_username.get(emp_code.lower())
+        
+        if matched_user:
+            full_name = matched_user.get_full_name().strip() or matched_user.first_name or matched_user.username
+        else:
+            first_user = exp_list[0].submitted_by if exp_list else None
+            full_name = (first_user.get_full_name().strip() or first_user.first_name or '') if first_user else ''
+
         grouped_expenses.append({
             'employee_code': emp_code,
             'employee_name': full_name,
@@ -355,6 +380,8 @@ def expense_create(request):
         if form.is_valid():
             expense = form.save(commit=False)
             expense.submitted_by = request.user
+            if not expense.employee_code and request.user.empid:
+                expense.employee_code = request.user.empid
             
             # Extract payload fields
             payload = {}
@@ -590,6 +617,7 @@ def expense_export_csv(request):
         expenses = expenses.filter(
             Q(title__icontains=search) | 
             Q(notes__icontains=search) |
+            Q(employee_code__icontains=search) |
             Q(submitted_by__empid__icontains=search) |
             Q(submitted_by__username__icontains=search) |
             Q(submitted_by__first_name__icontains=search) |
