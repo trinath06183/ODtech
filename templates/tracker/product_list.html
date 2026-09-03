@@ -1973,14 +1973,15 @@
         // Check if there's a lot to restore from session
         const storageKey = 'lastExpandedLotId_{{ order.id }}';
         const savedLotId = sessionStorage.getItem(storageKey);
+        const lotTbodies = document.querySelectorAll('tbody[data-lot-group]');
+        const isSingleLot = (lotTbodies.length === 1);
 
-        document.querySelectorAll('tbody[data-lot-group]').forEach(tbody => {
+        lotTbodies.forEach(tbody => {
             const lotId = tbody.dataset.lotGroup;
-            const shouldExpand = savedLotId && lotId === savedLotId;
+            // If only one lot is available, do not collapse that lot by default!
+            const shouldExpand = isSingleLot || (savedLotId && lotId === savedLotId);
             tbody.querySelectorAll('tr[data-product-id]').forEach(row => {
-                if (!shouldExpand) {
-                    row.style.display = 'none';
-                }
+                row.style.display = shouldExpand ? '' : 'none';
             });
             // Set chevron direction
             const headerRow = document.querySelector(`tr[data-lot-header="true"][data-lot-id="${lotId}"]`);
@@ -2168,7 +2169,7 @@
             {% for p in products %} '{{ p.id }}': {% if p.is_purchased %} true{% else %} false{% endif %}, {% endfor %}
     },
     collapsedLots: {
-        {% for p in products %} {% ifchanged p.lot %} '{{ p.lot.id|default:"unassigned" }}': true, {% endifchanged %} {% endfor %}
+        {% for p in products %} {% ifchanged p.lot %} '{{ p.lot.id|default:"unassigned" }}': {% if lot_list|length == 1 %}false{% else %}true{% endif %}, {% endifchanged %} {% endfor %}
         },
 
     // ── Search / Filter ──
@@ -2413,29 +2414,49 @@
             return { id, name, checked: true };
         });
 
-        const storageKey = 'lastExpandedLotId_{{ order.id }}';
-        let targetLotId = null;
+        const lotTbodies = document.querySelectorAll('tbody[data-lot-group]');
+        const lotKeys = Object.keys(this.collapsedLots);
+        const isSingleLot = (lotTbodies.length === 1) || (lotKeys.length === 1);
 
-        {% if request.GET.open_lot_id %}
-        targetLotId = '{{ request.GET.open_lot_id }}';
-        {% else %}
-        targetLotId = sessionStorage.getItem(storageKey);
-        {% endif %}
-
-        if (targetLotId && targetLotId in this.collapsedLots) {
-            // Ensure all others are collapsed first
+        if (isSingleLot) {
+            // If only one lot is available, do not collapse that lot by default
             for (let key in this.collapsedLots) {
-                this.collapsedLots[key] = true;
+                this.collapsedLots[key] = false;
             }
-            this.collapsedLots[targetLotId] = false;
-            sessionStorage.setItem(storageKey, targetLotId);
+            if (lotKeys.length > 0) {
+                this.collapsedLots[lotKeys[0]] = false;
+            }
+            document.querySelectorAll('tbody[data-lot-group] tr[data-product-id]').forEach(row => {
+                row.style.display = '';
+            });
+            document.querySelectorAll('tr[data-lot-header="true"] svg').forEach(svg => {
+                svg.style.transform = 'rotate(0deg)';
+            });
+        } else {
+            const storageKey = 'lastExpandedLotId_{{ order.id }}';
+            let targetLotId = null;
 
-            // Clean up URL so it doesn't get stuck on refresh
-            if (window.history && window.history.replaceState) {
-                const url = new URL(window.location.href);
-                if (url.searchParams.has('open_lot_id')) {
-                    url.searchParams.delete('open_lot_id');
-                    window.history.replaceState({}, '', url);
+            {% if request.GET.open_lot_id %}
+            targetLotId = '{{ request.GET.open_lot_id }}';
+            {% else %}
+            targetLotId = sessionStorage.getItem(storageKey);
+            {% endif %}
+
+            if (targetLotId && targetLotId in this.collapsedLots) {
+                // Ensure all others are collapsed first
+                for (let key in this.collapsedLots) {
+                    this.collapsedLots[key] = true;
+                }
+                this.collapsedLots[targetLotId] = false;
+                sessionStorage.setItem(storageKey, targetLotId);
+
+                // Clean up URL so it doesn't get stuck on refresh
+                if (window.history && window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    if (url.searchParams.has('open_lot_id')) {
+                        url.searchParams.delete('open_lot_id');
+                        window.history.replaceState({}, '', url);
+                    }
                 }
             }
         }

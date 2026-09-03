@@ -886,6 +886,57 @@
          NOTES & TO-DO POPUP
     ═══════════════════════════════════════════════════════════ -->
     {% if user.is_authenticated %}
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           LIGHT THEME FOR OPENED TRAYS (NOTES & TO-DO)
+        ═══════════════════════════════════════════════════════════════ */
+        .ntp-card {
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        /* ── To-Do Tray (Opened State - Mint / Emerald Light Theme) ── */
+        .ntp-card.ntp-card-opened[data-todo-id] {
+            background: #f4fbf7 !important;
+            border: 1.5px solid #10b981 !important;
+            box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.22), 0 0 0 1px #10b981 !important;
+            transform: translateY(-2px) !important;
+        }
+        .ntp-card.ntp-card-opened[data-todo-id] [id^="todo-body-"] {
+            background: #f4fbf7 !important;
+        }
+        .ntp-card.ntp-card-opened[data-todo-id] [id^="todo-body-"] > div {
+            border-top: 1px solid #cbf4dc !important;
+        }
+        .ntp-card.ntp-card-opened[data-todo-id] > div:last-child {
+            background: #e6f8ee !important;
+            border-top: 1px solid #cbf4dc !important;
+        }
+        .ntp-card.ntp-card-opened[data-todo-id] .ntp-chevron {
+            stroke: #059669 !important;
+        }
+
+        /* ── Notes Tray (Opened State - Honey Amber Light Theme) ── */
+        .ntp-card.ntp-card-opened[data-note-id] {
+            background: #fefdf4 !important;
+            border: 1.5px solid #f59e0b !important;
+            box-shadow: 0 12px 28px -6px rgba(245, 158, 11, 0.22), 0 0 0 1px #f59e0b !important;
+            transform: translateY(-2px) !important;
+        }
+        .ntp-card.ntp-card-opened[data-note-id] [id^="note-body-"] {
+            background: #fefdf4 !important;
+        }
+        .ntp-card.ntp-card-opened[data-note-id] [id^="note-body-"] > div {
+            border-top: 1px solid #fde68a !important;
+        }
+        .ntp-card.ntp-card-opened[data-note-id] > div:last-child {
+            background: #fef3c7 !important;
+            border-top: 1px solid #fde68a !important;
+        }
+        .ntp-card.ntp-card-opened[data-note-id] .ntp-chevron {
+            stroke: #d97706 !important;
+        }
+    </style>
+
     <!-- Backdrop -->
     <div id="ntp-backdrop" onclick="closeNotesPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:10000;
                opacity:0;transition:opacity .25s ease;backdrop-filter:blur(2px);">
@@ -1196,8 +1247,8 @@
                        display:flex;flex-direction:column;cursor:pointer;
                        transition:transform .18s ease,box-shadow .18s ease;
                        min-height:140px;"
-                onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08),0 0 0 1px #d1d5db'"
-                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb'">
+                onmouseover="if(!this.classList.contains('ntp-card-opened')){this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08),0 0 0 1px #d1d5db'}"
+                onmouseout="if(!this.classList.contains('ntp-card-opened')){this.style.transform='';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb'}">
                 <!-- Card Header - clickable to expand -->
                 <button
                     id="note-hdr-${n.id}"
@@ -1260,6 +1311,8 @@
         function ntpToggleNote(id) {
             const btn = document.getElementById('note-hdr-' + id);
             const body = document.getElementById('note-body-' + id);
+            if (!body) return;
+            const card = document.querySelector(`.ntp-card[data-note-id="${id}"]`);
             const chevron = btn.querySelector('.ntp-chevron');
             const isOpen = btn.getAttribute('aria-expanded') === 'true';
             if (isOpen) {
@@ -1267,11 +1320,13 @@
                 body.style.opacity = '0';
                 btn.setAttribute('aria-expanded', 'false');
                 chevron.style.transform = 'rotate(-90deg)';
+                if (card) card.classList.remove('ntp-card-opened');
             } else {
                 body.style.maxHeight = body.scrollHeight + 300 + 'px';
                 body.style.opacity = '1';
                 btn.setAttribute('aria-expanded', 'true');
                 chevron.style.transform = 'rotate(0deg)';
+                if (card) card.classList.add('ntp-card-opened');
             }
         }
 
@@ -1401,8 +1456,8 @@
                        display:flex;flex-direction:column;min-height:120px;
                        opacity:${t.is_completed ? '.75' : '1'};
                        transition:transform .18s ease,box-shadow .18s ease;"
-                onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px #d1d5db'"
-                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb'">
+                onmouseover="if(!this.classList.contains('ntp-card-opened')){this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px #d1d5db'}"
+                onmouseout="if(!this.classList.contains('ntp-card-opened')){this.style.transform='';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px #e5e7eb'}">
 
                 <!-- Card Header -->
                 <div style="display:flex;align-items:flex-start;gap:8px;padding:13px 13px 8px;">
@@ -1518,6 +1573,7 @@
             const btn = document.getElementById('todo-hdr-' + id);
             const body = document.getElementById('todo-body-' + id);
             if (!body) return;
+            const card = document.querySelector(`.ntp-card[data-todo-id="${id}"]`);
             const chevron = btn.querySelector('.ntp-chevron');
             const isOpen = btn.getAttribute('aria-expanded') === 'true';
             if (isOpen) {
@@ -1525,11 +1581,13 @@
                 body.style.opacity = '0';
                 btn.setAttribute('aria-expanded', 'false');
                 if (chevron) chevron.style.transform = 'rotate(-90deg)';
+                if (card) card.classList.remove('ntp-card-opened');
             } else {
                 body.style.maxHeight = body.scrollHeight + 500 + 'px';
                 body.style.opacity = '1';
                 btn.setAttribute('aria-expanded', 'true');
                 if (chevron) chevron.style.transform = 'rotate(0deg)';
+                if (card) card.classList.add('ntp-card-opened');
             }
         }
 

@@ -20,6 +20,69 @@
         </div>
     </div>
 
+    {# ── Cash Gap & Balance Alert Banner ── #}
+    {% if is_cash_deficit %}
+    <div class="bg-gradient-to-r from-rose-50 to-red-50 border-l-4 border-rose-500 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                ⚠️
+            </div>
+            <div>
+                <h2 class="text-sm font-bold text-rose-900 flex items-center gap-2 flex-wrap">
+                    <span>Projected Cash Gap Alert ({{ current_month_start|date:'F Y' }})</span>
+                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-200 text-rose-900">Deficit: ₹{{ cash_deficit_amount|floatformat:2 }}</span>
+                </h2>
+                <p class="text-xs text-rose-700 mt-0.5 leading-relaxed">
+                    Planned purchases (<strong>₹{{ curr_purchases_total|floatformat:2 }}</strong>) exceed planned customer orders (<strong>₹{{ curr_orders_total|floatformat:2 }}</strong>). Auto-import or schedule additional orders to ensure positive liquidity.
+                </p>
+            </div>
+        </div>
+        <button type="button" onclick="openModal('importOrdersModal')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
+            <span>⚡ Import Orders to Balance</span>
+        </button>
+    </div>
+    {% elif curr_orders_total > 0 %}
+    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-500 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                🛡️
+            </div>
+            <div>
+                <h2 class="text-sm font-bold text-emerald-900 flex items-center gap-2 flex-wrap">
+                    <span>Positive Cash Flow Outlook ({{ current_month_start|date:'F Y' }})</span>
+                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-900">Net Surplus: +₹{{ cash_surplus_amount|floatformat:2 }}</span>
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Margin: {{ profit_margin_pct }}%</span>
+                </h2>
+                <p class="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+                    Planned customer orders (<strong>₹{{ curr_orders_total|floatformat:2 }}</strong>) provide healthy coverage over planned vendor purchases (<strong>₹{{ curr_purchases_total|floatformat:2 }}</strong>).
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Rollover Notice Banner ── #}
+    {% if has_rollover %}
+    <div class="bg-amber-50/90 border-l-4 border-amber-400 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                ⏳
+            </div>
+            <div>
+                <h2 class="text-sm font-bold text-amber-900 flex items-center gap-2 flex-wrap">
+                    <span>Rollover in Effect (Carried into {{ current_month_start|date:'F Y' }})</span>
+                    <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900">
+                        {{ rolled_over_orders_count }} Order(s) (₹{{ rolled_over_orders_total|floatformat:2 }}) • {{ rolled_over_purchases_count }} Purchase(s) (₹{{ rolled_over_purchases_total|floatformat:2 }})
+                    </span>
+                </h2>
+                <p class="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                    These items were planned in prior months and were not marked completed. They automatically stay active in your execution schedule until fulfilled.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {# Split Screen: Left Sales, Right Purchases #}
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
         
@@ -30,6 +93,12 @@
                     <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">📈</span>
                     Planned Orders
                 </h2>
+                <button type="button" onclick="openModal('importOrdersModal')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs rounded-xl transition-all shadow-sm">
+                    <span>⚡ Auto-Import ERP</span>
+                    {% if available_orders %}
+                    <span class="px-1.5 py-0.2 rounded-full bg-emerald-700 text-white text-[10px]">{{ available_orders|length }}</span>
+                    {% endif %}
+                </button>
             </div>
 
             {# Add New Form #}
@@ -39,7 +108,7 @@
                     <input type="hidden" name="action" value="add_order">
                     <div class="flex-1 w-full">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Customer / Title</label>
-                        <input type="text" name="title" required class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500">
+                        <input type="text" name="title" list="customerListDatalist" placeholder="e.g. Acme Corp or type to search..." required class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500">
                     </div>
                     <div class="w-full sm:w-32">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Amount (₹)</label>
@@ -117,6 +186,12 @@
                     <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">🛒</span>
                     Planned Purchases
                 </h2>
+                <button type="button" onclick="openModal('importPurchasesModal')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-xs rounded-xl transition-all shadow-sm">
+                    <span>⚡ Auto-Import ERP</span>
+                    {% if available_purchases %}
+                    <span class="px-1.5 py-0.2 rounded-full bg-purple-700 text-white text-[10px]">{{ available_purchases|length }}</span>
+                    {% endif %}
+                </button>
             </div>
 
             {# Add New Form #}
@@ -126,7 +201,7 @@
                     <input type="hidden" name="action" value="add_purchase">
                     <div class="flex-1 w-full">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendor / Title</label>
-                        <input type="text" name="title" required class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500">
+                        <input type="text" name="title" list="vendorListDatalist" placeholder="e.g. Supplier name or type to search..." required class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500">
                     </div>
                     <div class="w-full sm:w-32">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Amount (₹)</label>
@@ -198,4 +273,237 @@
         </div>
     </div>
 </div>
+
+{# ── Datalists for Party Autocomplete ── #}
+<datalist id="customerListDatalist">
+    {% for name in customer_names %}
+    <option value="{{ name }}">
+    {% endfor %}
+</datalist>
+
+<datalist id="vendorListDatalist">
+    {% for name in vendor_names %}
+    <option value="{{ name }}">
+    {% endfor %}
+</datalist>
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# MODAL: AUTO-IMPORT ORDERS FROM ERP                                          #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+<div id="importOrdersModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        <!-- Header -->
+        <div class="px-6 py-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    ⚡
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Auto-Import Orders from ERP</h3>
+                    <p class="text-xs text-slate-500">Select active Tracker manufacturing orders or approved Quotations/Proformas</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('importOrdersModal')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 flex items-center justify-center transition-colors">
+                ✕
+            </button>
+        </div>
+
+        <!-- Filter / Quick Search -->
+        <div class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
+            <input type="text" id="orderSearchInput" onkeyup="filterModalRows('orderSearchInput', 'orderRowList')" placeholder="Quick search candidate orders..." class="text-xs rounded-xl border-slate-300 w-full max-w-sm focus:ring-emerald-500">
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer select-none">
+                    <input type="checkbox" id="selectAllOrders" onchange="toggleSelectAll('selectAllOrders', 'orderCheckbox', 'selectedOrdersCount')" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    Select All
+                </label>
+            </div>
+        </div>
+
+        <!-- Candidate Form & List -->
+        <form method="POST" class="flex-1 flex flex-col overflow-hidden">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="bulk_import_orders">
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-2.5 divide-y divide-slate-100" id="orderRowList">
+                {% for item in available_orders %}
+                <div class="order-candidate-item pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <input type="checkbox" name="selected_orders" value="{{ forloop.counter0 }}" onchange="updateSelectedCount('orderCheckbox', 'selectedOrdersCount')" class="orderCheckbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if item.badge_color == 'indigo' %}bg-indigo-100 text-indigo-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
+                                    {{ item.source }}
+                                </span>
+                                <span class="text-xs font-bold text-slate-800 truncate" title="{{ item.title }}">{{ item.title }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <input type="hidden" name="import_title" value="{{ item.title }}">
+                        <div class="w-32">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Amount (₹)</label>
+                            <input type="number" step="0.01" name="import_amount" value="{{ item.amount|stringformat:'.2f' }}" class="text-xs py-1 px-2 font-bold text-emerald-700 border-slate-200 rounded-lg w-full focus:ring-emerald-500">
+                        </div>
+                        <div class="w-36">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Planned Month</label>
+                            <input type="month" name="import_month" value="{{ current_month_start|date:'Y-m' }}" class="text-xs py-1 px-2 border-slate-200 rounded-lg w-full focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <p class="text-sm font-semibold text-slate-500">No unimported orders found in ERP.</p>
+                    <p class="text-xs text-slate-400 mt-1">All active Tracker orders and approved documents are already in your execution plan!</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500" id="selectedOrdersCount">0 selected</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeModal('importOrdersModal')" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-white transition-colors">
+                        Cancel
+                    </button>
+                    {% if available_orders %}
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
+                        Import Selected Orders
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# MODAL: AUTO-IMPORT PURCHASES FROM ERP                                       #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+<div id="importPurchasesModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        <!-- Header -->
+        <div class="px-6 py-5 bg-gradient-to-r from-purple-50 to-fuchsia-50 border-b border-purple-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    ⚡
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Auto-Import Purchases from ERP</h3>
+                    <p class="text-xs text-slate-500">Select active Purchase Orders (PO) or Tracker procurement requirements</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('importPurchasesModal')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 flex items-center justify-center transition-colors">
+                ✕
+            </button>
+        </div>
+
+        <!-- Filter / Quick Search -->
+        <div class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
+            <input type="text" id="purchaseSearchInput" onkeyup="filterModalRows('purchaseSearchInput', 'purchaseRowList')" placeholder="Quick search candidate purchases..." class="text-xs rounded-xl border-slate-300 w-full max-w-sm focus:ring-purple-500">
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer select-none">
+                    <input type="checkbox" id="selectAllPurchases" onchange="toggleSelectAll('selectAllPurchases', 'purchaseCheckbox', 'selectedPurchasesCount')" class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                    Select All
+                </label>
+            </div>
+        </div>
+
+        <!-- Candidate Form & List -->
+        <form method="POST" class="flex-1 flex flex-col overflow-hidden">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="bulk_import_purchases">
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-2.5 divide-y divide-slate-100" id="purchaseRowList">
+                {% for item in available_purchases %}
+                <div class="purchase-candidate-item pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <input type="checkbox" name="selected_purchases" value="{{ forloop.counter0 }}" onchange="updateSelectedCount('purchaseCheckbox', 'selectedPurchasesCount')" class="purchaseCheckbox rounded border-slate-300 text-purple-600 focus:ring-purple-500 h-4 w-4">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if item.badge_color == 'purple' %}bg-purple-100 text-purple-700{% else %}bg-violet-100 text-violet-700{% endif %}">
+                                    {{ item.source }}
+                                </span>
+                                <span class="text-xs font-bold text-slate-800 truncate" title="{{ item.title }}">{{ item.title }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <input type="hidden" name="import_title" value="{{ item.title }}">
+                        <div class="w-32">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Amount (₹)</label>
+                            <input type="number" step="0.01" name="import_amount" value="{{ item.amount|stringformat:'.2f' }}" class="text-xs py-1 px-2 font-bold text-purple-700 border-slate-200 rounded-lg w-full focus:ring-purple-500">
+                        </div>
+                        <div class="w-36">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Planned Month</label>
+                            <input type="month" name="import_month" value="{{ current_month_start|date:'Y-m' }}" class="text-xs py-1 px-2 border-slate-200 rounded-lg w-full focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <p class="text-sm font-semibold text-slate-500">No unimported purchases found in ERP.</p>
+                    <p class="text-xs text-slate-400 mt-1">All active Purchase Orders and Tracker procurement costs are already in your execution plan!</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500" id="selectedPurchasesCount">0 selected</span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeModal('importPurchasesModal')" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-white transition-colors">
+                        Cancel
+                    </button>
+                    {% if available_purchases %}
+                    <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
+                        Import Selected Purchases
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+}
+
+function toggleSelectAll(selectAllId, checkboxClass, countId) {
+    const checked = document.getElementById(selectAllId).checked;
+    document.querySelectorAll('.' + checkboxClass).forEach(cb => {
+        if (cb.closest('div').offsetParent !== null) { // only visible
+            cb.checked = checked;
+        }
+    });
+    updateSelectedCount(checkboxClass, countId);
+}
+
+function updateSelectedCount(checkboxClass, countId) {
+    const count = document.querySelectorAll('.' + checkboxClass + ':checked').length;
+    const label = document.getElementById(countId);
+    if (label) label.innerText = count + ' selected';
+}
+
+function filterModalRows(inputId, containerId) {
+    const query = document.getElementById(inputId).value.toLowerCase();
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const items = container.querySelectorAll('.order-candidate-item, .purchase-candidate-item');
+    items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
+
 {% endblock %}

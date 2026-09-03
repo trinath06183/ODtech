@@ -531,6 +531,48 @@ def business_planning_dashboard(request):
             purchase = PlannedPurchase.objects.get(id=request.POST.get('id'))
             purchase.delete()
             messages.success(request, 'Purchase deleted.')
+
+        elif action == 'bulk_import_orders':
+            titles = request.POST.getlist('import_title')
+            amounts = request.POST.getlist('import_amount')
+            months = request.POST.getlist('import_month')
+            selected_indices = request.POST.getlist('selected_orders')
+
+            created_count = 0
+            for idx_str in selected_indices:
+                try:
+                    idx = int(idx_str)
+                    if idx < len(titles) and titles[idx]:
+                        PlannedOrder.objects.create(
+                            title=titles[idx].strip(),
+                            amount=Decimal(amounts[idx] or '0'),
+                            expected_month=parse_month(months[idx]) or current_month_start,
+                        )
+                        created_count += 1
+                except (ValueError, IndexError):
+                    continue
+            messages.success(request, f'{created_count} order(s) successfully imported into execution plan.')
+
+        elif action == 'bulk_import_purchases':
+            titles = request.POST.getlist('import_title')
+            amounts = request.POST.getlist('import_amount')
+            months = request.POST.getlist('import_month')
+            selected_indices = request.POST.getlist('selected_purchases')
+
+            created_count = 0
+            for idx_str in selected_indices:
+                try:
+                    idx = int(idx_str)
+                    if idx < len(titles) and titles[idx]:
+                        PlannedPurchase.objects.create(
+                            title=titles[idx].strip(),
+                            amount=Decimal(amounts[idx] or '0'),
+                            expected_month=parse_month(months[idx]) or current_month_start,
+                        )
+                        created_count += 1
+                except (ValueError, IndexError):
+                    continue
+            messages.success(request, f'{created_count} purchase(s) successfully imported into execution plan.')
             
         return redirect('business_planning')
 
@@ -569,6 +611,142 @@ def business_planning_dashboard(request):
     context['prev_purchases_total'] = context['prev_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     context['next_orders_total'] = context['next_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     context['next_purchases_total'] = context['next_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+    # ── Rollover Analytics ──
+    rolled_over_orders = PlannedOrder.objects.filter(
+        expected_month__lt=current_month_start
+    ).exclude(status='Completed')
+    rolled_over_orders_count = rolled_over_orders.count()
+    rolled_over_orders_total = rolled_over_orders.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+
+    rolled_over_purchases = PlannedPurchase.objects.filter(
+        expected_month__lt=current_month_start
+    ).exclude(status='Completed')
+    rolled_over_purchases_count = rolled_over_purchases.count()
+    rolled_over_purchases_total = rolled_over_purchases.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+
+    has_rollover = (rolled_over_orders_count > 0 or rolled_over_purchases_count > 0)
+
+    # ── Cash Gap Analysis ──
+    curr_orders_total = context['curr_orders_total']
+    curr_purchases_total = context['curr_purchases_total']
+    cash_gap = curr_orders_total - curr_purchases_total
+    is_cash_deficit = (curr_purchases_total > curr_orders_total) and (curr_purchases_total > 0)
+    cash_deficit_amount = (curr_purchases_total - curr_orders_total) if is_cash_deficit else Decimal('0.00')
+    cash_surplus_amount = (curr_orders_total - curr_purchases_total) if not is_cash_deficit else Decimal('0.00')
+
+    profit_margin_pct = Decimal('0.0')
+    if curr_orders_total > 0:
+        profit_margin_pct = round(((curr_orders_total - curr_purchases_total) / curr_orders_total) * 100, 1)
+
+    # ── Auto-Import Candidates from ERP ──
+    existing_order_titles = set(PlannedOrder.objects.values_list('title', flat=True))
+    available_orders = []
+
+    try:
+        from tracker.models import Order as TrackerOrder
+        tracker_orders = TrackerOrder.objects.filter(
+            order_status__in=['OPEN', 'SOURCING', 'PROCURED']
+        ).prefetch_related('products').order_by('-order_date')[:30]
+
+        for to in tracker_orders:
+            sp_total = sum((p.selling_price_inc_gst or 0) * (p.quantity or 1) for p in to.products.all())
+            title = f"Tracker #{to.order_number}: {to.customer_name}"
+            if title not in existing_order_titles:
+                available_orders.append({
+                    'source': 'Tracker Order',
+                    'badge_color': 'indigo',
+                    'title': title,
+                    'amount': float(sp_total),
+                    'ref': to.order_number,
+                })
+    except Exception:
+        tracker_orders = []
+
+    try:
+        doc_orders = Document.objects.filter(
+            type__in=['PRO', 'QTN'],
+            status='Approved'
+        ).select_related('contact').order_by('-date')[:30]
+
+        for doc in doc_orders:
+            c_name = doc.contact.name if doc.contact else (doc.customer_name or 'Client')
+            title = f"{doc.get_type_display()} {doc.number}: {c_name}"
+            if title not in existing_order_titles:
+                available_orders.append({
+                    'source': doc.get_type_display(),
+                    'badge_color': 'emerald',
+                    'title': title,
+                    'amount': float(doc.balance_due or doc.grand_total or 0),
+                    'ref': doc.number,
+                })
+    except Exception:
+        pass
+
+    # Available Purchases from ERP
+    existing_purchase_titles = set(PlannedPurchase.objects.values_list('title', flat=True))
+    available_purchases = []
+
+    try:
+        pos = Document.objects.filter(
+            type='PO'
+        ).exclude(status='Cancelled').select_related('contact').order_by('-date')[:30]
+
+        for po in pos:
+            v_name = po.contact.name if po.contact else (po.vendor_name or 'Supplier')
+            title = f"PO {po.number}: {v_name}"
+            if title not in existing_purchase_titles:
+                available_purchases.append({
+                    'source': 'Purchase Order',
+                    'badge_color': 'purple',
+                    'title': title,
+                    'amount': float(po.balance_due or po.grand_total or 0),
+                    'ref': po.number,
+                })
+    except Exception:
+        pass
+
+    try:
+        for to in tracker_orders:
+            bp_total = sum((p.buying_price_inc_gst or 0) * (p.quantity or 1) for p in to.products.all() if p.buying_price_inc_gst)
+            if bp_total > 0:
+                title = f"Tracker Procure #{to.order_number}: {to.customer_name}"
+                if title not in existing_purchase_titles:
+                    available_purchases.append({
+                        'source': 'Tracker Procurement',
+                        'badge_color': 'violet',
+                        'title': title,
+                        'amount': float(bp_total),
+                        'ref': to.order_number,
+                    })
+    except Exception:
+        pass
+
+    # Autocomplete Contacts
+    try:
+        from contacts.models import Contact
+        customer_names = list(Contact.objects.filter(contact_type__in=['Customer', 'Both']).values_list('name', flat=True).distinct()[:100])
+        vendor_names = list(Contact.objects.filter(contact_type__in=['Vendor', 'Both']).values_list('name', flat=True).distinct()[:100])
+    except Exception:
+        customer_names, vendor_names = [], []
+
+    context.update({
+        'rolled_over_orders_count': rolled_over_orders_count,
+        'rolled_over_orders_total': rolled_over_orders_total,
+        'rolled_over_purchases_count': rolled_over_purchases_count,
+        'rolled_over_purchases_total': rolled_over_purchases_total,
+        'has_rollover': has_rollover,
+        'is_cash_deficit': is_cash_deficit,
+        'cash_deficit_amount': cash_deficit_amount,
+        'cash_surplus_amount': cash_surplus_amount,
+        'profit_margin_pct': profit_margin_pct,
+        'cash_gap': cash_gap,
+        'available_orders': available_orders,
+        'available_purchases': available_purchases,
+        'customer_names': customer_names,
+        'vendor_names': vendor_names,
+    })
+
     return render(request, 'reporting/planning_dashboard.html', context)
 
 
