@@ -141,7 +141,7 @@
                     <div class="flex items-center gap-3">
                         <div class="text-lg">{{ doc.file_extension|file_type_badge }}</div>
                         <div>
-                            <a href="{% url 'edms:document_detail' doc_id=doc.id %}" class="font-semibold text-slate-800 hover:text-violet-700 block max-w-xs truncate">{{ doc.title }}</a>
+                            <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="font-semibold text-slate-800 hover:text-violet-700 block max-w-xs truncate">{{ doc.title }}</a>
                             {% if doc.reference_number %}
                             <span class="text-xs text-slate-400">Ref: {{ doc.reference_number }}</span>
                             {% endif %}
@@ -153,7 +153,7 @@
                 <td class="px-6 py-3">{{ doc.approval_status|approval_badge }}</td>
                 <td class="px-6 py-3 text-xs text-slate-500">{{ doc.created_at|date:"d M Y" }}</td>
                 <td class="px-6 py-3">
-                    <a href="{% url 'edms:document_detail' doc_id=doc.id %}" class="text-violet-600 hover:underline text-xs">View →</a>
+                    <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="text-violet-600 hover:underline text-xs">View →</a>
                 </td>
             </tr>
             {% endfor %}

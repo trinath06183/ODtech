@@ -78,7 +78,7 @@
                             {% if doc.source_type == 'commercial' %}📋{% else %}{{ doc.file_extension|file_type_badge }}{% endif %}
                         </div>
                         <div class="min-w-0">
-                            <a href="{% url 'edms:document_detail' doc_id=doc.id %}"
+                            <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                                class="font-semibold text-slate-800 hover:text-violet-700 truncate block max-w-[220px]">
                                 {{ doc.title }}
                             </a>
@@ -110,7 +110,7 @@
                 </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center gap-1">
-                        <a href="{% url 'edms:document_detail' doc_id=doc.id %}"
+                        <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
                            title="View" class="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
                             👁
                         </a>

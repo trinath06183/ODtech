@@ -138,6 +138,50 @@ class DocumentDetailView(EDMSLoginRequiredMixin, EDMSContextMixin, DetailView):
         ctx['can_share']     = PermissionService.has_document_access(self.request.user, doc, 'share')[0]
         ctx['preview_url']   = reverse_lazy('edms:document_preview', kwargs={'doc_id': doc.id})
         ctx['linked_documents'] = doc.get_linked_documents()
+
+        # ── Previous / Next Navigation with Applicable Filters ────────────────
+        form = SearchForm(self.request.GET)
+        filters = {}
+        if form.is_valid():
+            filters = {k: v for k, v in form.cleaned_data.items() if v not in [None, '', []]}
+
+        if not filters.get('sort'):
+            filters['sort'] = '-created_at'
+
+        qs = SearchService.search(
+            user=self.request.user,
+            filters=filters,
+        )
+
+        doc_ids = list(qs.values_list('id', flat=True))
+        prev_doc = None
+        next_doc = None
+        current_index = None
+        total_count = len(doc_ids)
+
+        if doc.id in doc_ids:
+            idx = doc_ids.index(doc.id)
+            current_index = idx + 1
+            if idx > 0:
+                prev_doc = EDMSDocument.objects.filter(id=doc_ids[idx - 1]).only('id', 'title').first()
+            if idx < total_count - 1:
+                next_doc = EDMSDocument.objects.filter(id=doc_ids[idx + 1]).only('id', 'title').first()
+        else:
+            visible_qs = PermissionService.get_visible_queryset(self.request.user)
+            prev_doc = visible_qs.filter(created_at__lt=doc.created_at).order_by('-created_at').only('id', 'title').first()
+            next_doc = visible_qs.filter(created_at__gt=doc.created_at).order_by('created_at').only('id', 'title').first()
+
+        get_params = self.request.GET.copy()
+        get_params.pop('page', None)
+        filter_querystring = get_params.urlencode()
+
+        ctx['prev_doc'] = prev_doc
+        ctx['next_doc'] = next_doc
+        ctx['current_filter_index'] = current_index
+        ctx['total_filter_count'] = total_count
+        ctx['filter_querystring'] = filter_querystring
+        ctx['has_filter'] = bool(any(v for k, v in get_params.items() if v))
+
         return ctx
 
 

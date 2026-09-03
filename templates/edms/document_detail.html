@@ -2,22 +2,72 @@
 {% load edms_tags %}
 
 {% block edms_content %}
-<!-- Header Area (Breadcrumb + Actions) -->
-<div class="flex items-center justify-between mb-4">
+<!-- Header Area (Breadcrumb + Navigation + Actions) -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
     <!-- Breadcrumb -->
-    <nav class="text-sm text-slate-400 flex items-center gap-1">
-        <a href="{% url 'edms:dashboard' %}" class="hover:text-violet-600">EDMS</a>
+    <nav class="text-sm text-slate-400 flex items-center gap-1.5 min-w-0">
+        <a href="{% url 'edms:dashboard' %}" class="hover:text-violet-600 transition-colors">EDMS</a>
         <span>›</span>
-        <a href="{% url 'edms:document_list' %}" class="hover:text-violet-600">Documents</a>
+        <a href="{% url 'edms:document_list' %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}" class="hover:text-violet-600 transition-colors">Documents</a>
         <span>›</span>
-        <span class="text-slate-600 truncate max-w-xs">{{ document.title }}</span>
+        <span class="text-slate-600 font-medium truncate max-w-[180px] sm:max-w-xs">{{ document.title }}</span>
     </nav>
     
-    <!-- Upload New Button -->
-    <a href="{% url 'edms:document_upload' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-sm transition-colors shadow-md flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Upload New
-    </a>
+    <!-- Next and Previous Document Navigation with Applicable Filter -->
+    <div class="flex items-center gap-3">
+        <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            {% if prev_doc %}
+            <a href="{% url 'edms:document_detail' doc_id=prev_doc.id %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}"
+               id="edmsPrevDocBtn"
+               title="Previous: {{ prev_doc.title }} (Shortcut: Alt + ←)"
+               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-50 font-medium text-xs transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <span class="hidden sm:inline">Previous</span>
+            </a>
+            {% else %}
+            <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-300 cursor-not-allowed font-medium text-xs" title="No previous document in list">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <span class="hidden sm:inline">Previous</span>
+            </span>
+            {% endif %}
+
+            {% if current_filter_index %}
+            <span class="px-2.5 text-[11px] font-semibold text-slate-500 border-x border-slate-200 select-none whitespace-nowrap">
+                {{ current_filter_index }} / {{ total_filter_count }}
+            </span>
+            {% else %}
+            <span class="h-4 w-[1px] bg-slate-200 mx-1"></span>
+            {% endif %}
+
+            {% if next_doc %}
+            <a href="{% url 'edms:document_detail' doc_id=next_doc.id %}{% if filter_querystring %}?{{ filter_querystring }}{% endif %}"
+               id="edmsNextDocBtn"
+               title="Next: {{ next_doc.title }} (Shortcut: Alt + →)"
+               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-50 font-medium text-xs transition-colors">
+                <span class="hidden sm:inline">Next</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            {% else %}
+            <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-300 cursor-not-allowed font-medium text-xs" title="No next document in list">
+                <span class="hidden sm:inline">Next</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </span>
+            {% endif %}
+        </div>
+
+        {% if has_filter %}
+        <span class="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium rounded-lg" title="Navigating inside active filtered list">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+            Filtered
+        </span>
+        {% endif %}
+
+        <!-- Upload New Button -->
+        <a href="{% url 'edms:document_upload' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-sm transition-colors shadow-md flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span class="hidden sm:inline">Upload New</span>
+        </a>
+    </div>
 </div>
 
 {% if document.source_type == 'commercial' and document.commercial_doc_id %}
@@ -309,5 +359,18 @@
     </table>
 </div>
 {% endif %}
+
+<script>
+document.addEventListener('keydown', function(e) {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+    if (e.key === 'ArrowLeft' && (e.altKey || e.ctrlKey)) {
+        const prevBtn = document.getElementById('edmsPrevDocBtn');
+        if (prevBtn) prevBtn.click();
+    } else if (e.key === 'ArrowRight' && (e.altKey || e.ctrlKey)) {
+        const nextBtn = document.getElementById('edmsNextDocBtn');
+        if (nextBtn) nextBtn.click();
+    }
+});
+</script>
 
 {% endblock %}
