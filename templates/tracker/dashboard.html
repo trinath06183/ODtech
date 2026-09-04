@@ -116,6 +116,23 @@
                         {{ task_count }} Tasks
                       </div>
                       {% endif %}{% endwith %}
+                      {% if order.has_approved_pi %}
+                      <a href="{% url 'tracker:order_detail' order.id %}#linked-documents-section" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full transition-colors" title="Approved PI: {{ order.approved_pi_number }}">
+                        <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        {{ order.approved_pi_number }}
+                      </a>
+                      {% endif %}
+                      {% if order.other_linked_docs_count > 0 %}
+                      <a href="{% url 'tracker:order_detail' order.id %}#linked-documents-section" class="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full transition-colors" title="{{ order.linked_documents_summary }}">
+                        <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        +{{ order.other_linked_docs_count }} Doc{{ order.other_linked_docs_count|pluralize }}
+                      </a>
+                      {% elif not order.has_approved_pi and order.linked_documents_count > 0 %}
+                      <a href="{% url 'tracker:order_detail' order.id %}#linked-documents-section" class="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full transition-colors" title="{{ order.linked_documents_summary }}">
+                        <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        {{ order.linked_documents_count }} Doc{{ order.linked_documents_count|pluralize }}
+                      </a>
+                      {% endif %}
                     </div>
                   </div>
                   <div class="flex items-center space-x-6 flex-shrink-0 pointer-events-auto">
@@ -260,6 +277,23 @@
                       <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                       COMPLETED
                     </span>
+                    {% if order.has_approved_pi %}
+                    <a href="{% url 'tracker:order_detail' order.id %}#linked-documents-section" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full pointer-events-auto hover:bg-emerald-100 transition-colors" title="Approved PI: {{ order.approved_pi_number }}">
+                      <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                      {{ order.approved_pi_number }}
+                    </a>
+                    {% endif %}
+                    {% if order.other_linked_docs_count > 0 %}
+                    <a href="{% url 'tracker:order_detail' order.id %}#linked-documents-section" class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full pointer-events-auto hover:bg-indigo-100 transition-colors" title="{{ order.linked_documents_summary }}">
+                      <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                      +{{ order.other_linked_docs_count }} Doc{{ order.other_linked_docs_count|pluralize }}
+                    </a>
+                    {% elif not order.has_approved_pi and order.linked_documents_count > 0 %}
+                    <a href="{% url 'tracker:order_detail' order.id %}#linked-documents-section" class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full pointer-events-auto hover:bg-indigo-100 transition-colors" title="{{ order.linked_documents_summary }}">
+                      <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                      {{ order.linked_documents_count }} Doc{{ order.linked_documents_count|pluralize }}
+                    </a>
+                    {% endif %}
                   </div>
                   <p class="mt-1 text-sm text-gray-500 truncate">{{ order.customer_name }} ({{ order.customer_phone }})</p>
                 </div>

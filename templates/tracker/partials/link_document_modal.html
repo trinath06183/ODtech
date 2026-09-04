@@ -1,0 +1,359 @@
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Link Document Modal                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="link-document-modal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="closeLinkDocumentModal()"></div>
+
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-gray-200">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 px-6 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+                        <svg class="w-5 h-5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white leading-6" id="modal-title">Link Document to Order</h3>
+                        <p class="text-xs text-indigo-200">Link commercial documents or EDMS uploads to Order <span class="font-mono font-bold text-white bg-white/20 px-1.5 py-0.5 rounded">{{ order.order_number }}</span></p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeLinkDocumentModal()" class="rounded-lg p-1.5 text-indigo-200 hover:text-white hover:bg-white/10 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <!-- Search Box -->
+                <div class="relative mb-4">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" id="doc-link-search-input" oninput="debounceDocLinkSearch()" placeholder="Search by Document #, Customer Name, PO Ref, or Title..."
+                        class="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                    <div id="doc-link-loading-spinner" class="absolute inset-y-0 right-0 pr-3.5 flex items-center hidden">
+                        <svg class="animate-spin h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Filter Type Pills -->
+                <div class="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1 text-xs font-semibold">
+                    <button type="button" onclick="setDocLinkFilter('ALL')" id="filter-pill-ALL" class="doc-filter-btn px-3 py-1 rounded-lg bg-indigo-600 text-white shadow-xs transition-colors">All</button>
+                    <button type="button" onclick="setDocLinkFilter('INV')" id="filter-pill-INV" class="doc-filter-btn px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">Invoices</button>
+                    <button type="button" onclick="setDocLinkFilter('PRO')" id="filter-pill-PRO" class="doc-filter-btn px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">Proformas (PI)</button>
+                    <button type="button" onclick="setDocLinkFilter('QTN')" id="filter-pill-QTN" class="doc-filter-btn px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">Quotations</button>
+                    <button type="button" onclick="setDocLinkFilter('CHL')" id="filter-pill-CHL" class="doc-filter-btn px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">Challans</button>
+                    <button type="button" onclick="setDocLinkFilter('PO')"  id="filter-pill-PO"  class="doc-filter-btn px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">POs</button>
+                    <button type="button" onclick="setDocLinkFilter('EDMS')" id="filter-pill-EDMS" class="doc-filter-btn px-3 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">EDMS Files</button>
+                </div>
+
+                <!-- Search Results List -->
+                <div id="doc-link-results" class="max-h-80 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-[140px]">
+                    <div class="text-center py-8 text-gray-400 text-sm">
+                        <svg class="mx-auto h-8 w-8 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Loading documents...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Need a new document?</span>
+                    <button type="button" onclick="closeLinkDocumentModal(); openPartialDispatchModal();"
+                        class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline">
+                        + Create PI / Invoice / Challan
+                    </button>
+                </div>
+                <button type="button" onclick="closeLinkDocumentModal()"
+                    class="w-full sm:w-auto inline-flex justify-center rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentDocFilter = 'ALL';
+    let docLinkSearchResults = [];
+    let searchDebounceTimer = null;
+    const currentOrderId = "{{ order.id }}";
+
+    function openLinkDocumentModal() {
+        const modal = document.getElementById('link-document-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            const input = document.getElementById('doc-link-search-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            fetchLinkableDocuments('');
+        }
+    }
+
+    function closeLinkDocumentModal() {
+        const modal = document.getElementById('link-document-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('link-document-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeLinkDocumentModal();
+            }
+        }
+    });
+
+    function debounceDocLinkSearch() {
+        clearTimeout(searchDebounceTimer);
+        const query = document.getElementById('doc-link-search-input').value.trim();
+        searchDebounceTimer = setTimeout(() => {
+            fetchLinkableDocuments(query);
+        }, 250);
+    }
+
+    function setDocLinkFilter(filterKey) {
+        currentDocFilter = filterKey;
+        document.querySelectorAll('.doc-filter-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-700');
+        });
+        const activeBtn = document.getElementById('filter-pill-' + filterKey);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-indigo-600', 'text-white');
+            activeBtn.classList.remove('bg-gray-100', 'text-gray-700');
+        }
+        renderDocLinkResults();
+    }
+
+    async function fetchLinkableDocuments(query) {
+        const spinner = document.getElementById('doc-link-loading-spinner');
+        if (spinner) spinner.classList.remove('hidden');
+        try {
+            const res = await fetch(`/api/document-links/search/?q=${encodeURIComponent(query)}&order_id=${currentOrderId}`);
+            const data = await res.json();
+            docLinkSearchResults = data.results || [];
+            renderDocLinkResults();
+        } catch (err) {
+            console.error('Error fetching linkable documents:', err);
+            const container = document.getElementById('doc-link-results');
+            if (container) {
+                container.innerHTML = '<div class="text-center py-6 text-red-500 text-sm">Failed to load documents. Please retry.</div>';
+            }
+        } finally {
+            if (spinner) spinner.classList.add('hidden');
+        }
+    }
+
+    function renderDocLinkResults() {
+        const container = document.getElementById('doc-link-results');
+        if (!container) return;
+
+        let filtered = docLinkSearchResults;
+        if (currentDocFilter !== 'ALL') {
+            filtered = docLinkSearchResults.filter(item => {
+                if (currentDocFilter === 'EDMS') return item.model === 'edms.edmsdocument' || item.doc_type === 'EDMS';
+                return item.doc_type === currentDocFilter;
+            });
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-10 text-gray-400 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                    <svg class="mx-auto h-8 w-8 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="text-xs font-semibold text-gray-600">No documents found</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Try searching with a different term or document number.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            let badgeClass = 'bg-gray-100 text-gray-800 border-gray-200';
+            let typeLabel = item.doc_type_display || item.type || 'Document';
+            if (item.doc_type === 'INV') {
+                badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-300';
+                typeLabel = 'Invoice';
+            } else if (item.doc_type === 'PRO') {
+                badgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-300';
+                typeLabel = 'Proforma';
+            } else if (item.doc_type === 'QTN') {
+                badgeClass = 'bg-amber-50 text-amber-700 border-amber-300';
+                typeLabel = 'Quotation';
+            } else if (item.doc_type === 'CHL') {
+                badgeClass = 'bg-teal-50 text-teal-700 border-teal-300';
+                typeLabel = 'Challan';
+            } else if (item.doc_type === 'PO') {
+                badgeClass = 'bg-purple-50 text-purple-700 border-purple-300';
+                typeLabel = 'Purchase Order';
+            } else if (item.model === 'edms.edmsdocument' || item.doc_type === 'EDMS') {
+                badgeClass = 'bg-sky-50 text-sky-700 border-sky-300';
+                typeLabel = 'EDMS File';
+            }
+
+            const amountHtml = item.amount > 0 ? `<span class="font-bold text-gray-900">₹${item.amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> • ` : '';
+            const statusBadge = item.status ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">${item.status}</span>` : '';
+
+            html += `
+                <div class="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-white hover:bg-indigo-50/30 hover:border-indigo-200 transition-all group" id="link-item-${item.id}">
+                    <div class="flex-1 min-w-0 pr-3 text-left">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${badgeClass}">${typeLabel}</span>
+                            <a href="${item.preview_url || '#'}" target="_blank" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1">
+                                <span>${item.number || item.title}</span>
+                                <svg class="w-3 h-3 text-gray-400 group-hover:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                            ${statusBadge}
+                        </div>
+                        <p class="text-[11px] text-gray-500 truncate">
+                            ${amountHtml}
+                            <span>${item.customer_name ? item.customer_name + ' • ' : ''}</span>
+                            <span>${item.date || ''}</span>
+                        </p>
+                    </div>
+                    <button type="button" onclick="linkDocumentToOrder('${item.model}', '${item.id}', this)"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all flex-shrink-0">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        <span>Link</span>
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    async function linkDocumentToOrder(targetModel, targetId, btnEl) {
+        if (!btnEl) return;
+        const origHtml = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = `
+            <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Linking...</span>
+        `;
+
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+            const res = await fetch('/api/document-links/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    source_model: 'tracker.order',
+                    source_id: currentOrderId,
+                    target_model: targetModel,
+                    target_id: targetId,
+                    link_type: 'related'
+                })
+            });
+
+            const data = await res.json();
+            if (data.status === 'success') {
+                btnEl.className = "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg text-emerald-700 bg-emerald-100 border border-emerald-300 flex-shrink-0";
+                btnEl.innerHTML = `
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Linked!</span>
+                `;
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 600);
+            } else {
+                alert(data.message || 'Failed to link document.');
+                btnEl.disabled = false;
+                btnEl.innerHTML = origHtml;
+            }
+        } catch (err) {
+            console.error('Error linking document:', err);
+            alert('An unexpected error occurred while linking the document.');
+            btnEl.disabled = false;
+            btnEl.innerHTML = origHtml;
+        }
+    }
+
+    async function unlinkDocumentFromOrder(linkId, targetModel, targetId, btnEl) {
+        if (!confirm('Are you sure you want to unlink this document from this tracker order?')) {
+            return;
+        }
+
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.classList.add('opacity-50');
+        }
+
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+            let res;
+            if (linkId) {
+                res = await fetch(`/api/document-links/${linkId}/delete/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+            } else {
+                res = await fetch('/api/document-links/unlink/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        source_model: 'tracker.order',
+                        source_id: currentOrderId,
+                        target_model: targetModel,
+                        target_id: targetId
+                    })
+                });
+            }
+
+            const data = await res.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to unlink document.');
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.classList.remove('opacity-50');
+                }
+            }
+        } catch (err) {
+            console.error('Error unlinking document:', err);
+            alert('An error occurred while unlinking.');
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.classList.remove('opacity-50');
+            }
+        }
+    }
+</script>

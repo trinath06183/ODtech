@@ -20,5 +20,6 @@ urlpatterns = [
     # Document Linking API
     path('api/document-links/create/', document_link_views.create_document_link, name='create_document_link'),
     path('api/document-links/<int:link_id>/delete/', document_link_views.delete_document_link, name='delete_document_link'),
+    path('api/document-links/unlink/', document_link_views.unlink_document, name='unlink_document'),
     path('api/document-links/search/', document_link_views.search_linkable_documents, name='search_linkable_documents'),
 ]

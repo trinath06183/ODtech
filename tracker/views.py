@@ -50,9 +50,301 @@ def _apply_qr_upload(request, supplier_option):
         except Exception:
             pass  # Silently skip if session not found or already used
 
+def get_order_approved_pis(order):
+    """
+    Returns all approved Proforma Invoices (PIs) linked to this Tracker Order.
+    Checks DocumentLink, po_reference_number, project_name, order number, remark references,
+    and Document.tracker_order matching.
+    """
+    if not order:
+        return []
+    try:
+        from documents.models import Document
+        from core.models import DocumentLink
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        import re
+
+        doc_ct = ContentType.objects.get_for_model(Document)
+        order_ct = ContentType.objects.get_for_model(order.__class__)
+
+        # 1. Linked via generic DocumentLink
+        linked_doc_ids = set()
+        links = DocumentLink.objects.filter(
+            (Q(source_type=order_ct, source_id=str(order.id)) & Q(target_type=doc_ct)) |
+            (Q(target_type=order_ct, target_id=str(order.id)) & Q(source_type=doc_ct))
+        )
+        for lk in links:
+            t_id = lk.target_id if lk.target_type == doc_ct else lk.source_id
+            try:
+                linked_doc_ids.add(int(t_id))
+            except (ValueError, TypeError):
+                pass
+
+        # 2. Match via order number, po_reference_number, project_name, or remark
+        q_order = (
+            Q(po_reference_number__iexact=order.order_number) |
+            Q(project_name__iexact=order.order_number) |
+            Q(number__iexact=order.order_number)
+        )
+        if linked_doc_ids:
+            q_order |= Q(id__in=linked_doc_ids)
+
+        if order.remark:
+            doc_nums = re.findall(r'(?:PI|QTN|INV|CHL|PO)[A-Za-z0-9\-_/]+', order.remark)
+            if doc_nums:
+                q_order |= Q(number__in=doc_nums)
+
+        pi_qs = Document.objects.filter(
+            q_order,
+            type='PRO',
+            status='Approved'
+        ).select_related('contact').prefetch_related('items').distinct().order_by('-date', '-id')
+
+        matched_ids = set(pi_qs.values_list('id', flat=True))
+        result = list(pi_qs)
+
+        # 3. Fallback: check other approved PIs if their tracker_order property matches this order
+        other_pis = Document.objects.filter(
+            type='PRO',
+            status='Approved'
+        ).exclude(id__in=matched_ids).select_related('contact').prefetch_related('items').order_by('-date', '-id')[:25]
+
+        for pi in other_pis:
+            try:
+                to = pi.tracker_order
+                if to and str(to.id) == str(order.id):
+                    result.append(pi)
+                    matched_ids.add(pi.id)
+            except Exception:
+                pass
+
+        return result
+    except Exception:
+        return []
+
+
+def get_order_linked_documents(order):
+    """
+    Returns all documents linked to this Tracker Order:
+    - Commercial Documents (INV, PRO, QTN, CHL, PO) via DocumentLink and reference matching
+    - EDMS Documents via DocumentLink and reference matching
+    Returns a unified list of dictionaries sorted by date descending.
+    """
+    if not order:
+        return []
+    try:
+        from documents.models import Document
+        from edms.models import EDMSDocument
+        from core.models import DocumentLink
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        from django.urls import reverse
+        import re
+
+        doc_ct = ContentType.objects.get_for_model(Document)
+        edms_ct = ContentType.objects.get_for_model(EDMSDocument)
+        order_ct = ContentType.objects.get_for_model(order.__class__)
+
+        linked_doc_id_to_link = {}    # {doc_id: link_id}
+        linked_edms_id_to_link = {}   # {edms_id: link_id}
+
+        # 1. Fetch all generic DocumentLink records for this order
+        links = DocumentLink.objects.filter(
+            (Q(source_type=order_ct, source_id=str(order.id))) |
+            (Q(target_type=order_ct, target_id=str(order.id)))
+        )
+        for lk in links:
+            if lk.source_type == doc_ct:
+                try: linked_doc_id_to_link[int(lk.source_id)] = lk.id
+                except: pass
+            elif lk.target_type == doc_ct:
+                try: linked_doc_id_to_link[int(lk.target_id)] = lk.id
+                except: pass
+            elif lk.source_type == edms_ct:
+                linked_edms_id_to_link[str(lk.source_id)] = lk.id
+            elif lk.target_type == edms_ct:
+                linked_edms_id_to_link[str(lk.target_id)] = lk.id
+
+        # 2. Commercial Documents matching query
+        q_order = (
+            Q(po_reference_number__iexact=order.order_number) |
+            Q(project_name__iexact=order.order_number) |
+            Q(number__iexact=order.order_number)
+        )
+        if linked_doc_id_to_link:
+            q_order |= Q(id__in=list(linked_doc_id_to_link.keys()))
+
+        if order.remark:
+            doc_nums = re.findall(r'(?:PI|QTN|INV|CHL|PO)[A-Za-z0-9\-_/]+', order.remark)
+            if doc_nums:
+                q_order |= Q(number__in=doc_nums)
+
+        raw_docs = list(Document.objects.filter(q_order).select_related('contact').distinct().order_by('-date', '-id'))
+
+        # Also check if any other documents have tracker_order property matching this order
+        matched_doc_ids = {d.id for d in raw_docs}
+        fallback_candidates = Document.objects.exclude(id__in=matched_doc_ids).select_related('contact').order_by('-date', '-id')[:30]
+        for fd in fallback_candidates:
+            try:
+                to = fd.tracker_order
+                if to and str(to.id) == str(order.id):
+                    raw_docs.append(fd)
+                    matched_doc_ids.add(fd.id)
+            except Exception:
+                pass
+
+        # Deduplicate commercial documents by ID
+        docs = []
+        seen_doc_ids = set()
+        for d in raw_docs:
+            if d.id not in seen_doc_ids:
+                seen_doc_ids.add(d.id)
+                docs.append(d)
+
+        # 3. EDMS Documents
+        # Exclude auto-synced mirrors of commercial documents so invoices/PIs are not duplicated
+        comm_doc_numbers = {d.number.strip().lower() for d in docs if d.number}
+        q_edms = Q()
+        if linked_edms_id_to_link:
+            q_edms |= Q(id__in=list(linked_edms_id_to_link.keys()))
+        if order.order_number:
+            q_edms |= Q(invoice_number__iexact=order.order_number) | Q(po_number__iexact=order.order_number)
+        
+        edms_docs = []
+        if q_edms:
+            raw_edms = list(
+                EDMSDocument.objects.filter(q_edms)
+                .filter(commercial_doc__isnull=True)
+                .exclude(source_type='commercial')
+                .distinct()
+                .order_by('-created_at')
+            )
+            for ed in raw_edms:
+                if ed.commercial_doc_id and ed.commercial_doc_id in seen_doc_ids:
+                    continue
+                ref_num = (ed.invoice_number or ed.po_number or ed.reference_number or '').strip().lower()
+                if ref_num and ref_num in comm_doc_numbers:
+                    continue
+                if any(c_num in (ed.title or '').lower() for c_num in comm_doc_numbers if len(c_num) >= 5):
+                    continue
+                edms_docs.append(ed)
+
+        results = []
+        for d in docs:
+            t = (d.type or '').upper()
+            if t == 'INV':
+                badge_bg = 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                type_name = 'Tax Invoice'
+            elif t == 'PRO':
+                badge_bg = 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                type_name = 'Proforma Invoice'
+            elif t == 'QTN':
+                badge_bg = 'bg-amber-50 text-amber-700 border-amber-300'
+                type_name = 'Quotation'
+            elif t == 'CHL':
+                badge_bg = 'bg-teal-50 text-teal-700 border-teal-300'
+                type_name = 'Delivery Challan'
+            elif t == 'PO':
+                badge_bg = 'bg-purple-50 text-purple-700 border-purple-300'
+                type_name = 'Purchase Order'
+            else:
+                badge_bg = 'bg-gray-50 text-gray-700 border-gray-300'
+                type_name = d.get_type_display() if hasattr(d, 'get_type_display') else t
+
+            try:
+                prev_url = reverse('document_preview', args=[d.id])
+            except Exception:
+                prev_url = f'/documents/{d.id}/preview/'
+
+            try:
+                pdf_url = reverse('generate_pdf', args=[d.id])
+            except Exception:
+                pdf_url = f'/documents/{d.id}/pdf/'
+
+            results.append({
+                'id': d.id,
+                'model': 'documents.document',
+                'type': t,
+                'type_display': type_name,
+                'badge_classes': badge_bg,
+                'number': d.number,
+                'date': d.date,
+                'date_display': d.date.strftime('%d %b %Y') if d.date else '',
+                'customer_name': d.contact.name if d.contact else '',
+                'po_reference_number': d.po_reference_number or '',
+                'status': d.status,
+                'status_display': d.get_status_display() if hasattr(d, 'get_status_display') else d.status,
+                'grand_total': float(d.grand_total or 0),
+                'preview_url': prev_url,
+                'pdf_url': pdf_url,
+                'link_id': linked_doc_id_to_link.get(d.id),
+                'is_approved_pi': (t == 'PRO' and d.status == 'Approved'),
+                'is_commercial': True,
+            })
+
+        for ed in edms_docs:
+            type_disp = ed.get_document_type_display() if hasattr(ed, 'get_document_type_display') else (ed.document_type or 'File')
+            try:
+                prev_url = reverse('edms:document_preview', args=[ed.id])
+            except Exception:
+                prev_url = f'/edms/document/{ed.id}/preview/'
+
+            try:
+                dl_url = reverse('edms:document_download', args=[ed.id])
+            except Exception:
+                dl_url = f'/edms/document/{ed.id}/download/'
+
+            ref_num = ed.invoice_number or ed.po_number or ed.reference_number or ed.title
+            date_val = ed.created_at.date() if ed.created_at else None
+            date_disp = ed.created_at.strftime('%d %b %Y') if ed.created_at else ''
+            cust_name = ed.party_name or (ed.contact_vendor.name if ed.contact_vendor else '')
+
+            results.append({
+                'id': str(ed.id),
+                'model': 'edms.edmsdocument',
+                'type': 'EDMS',
+                'type_display': f'EDMS ({type_disp})',
+                'badge_classes': 'bg-sky-50 text-sky-700 border-sky-300',
+                'number': ref_num,
+                'title': ed.title,
+                'date': date_val,
+                'date_display': date_disp,
+                'customer_name': cust_name,
+                'po_reference_number': ed.po_number or '',
+                'status': 'Uploaded',
+                'status_display': ed.get_approval_status_display() if hasattr(ed, 'get_approval_status_display') else ed.approval_status,
+                'grand_total': float(ed.amount) if ed.amount else None,
+                'preview_url': prev_url,
+                'pdf_url': dl_url,
+                'link_id': linked_edms_id_to_link.get(str(ed.id)),
+                'is_approved_pi': False,
+                'is_commercial': False,
+            })
+
+        # Sort newest first
+        results.sort(key=lambda x: str(x.get('date') or ''), reverse=True)
+        return results
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("Error in get_order_linked_documents: %s", e)
+        return []
+
+
 # --- Shared helper for product list context (eliminates duplication) ---
 def _build_product_list_context(request, products_qs, order, lot=None):
     """Build context for product_list.html with optimized queries."""
+    # Fetch Approved Proforma Invoices (PIs) and all linked documents
+    approved_pis = get_order_approved_pis(order)
+    linked_documents = get_order_linked_documents(order)
+
+    # Document type counts
+    inv_count = sum(1 for d in linked_documents if d.get('type') == 'INV')
+    pi_count = sum(1 for d in linked_documents if d.get('type') == 'PRO')
+    qtn_count = sum(1 for d in linked_documents if d.get('type') == 'QTN')
+    chl_count = sum(1 for d in linked_documents if d.get('type') == 'CHL')
+    po_count = sum(1 for d in linked_documents if d.get('type') == 'PO')
+    edms_count = sum(1 for d in linked_documents if d.get('type') == 'EDMS')
     # Prefetch supplier_options to avoid N+1 queries
     products = list(
         products_qs
@@ -195,6 +487,17 @@ def _build_product_list_context(request, products_qs, order, lot=None):
         'product_expenses': product_expenses,
         'linked_expenses': linked_expenses,
         'product_expenses_total': product_expenses_total,
+        'approved_pis': approved_pis,
+        'linked_documents': linked_documents,
+        'linked_counts': {
+            'total': len(linked_documents),
+            'inv': inv_count,
+            'pi': pi_count,
+            'qtn': qtn_count,
+            'chl': chl_count,
+            'po': po_count,
+            'edms': edms_count,
+        },
     }
 
 
@@ -203,9 +506,118 @@ def _build_product_list_context(request, products_qs, order, lot=None):
 def dashboard_view(request):
     base_qs = Order.objects.select_related('created_by', 'updated_by').prefetch_related('products', 'tasks').order_by('-order_date')
     # Completed: CLOSED status + PAID payment — shown in a separate archived section
-    completed_orders = base_qs.filter(order_status='CLOSED', payment_status='PAID')
-    active_orders    = base_qs.exclude(order_status='CLOSED', payment_status='PAID')
+    completed_orders = list(base_qs.filter(order_status='CLOSED', payment_status='PAID'))
+    active_orders    = list(base_qs.exclude(order_status='CLOSED', payment_status='PAID'))
     status_choices   = Order.STATUS_CHOICES
+
+    # Annotate active and completed orders with linked documents and approved PI details
+    try:
+        from documents.models import Document
+        from edms.models import EDMSDocument
+        from core.models import DocumentLink
+        from django.contrib.contenttypes.models import ContentType
+        doc_ct = ContentType.objects.get_for_model(Document)
+        edms_ct = ContentType.objects.get_for_model(EDMSDocument)
+        order_ct = ContentType.objects.get_for_model(Order)
+
+        all_target_orders = active_orders + completed_orders
+        order_ids_str = [str(o.id) for o in all_target_orders]
+        
+        # Batch-fetch DocumentLink records for all orders
+        links = DocumentLink.objects.filter(
+            (Q(source_type=order_ct, source_id__in=order_ids_str)) |
+            (Q(target_type=order_ct, target_id__in=order_ids_str))
+        )
+        
+        order_doc_links = {str(o.id): set() for o in all_target_orders}
+        for lk in links:
+            if lk.source_type == order_ct:
+                oid = str(lk.source_id)
+                m_type = 'doc' if lk.target_type == doc_ct else ('edms' if lk.target_type == edms_ct else None)
+                if m_type and oid in order_doc_links:
+                    order_doc_links[oid].add((m_type, lk.target_id))
+            elif lk.target_type == order_ct:
+                oid = str(lk.target_id)
+                m_type = 'doc' if lk.source_type == doc_ct else ('edms' if lk.source_type == edms_ct else None)
+                if m_type and oid in order_doc_links:
+                    order_doc_links[oid].add((m_type, lk.source_id))
+
+        # Commercial documents metadata
+        all_docs = {
+            d['id']: d for d in Document.objects.all().values('id', 'number', 'type', 'status', 'po_reference_number', 'project_name')
+        }
+        
+        docs_by_ref = {}
+        for d_id, d_val in all_docs.items():
+            if d_val['po_reference_number']:
+                docs_by_ref[d_val['po_reference_number'].strip().lower()] = d_val
+            if d_val['project_name']:
+                docs_by_ref[d_val['project_name'].strip().lower()] = d_val
+            docs_by_ref[d_val['number'].strip().lower()] = d_val
+
+        edms_commercial_doc_ids = set(
+            str(e['id']) for e in EDMSDocument.objects.filter(
+                Q(commercial_doc__isnull=False) | Q(source_type='commercial')
+            ).values('id')
+        )
+
+        for ord_obj in all_target_orders:
+            ord_id_str = str(ord_obj.id)
+            ord_num_key = (ord_obj.order_number or '').strip().lower()
+            
+            seen_doc_ids = set()
+            order_docs = []
+            
+            # From DocumentLink
+            for m_type, m_id in order_doc_links.get(ord_id_str, set()):
+                if m_type == 'doc':
+                    try:
+                        int_id = int(m_id)
+                        if int_id in all_docs and int_id not in seen_doc_ids:
+                            order_docs.append(all_docs[int_id])
+                            seen_doc_ids.add(int_id)
+                    except: pass
+                elif m_type == 'edms':
+                    if m_id not in seen_doc_ids and str(m_id) not in edms_commercial_doc_ids:
+                        order_docs.append({'type': 'EDMS', 'status': 'Uploaded', 'number': 'EDMS File'})
+                        seen_doc_ids.add(m_id)
+
+            # From Order number / PO reference match
+            if ord_num_key in docs_by_ref:
+                d_ref = docs_by_ref[ord_num_key]
+                if d_ref['id'] not in seen_doc_ids:
+                    order_docs.append(d_ref)
+                    seen_doc_ids.add(d_ref['id'])
+
+            # From remark matching
+            if ord_obj.remark:
+                for d_num, d_val in docs_by_ref.items():
+                    if d_num in ord_obj.remark.lower() and d_val['id'] not in seen_doc_ids:
+                        order_docs.append(d_val)
+                        seen_doc_ids.add(d_val['id'])
+
+            # Determine approved PI
+            app_pi = next((d for d in order_docs if d.get('type') == 'PRO' and d.get('status') == 'Approved'), None)
+            if not app_pi and ord_num_key in docs_by_ref:
+                c = docs_by_ref[ord_num_key]
+                if c.get('type') == 'PRO' and c.get('status') == 'Approved':
+                    app_pi = c
+
+            if app_pi:
+                ord_obj.has_approved_pi = True
+                ord_obj.approved_pi_number = app_pi['number']
+            else:
+                ord_obj.has_approved_pi = False
+                ord_obj.approved_pi_number = None
+
+            ord_obj.linked_documents_count = len(order_docs)
+            ord_obj.other_linked_docs_count = (len(order_docs) - 1) if app_pi else len(order_docs)
+            
+            # Format types summary
+            types_list = [d.get('type') for d in order_docs if d.get('type')]
+            ord_obj.linked_documents_summary = f"{len(order_docs)} linked document(s): " + ", ".join(sorted(set(types_list))) if order_docs else ""
+    except Exception as e:
+        pass
 
     # Build supplier → order mapping for client-side supplier filter
     # Returns: { 'Supplier Name': ['order-uuid-1', 'order-uuid-2', ...], ... }
@@ -526,6 +938,7 @@ def product_detail_view(request, product_id):
         'unique_suppliers': unique_suppliers,
         'product_expenses_json': product_expenses_json,
         'pending_request': pending_request,
+        'approved_pis': get_order_approved_pis(product.order),
     }
     return render(request, 'tracker/product_detail.html', context)
 
@@ -756,6 +1169,7 @@ def product_modal_detail_view(request, product_id):
         'unique_suppliers_json': unique_suppliers_json,
         'product_expenses_json': product_expenses_json,
         'pending_request': pending_request,
+        'approved_pis': get_order_approved_pis(product.order),
     }
     return render(request, 'tracker/partials/product_detail_modal_content.html', context)
 
