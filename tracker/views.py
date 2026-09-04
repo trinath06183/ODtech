@@ -50,50 +50,188 @@ def _apply_qr_upload(request, supplier_option):
         except Exception:
             pass  # Silently skip if session not found or already used
 
-def get_order_approved_pis(order):
+def get_order_matched_document_ids(order):
     """
-    Returns all approved Proforma Invoices (PIs) linked to this Tracker Order.
-    Checks DocumentLink, po_reference_number, project_name, order number, remark references,
-    and Document.tracker_order matching.
+    Returns (matched_doc_ids, linked_doc_id_to_link) for this Tracker Order:
+    1. Explicit generic DocumentLink records (excluding link_type='excluded').
+    2. Direct po_reference_number == order.order_number match.
+    3. Client Match + Total Amount Match + Product Count Match:
+       - Documents belonging to this order's client (contact.name or contact.phone).
+       - Total Amount matches order total selling price (grand_total or subtotal matching order selling price inc/ex GST).
+       - Product count matches (document line items count or total qty matching order products count or total qty).
     """
     if not order:
-        return []
+        return set(), {}
+
+    matched_doc_ids = set()
+    linked_doc_id_to_link = {}
+
     try:
         from documents.models import Document
         from core.models import DocumentLink
         from django.contrib.contenttypes.models import ContentType
         from django.db.models import Q
+        from decimal import Decimal
         import re
 
         doc_ct = ContentType.objects.get_for_model(Document)
         order_ct = ContentType.objects.get_for_model(order.__class__)
 
-        # 1. Linked via generic DocumentLink
-        linked_doc_ids = set()
-        links = DocumentLink.objects.filter(
-            (Q(source_type=order_ct, source_id=str(order.id)) & Q(target_type=doc_ct)) |
-            (Q(target_type=order_ct, target_id=str(order.id)) & Q(source_type=doc_ct))
+        # Excluded doc IDs (user intentionally unlinked)
+        excluded_doc_ids = set()
+        excluded_links = DocumentLink.objects.filter(
+            (Q(source_type=order_ct, source_id=str(order.id), target_type=doc_ct)) |
+            (Q(target_type=order_ct, target_id=str(order.id), source_type=doc_ct)),
+            link_type='excluded'
         )
-        for lk in links:
-            t_id = lk.target_id if lk.target_type == doc_ct else lk.source_id
+        for el in excluded_links:
+            t_id = el.target_id if el.target_type == doc_ct else el.source_id
             try:
-                linked_doc_ids.add(int(t_id))
+                excluded_doc_ids.add(int(t_id))
             except (ValueError, TypeError):
                 pass
 
-        # 2. Strict Match: Only explicit DocumentLinks or direct PO reference matching order.order_number
-        q_order = Q()
-        if linked_doc_ids:
-            q_order |= Q(id__in=linked_doc_ids)
+        # 1. Linked via generic DocumentLink (non-excluded)
+        links = DocumentLink.objects.filter(
+            (Q(source_type=order_ct, source_id=str(order.id)) & Q(target_type=doc_ct)) |
+            (Q(target_type=order_ct, target_id=str(order.id)) & Q(source_type=doc_ct))
+        ).exclude(link_type='excluded')
 
+        for lk in links:
+            t_id = lk.target_id if lk.target_type == doc_ct else lk.source_id
+            try:
+                d_id = int(t_id)
+                matched_doc_ids.add(d_id)
+                linked_doc_id_to_link[d_id] = lk.id
+            except (ValueError, TypeError):
+                pass
+
+        # 2. Strict PO Reference Match
         if order.order_number and order.order_number.strip():
-            q_order |= Q(po_reference_number__iexact=order.order_number.strip())
+            po_ids = Document.objects.filter(
+                po_reference_number__iexact=order.order_number.strip()
+            ).values_list('id', flat=True)
+            matched_doc_ids.update(po_ids)
 
-        if not q_order:
+        # 3. Client Match + Total Amount Match + Count of Products Match
+        customer_name = (order.customer_name or '').strip()
+        customer_phone = (order.customer_phone or '').strip()
+
+        order_products = list(order.products.all())
+        order_product_count = len(order_products)
+        order_total_qty = sum((p.quantity or 0) for p in order_products)
+
+        # Calculate target order selling totals
+        order_sell_inc = sum(
+            Decimal(str(p.selling_price_inc_gst or 0)) * Decimal(str(p.quantity or 1))
+            for p in order_products
+        )
+        order_sell_ex = sum(
+            Decimal(str(p.selling_price_ex_gst or 0)) * Decimal(str(p.quantity or 1))
+            for p in order_products
+        )
+        order_sum_sp_inc = sum(Decimal(str(p.selling_price_inc_gst or 0)) for p in order_products)
+        order_sum_sp_ex = sum(Decimal(str(p.selling_price_ex_gst or 0)) for p in order_products)
+
+        target_amounts = {
+            round(amt, 2)
+            for amt in [order_sell_inc, order_sell_ex, order_sum_sp_inc, order_sum_sp_ex]
+            if amt and amt > 0
+        }
+
+        if (customer_name or customer_phone) and target_amounts and order_product_count > 0:
+            q_client = Q()
+            if customer_name:
+                q_client |= Q(contact__name__iexact=customer_name)
+                q_client |= Q(contact__name__icontains=customer_name)
+            if customer_phone:
+                q_client |= Q(contact__phone=customer_phone)
+
+            client_docs = list(
+                Document.objects.filter(q_client)
+                .select_related('contact')
+                .prefetch_related('items')
+            )
+
+            # Fallback for slight variations in customer name (e.g. "Industech" in "Industech Engineering")
+            if not client_docs and customer_name:
+                words = [w for w in re.split(r'[\s,\.-]+', customer_name) if len(w) >= 4]
+                if words:
+                    q_words = Q()
+                    for w in words:
+                        q_words |= Q(contact__name__icontains=w)
+                    client_docs = list(
+                        Document.objects.filter(q_words)
+                        .select_related('contact')
+                        .prefetch_related('items')
+                    )
+
+            for d in client_docs:
+                if d.id in matched_doc_ids:
+                    continue
+
+                # Verify client relation
+                c_name = (d.contact.name or '').strip().lower()
+                ord_c_name = customer_name.lower()
+                is_client_match = (
+                    ord_c_name in c_name or
+                    c_name in ord_c_name or
+                    (customer_phone and d.contact.phone and customer_phone == d.contact.phone)
+                )
+                if not is_client_match:
+                    continue
+
+                # 1. Product count / quantity match
+                d_items = list(d.items.all())
+                d_item_count = len(d_items)
+                d_total_qty = sum(Decimal(str(it.quantity or 0)) for it in d_items)
+
+                count_matched = (
+                    d_item_count == order_product_count or
+                    d_total_qty == Decimal(str(order_total_qty)) or
+                    d_item_count == order_total_qty or
+                    d_total_qty == Decimal(str(order_product_count))
+                )
+                if not count_matched:
+                    continue
+
+                # 2. Total amount match (within 1.00 tolerance for rounding/paise)
+                d_grand_total = round(Decimal(str(d.grand_total or 0)), 2)
+                d_subtotal = round(Decimal(str(d.subtotal or 0)), 2)
+
+                amount_matched = False
+                for tgt in target_amounts:
+                    if abs(d_grand_total - tgt) <= Decimal('1.00') or abs(d_subtotal - tgt) <= Decimal('1.00'):
+                        amount_matched = True
+                        break
+
+                if amount_matched:
+                    matched_doc_ids.add(d.id)
+
+        # Remove any manually excluded documents
+        matched_doc_ids -= excluded_doc_ids
+
+    except Exception:
+        pass
+
+    return matched_doc_ids, linked_doc_id_to_link
+
+
+def get_order_approved_pis(order):
+    """
+    Returns all approved Proforma Invoices (PIs) linked to this Tracker Order.
+    Matches via explicit DocumentLinks, PO reference number, and client + amount + product count match.
+    """
+    if not order:
+        return []
+    try:
+        from documents.models import Document
+        matched_doc_ids, _ = get_order_matched_document_ids(order)
+        if not matched_doc_ids:
             return []
 
         return list(
-            Document.objects.filter(q_order, type='PRO', status='Approved')
+            Document.objects.filter(id__in=matched_doc_ids, type='PRO', status='Approved')
             .select_related('contact')
             .prefetch_related('items')
             .distinct()
@@ -106,8 +244,8 @@ def get_order_approved_pis(order):
 def get_order_linked_documents(order):
     """
     Returns all documents strictly linked to this Tracker Order:
-    - Commercial Documents via explicit DocumentLink or direct po_reference_number match
-    - EDMS Documents via explicit DocumentLink or direct po_number match
+    - Commercial Documents via explicit DocumentLink, PO reference, or Client + Amount + Product count match
+    - EDMS Documents via explicit DocumentLink, PO reference, or Client + Amount match
     Returns a unified list of dictionaries sorted by date descending.
     """
     if not order:
@@ -119,42 +257,20 @@ def get_order_linked_documents(order):
         from django.contrib.contenttypes.models import ContentType
         from django.db.models import Q
         from django.urls import reverse
+        from decimal import Decimal
 
-        doc_ct = ContentType.objects.get_for_model(Document)
         edms_ct = ContentType.objects.get_for_model(EDMSDocument)
         order_ct = ContentType.objects.get_for_model(order.__class__)
 
-        linked_doc_id_to_link = {}    # {doc_id: link_id}
-        linked_edms_id_to_link = {}   # {edms_id: link_id}
-
-        # 1. Fetch all explicit DocumentLink records for this order
-        links = DocumentLink.objects.filter(
-            (Q(source_type=order_ct, source_id=str(order.id))) |
-            (Q(target_type=order_ct, target_id=str(order.id)))
-        )
-        for lk in links:
-            if lk.source_type == doc_ct:
-                try: linked_doc_id_to_link[int(lk.source_id)] = lk.id
-                except: pass
-            elif lk.target_type == doc_ct:
-                try: linked_doc_id_to_link[int(lk.target_id)] = lk.id
-                except: pass
-            elif lk.source_type == edms_ct:
-                linked_edms_id_to_link[str(lk.source_id)] = lk.id
-            elif lk.target_type == edms_ct:
-                linked_edms_id_to_link[str(lk.target_id)] = lk.id
-
-        # 2. Commercial Documents strictly matching this order:
-        # Either explicitly linked via DocumentLink OR po_reference_number equals order_number
-        q_order = Q()
-        if linked_doc_id_to_link:
-            q_order |= Q(id__in=list(linked_doc_id_to_link.keys()))
-
-        if order.order_number and order.order_number.strip():
-            q_order |= Q(po_reference_number__iexact=order.order_number.strip())
-
-        if q_order:
-            raw_docs = list(Document.objects.filter(q_order).select_related('contact').distinct().order_by('-date', '-id'))
+        # 1. Commercial documents matching order
+        matched_doc_ids, linked_doc_id_to_link = get_order_matched_document_ids(order)
+        if matched_doc_ids:
+            raw_docs = list(
+                Document.objects.filter(id__in=matched_doc_ids)
+                .select_related('contact')
+                .distinct()
+                .order_by('-date', '-id')
+            )
         else:
             raw_docs = []
 
@@ -166,15 +282,52 @@ def get_order_linked_documents(order):
                 seen_doc_ids.add(d.id)
                 docs.append(d)
 
-        # 3. EDMS Documents strictly matching this order:
-        # Either explicitly linked via DocumentLink OR po_number equals order_number
+        # 2. EDMS Documents matching order
+        linked_edms_id_to_link = {}
+        links = DocumentLink.objects.filter(
+            (Q(source_type=order_ct, source_id=str(order.id)) & Q(target_type=edms_ct)) |
+            (Q(target_type=order_ct, target_id=str(order.id)) & Q(source_type=edms_ct))
+        ).exclude(link_type='excluded')
+
+        for lk in links:
+            t_id = lk.target_id if lk.target_type == edms_ct else lk.source_id
+            linked_edms_id_to_link[str(t_id)] = lk.id
+
         comm_doc_numbers = {d.number.strip().lower() for d in docs if d.number}
         q_edms = Q()
         if linked_edms_id_to_link:
             q_edms |= Q(id__in=list(linked_edms_id_to_link.keys()))
         if order.order_number and order.order_number.strip():
             q_edms |= Q(po_number__iexact=order.order_number.strip())
-        
+
+        # Also check EDMS client + amount match
+        customer_name = (order.customer_name or '').strip()
+        order_products = list(order.products.all())
+        order_sell_inc = sum(
+            Decimal(str(p.selling_price_inc_gst or 0)) * Decimal(str(p.quantity or 1))
+            for p in order_products
+        )
+        order_sell_ex = sum(
+            Decimal(str(p.selling_price_ex_gst or 0)) * Decimal(str(p.quantity or 1))
+            for p in order_products
+        )
+        target_amounts = {
+            round(amt, 2)
+            for amt in [order_sell_inc, order_sell_ex]
+            if amt and amt > 0
+        }
+        if customer_name and target_amounts:
+            edms_client_candidates = EDMSDocument.objects.filter(
+                Q(party_name__iexact=customer_name) | Q(party_name__icontains=customer_name)
+            ).filter(commercial_doc__isnull=True).exclude(source_type='commercial')
+            for ed in edms_client_candidates:
+                if ed.amount:
+                    ed_amt = round(Decimal(str(ed.amount)), 2)
+                    for tgt in target_amounts:
+                        if abs(ed_amt - tgt) <= Decimal('1.00'):
+                            q_edms |= Q(id=ed.id)
+                            break
+
         edms_docs = []
         if q_edms:
             raw_edms = list(
@@ -527,45 +680,25 @@ def dashboard_view(request):
 
         for ord_obj in all_target_orders:
             ord_id_str = str(ord_obj.id)
-            ord_num_key = (ord_obj.order_number or '').strip().lower()
-            
             seen_doc_ids = set()
             order_docs = []
-            
-            # From DocumentLink
+
+            # Match commercial documents via explicit links, PO reference, and Client + Amount + Product Count
+            m_ids, _ = get_order_matched_document_ids(ord_obj)
+            for d_id in m_ids:
+                if d_id in all_docs and d_id not in seen_doc_ids:
+                    order_docs.append(all_docs[d_id])
+                    seen_doc_ids.add(d_id)
+
+            # EDMS Documents from explicit links
             for m_type, m_id in order_doc_links.get(ord_id_str, set()):
-                if m_type == 'doc':
-                    try:
-                        int_id = int(m_id)
-                        if int_id in all_docs and int_id not in seen_doc_ids:
-                            order_docs.append(all_docs[int_id])
-                            seen_doc_ids.add(int_id)
-                    except: pass
-                elif m_type == 'edms':
+                if m_type == 'edms':
                     if m_id not in seen_doc_ids and str(m_id) not in edms_commercial_doc_ids:
                         order_docs.append({'type': 'EDMS', 'status': 'Uploaded', 'number': 'EDMS File'})
                         seen_doc_ids.add(m_id)
 
-            # From Order number / PO reference match
-            if ord_num_key in docs_by_ref:
-                d_ref = docs_by_ref[ord_num_key]
-                if d_ref['id'] not in seen_doc_ids:
-                    order_docs.append(d_ref)
-                    seen_doc_ids.add(d_ref['id'])
-
-            # From remark matching
-            if ord_obj.remark:
-                for d_num, d_val in docs_by_ref.items():
-                    if d_num in ord_obj.remark.lower() and d_val['id'] not in seen_doc_ids:
-                        order_docs.append(d_val)
-                        seen_doc_ids.add(d_val['id'])
-
             # Determine approved PI
             app_pi = next((d for d in order_docs if d.get('type') == 'PRO' and d.get('status') == 'Approved'), None)
-            if not app_pi and ord_num_key in docs_by_ref:
-                c = docs_by_ref[ord_num_key]
-                if c.get('type') == 'PRO' and c.get('status') == 'Approved':
-                    app_pi = c
 
             if app_pi:
                 ord_obj.has_approved_pi = True

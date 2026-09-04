@@ -39,6 +39,7 @@ class DocumentLink(TimeStampedModel):
         ('converted', 'Converted To/From'),
         ('payment', 'Payment Proof'),
         ('supporting', 'Supporting Document'),
+        ('excluded', 'Excluded / Unlinked'),
     )
     
     # The document initiating the link

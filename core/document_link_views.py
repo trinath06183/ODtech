@@ -28,11 +28,18 @@ def create_document_link(request):
         source_ct = ContentType.objects.get(app_label=source_app, model=source_model_name)
         target_ct = ContentType.objects.get(app_label=target_app, model=target_model_name)
 
+        # Remove any previous exclusion record when explicitly linking
+        DocumentLink.objects.filter(
+            (Q(source_type=source_ct, source_id=str(source_id), target_type=target_ct, target_id=str(target_id))) |
+            (Q(source_type=target_ct, source_id=str(target_id), target_type=source_ct, target_id=str(source_id))),
+            link_type='excluded'
+        ).delete()
+
         # Check if already linked in either direction
         existing = DocumentLink.objects.filter(
             (Q(source_type=source_ct, source_id=str(source_id), target_type=target_ct, target_id=str(target_id))) |
             (Q(source_type=target_ct, source_id=str(target_id), target_type=source_ct, target_id=str(source_id)))
-        ).first()
+        ).exclude(link_type='excluded').first()
 
         if existing:
             return JsonResponse({
@@ -67,7 +74,17 @@ def delete_document_link(request, link_id):
         # Allow deletion if admin, staff, creator, or if creator is None
         is_admin = getattr(request.user, 'role', '') == 'Admin' or request.user.is_staff or request.user.is_superuser
         if is_admin or link.created_by == request.user or link.created_by is None:
+            source_ct, source_id = link.source_type, link.source_id
+            target_ct, target_id = link.target_type, link.target_id
             link.delete()
+            DocumentLink.objects.get_or_create(
+                source_type=source_ct,
+                source_id=str(source_id),
+                target_type=target_ct,
+                target_id=str(target_id),
+                link_type='excluded',
+                defaults={'created_by': request.user}
+            )
             return JsonResponse({'status': 'success', 'message': 'Link removed successfully'})
         else:
             return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
@@ -91,7 +108,17 @@ def unlink_document(request):
         if link_id:
             try:
                 link = DocumentLink.objects.get(id=link_id)
+                source_ct, source_id = link.source_type, link.source_id
+                target_ct, target_id = link.target_type, link.target_id
                 link.delete()
+                DocumentLink.objects.get_or_create(
+                    source_type=source_ct,
+                    source_id=str(source_id),
+                    target_type=target_ct,
+                    target_id=str(target_id),
+                    link_type='excluded',
+                    defaults={'created_by': request.user}
+                )
                 return JsonResponse({'status': 'success', 'message': 'Link removed successfully'})
             except DocumentLink.DoesNotExist:
                 pass
@@ -106,6 +133,16 @@ def unlink_document(request):
                 (Q(source_type=source_ct, source_id=str(source_id), target_type=target_ct, target_id=str(target_id))) |
                 (Q(source_type=target_ct, source_id=str(target_id), target_type=source_ct, target_id=str(source_id)))
             ).delete()
+
+            # Record exclusion so auto-matching does not pull it back
+            DocumentLink.objects.get_or_create(
+                source_type=source_ct,
+                source_id=str(source_id),
+                target_type=target_ct,
+                target_id=str(target_id),
+                link_type='excluded',
+                defaults={'created_by': request.user}
+            )
 
             # If target was a Document and po_reference_number matched source order, clear it
             if target_model == 'documents.document':
@@ -138,25 +175,22 @@ def search_linkable_documents(request):
     if order_id:
         try:
             from tracker.models import Order
+            from tracker.views import get_order_matched_document_ids
             order = Order.objects.filter(id=order_id).first()
             if order:
+                m_doc_ids, _ = get_order_matched_document_ids(order)
+                excluded_doc_ids.update(m_doc_ids)
+
                 order_ct = ContentType.objects.get_for_model(Order)
-                doc_ct = ContentType.objects.get_for_model(Document)
                 edms_ct = ContentType.objects.get_for_model(EDMSDocument)
 
                 links = DocumentLink.objects.filter(
-                    (Q(source_type=order_ct, source_id=str(order.id))) |
-                    (Q(target_type=order_ct, target_id=str(order.id)))
-                )
+                    (Q(source_type=order_ct, source_id=str(order.id), target_type=edms_ct)) |
+                    (Q(target_type=order_ct, target_id=str(order.id), source_type=edms_ct))
+                ).exclude(link_type='excluded')
                 for lk in links:
-                    if lk.source_type == doc_ct:
-                        excluded_doc_ids.add(int(lk.source_id))
-                    elif lk.target_type == doc_ct:
-                        excluded_doc_ids.add(int(lk.target_id))
-                    elif lk.source_type == edms_ct:
-                        excluded_edms_ids.add(str(lk.source_id))
-                    elif lk.target_type == edms_ct:
-                        excluded_edms_ids.add(str(lk.target_id))
+                    t_id = lk.target_id if lk.target_type == edms_ct else lk.source_id
+                    excluded_edms_ids.add(str(t_id))
         except Exception:
             pass
     
