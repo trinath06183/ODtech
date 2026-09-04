@@ -422,9 +422,10 @@ def financial_dashboard(request):
             if o.order_number:
                 order_map[o.order_number.strip().lower()] = o.id
 
-        # 1. RECEIVABLES: Approved Tax Invoices with outstanding balance
+        # 1. RECEIVABLES: Approved Tax Invoices in the selected period with outstanding balance
         invoices_with_dues = Document.objects.filter(
-            type='INV', status='Approved'
+            type='INV', status='Approved',
+            date__gte=start_date, date__lte=end_date,
         ).select_related('contact').order_by('-date')
 
         for inv in invoices_with_dues:
@@ -446,13 +447,14 @@ def financial_dashboard(request):
                     'paid': paid,
                     'due': due,
                     'link': f"/documents/{inv.id}/preview/",
-                    'is_period': (start_date <= inv.date <= end_date) if inv.date else False,
+                    'is_period': True,
                 })
 
         # 2. PAYABLES:
-        # A) Approved Purchase Orders with pending balance
+        # A) Approved Purchase Orders in the selected period with pending balance
         pos_with_dues = Document.objects.filter(
-            type='PO', status='Approved'
+            type='PO', status='Approved',
+            date__gte=start_date, date__lte=end_date,
         ).select_related('contact').order_by('-date')
 
         for po in pos_with_dues:
@@ -475,10 +477,14 @@ def financial_dashboard(request):
                     'paid': paid,
                     'due': due,
                     'link': f"/documents/{po.id}/preview/",
-                    'is_period': (start_date <= po.date <= end_date) if po.date else False,
+                    'is_period': True,
                 })
 
-        # B) EDMS Purchase Invoices / Bills that are unpaid or partial
+        # B) EDMS Purchase Invoices / Bills in the selected period that are unpaid or partial
+        edms_date_q = (
+            Q(invoice_date__gte=start_date, invoice_date__lte=end_date) |
+            Q(invoice_date__isnull=True, issue_date__gte=start_date, issue_date__lte=end_date)
+        )
         unpaid_edms_bills = EDMSDocument.objects.filter(
             is_deleted=False
         ).filter(
@@ -490,7 +496,7 @@ def financial_dashboard(request):
             Q(category__name__icontains='vendor')
         ).exclude(
             category__name__icontains='proforma'
-        ).select_related('vendor', 'category').order_by('-invoice_date')[:60]
+        ).filter(edms_date_q).select_related('vendor', 'category').order_by('-invoice_date')[:100]
 
         for b in unpaid_edms_bills:
             b_amount = b.amount or Decimal('0')
@@ -512,11 +518,15 @@ def financial_dashboard(request):
                     'paid': Decimal('0'),
                     'due': b_amount,
                     'link': f"/edms/document/{b.id}/",
-                    'is_period': (start_date <= b_date <= end_date) if b_date else False,
+                    'is_period': True,
                 })
 
-        # C) Pending Expenses
-        for exp in Expense.objects.filter(status='Pending').order_by('-date')[:50]:
+        # C) Pending Expenses in the selected period
+        for exp in Expense.objects.filter(
+            status='Pending',
+            date__gte=start_date,
+            date__lte=end_date,
+        ).order_by('-date')[:100]:
             total_payables_due += exp.amount
             payables_list.append({
                 'id': exp.id,
@@ -531,7 +541,7 @@ def financial_dashboard(request):
                 'paid': Decimal('0'),
                 'due': exp.amount,
                 'link': "/payments/expenses/",
-                'is_period': (start_date <= exp.date <= end_date) if exp.date else False,
+                'is_period': True,
             })
 
     except Exception:
@@ -1486,6 +1496,7 @@ def settle_due_transaction(request):
         doc_id = str(data.get('doc_id', '')).strip()
         amount_str = str(data.get('amount', '')).strip()
         payment_mode = data.get('payment_mode', 'Bank Transfer').strip() or 'Bank Transfer'
+        payment_date = data.get('payment_date', '').strip()
         reference_number = data.get('reference_number', '').strip()
         notes = data.get('notes', '').strip()
 
@@ -1537,6 +1548,14 @@ def settle_due_transaction(request):
                     notes=notes or f"Settlement for {doc.get_type_display()} {doc.number} via Financial Dashboard",
                 )
 
+                # Set payment date to specified date or default to document's date
+                target_date = payment_date or (doc.date.strftime('%Y-%m-%d') if doc.date else None)
+                if target_date:
+                    try:
+                        Payment.objects.filter(id=payment.id).update(date=target_date)
+                    except Exception:
+                        pass
+
                 remaining_due = max(Decimal('0'), current_due - settle_amount)
                 return JsonResponse({
                     'success': True,
@@ -1570,6 +1589,15 @@ def settle_due_transaction(request):
                     notes=notes or f"Settlement for EDMS Bill {doc_ref} via Financial Dashboard",
                 )
 
+                # Set payment date to specified date or default to document's date
+                b_date = b.invoice_date or b.issue_date
+                target_date = payment_date or (b_date.strftime('%Y-%m-%d') if b_date else None)
+                if target_date:
+                    try:
+                        Payment.objects.filter(id=payment.id).update(date=target_date)
+                    except Exception:
+                        pass
+
                 b.payment_status = 'paid'
                 b.save(update_fields=['payment_status', 'updated_at'])
 
@@ -1599,6 +1627,14 @@ def settle_due_transaction(request):
                     reference_number=reference_number or f"SETTLE-EXP-{exp.id}",
                     notes=notes or f"Settlement for Expense {exp.title} via Financial Dashboard",
                 )
+
+                # Set payment date to specified date or default to expense date
+                target_date = payment_date or (exp.date.strftime('%Y-%m-%d') if exp.date else None)
+                if target_date:
+                    try:
+                        Payment.objects.filter(id=payment.id).update(date=target_date)
+                    except Exception:
+                        pass
 
                 exp.status = 'Approved'
                 exp.is_paid = True

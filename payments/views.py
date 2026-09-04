@@ -99,6 +99,7 @@ def payment_create(request):
         document_ref = request.POST.get('document_ref', '').strip() or None
         amount = request.POST.get('amount', '').strip()
         payment_mode = request.POST.get('payment_mode', 'Cash')
+        payment_date = request.POST.get('date', '').strip() or None
         reference_number = request.POST.get('reference_number', '').strip() or None
         notes = request.POST.get('notes', '').strip() or None
 
@@ -112,7 +113,7 @@ def payment_create(request):
             for e in errors:
                 messages.error(request, e)
         else:
-            Payment.objects.create(
+            payment = Payment.objects.create(
                 contact_id=contact_id,
                 document_ref=document_ref,
                 amount=amount,
@@ -120,18 +121,25 @@ def payment_create(request):
                 reference_number=reference_number,
                 notes=notes,
             )
+            if payment_date:
+                try:
+                    Payment.objects.filter(id=payment.id).update(date=payment_date)
+                except Exception:
+                    pass
             messages.success(request, 'Payment recorded successfully.')
             next_url = request.GET.get('next') or request.POST.get('next')
             if next_url:
                 return redirect(next_url)
             return redirect('payment_list')
 
+    from django.utils import timezone
     return render(request, 'payments/payment_form.html', {
         'contacts': contacts,
         'documents': documents,
         'payment_modes': Payment.PAYMENT_MODES,
         'preselect_contact': preselect_contact,
         'preselect_document': preselect_document,
+        'today': timezone.localdate(),
         'is_edit': False,
     })
 
@@ -148,6 +156,7 @@ def payment_edit(request, payment_id):
         document_ref = request.POST.get('document_ref', '').strip() or None
         amount = request.POST.get('amount', '').strip()
         payment_mode = request.POST.get('payment_mode', 'Cash')
+        payment_date = request.POST.get('date', '').strip() or None
         reference_number = request.POST.get('reference_number', '').strip() or None
         notes = request.POST.get('notes', '').strip() or None
 
@@ -168,6 +177,11 @@ def payment_edit(request, payment_id):
             payment.reference_number = reference_number
             payment.notes = notes
             payment.save()
+            if payment_date:
+                try:
+                    Payment.objects.filter(id=payment.id).update(date=payment_date)
+                except Exception:
+                    pass
             messages.success(request, 'Payment updated successfully.')
             next_url = request.GET.get('next') or request.POST.get('next')
             if next_url:
@@ -178,6 +192,7 @@ def payment_edit(request, payment_id):
     linked_doc = payment.linked_document
     preselect_document = str(linked_doc.id) if linked_doc else ''
 
+    from django.utils import timezone
     return render(request, 'payments/payment_form.html', {
         'payment': payment,
         'contacts': contacts,
@@ -185,6 +200,7 @@ def payment_edit(request, payment_id):
         'payment_modes': Payment.PAYMENT_MODES,
         'preselect_contact': str(payment.contact_id),
         'preselect_document': preselect_document,
+        'today': timezone.localdate(),
         'is_edit': True,
     })
 
