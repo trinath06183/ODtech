@@ -558,6 +558,12 @@ function closeDuesModal() {
 document.getElementById('dues-modal')?.addEventListener('click', function(e) {
     if (e.target === this) closeDuesModal();
 });
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDuesModal();
+        closePnLModal();
+    }
+});
 
 function switchDuesTab(tab) {
     const recvTabBtn = document.getElementById('dues-tab-recv-btn');
@@ -802,12 +808,12 @@ function filterDuesSearch(val) {
 </div>
 
 <!-- ── Outstanding Receivables & Payables Modal (with Order & Direct Doc Links) ── -->
-<div id="dues-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+<div id="dues-modal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-md items-center justify-center p-2 sm:p-3 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full h-[96vh] max-w-[98vw] max-h-[96vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150 flex flex-col">
         <!-- Modal Header -->
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 flex items-center justify-between shrink-0">
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex items-center justify-between shrink-0 shadow-md">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shadow-inner">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shadow-inner">
                     ⚖️
                 </div>
                 <div>
@@ -818,107 +824,109 @@ function filterDuesSearch(val) {
                     <p class="text-xs text-indigo-200 font-medium">Customer Invoices to Collect &amp; Vendor Bills to Pay with Order References</p>
                 </div>
             </div>
-            <button type="button" onclick="closeDuesModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors">
-                ✕
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="closeDuesModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-base font-bold transition-all hover:scale-105" title="Close (Esc)">
+                    ✕
+                </button>
+            </div>
         </div>
 
         <!-- Controls Bar: Search & Tabs -->
-        <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="px-6 py-3.5 bg-slate-50/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <!-- Tabs -->
-            <div class="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-2xl">
-                <button type="button" id="dues-tab-recv-btn" onclick="switchDuesTab('receivables')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white text-emerald-700 shadow-sm border border-emerald-200 flex items-center gap-1.5">
+            <div class="flex items-center gap-2 bg-slate-200/80 p-1.5 rounded-2xl">
+                <button type="button" id="dues-tab-recv-btn" onclick="switchDuesTab('receivables')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white text-emerald-700 shadow-sm border border-emerald-200 flex items-center gap-2">
                     <span>📥 Receivables</span>
-                    <span class="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px]">₹{{ total_receivables_due|floatformat:0 }}</span>
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-mono font-bold">₹{{ total_receivables_due|floatformat:0 }}</span>
                     <span class="text-slate-400 font-normal">({{ receivables_count }})</span>
                 </button>
-                <button type="button" id="dues-tab-pay-btn" onclick="switchDuesTab('payables')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center gap-1.5">
+                <button type="button" id="dues-tab-pay-btn" onclick="switchDuesTab('payables')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2">
                     <span>📤 Payables</span>
-                    <span class="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px]">₹{{ total_payables_due|floatformat:0 }}</span>
+                    <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-mono font-bold">₹{{ total_payables_due|floatformat:0 }}</span>
                     <span class="text-slate-400 font-normal">({{ payables_count }})</span>
                 </button>
             </div>
 
             <!-- Instant Search Input -->
-            <div class="relative w-full sm:w-72">
+            <div class="relative w-full sm:w-80 md:w-96">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
-                <input type="text" oninput="filterDuesSearch(this.value)" placeholder="Search Order #, Invoice #, Party..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700 placeholder:text-slate-400 shadow-sm">
+                <input type="text" oninput="filterDuesSearch(this.value)" placeholder="Search Order #, Invoice #, Vendor / Customer..." class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700 placeholder:text-slate-400 shadow-sm">
             </div>
         </div>
 
-        <!-- Modal Body Content -->
-        <div class="p-6 overflow-y-auto flex-1 font-sans space-y-4">
+        <!-- Modal Body Content (Scrollable) -->
+        <div class="p-6 overflow-y-auto flex-1 font-sans space-y-4 bg-slate-50/40">
 
             <!-- 📥 TAB 1: RECEIVABLES CONTENT -->
             <div id="dues-recv-content">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Customer Invoices Pending Collection ({{ receivables_count }})
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Customer Invoices Pending Collection ({{ receivables_count }})
                     </span>
-                    <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-100">
-                        Total Balance to Receive: ₹{{ total_receivables_due|floatformat:2 }}
+                    <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                        Total Balance to Receive: <strong class="font-mono text-sm">₹{{ total_receivables_due|floatformat:2 }}</strong>
                     </span>
                 </div>
 
                 {% if receivables_list %}
-                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
-                            <thead class="bg-slate-100/80 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200 z-10">
                                 <tr>
-                                    <th class="py-3 px-3.5">Invoice #</th>
-                                    <th class="py-3 px-3.5">Order / PO Ref</th>
-                                    <th class="py-3 px-3.5">Customer</th>
-                                    <th class="py-3 px-3.5">Date</th>
-                                    <th class="py-3 px-3.5 text-right">Total (₹)</th>
-                                    <th class="py-3 px-3.5 text-right">Paid (₹)</th>
-                                    <th class="py-3 px-3.5 text-right">Balance Due (₹)</th>
-                                    <th class="py-3 px-3.5 text-center">Action</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Invoice #</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Order / PO Ref</th>
+                                    <th class="py-3 px-4 min-w-[220px]">Customer</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Date</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Total (₹)</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Paid (₹)</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Balance Due (₹)</th>
+                                    <th class="py-3 px-4 text-center whitespace-nowrap">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 {% for item in receivables_list %}
                                 <tr class="dues-table-row hover:bg-emerald-50/40 transition-colors">
-                                    <td class="py-2.5 px-3.5 font-bold text-slate-800">
-                                        <a href="{{ item.link }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1">
+                                    <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap font-mono text-xs">
+                                        <a href="{{ item.link }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1.5">
                                             🧾 {{ item.number }}
                                         </a>
                                     </td>
-                                    <td class="py-2.5 px-3.5">
+                                    <td class="py-3 px-4 whitespace-nowrap">
                                         {% if item.order_url %}
-                                        <a href="{{ item.order_url }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-[11px] font-mono hover:underline transition-all">
+                                        <a href="{{ item.order_url }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-[11px] font-mono hover:underline transition-all">
                                             📦 {{ item.order_ref }} ↗
                                         </a>
                                         {% elif item.order_ref %}
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px] font-mono">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px] font-mono">
                                             📄 {{ item.order_ref }}
                                         </span>
                                         {% else %}
                                         <span class="text-slate-400 italic">—</span>
                                         {% endif %}
                                     </td>
-                                    <td class="py-2.5 px-3.5 font-medium text-slate-700">
+                                    <td class="py-3 px-4 font-medium text-slate-800">
                                         {{ item.contact_name }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-slate-500 whitespace-nowrap">
+                                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap font-medium">
                                         {{ item.date|date:"d M Y" }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-right font-medium text-slate-600">
+                                    <td class="py-3 px-4 text-right font-medium text-slate-600 whitespace-nowrap font-mono">
                                         ₹{{ item.total|floatformat:2 }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-right font-medium text-slate-500">
+                                    <td class="py-3 px-4 text-right font-medium text-slate-500 whitespace-nowrap font-mono">
                                         ₹{{ item.paid|floatformat:2 }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-right font-black text-emerald-600 whitespace-nowrap">
+                                    <td class="py-3 px-4 text-right font-black text-emerald-600 whitespace-nowrap font-mono text-sm">
                                         ₹{{ item.due|floatformat:2 }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-center whitespace-nowrap">
-                                        <div class="flex items-center justify-center gap-1.5">
-                                            <a href="{{ item.link }}" target="_blank" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105">
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
                                                 Open Invoice ↗
                                             </a>
                                             {% if item.order_url %}
-                                            <a href="{{ item.order_url }}" target="_blank" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-[11px] font-bold transition-all">
+                                            <a href="{{ item.order_url }}" target="_blank" class="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1">
                                                 Order ↗
                                             </a>
                                             {% endif %}
@@ -931,8 +939,8 @@ function filterDuesSearch(val) {
                     </div>
                 </div>
                 {% else %}
-                <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
-                    <span class="text-3xl block mb-2">🎉</span>
+                <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400 shadow-sm">
+                    <span class="text-4xl block mb-2">🎉</span>
                     <p class="text-sm font-semibold text-slate-600">No outstanding receivables found!</p>
                     <p class="text-xs text-slate-400">All customer invoices have been fully collected.</p>
                 </div>
@@ -943,74 +951,74 @@ function filterDuesSearch(val) {
             <div id="dues-pay-content" class="hidden">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Vendor Bills, POs &amp; Expenses to Pay ({{ payables_count }})
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> Vendor Bills, POs &amp; Expenses to Pay ({{ payables_count }})
                     </span>
-                    <span class="text-xs font-bold text-rose-800 bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">
-                        Total Balance to Pay: ₹{{ total_payables_due|floatformat:2 }}
+                    <span class="text-xs font-bold text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
+                        Total Balance to Pay: <strong class="font-mono text-sm">₹{{ total_payables_due|floatformat:2 }}</strong>
                     </span>
                 </div>
 
                 {% if payables_list %}
-                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
-                            <thead class="bg-slate-100/80 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200 z-10">
                                 <tr>
-                                    <th class="py-3 px-3.5">Bill / PO #</th>
-                                    <th class="py-3 px-3.5">Order / PO Ref</th>
-                                    <th class="py-3 px-3.5">Vendor / Payee</th>
-                                    <th class="py-3 px-3.5">Type</th>
-                                    <th class="py-3 px-3.5">Date</th>
-                                    <th class="py-3 px-3.5 text-right">Total (₹)</th>
-                                    <th class="py-3 px-3.5 text-right">Balance Due (₹)</th>
-                                    <th class="py-3 px-3.5 text-center">Action</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Bill / PO #</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Order / PO Ref</th>
+                                    <th class="py-3 px-4 min-w-[220px]">Vendor / Payee</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Type</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Date</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Total (₹)</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Balance Due (₹)</th>
+                                    <th class="py-3 px-4 text-center whitespace-nowrap">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 {% for item in payables_list %}
                                 <tr class="dues-table-row hover:bg-rose-50/40 transition-colors">
-                                    <td class="py-2.5 px-3.5 font-bold text-slate-800">
-                                        <a href="{{ item.link }}" target="_blank" class="text-rose-600 hover:text-rose-800 hover:underline flex items-center gap-1">
+                                    <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap font-mono text-xs">
+                                        <a href="{{ item.link }}" target="_blank" class="text-rose-600 hover:text-rose-800 hover:underline inline-flex items-center gap-1.5">
                                             📄 {{ item.number }}
                                         </a>
                                     </td>
-                                    <td class="py-2.5 px-3.5">
+                                    <td class="py-3 px-4 whitespace-nowrap">
                                         {% if item.order_url %}
-                                        <a href="{{ item.order_url }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-[11px] font-mono hover:underline transition-all">
+                                        <a href="{{ item.order_url }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-[11px] font-mono hover:underline transition-all">
                                             📦 {{ item.order_ref }} ↗
                                         </a>
                                         {% elif item.order_ref %}
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px] font-mono">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px] font-mono">
                                             📄 {{ item.order_ref }}
                                         </span>
                                         {% else %}
                                         <span class="text-slate-400 italic">—</span>
                                         {% endif %}
                                     </td>
-                                    <td class="py-2.5 px-3.5 font-medium text-slate-700">
+                                    <td class="py-3 px-4 font-medium text-slate-800">
                                         {{ item.contact_name }}
                                     </td>
-                                    <td class="py-2.5 px-3.5">
-                                        <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                                             {{ item.type }}
                                         </span>
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-slate-500 whitespace-nowrap">
+                                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap font-medium">
                                         {{ item.date|date:"d M Y"|default:"—" }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-right font-medium text-slate-600">
+                                    <td class="py-3 px-4 text-right font-medium text-slate-600 whitespace-nowrap font-mono">
                                         ₹{{ item.total|floatformat:2 }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-right font-black text-rose-600 whitespace-nowrap">
+                                    <td class="py-3 px-4 text-right font-black text-rose-600 whitespace-nowrap font-mono text-sm">
                                         ₹{{ item.due|floatformat:2 }}
                                     </td>
-                                    <td class="py-2.5 px-3.5 text-center whitespace-nowrap">
-                                        <div class="flex items-center justify-center gap-1.5">
-                                            <a href="{{ item.link }}" target="_blank" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105">
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
                                                 Open Doc ↗
                                             </a>
                                             {% if item.order_url %}
-                                            <a href="{{ item.order_url }}" target="_blank" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-[11px] font-bold transition-all">
+                                            <a href="{{ item.order_url }}" target="_blank" class="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1">
                                                 Order ↗
                                             </a>
                                             {% endif %}
@@ -1023,8 +1031,8 @@ function filterDuesSearch(val) {
                     </div>
                 </div>
                 {% else %}
-                <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400">
-                    <span class="text-3xl block mb-2">🎉</span>
+                <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400 shadow-sm">
+                    <span class="text-4xl block mb-2">🎉</span>
                     <p class="text-sm font-semibold text-slate-600">No outstanding payables found!</p>
                     <p class="text-xs text-slate-400">All vendor bills, POs, and expenses have been settled.</p>
                 </div>
@@ -1034,17 +1042,18 @@ function filterDuesSearch(val) {
         </div>
 
         <!-- Modal Footer -->
-        <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 shrink-0">
             <div class="text-xs text-slate-500 flex items-center gap-3">
-                <span>Total Net Cash Difference: <strong class="{% if net_dues_balance >= 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">{% if net_dues_balance >= 0 %}+{% endif %}₹{{ net_dues_balance|floatformat:2 }}</strong></span>
+                <span>Total Net Cash Difference: <strong class="{% if net_dues_balance >= 0 %}text-emerald-600{% else %}text-rose-600{% endif %} font-mono text-sm font-bold">{% if net_dues_balance >= 0 %}+{% endif %}₹{{ net_dues_balance|floatformat:2 }}</strong></span>
                 <span class="text-slate-300">|</span>
                 <span class="text-slate-400">Click any document or order link to open instantly in a new tab</span>
             </div>
-            <button type="button" onclick="closeDuesModal()" class="px-5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-colors">
+            <button type="button" onclick="closeDuesModal()" class="px-6 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow hover:shadow-md">
                 Close
             </button>
         </div>
     </div>
 </div>
 {% endblock %}
+
 
