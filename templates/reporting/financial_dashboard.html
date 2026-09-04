@@ -558,8 +558,12 @@ function closeDuesModal() {
 document.getElementById('dues-modal')?.addEventListener('click', function(e) {
     if (e.target === this) closeDuesModal();
 });
+document.getElementById('settle-confirm-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeSettleModal();
+});
 window.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+        closeSettleModal();
         closeDuesModal();
         closePnLModal();
     }
@@ -595,6 +599,152 @@ function filterDuesSearch(val) {
             r.style.display = 'none';
         }
     });
+}
+
+let currentSettlingRow = null;
+
+function openSettleModal(docType, docId, docNumber, contactName, dueAmount, category) {
+    const modal = document.getElementById('settle-confirm-modal');
+    if (!modal) return;
+
+    document.getElementById('settle-doc-type').value = docType;
+    document.getElementById('settle-doc-id').value = docId;
+    document.getElementById('settle-category').value = category || 'receivable';
+    document.getElementById('settle-doc-number').textContent = docNumber;
+    document.getElementById('settle-contact-name').textContent = contactName || '—';
+    document.getElementById('settle-display-due').textContent = '₹' + parseFloat(dueAmount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('settle-amount').value = parseFloat(dueAmount).toFixed(2);
+    document.getElementById('settle-reference-number').value = 'SETTLE-' + docNumber;
+    document.getElementById('settle-notes').value = 'Settlement for ' + docNumber + ' via Live Audit';
+    
+    const errBox = document.getElementById('settle-error');
+    if (errBox) {
+        errBox.classList.add('hidden');
+        errBox.textContent = '';
+    }
+
+    const badge = document.getElementById('settle-type-badge');
+    const submitBtn = document.getElementById('settle-submit-btn');
+    if (category === 'payable') {
+        if (badge) {
+            badge.textContent = 'Payable (' + docType + ')';
+            badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30';
+        }
+        if (submitBtn) {
+            submitBtn.className = 'px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-md transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer';
+        }
+    } else {
+        if (badge) {
+            badge.textContent = 'Receivable';
+            badge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+        }
+        if (submitBtn) {
+            submitBtn.className = 'px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer';
+        }
+    }
+
+    currentSettlingRow = document.querySelector(`[data-row-key="${docType}_${docId}"]`);
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeSettleModal() {
+    const modal = document.getElementById('settle-confirm-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+async function submitSettlement(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('settle-submit-btn');
+    const errBox = document.getElementById('settle-error');
+    if (errBox) errBox.classList.add('hidden');
+
+    const docType = document.getElementById('settle-doc-type').value;
+    const docId = document.getElementById('settle-doc-id').value;
+    const amount = document.getElementById('settle-amount').value;
+    const paymentMode = document.getElementById('settle-payment-mode').value;
+    const referenceNumber = document.getElementById('settle-reference-number').value;
+    const notes = document.getElementById('settle-notes').value;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳ Processing settlement...</span>';
+
+    try {
+        const resp = await fetch('/reporting/api/settle-due/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                doc_type: docType,
+                doc_id: docId,
+                amount: amount,
+                payment_mode: paymentMode,
+                reference_number: referenceNumber,
+                notes: notes,
+            }),
+        });
+
+        const data = await resp.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to settle transaction.');
+        }
+
+        closeSettleModal();
+        showDuesToast(data.message);
+
+        // Update the row in the table
+        if (currentSettlingRow) {
+            currentSettlingRow.style.transition = 'all 0.4s ease';
+            currentSettlingRow.classList.add('bg-emerald-50');
+            const settleBtn = currentSettlingRow.querySelector('.settle-btn');
+            if (settleBtn) {
+                settleBtn.outerHTML = '<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold border border-emerald-300 inline-flex items-center gap-1">✅ Settled</span>';
+            }
+            const dueCell = currentSettlingRow.querySelector('.balance-due-cell');
+            if (dueCell) {
+                dueCell.textContent = '₹' + (data.remaining_due || 0).toFixed(2);
+                if (data.remaining_due <= 0.01) {
+                    dueCell.className = 'py-3 px-4 text-right font-bold text-slate-400 whitespace-nowrap font-mono line-through';
+                }
+            }
+            if (data.settled) {
+                setTimeout(() => {
+                    currentSettlingRow.style.opacity = '0.5';
+                }, 1000);
+            }
+        }
+
+    } catch (err) {
+        if (errBox) {
+            errBox.textContent = err.message || 'An unexpected error occurred.';
+            errBox.classList.remove('hidden');
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>⚡ Confirm Settlement</span>';
+    }
+}
+
+function showDuesToast(msg) {
+    let toast = document.getElementById('dues-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'dues-toast';
+        toast.className = 'fixed top-6 right-6 z-[80] bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-500 flex items-center gap-2 text-xs font-bold animate-in slide-in-from-top-4 duration-200';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = '<span>✅</span> <span>' + msg + '</span>';
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 4500);
 }
 </script>
 
@@ -886,7 +1036,7 @@ function filterDuesSearch(val) {
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 {% for item in receivables_list %}
-                                <tr class="dues-table-row hover:bg-emerald-50/40 transition-colors">
+                                <tr class="dues-table-row hover:bg-emerald-50/40 transition-colors" data-row-key="INV_{{ item.id }}" data-due="{{ item.due|floatformat:2 }}">
                                     <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap font-mono text-xs">
                                         <a href="{{ item.link }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1.5">
                                             🧾 {{ item.number }}
@@ -917,11 +1067,17 @@ function filterDuesSearch(val) {
                                     <td class="py-3 px-4 text-right font-medium text-slate-500 whitespace-nowrap font-mono">
                                         ₹{{ item.paid|floatformat:2 }}
                                     </td>
-                                    <td class="py-3 px-4 text-right font-black text-emerald-600 whitespace-nowrap font-mono text-sm">
+                                    <td class="balance-due-cell py-3 px-4 text-right font-black text-emerald-600 whitespace-nowrap font-mono text-sm">
                                         ₹{{ item.due|floatformat:2 }}
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-2">
+                                            <button type="button"
+                                                    onclick="openSettleModal('INV', '{{ item.id }}', '{{ item.number|escapejs }}', '{{ item.contact_name|escapejs }}', '{{ item.due|floatformat:2 }}', 'receivable')"
+                                                    class="settle-btn px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 cursor-pointer"
+                                                    title="Record full payment of ₹{{ item.due|floatformat:2 }} to settle this invoice">
+                                                <span>⚡ Settle</span>
+                                            </button>
                                             <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
                                                 Open Invoice ↗
                                             </a>
@@ -976,7 +1132,7 @@ function filterDuesSearch(val) {
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 {% for item in payables_list %}
-                                <tr class="dues-table-row hover:bg-rose-50/40 transition-colors">
+                                <tr class="dues-table-row hover:bg-rose-50/40 transition-colors" data-row-key="{{ item.doc_type }}_{{ item.id }}" data-due="{{ item.due|floatformat:2 }}">
                                     <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap font-mono text-xs">
                                         <a href="{{ item.link }}" target="_blank" class="text-rose-600 hover:text-rose-800 hover:underline inline-flex items-center gap-1.5">
                                             📄 {{ item.number }}
@@ -1009,12 +1165,18 @@ function filterDuesSearch(val) {
                                     <td class="py-3 px-4 text-right font-medium text-slate-600 whitespace-nowrap font-mono">
                                         ₹{{ item.total|floatformat:2 }}
                                     </td>
-                                    <td class="py-3 px-4 text-right font-black text-rose-600 whitespace-nowrap font-mono text-sm">
+                                    <td class="balance-due-cell py-3 px-4 text-right font-black text-rose-600 whitespace-nowrap font-mono text-sm">
                                         ₹{{ item.due|floatformat:2 }}
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-2">
-                                            <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
+                                            <button type="button"
+                                                    onclick="openSettleModal('{{ item.doc_type }}', '{{ item.id }}', '{{ item.number|escapejs }}', '{{ item.contact_name|escapejs }}', '{{ item.due|floatformat:2 }}', 'payable')"
+                                                    class="settle-btn px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 cursor-pointer"
+                                                    title="Record full payment of ₹{{ item.due|floatformat:2 }} to settle this payable">
+                                                <span>⚡ Settle</span>
+                                            </button>
+                                            <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
                                                 Open Doc ↗
                                             </a>
                                             {% if item.order_url %}
@@ -1054,6 +1216,105 @@ function filterDuesSearch(val) {
         </div>
     </div>
 </div>
+
+<!-- ── Quick Settlement Modal ── -->
+<div id="settle-confirm-modal" class="fixed inset-0 z-[60] hidden bg-slate-900/80 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150 flex flex-col">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex items-center justify-between shrink-0 shadow">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-xl shadow-inner text-emerald-400">
+                    ⚡
+                </div>
+                <div>
+                    <h3 class="font-bold text-base !text-white tracking-wide flex items-center gap-2">
+                        Settle Transaction
+                        <span id="settle-type-badge" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Receivable</span>
+                    </h3>
+                    <p class="text-xs text-indigo-200">Record a payment to settle this document immediately</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeSettleModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors">
+                ✕
+            </button>
+        </div>
+
+        <!-- Form Body -->
+        <form id="settle-form" onsubmit="submitSettlement(event)" class="p-6 space-y-4 font-sans text-xs">
+            {% csrf_token %}
+            <input type="hidden" id="settle-doc-type" name="doc_type" value="">
+            <input type="hidden" id="settle-doc-id" name="doc_id" value="">
+            <input type="hidden" id="settle-category" value="">
+
+            <!-- Document Details Card -->
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div class="flex justify-between items-center text-slate-500">
+                    <span>Document:</span>
+                    <strong id="settle-doc-number" class="text-slate-800 font-mono text-xs">OD-INV-001</strong>
+                </div>
+                <div class="flex justify-between items-center text-slate-500">
+                    <span>Party / Contact:</span>
+                    <strong id="settle-contact-name" class="text-slate-800 font-medium">Customer Name</strong>
+                </div>
+                <div class="flex justify-between items-center text-slate-500 border-t border-slate-200/80 pt-2">
+                    <span class="font-semibold text-slate-700">Outstanding Balance:</span>
+                    <strong id="settle-display-due" class="text-emerald-700 font-mono font-black text-sm">₹0.00</strong>
+                </div>
+            </div>
+
+            <!-- Settlement Amount Input -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Settlement Amount (₹) <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold">₹</span>
+                    <input type="number" step="0.01" min="0.01" id="settle-amount" name="amount" required
+                           class="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-bold text-sm">
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Pre-filled with the exact balance due to fully settle this transaction.</p>
+            </div>
+
+            <!-- Payment Mode -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Payment Mode <span class="text-rose-500">*</span></label>
+                    <select id="settle-payment-mode" name="payment_mode" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 text-xs font-medium">
+                        <option value="Bank Transfer" selected>Bank Transfer (NEFT/RTGS/IMPS)</option>
+                        <option value="UPI">UPI / QR</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Credit Card">Credit Card</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Ref / UTR / Cheque #</label>
+                    <input type="text" id="settle-reference-number" name="reference_number" placeholder="e.g. UTR / Txn Ref"
+                           class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 text-xs">
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Notes / Remarks (Optional)</label>
+                <input type="text" id="settle-notes" name="notes" placeholder="Settlement note..."
+                       class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 text-xs">
+            </div>
+
+            <!-- Error Banner -->
+            <div id="settle-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium"></div>
+
+            <!-- Buttons -->
+            <div class="pt-2 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeSettleModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="settle-submit-btn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer">
+                    <span>⚡ Confirm Settlement</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
+
 
 

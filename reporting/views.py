@@ -437,6 +437,7 @@ def financial_dashboard(request):
                 receivables_list.append({
                     'id': inv.id,
                     'number': inv.number,
+                    'doc_type': 'INV',
                     'order_ref': order_ref or '',
                     'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
                     'contact_name': inv.contact.name if inv.contact else '—',
@@ -464,6 +465,7 @@ def financial_dashboard(request):
                 payables_list.append({
                     'id': po.id,
                     'number': po.number,
+                    'doc_type': 'PO',
                     'order_ref': order_ref or '',
                     'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
                     'type': 'Purchase Order',
@@ -500,6 +502,7 @@ def financial_dashboard(request):
                 payables_list.append({
                     'id': str(b.id),
                     'number': b.invoice_number or b.bill_number or b.title,
+                    'doc_type': 'EDMS',
                     'order_ref': order_ref or '',
                     'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
                     'type': 'EDMS Bill',
@@ -518,10 +521,11 @@ def financial_dashboard(request):
             payables_list.append({
                 'id': exp.id,
                 'number': f"EXP-{exp.id}",
+                'doc_type': 'EXPENSE',
                 'order_ref': '',
                 'order_url': None,
                 'type': f"Expense ({exp.expense_type})",
-                'contact_name': exp.paid_to or '—',
+                'contact_name': (exp.submitted_by.get_full_name() if exp.submitted_by else '') or (exp.submitted_by.username if exp.submitted_by else '—'),
                 'date': exp.date,
                 'total': exp.amount,
                 'paid': Decimal('0'),
@@ -1450,3 +1454,160 @@ def daily_digest_view(request):
         'total_receivable': total_receivable,
         'top_receivables': top_receivables,
     })
+
+
+@login_required
+@require_permission('PAYMENTS', 'write')
+def settle_due_transaction(request):
+    """
+    Generate and record a Payment against a Document (INV/PO), EDMS Bill, or Expense
+    with the specified amount to settle the transaction immediately.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST method required.'}, status=405)
+
+    try:
+        if request.content_type == 'application/json' and request.body:
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        doc_type = data.get('doc_type', '').strip().upper()
+        doc_id = str(data.get('doc_id', '')).strip()
+        amount_str = str(data.get('amount', '')).strip()
+        payment_mode = data.get('payment_mode', 'Bank Transfer').strip() or 'Bank Transfer'
+        reference_number = data.get('reference_number', '').strip()
+        notes = data.get('notes', '').strip()
+
+        if not doc_type or not doc_id:
+            return JsonResponse({'success': False, 'error': 'Document type and ID are required.'}, status=400)
+
+        if not amount_str:
+            return JsonResponse({'success': False, 'error': 'Settlement amount is required.'}, status=400)
+
+        try:
+            amount = Decimal(amount_str)
+        except Exception:
+            return JsonResponse({'success': False, 'error': 'Invalid settlement amount.'}, status=400)
+
+        if amount <= Decimal('0'):
+            return JsonResponse({'success': False, 'error': 'Settlement amount must be greater than zero.'}, status=400)
+
+        from contacts.models import Contact
+        from payments.models import Payment, Expense
+        from documents.models import Document
+        from edms.models import EDMSDocument
+        from django.db import transaction
+
+        with transaction.atomic():
+            if doc_type in ['INV', 'PO']:
+                doc = get_object_or_404(Document, id=doc_id)
+
+                contact = doc.contact
+                if not contact:
+                    contact, _ = Contact.objects.get_or_create(
+                        name="Default Customer / Vendor",
+                        defaults={'contact_type': 'Customer' if doc_type == 'INV' else 'Vendor'}
+                    )
+
+                paid = Payment.objects.filter(document_ref=doc.number).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+                current_due = doc.grand_total - paid
+
+                if current_due <= Decimal('0.01'):
+                    return JsonResponse({'success': False, 'error': f'{doc.get_type_display()} {doc.number} is already settled.'}, status=400)
+
+                settle_amount = min(amount, current_due)
+
+                payment = Payment.objects.create(
+                    contact=contact,
+                    document_ref=doc.number,
+                    amount=settle_amount,
+                    payment_mode=payment_mode,
+                    reference_number=reference_number or f"SETTLE-{doc.number}",
+                    notes=notes or f"Settlement for {doc.get_type_display()} {doc.number} via Financial Dashboard",
+                )
+
+                remaining_due = max(Decimal('0'), current_due - settle_amount)
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Recorded payment of ₹{settle_amount:,.2f} for {doc.number}. Document is now {'fully settled' if remaining_due <= Decimal('0.01') else f'partially settled (remaining due: ₹{remaining_due:,.2f})'}!",
+                    'settled': remaining_due <= Decimal('0.01'),
+                    'payment_id': payment.id,
+                    'doc_number': doc.number,
+                    'remaining_due': float(remaining_due),
+                    'settle_amount': float(settle_amount),
+                })
+
+            elif doc_type == 'EDMS':
+                b = get_object_or_404(EDMSDocument, id=doc_id)
+                doc_ref = b.invoice_number or b.bill_number or str(b.id)
+
+                contact = b.contact_vendor
+                if not contact and b.vendor:
+                    contact = Contact.objects.filter(name__iexact=b.vendor.name).first()
+                if not contact and b.party_name:
+                    contact = Contact.objects.filter(name__iexact=b.party_name).first()
+                if not contact:
+                    vendor_name = (b.vendor.name if b.vendor else b.party_name) or "EDMS Vendor"
+                    contact, _ = Contact.objects.get_or_create(name=vendor_name, defaults={'contact_type': 'Vendor'})
+
+                payment = Payment.objects.create(
+                    contact=contact,
+                    document_ref=doc_ref,
+                    amount=amount,
+                    payment_mode=payment_mode,
+                    reference_number=reference_number or f"SETTLE-{doc_ref}",
+                    notes=notes or f"Settlement for EDMS Bill {doc_ref} via Financial Dashboard",
+                )
+
+                b.payment_status = 'paid'
+                b.save(update_fields=['payment_status', 'updated_at'])
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Recorded payment of ₹{amount:,.2f} for EDMS Bill {doc_ref}. Bill is marked Paid!",
+                    'settled': True,
+                    'payment_id': payment.id,
+                    'doc_number': doc_ref,
+                    'remaining_due': 0,
+                    'settle_amount': float(amount),
+                })
+
+            elif doc_type == 'EXPENSE':
+                exp = get_object_or_404(Expense, id=doc_id)
+                payee_name = (exp.submitted_by.get_full_name() if exp.submitted_by else '') or (exp.submitted_by.username if exp.submitted_by else 'General Expense')
+
+                contact = Contact.objects.filter(name__iexact=payee_name).first()
+                if not contact:
+                    contact, _ = Contact.objects.get_or_create(name=payee_name, defaults={'contact_type': 'Other'})
+
+                payment = Payment.objects.create(
+                    contact=contact,
+                    document_ref=f"EXP-{exp.id}",
+                    amount=amount,
+                    payment_mode=payment_mode,
+                    reference_number=reference_number or f"SETTLE-EXP-{exp.id}",
+                    notes=notes or f"Settlement for Expense {exp.title} via Financial Dashboard",
+                )
+
+                exp.status = 'Approved'
+                exp.is_paid = True
+                exp.paid_at = timezone.now()
+                exp.save(update_fields=['status', 'is_paid', 'paid_at', 'updated_at'])
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Recorded payment of ₹{amount:,.2f} for Expense EXP-{exp.id}. Expense is now approved and settled!",
+                    'settled': True,
+                    'payment_id': payment.id,
+                    'doc_number': f"EXP-{exp.id}",
+                    'remaining_due': 0,
+                    'settle_amount': float(amount),
+                })
+
+            else:
+                return JsonResponse({'success': False, 'error': f'Unsupported document type: {doc_type}'}, status=400)
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
