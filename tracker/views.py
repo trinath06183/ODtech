@@ -81,54 +81,33 @@ def get_order_approved_pis(order):
             except (ValueError, TypeError):
                 pass
 
-        # 2. Match via order number, po_reference_number, project_name, or remark
-        q_order = (
-            Q(po_reference_number__iexact=order.order_number) |
-            Q(project_name__iexact=order.order_number) |
-            Q(number__iexact=order.order_number)
-        )
+        # 2. Strict Match: Only explicit DocumentLinks or direct PO reference matching order.order_number
+        q_order = Q()
         if linked_doc_ids:
             q_order |= Q(id__in=linked_doc_ids)
 
-        if order.remark:
-            doc_nums = re.findall(r'(?:PI|QTN|INV|CHL|PO)[A-Za-z0-9\-_/]+', order.remark)
-            if doc_nums:
-                q_order |= Q(number__in=doc_nums)
+        if order.order_number and order.order_number.strip():
+            q_order |= Q(po_reference_number__iexact=order.order_number.strip())
 
-        pi_qs = Document.objects.filter(
-            q_order,
-            type='PRO',
-            status='Approved'
-        ).select_related('contact').prefetch_related('items').distinct().order_by('-date', '-id')
+        if not q_order:
+            return []
 
-        matched_ids = set(pi_qs.values_list('id', flat=True))
-        result = list(pi_qs)
-
-        # 3. Fallback: check other approved PIs if their tracker_order property matches this order
-        other_pis = Document.objects.filter(
-            type='PRO',
-            status='Approved'
-        ).exclude(id__in=matched_ids).select_related('contact').prefetch_related('items').order_by('-date', '-id')[:25]
-
-        for pi in other_pis:
-            try:
-                to = pi.tracker_order
-                if to and str(to.id) == str(order.id):
-                    result.append(pi)
-                    matched_ids.add(pi.id)
-            except Exception:
-                pass
-
-        return result
+        return list(
+            Document.objects.filter(q_order, type='PRO', status='Approved')
+            .select_related('contact')
+            .prefetch_related('items')
+            .distinct()
+            .order_by('-date', '-id')
+        )
     except Exception:
         return []
 
 
 def get_order_linked_documents(order):
     """
-    Returns all documents linked to this Tracker Order:
-    - Commercial Documents (INV, PRO, QTN, CHL, PO) via DocumentLink and reference matching
-    - EDMS Documents via DocumentLink and reference matching
+    Returns all documents strictly linked to this Tracker Order:
+    - Commercial Documents via explicit DocumentLink or direct po_reference_number match
+    - EDMS Documents via explicit DocumentLink or direct po_number match
     Returns a unified list of dictionaries sorted by date descending.
     """
     if not order:
@@ -140,7 +119,6 @@ def get_order_linked_documents(order):
         from django.contrib.contenttypes.models import ContentType
         from django.db.models import Q
         from django.urls import reverse
-        import re
 
         doc_ct = ContentType.objects.get_for_model(Document)
         edms_ct = ContentType.objects.get_for_model(EDMSDocument)
@@ -149,7 +127,7 @@ def get_order_linked_documents(order):
         linked_doc_id_to_link = {}    # {doc_id: link_id}
         linked_edms_id_to_link = {}   # {edms_id: link_id}
 
-        # 1. Fetch all generic DocumentLink records for this order
+        # 1. Fetch all explicit DocumentLink records for this order
         links = DocumentLink.objects.filter(
             (Q(source_type=order_ct, source_id=str(order.id))) |
             (Q(target_type=order_ct, target_id=str(order.id)))
@@ -166,33 +144,19 @@ def get_order_linked_documents(order):
             elif lk.target_type == edms_ct:
                 linked_edms_id_to_link[str(lk.target_id)] = lk.id
 
-        # 2. Commercial Documents matching query
-        q_order = (
-            Q(po_reference_number__iexact=order.order_number) |
-            Q(project_name__iexact=order.order_number) |
-            Q(number__iexact=order.order_number)
-        )
+        # 2. Commercial Documents strictly matching this order:
+        # Either explicitly linked via DocumentLink OR po_reference_number equals order_number
+        q_order = Q()
         if linked_doc_id_to_link:
             q_order |= Q(id__in=list(linked_doc_id_to_link.keys()))
 
-        if order.remark:
-            doc_nums = re.findall(r'(?:PI|QTN|INV|CHL|PO)[A-Za-z0-9\-_/]+', order.remark)
-            if doc_nums:
-                q_order |= Q(number__in=doc_nums)
+        if order.order_number and order.order_number.strip():
+            q_order |= Q(po_reference_number__iexact=order.order_number.strip())
 
-        raw_docs = list(Document.objects.filter(q_order).select_related('contact').distinct().order_by('-date', '-id'))
-
-        # Also check if any other documents have tracker_order property matching this order
-        matched_doc_ids = {d.id for d in raw_docs}
-        fallback_candidates = Document.objects.exclude(id__in=matched_doc_ids).select_related('contact').order_by('-date', '-id')[:30]
-        for fd in fallback_candidates:
-            try:
-                to = fd.tracker_order
-                if to and str(to.id) == str(order.id):
-                    raw_docs.append(fd)
-                    matched_doc_ids.add(fd.id)
-            except Exception:
-                pass
+        if q_order:
+            raw_docs = list(Document.objects.filter(q_order).select_related('contact').distinct().order_by('-date', '-id'))
+        else:
+            raw_docs = []
 
         # Deduplicate commercial documents by ID
         docs = []
@@ -202,14 +166,14 @@ def get_order_linked_documents(order):
                 seen_doc_ids.add(d.id)
                 docs.append(d)
 
-        # 3. EDMS Documents
-        # Exclude auto-synced mirrors of commercial documents so invoices/PIs are not duplicated
+        # 3. EDMS Documents strictly matching this order:
+        # Either explicitly linked via DocumentLink OR po_number equals order_number
         comm_doc_numbers = {d.number.strip().lower() for d in docs if d.number}
         q_edms = Q()
         if linked_edms_id_to_link:
             q_edms |= Q(id__in=list(linked_edms_id_to_link.keys()))
-        if order.order_number:
-            q_edms |= Q(invoice_number__iexact=order.order_number) | Q(po_number__iexact=order.order_number)
+        if order.order_number and order.order_number.strip():
+            q_edms |= Q(po_number__iexact=order.order_number.strip())
         
         edms_docs = []
         if q_edms:
