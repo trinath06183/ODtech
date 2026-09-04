@@ -371,15 +371,32 @@ class Document(TimeStampedModel):
         """
         try:
             from tracker.models import Order as TrackerOrder
+            from core.models import DocumentLink
+            from django.contrib.contenttypes.models import ContentType
             from django.db.models import Q
             
+            # 1. Check direct DocumentLink
+            doc_ct = ContentType.objects.get_for_model(self.__class__)
+            order_ct = ContentType.objects.get_for_model(TrackerOrder)
+            links = DocumentLink.objects.filter(
+                (Q(source_type=order_ct) & Q(target_type=doc_ct, target_id=str(self.id))) |
+                (Q(target_type=order_ct) & Q(source_type=doc_ct, source_id=str(self.id)))
+            )
+            for lk in links:
+                ord_id = lk.source_id if lk.source_type == order_ct else lk.target_id
+                matched_ord = TrackerOrder.objects.filter(id=ord_id).first()
+                if matched_ord:
+                    return matched_ord
+
             all_numbers = self.get_all_linked_document_numbers() if hasattr(self, 'get_all_linked_document_numbers') else [self.number]
             if self.number not in all_numbers:
                 all_numbers.append(self.number)
             
             q_filter = Q(order_number__in=all_numbers)
             if self.po_reference_number:
-                q_filter |= Q(order_number=self.po_reference_number)
+                q_filter |= Q(order_number__iexact=self.po_reference_number)
+            if self.project_name:
+                q_filter |= Q(order_number__iexact=self.project_name)
             
             for num in all_numbers:
                 if num:

@@ -8,84 +8,475 @@
         <h1 class="text-xl font-bold text-slate-800">✏ Edit — {{ document.title }}</h1>
     </div>
 
+    {% if form.errors %}
+    <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm shadow-sm">
+        <div class="font-bold flex items-center gap-2 mb-2 text-rose-700">
+            <svg class="w-5 h-5 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Please correct the errors below to save changes:</span>
+        </div>
+        <ul class="list-disc list-inside space-y-1 text-xs text-rose-600 ml-1">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li><strong class="font-semibold text-rose-700">{{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <div class="glass rounded-2xl p-8">
         <form method="POST" novalidate>
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Title -->
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Title *</label>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Title <span class="text-rose-500">*</span></label>
                     {{ form.title }}
+                    {% if form.title.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.title.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Description -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Description</label>
                     {{ form.description }}
+                    {% if form.description.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.description.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Category -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Category</label>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase">Category <span class="text-rose-500">*</span></label>
+                        <button type="button" onclick="openAddCategoryModal()"
+                                class="px-2 py-0.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-lg transition-colors shadow-sm flex items-center gap-1"
+                                title="Add new category">
+                            + Add New
+                        </button>
+                    </div>
                     {{ form.category }}
+                    {% if form.category.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.category.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Department -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Department</label>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase">Department</label>
+                        <button type="button" onclick="openAddDepartmentModal()"
+                                class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg transition-colors shadow-sm flex items-center gap-1"
+                                title="Add new department">
+                            + Add New
+                        </button>
+                    </div>
                     {{ form.department }}
+                    {% if form.department.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.department.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Document Type -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Document Type</label>
                     {{ form.document_type }}
+                    {% if form.document_type.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.document_type.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Access Level -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Access Level</label>
                     {{ form.access_level }}
+                    {% if form.access_level.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.access_level.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Issue Date -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Issue Date</label>
                     {{ form.issue_date }}
+                    {% if form.issue_date.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.issue_date.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Expiry Date -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Expiry Date</label>
                     {{ form.expiry_date }}
+                    {% if form.expiry_date.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.expiry_date.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Reference Number -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Reference Number</label>
                     {{ form.reference_number }}
+                    {% if form.reference_number.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.reference_number.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Vendor / Customer -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Vendor / Customer</label>
                     {{ form.contact_vendor }}
+                    {% if form.contact_vendor.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.contact_vendor.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- PO Number -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">PO Number</label>
                     {{ form.po_number }}
+                    {% if form.po_number.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.po_number.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Invoice Number -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Invoice Number</label>
                     {{ form.invoice_number }}
+                    {% if form.invoice_number.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.invoice_number.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Invoice Date -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Amount</label>
-                    {{ form.amount }}
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Invoice Date</label>
+                    {{ form.invoice_date }}
+                    {% if form.invoice_date.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.invoice_date.errors.0 }}</p>{% endif %}
                 </div>
-                <div class="flex items-center gap-3 md:col-span-2">
+
+                <!-- Bill Number -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Bill Number</label>
+                    {{ form.bill_number }}
+                    {% if form.bill_number.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.bill_number.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Amount & Currency -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Amount & Currency</label>
+                    <div class="flex gap-2">
+                        <div class="w-28">
+                            {{ form.currency }}
+                        </div>
+                        <div class="flex-1">
+                            {{ form.amount }}
+                        </div>
+                    </div>
+                    {% if form.amount.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.amount.errors.0 }}</p>{% endif %}
+                    {% if form.currency.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.currency.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Tax Amount -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Tax Amount</label>
+                    {{ form.tax_amount }}
+                    {% if form.tax_amount.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.tax_amount.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Payment Status -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Payment Status</label>
+                    {{ form.payment_status }}
+                    {% if form.payment_status.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.payment_status.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Keywords -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Keywords</label>
+                    {{ form.keywords }}
+                    {% if form.keywords.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.keywords.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Mark as Confidential -->
+                <div class="flex items-center gap-3 md:col-span-2 py-1">
                     {{ form.is_confidential }}
-                    <label class="text-sm font-medium text-slate-700">Mark as Confidential</label>
+                    <label class="text-sm font-medium text-slate-700 select-none cursor-pointer" for="{{ form.is_confidential.id_for_label }}">Mark as Confidential</label>
+                    {% if form.is_confidential.errors %}<p class="text-rose-500 text-xs font-medium">{{ form.is_confidential.errors.0 }}</p>{% endif %}
                 </div>
+
+                <!-- Existing Tags -->
+                {% if document.tags.all %}
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Current Tags</label>
+                    <div class="flex flex-wrap gap-2">
+                        {% for t in document.tags.all %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-100 text-violet-800 border border-violet-200 shadow-sm">
+                                🏷 {{ t.name }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Add New Tags -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Add New Tags</label>
                     {{ form.new_tags }}
+                    <p class="text-xs text-slate-400 mt-1">Comma-separated tags to attach (e.g. finance, 2025, certified)</p>
+                    {% if form.new_tags.errors %}<p class="text-rose-500 text-xs mt-1 font-medium">{{ form.new_tags.errors.0 }}</p>{% endif %}
                 </div>
             </div>
-            <div class="flex gap-3 mt-6">
+
+            <div class="flex gap-3 mt-8 pt-4 border-t border-slate-100">
                 <button type="submit"
                         class="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white
-                               font-semibold rounded-xl shadow hover:shadow-lg transition-all">
-                    💾 Save Changes
+                               font-semibold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span>Save Changes</span>
                 </button>
                 <a href="{% url 'edms:document_detail' doc_id=document.id %}"
                    class="px-6 py-3 border border-slate-200 text-slate-600 font-medium rounded-xl
-                          hover:bg-slate-50 transition-all text-center">
+                          hover:bg-slate-50 transition-all text-center flex items-center justify-center">
                     Cancel
                 </a>
             </div>
         </form>
     </div>
 </div>
+
+<!-- ── Add New Category Modal ─────────────────────────────────── -->
+<div id="add-category-modal" class="fixed inset-0 z-[9999] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAddCategoryModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-base">📁</span>
+                <h3 class="text-base font-bold text-slate-800">Add New Category</h3>
+            </div>
+            <button type="button" onclick="closeAddCategoryModal()" class="text-slate-400 hover:text-red-500 text-lg transition-colors">✕</button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Category Name <span class="text-red-500">*</span></label>
+                <input type="text" id="modal-category-name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-800" placeholder="e.g. GeM Bids, Invoices, Purchase Orders">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Icon</label>
+                    <select id="modal-category-icon" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="📄">📄 Document</option>
+                        <option value="🧾" selected>🧾 Invoice</option>
+                        <option value="🛍️">🛍️ Purchase</option>
+                        <option value="📜">📜 Tender</option>
+                        <option value="📁">📁 Folder</option>
+                        <option value="💰">💰 Finance</option>
+                        <option value="⚖️">⚖️ Legal</option>
+                        <option value="🛡️">🛡️ Compliance</option>
+                        <option value="⚙️">⚙️ Engineering</option>
+                        <option value="👥">👥 HR</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Color Badge</label>
+                    <select id="modal-category-color" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="#10b981" selected>🟢 Emerald</option>
+                        <option value="#6366f1">🟣 Indigo</option>
+                        <option value="#2563eb">🔵 Blue</option>
+                        <option value="#ea580c">🟠 Orange</option>
+                        <option value="#db2777">🌸 Pink</option>
+                        <option value="#ca8a04">🟡 Gold</option>
+                        <option value="#64748b">⚪ Slate</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Description (Optional)</label>
+                <input type="text" id="modal-category-desc" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-700" placeholder="Brief description...">
+            </div>
+        </div>
+
+        <p id="modal-category-error" class="text-red-500 text-xs mt-2.5 hidden font-semibold"></p>
+
+        <div class="flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-slate-100">
+            <button type="button" onclick="closeAddCategoryModal()" class="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors text-xs">Cancel</button>
+            <button type="button" onclick="saveNewCategory()" id="save-category-btn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all text-xs">
+                ✓ Create Category
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Add New Department Modal ───────────────────────────────── -->
+<div id="add-department-modal" class="fixed inset-0 z-[9999] hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAddDepartmentModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-base">🏢</span>
+                <h3 class="text-base font-bold text-slate-800">Add New Department</h3>
+            </div>
+            <button type="button" onclick="closeAddDepartmentModal()" class="text-slate-400 hover:text-red-500 text-lg transition-colors">✕</button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Department Name <span class="text-red-500">*</span></label>
+                <input type="text" id="modal-department-name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800" placeholder="e.g. Accounts, Operations, Quality">
+            </div>
+        </div>
+
+        <p id="modal-department-error" class="text-red-500 text-xs mt-2.5 hidden font-semibold"></p>
+
+        <div class="flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-slate-100">
+            <button type="button" onclick="closeAddDepartmentModal()" class="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors text-xs">Cancel</button>
+            <button type="button" onclick="saveNewDepartment()" id="save-department-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-all text-xs">
+                ✓ Create Department
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ── Add New Category Modal ─────────────────────────────────────────── */
+    function openAddCategoryModal() {
+        const modal = document.getElementById('add-category-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.getElementById('modal-category-name').value = '';
+            document.getElementById('modal-category-desc').value = '';
+            document.getElementById('modal-category-error').classList.add('hidden');
+            setTimeout(() => document.getElementById('modal-category-name').focus(), 100);
+        }
+    }
+
+    function closeAddCategoryModal() {
+        const modal = document.getElementById('add-category-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function saveNewCategory() {
+        const name = document.getElementById('modal-category-name').value.trim();
+        const icon = document.getElementById('modal-category-icon').value;
+        const color = document.getElementById('modal-category-color').value;
+        const description = document.getElementById('modal-category-desc').value.trim();
+        const errBox = document.getElementById('modal-category-error');
+        const btn = document.getElementById('save-category-btn');
+
+        if (!name) {
+            errBox.textContent = 'Category name is required.';
+            errBox.classList.remove('hidden');
+            return;
+        }
+
+        errBox.classList.add('hidden');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch(`{% url 'edms:api_category_quick_create' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                name: name,
+                icon: icon,
+                color: color,
+                description: description,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Category';
+
+            if (data.error) {
+                errBox.textContent = data.error;
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            const catSelect = document.getElementById('id_category') || document.querySelector('select[name="category"]');
+            if (catSelect) {
+                let existingOpt = Array.from(catSelect.options).find(o => o.value == data.id);
+                if (!existingOpt) {
+                    existingOpt = new Option(data.name, data.id, true, true);
+                    catSelect.add(existingOpt);
+                }
+                catSelect.value = data.id;
+                catSelect.dispatchEvent(new Event('change'));
+            }
+
+            closeAddCategoryModal();
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Category';
+            errBox.textContent = 'Error: ' + err.message;
+            errBox.classList.remove('hidden');
+        });
+    }
+
+    /* ── Add New Department Modal ───────────────────────────────────────── */
+    function openAddDepartmentModal() {
+        const modal = document.getElementById('add-department-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.getElementById('modal-department-name').value = '';
+            document.getElementById('modal-department-error').classList.add('hidden');
+            setTimeout(() => document.getElementById('modal-department-name').focus(), 100);
+        }
+    }
+
+    function closeAddDepartmentModal() {
+        const modal = document.getElementById('add-department-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function saveNewDepartment() {
+        const name = document.getElementById('modal-department-name').value.trim();
+        const errBox = document.getElementById('modal-department-error');
+        const btn = document.getElementById('save-department-btn');
+
+        if (!name) {
+            errBox.textContent = 'Department name is required.';
+            errBox.classList.remove('hidden');
+            return;
+        }
+
+        errBox.classList.add('hidden');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch(`{% url 'edms:api_department_quick_create' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                name: name,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Department';
+
+            if (data.error) {
+                errBox.textContent = data.error;
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            const deptSelect = document.getElementById('id_department') || document.querySelector('select[name="department"]');
+            if (deptSelect) {
+                let existingOpt = Array.from(deptSelect.options).find(o => o.value == data.id);
+                if (!existingOpt) {
+                    existingOpt = new Option(data.name, data.id, true, true);
+                    deptSelect.add(existingOpt);
+                }
+                deptSelect.value = data.id;
+                deptSelect.dispatchEvent(new Event('change'));
+            }
+
+            closeAddDepartmentModal();
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Department';
+            errBox.textContent = 'Error: ' + err.message;
+            errBox.classList.remove('hidden');
+        });
+    }
+</script>
 {% endblock %}

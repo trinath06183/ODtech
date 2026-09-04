@@ -65,6 +65,21 @@ class DocumentMetadataForm(forms.ModelForm):
         help_text='Comma-separated new tags to create and attach',
         widget=forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'finance, 2025, certified'}),
     )
+    issue_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%Y/%m/%d'],
+    )
+    expiry_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%Y/%m/%d'],
+    )
+    invoice_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%Y/%m/%d'],
+    )
 
     class Meta:
         model  = EDMSDocument
@@ -86,8 +101,8 @@ class DocumentMetadataForm(forms.ModelForm):
             'document_type':    forms.Select(attrs={'class': TAILWIND_SELECT}),
             'keywords':         forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'gst, 2024, annual'}),
             'reference_number': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'issue_date':       forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'expiry_date':      forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'issue_date':       forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}, format='%Y-%m-%d'),
+            'expiry_date':      forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}, format='%Y-%m-%d'),
             'access_level':     forms.Select(attrs={'class': TAILWIND_SELECT}),
             'is_confidential':  forms.CheckboxInput(attrs={'class': 'h-4 w-4 rounded text-blue-600'}),
             'approval_status':  forms.Select(attrs={'class': TAILWIND_SELECT}),
@@ -96,7 +111,7 @@ class DocumentMetadataForm(forms.ModelForm):
             'party_name':       forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'e.g. Tata Steel Ltd, HDFC Bank...'}),
             'po_number':        forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'invoice_number':   forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'invoice_date':     forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'invoice_date':     forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}, format='%Y-%m-%d'),
             'bill_number':      forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'amount':           forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': '0.01'}),
             'tax_amount':       forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': '0.01'}),
@@ -109,13 +124,31 @@ class DocumentMetadataForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if 'approval_status' in self.fields:
             self.fields['approval_status'].required = False
+        if 'currency' in self.fields:
+            self.fields['currency'].required = False
+            if not self.initial.get('currency'):
+                self.initial['currency'] = getattr(self.instance, 'currency', 'INR') or 'INR'
+        if 'document_type' in self.fields:
+            self.fields['document_type'].required = False
+        if 'access_level' in self.fields:
+            self.fields['access_level'].required = False
+
+    def clean_currency(self):
+        val = self.cleaned_data.get('currency')
+        if not val:
+            if self.instance and self.instance.pk and self.instance.currency:
+                return self.instance.currency
+            return 'INR'
+        return val
 
     def save(self, commit=True):
-        """Handle new_tags creation before saving."""
+        """Handle new_tags creation before saving and preserve tags if not in form."""
         instance = super().save(commit=False)
         if commit:
             instance.save()
-            self.save_m2m()
+            if 'tags' in self.data:
+                self.save_m2m()
+
             # Create and attach new tags
             new_tags_raw = self.cleaned_data.get('new_tags', '')
             if new_tags_raw:
@@ -127,6 +160,11 @@ class DocumentMetadataForm(forms.ModelForm):
                             defaults={'slug': slugify(tag_name)[:90]},
                         )
                         instance.tags.add(tag)
+        else:
+            if 'tags' in self.data:
+                self.save_m2m = self._save_m2m
+            else:
+                self.save_m2m = lambda: None
         return instance
 
 

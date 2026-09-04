@@ -115,4 +115,6 @@ urlpatterns = [
     # ── Contact APIs (for searchable vendor dropdown) ─────────────────────────
     path('api/contacts/search/', views.ContactSearchAPIView.as_view(), name='api_contact_search'),
     path('api/contacts/quick-create/', views.ContactQuickCreateAPIView.as_view(), name='api_contact_quick_create'),
+    path('api/categories/quick-create/', views.CategoryQuickCreateAPIView.as_view(), name='api_category_quick_create'),
+    path('api/departments/quick-create/', views.DepartmentQuickCreateAPIView.as_view(), name='api_department_quick_create'),
 ]

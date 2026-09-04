@@ -37,6 +37,18 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider">Supplier</span>
                     <span class="font-semibold">{% if product.supplier_stage %}{{ product.get_supplier_stage_display }}{% else %}Not set{% endif %}</span>
                 </span>
+                {% if approved_pis %}
+                {% for pi in approved_pis %}
+                <a href="{% url 'document_preview' pi.id %}" target="_blank"
+                   class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 transition-colors shadow-xs"
+                   title="Proforma Invoice {{ pi.number }} is approved (₹{{ pi.grand_total }})">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Approved PI</span>
+                    <span class="font-bold underline">{{ pi.number }}</span>
+                    <span class="text-[10px] text-emerald-600">(₹{{ pi.grand_total|floatformat:2 }})</span>
+                </a>
+                {% endfor %}
+                {% endif %}
             </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">

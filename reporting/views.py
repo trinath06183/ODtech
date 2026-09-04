@@ -192,9 +192,29 @@ def financial_dashboard(request):
 
         total_purchases = edms_all_invoices.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         purchases_count = edms_all_invoices.count()
-        purchase_invoice_list = list(edms_all_invoices.values(
-            'id', 'invoice_number', 'title', 'amount', 'issue_date', 'invoice_date', 'vendor__name'
-        ).order_by('-invoice_date')[:100])
+        purchase_invoice_list = []
+        for doc in edms_all_invoices.select_related('vendor', 'contact_vendor').order_by('-invoice_date')[:150]:
+            v_name = '—'
+            if doc.vendor:
+                v_name = doc.vendor.name
+            elif doc.contact_vendor:
+                v_name = doc.contact_vendor.name
+            elif doc.party_name:
+                v_name = doc.party_name
+
+            purchase_invoice_list.append({
+                'id': str(doc.id),
+                'invoice_number': doc.invoice_number or doc.bill_number or doc.reference_number or doc.title,
+                'title': doc.title,
+                'amount': doc.amount or Decimal('0'),
+                'issue_date': doc.issue_date,
+                'invoice_date': doc.invoice_date or doc.issue_date,
+                'vendor__name': v_name,
+                'vendor_name': v_name,
+                'po_number': doc.po_number or doc.reference_number or '',
+                'payment_status': doc.payment_status or 'unpaid',
+                'link': f"/edms/document/{doc.id}/",
+            })
     except Exception:
         pass
 
@@ -229,10 +249,25 @@ def financial_dashboard(request):
         expenses_count = expenses_qs.count()
         total_payments_given = total_purchases + total_expenses
 
-        # Expense detail list for collapsible
-        expense_detail_list = list(expenses_qs.values(
-            'id', 'title', 'expense_type', 'amount', 'date', 'status', 'employee_code'
-        )[:100])
+        # Expense detail list for breakdown
+        expense_detail_list = []
+        for exp in expenses_qs.select_related('submitted_by')[:150]:
+            sub_name = '—'
+            if exp.submitted_by:
+                sub_name = exp.submitted_by.get_full_name() or exp.submitted_by.username
+            expense_detail_list.append({
+                'id': exp.id,
+                'expense_id': exp.expense_id if hasattr(exp, 'expense_id') else f"EXP-{exp.id}",
+                'title': exp.title,
+                'expense_type': exp.expense_type,
+                'amount': exp.amount or Decimal('0'),
+                'date': exp.date,
+                'status': exp.status,
+                'is_paid': getattr(exp, 'is_paid', False),
+                'employee_code': exp.employee_code or '',
+                'submitted_by': sub_name,
+                'link': '/payments/expenses/',
+            })
 
         pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')
 

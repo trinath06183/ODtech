@@ -334,6 +334,13 @@ class DocumentEditView(EDMSLoginRequiredMixin, EDMSContextMixin, UpdateView):
         messages.success(self.request, f"Document '{document.title}' updated.")
         return redirect('edms:document_detail', doc_id=document.id)
 
+    def form_invalid(self, form):
+        import logging
+        logger = logging.getLogger('edms.views')
+        logger.warning("[EDMS EDIT] DocumentEditView form invalid for doc %s: %s", self.kwargs.get('doc_id'), form.errors.as_json())
+        messages.error(self.request, "Could not save changes. Please review the errors highlighted below.")
+        return super().form_invalid(form)
+
 # ─── Bulk Edit ────────────────────────────────────────────────────────────────
 
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -1046,6 +1053,76 @@ class ContactQuickCreateAPIView(EDMSLoginRequiredMixin, View):
             'contact_type': contact.contact_type,
             'gstin': contact.gstin or '',
             'display': f"{contact.name} ({contact.contact_type})",
+        })
+
+
+class CategoryQuickCreateAPIView(EDMSLoginRequiredMixin, View):
+    """JSON API: create a new EDMSDocumentCategory inline from upload form."""
+
+    def post(self, request):
+        import json as _json
+        from edms.models import EDMSDocumentCategory
+
+        try:
+            body = _json.loads(request.body)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        name = (body.get('name') or '').strip()
+        if not name:
+            return JsonResponse({'error': 'Category name is required.'}, status=400)
+
+        icon = (body.get('icon') or '📄').strip()
+        color = (body.get('color') or '#6366f1').strip()
+        description = (body.get('description') or '').strip()
+
+        if EDMSDocumentCategory.objects.filter(name__iexact=name).exists():
+            cat = EDMSDocumentCategory.objects.filter(name__iexact=name).first()
+            return JsonResponse({
+                'success': True,
+                'id': cat.id,
+                'name': cat.name,
+                'icon': cat.icon,
+            })
+
+        cat = EDMSDocumentCategory.objects.create(
+            name=name,
+            icon=icon,
+            color=color,
+            description=description,
+            is_active=True,
+        )
+
+        return JsonResponse({
+            'success': True,
+            'id': cat.id,
+            'name': cat.name,
+            'icon': cat.icon,
+        })
+
+
+class DepartmentQuickCreateAPIView(EDMSLoginRequiredMixin, View):
+    """JSON API: create a new Department inline from upload form."""
+
+    def post(self, request):
+        import json as _json
+        from edms.models import Department
+
+        try:
+            body = _json.loads(request.body)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        name = (body.get('name') or '').strip()
+        if not name:
+            return JsonResponse({'error': 'Department name is required.'}, status=400)
+
+        dept, _ = Department.objects.get_or_create(name=name, defaults={'is_active': True})
+
+        return JsonResponse({
+            'success': True,
+            'id': dept.id,
+            'name': dept.name,
         })
 
 

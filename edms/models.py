@@ -344,7 +344,7 @@ class EDMSDocument(TimeStampedModel):
     bill_number    = models.CharField(max_length=100, blank=True)
     amount         = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     tax_amount     = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
-    currency       = models.CharField(max_length=10, default='INR')
+    currency       = models.CharField(max_length=10, default='INR', blank=True)
     payment_status = models.CharField(max_length=30, blank=True,
                                       choices=(
                                           ('unpaid', 'Unpaid'),

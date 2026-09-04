@@ -181,24 +181,24 @@
         </a>
 
         {# 6. Total Payments Given #}
-        <a href="{% url 'expense_list' %}{% if start_date or end_date %}?{% if start_date %}start_date={{ start_date|date:'Y-m-d' }}&{% endif %}{% if end_date %}end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% endif %}" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between">
+        <div onclick="openPaymentsGivenModal('invoices')" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer">
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-3">
                     <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
                         📤
                     </div>
-                    <span class="text-xs font-semibold text-orange-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                    <button type="button" onclick="event.stopPropagation(); openPaymentsGivenModal('expenses')" class="text-xs font-semibold text-orange-600 hover:text-orange-800 transition-colors flex items-center gap-1 cursor-pointer">
                         View Expenses →
-                    </span>
+                    </button>
                 </div>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Payments Given</span>
                 <div class="text-2xl font-black text-slate-800 mt-1">₹{{ total_payments_given|floatformat:0 }}</div>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 relative z-10">
                 <span>{{ purchases_count }} Purchases + {{ expenses_count }} Bills</span>
-                <span class="text-orange-600 font-semibold">Total Outflow</span>
+                <span class="text-orange-600 font-semibold flex items-center gap-1">Total Outflow ↗</span>
             </div>
-        </a>
+        </div>
 
         {# 7. Total Receivables & Payables (Dues Breakdown & Orders) #}
         <div onclick="openDuesModal()" class="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer sm:col-span-2 md:col-span-1 lg:col-span-2">
@@ -522,6 +522,57 @@ document.getElementById('pnl-modal')?.addEventListener('click', function(e) {
     if (e.target === this) closePnLModal();
 });
 
+function openPaymentsGivenModal(tab) {
+    const modal = document.getElementById('payments-given-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        switchPaymentsGivenTab(tab || 'invoices');
+    }
+}
+function closePaymentsGivenModal() {
+    const modal = document.getElementById('payments-given-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+document.getElementById('payments-given-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closePaymentsGivenModal();
+});
+
+function switchPaymentsGivenTab(tab) {
+    const invTabBtn = document.getElementById('outflow-tab-invoices-btn');
+    const expTabBtn = document.getElementById('outflow-tab-expenses-btn');
+    const invContent = document.getElementById('outflow-invoices-content');
+    const expContent = document.getElementById('outflow-expenses-content');
+
+    if (tab === 'invoices') {
+        if (invTabBtn) invTabBtn.className = 'px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white text-orange-700 shadow-sm border border-orange-200 flex items-center gap-2';
+        if (expTabBtn) expTabBtn.className = 'px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2';
+        if (invContent) invContent.classList.remove('hidden');
+        if (expContent) expContent.classList.add('hidden');
+    } else {
+        if (expTabBtn) expTabBtn.className = 'px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white text-orange-700 shadow-sm border border-orange-200 flex items-center gap-2';
+        if (invTabBtn) invTabBtn.className = 'px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2';
+        if (invContent) invContent.classList.add('hidden');
+        if (expContent) expContent.classList.remove('hidden');
+    }
+}
+
+function filterOutflowSearch(val) {
+    val = (val || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.outflow-table-row');
+    rows.forEach(r => {
+        const text = r.textContent.toLowerCase();
+        if (!val || text.includes(val)) {
+            r.style.display = '';
+        } else {
+            r.style.display = 'none';
+        }
+    });
+}
+
 function openDuesModal() {
     const modal = document.getElementById('dues-modal');
     if (modal) {
@@ -547,6 +598,7 @@ window.addEventListener('keydown', function(e) {
         closeSettleModal();
         closeDuesModal();
         closePnLModal();
+        closePaymentsGivenModal();
     }
 });
 
@@ -663,7 +715,7 @@ async function submitSettlement(e) {
     submitBtn.innerHTML = '<span>⏳ Processing settlement...</span>';
 
     try {
-        const resp = await fetch('/reporting/api/settle-due/', {
+        const resp = await fetch('{% url "settle_due_transaction" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -680,7 +732,15 @@ async function submitSettlement(e) {
             }),
         });
 
-        const data = await resp.json();
+        const contentType = resp.headers.get('content-type') || '';
+        let data;
+        if (contentType.includes('application/json')) {
+            data = await resp.json();
+        } else {
+            const rawText = await resp.text();
+            throw new Error(`Server returned HTTP ${resp.status}. Please check your login session or permissions.`);
+        }
+
         if (!data.success) {
             throw new Error(data.error || 'Failed to settle transaction.');
         }
@@ -941,6 +1001,222 @@ function showDuesToast(msg) {
             <span class="text-xs text-slate-400">Financial Dashboard Statement</span>
             <button type="button" onclick="closePnLModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors">
                 Close Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Payments Given Outflow Modal (Invoices & Expenses Breakdown) ── -->
+<div id="payments-given-modal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-md items-center justify-center p-2 sm:p-3 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full h-[96vh] max-w-[98vw] max-h-[96vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150 flex flex-col">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-orange-950 to-slate-900 px-6 py-4 flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-orange-500/20 border border-orange-400/30 flex items-center justify-center text-xl shadow-inner text-orange-400">
+                    📤
+                </div>
+                <div>
+                    <h2 class="font-black text-lg !text-white tracking-wide flex items-center gap-2">
+                        Payments Given &amp; Outflow Breakdown
+                        <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-orange-500/30 text-orange-200 border border-orange-400/20">Audit Trail</span>
+                    </h2>
+                    <p class="text-xs text-orange-200 font-medium">All Purchase Invoices &amp; Operating Expense Bills for <span class="text-white font-bold">{{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="closePaymentsGivenModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-base font-bold transition-all hover:scale-105" title="Close (Esc)">
+                    ✕
+                </button>
+            </div>
+        </div>
+
+        <!-- Controls Bar: Search & Tabs -->
+        <div class="px-6 py-3.5 bg-slate-50/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <!-- Tabs -->
+            <div class="flex items-center gap-2 bg-slate-200/80 p-1.5 rounded-2xl">
+                <button type="button" id="outflow-tab-invoices-btn" onclick="switchPaymentsGivenTab('invoices')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white text-orange-700 shadow-sm border border-orange-200 flex items-center gap-2">
+                    <span>🧾 Invoices</span>
+                    <span class="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 text-[11px] font-mono font-bold">₹{{ total_purchases|floatformat:0 }}</span>
+                    <span class="text-slate-400 font-normal">({{ purchases_count }})</span>
+                </button>
+                <button type="button" id="outflow-tab-expenses-btn" onclick="switchPaymentsGivenTab('expenses')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2">
+                    <span>💸 Expenses</span>
+                    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-mono font-bold">₹{{ total_expenses|floatformat:0 }}</span>
+                    <span class="text-slate-400 font-normal">({{ expenses_count }})</span>
+                </button>
+            </div>
+
+            <!-- Instant Search Input -->
+            <div class="relative w-full sm:w-80 md:w-96">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+                <input type="text" oninput="filterOutflowSearch(this.value)" placeholder="Search Invoice #, Vendor, Title, Category..." class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium text-slate-700 placeholder:text-slate-400 shadow-sm">
+            </div>
+        </div>
+
+        <!-- Modal Body Content (Scrollable) -->
+        <div class="p-6 overflow-y-auto flex-1 font-sans space-y-4 bg-slate-50/40">
+
+            <!-- 🧾 TAB 1: INVOICES CONTENT -->
+            <div id="outflow-invoices-content">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-orange-700 flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span> Purchase Invoices Affecting Outflow ({{ purchases_count }})
+                    </span>
+                    <span class="text-xs font-bold text-orange-800 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100">
+                        Total Purchase Outflow: <strong class="font-mono text-sm">₹{{ total_purchases|floatformat:2 }}</strong>
+                    </span>
+                </div>
+
+                {% if purchase_invoice_list %}
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-3 px-4 whitespace-nowrap">Invoice #</th>
+                                    <th class="py-3 px-4 min-w-[220px]">Vendor / Supplier</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">PO / Ref #</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Date</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Payment Status</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Amount (₹)</th>
+                                    <th class="py-3 px-4 text-center whitespace-nowrap">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for inv in purchase_invoice_list %}
+                                <tr class="outflow-table-row hover:bg-orange-50/40 transition-colors">
+                                    <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap font-mono text-xs">
+                                        <a href="{{ inv.link }}" target="_blank" class="text-orange-600 hover:text-orange-800 hover:underline inline-flex items-center gap-1.5">
+                                            🧾 {{ inv.invoice_number }}
+                                        </a>
+                                    </td>
+                                    <td class="py-3 px-4 font-medium text-slate-800">
+                                        {{ inv.vendor__name|default:inv.vendor_name|default:"—" }}
+                                    </td>
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        {% if inv.po_number %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px] font-mono">
+                                            📄 {{ inv.po_number }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-slate-400 italic">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap font-medium">
+                                        {{ inv.invoice_date|date:"d M Y"|default:inv.issue_date|default:"—" }}
+                                    </td>
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full {% if inv.payment_status == 'paid' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif inv.payment_status == 'partial' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                                            {{ inv.payment_status|title|default:"Unpaid" }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-right font-black text-slate-800 whitespace-nowrap font-mono text-sm">
+                                        ₹{{ inv.amount|floatformat:2 }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        <a href="{{ inv.link }}" target="_blank" class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 whitespace-nowrap">
+                                            Open Document ↗
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400 shadow-sm">
+                    <span class="text-4xl block mb-2">🧾</span>
+                    <p class="text-sm font-semibold text-slate-600">No purchase invoices found for this period.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 💸 TAB 2: EXPENSES CONTENT -->
+            <div id="outflow-expenses-content" class="hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span> Operating Expense Bills ({{ expenses_count }})
+                    </span>
+                    <span class="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
+                        Total Expenses: <strong class="font-mono text-sm">₹{{ total_expenses|floatformat:2 }}</strong>
+                    </span>
+                </div>
+
+                {% if expense_detail_list %}
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200 z-10">
+                                <tr>
+                                    <th class="py-3 px-4 whitespace-nowrap">Expense ID / Title</th>
+                                    <th class="py-3 px-4 min-w-[180px]">Category / Type</th>
+                                    <th class="py-3 px-4 min-w-[180px]">Submitted By</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Date</th>
+                                    <th class="py-3 px-4 whitespace-nowrap">Status</th>
+                                    <th class="py-3 px-4 text-right whitespace-nowrap">Amount (₹)</th>
+                                    <th class="py-3 px-4 text-center whitespace-nowrap">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for exp in expense_detail_list %}
+                                <tr class="outflow-table-row hover:bg-amber-50/40 transition-colors">
+                                    <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap font-mono text-xs">
+                                        <a href="{{ exp.link }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1.5">
+                                            💸 {{ exp.expense_id|default:exp.id }} — {{ exp.title }}
+                                        </a>
+                                    </td>
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                            {{ exp.expense_type }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 font-medium text-slate-800">
+                                        {{ exp.submitted_by|default:"—" }}
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap font-medium">
+                                        {{ exp.date|date:"d M Y"|default:"—" }}
+                                    </td>
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full {% if exp.status == 'Approved' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif exp.status == 'Pending' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-rose-100 text-rose-800 border border-rose-200{% endif %}">
+                                            {{ exp.status }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-right font-black text-slate-800 whitespace-nowrap font-mono text-sm">
+                                        ₹{{ exp.amount|floatformat:2 }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        <a href="{{ exp.link }}" target="_blank" class="px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 whitespace-nowrap">
+                                            View Expense ↗
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400 shadow-sm">
+                    <span class="text-4xl block mb-2">💸</span>
+                    <p class="text-sm font-semibold text-slate-600">No expense bills found for this period.</p>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 shrink-0">
+            <div class="text-xs text-slate-500 flex items-center gap-3">
+                <span>Total Payments Given: <strong class="text-orange-600 font-mono text-sm font-bold">₹{{ total_payments_given|floatformat:2 }}</strong></span>
+                <span class="text-slate-300">|</span>
+                <span class="text-slate-500">Invoices: <strong>₹{{ total_purchases|floatformat:2 }}</strong></span>
+                <span class="text-slate-300">+</span>
+                <span class="text-slate-500">Expenses: <strong>₹{{ total_expenses|floatformat:2 }}</strong></span>
+            </div>
+            <button type="button" onclick="closePaymentsGivenModal()" class="px-6 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow hover:shadow-md">
+                Close
             </button>
         </div>
     </div>

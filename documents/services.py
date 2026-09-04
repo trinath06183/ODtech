@@ -341,6 +341,9 @@ class DocumentService:
         invoice_date = kwargs.get("invoice_date") or None
         doc_date_kwargs = {"date": invoice_date} if invoice_date else {}
 
+        source_order = kwargs.get("source_order")
+        po_ref_num = kwargs.get("po_reference_number") or (source_order.order_number if source_order else None) or None
+
         is_auto_number = not bool(kwargs.get("number"))
         document = Document.objects.create(
             type=document_type,
@@ -353,7 +356,7 @@ class DocumentService:
             site_address=kwargs.get("site_address") or None,
             eway_bill=kwargs.get("eway_bill") or None,
             eway_bill_date=kwargs.get("eway_bill_date") or None,
-            po_reference_number=kwargs.get("po_reference_number") or None,
+            po_reference_number=po_ref_num,
             po_date=kwargs.get("po_date") or None,
             place_of_supply=kwargs.get("place_of_supply", "21-Odisha"),
             transporter_details=kwargs.get("transporter_details", "Local Transportation"),
@@ -397,6 +400,19 @@ class DocumentService:
                 target_type=doc_ct,
                 target_id=document.id,
                 defaults={'link_type': 'converted'}
+            )
+
+        if source_order:
+            from core.models import DocumentLink
+            from django.contrib.contenttypes.models import ContentType
+            order_ct = ContentType.objects.get_for_model(source_order.__class__)
+            doc_ct = ContentType.objects.get_for_model(Document)
+            DocumentLink.objects.get_or_create(
+                source_type=order_ct,
+                source_id=str(source_order.id),
+                target_type=doc_ct,
+                target_id=str(document.id),
+                defaults={'link_type': 'order_document'}
             )
 
         if is_auto_number:
@@ -592,11 +608,9 @@ class DocumentService:
     @transaction.atomic
     def approve_document(doc_id):
         doc = Document.objects.select_for_update().get(id=doc_id)
-        if doc.status == "Approved":
-            return doc
-
-        doc.status = "Approved"
-        doc.save(update_fields=["status", "updated_at"])
+        if doc.status != "Approved":
+            doc.status = "Approved"
+            doc.save(update_fields=["status", "updated_at"])
 
         if doc.type == "INV":
             from inventory.models import StockTransaction
@@ -610,6 +624,93 @@ class DocumentService:
                             quantity=item.quantity,
                             reference_document=doc.number,
                         )
+
+        if doc.type == "PRO":
+            try:
+                from tracker.models import Order as TrackerOrder, Product as TrackerProduct
+                from core.models import DocumentLink
+                from django.contrib.contenttypes.models import ContentType
+                from django.db.models import Q
+
+                order = doc.tracker_order
+                if not order and doc.po_reference_number:
+                    order = TrackerOrder.objects.filter(order_number__iexact=doc.po_reference_number.strip()).first()
+                if not order and doc.project_name:
+                    order = TrackerOrder.objects.filter(order_number__iexact=doc.project_name.strip()).first()
+                if not order:
+                    order = TrackerOrder.objects.filter(order_number__iexact=doc.number.strip()).first()
+
+                # If no order exists in Tracker, auto-create one for this approved PI
+                if not order:
+                    candidate_num = (doc.po_reference_number or doc.number or "").strip()
+                    if not candidate_num or TrackerOrder.objects.filter(order_number=candidate_num).exists():
+                        candidate_num = doc.number
+                    if TrackerOrder.objects.filter(order_number=candidate_num).exists():
+                        candidate_num = f"{doc.number}-TRK"
+
+                    cust_name = doc.contact.name if doc.contact else "Customer"
+                    cust_phone = (doc.contact.phone if doc.contact else "") or "N/A"
+
+                    order = TrackerOrder.objects.create(
+                        order_number=candidate_num,
+                        customer_name=cust_name,
+                        customer_phone=cust_phone,
+                        order_status='OPEN',
+                        remark=f"Auto-created from Approved Proforma Invoice {doc.number}",
+                        created_by=doc.created_by
+                    )
+
+                    sl_no = 1
+                    for item in doc.items.all():
+                        qty = item.quantity if item.quantity else Decimal('1.00')
+                        rate = item.unit_price if item.unit_price else Decimal('0.00')
+                        tax_rate = item.tax_rate if item.tax_rate else Decimal('18.00')
+                        total_inc = item.total if item.total else (qty * rate * (1 + tax_rate / Decimal('100.00')))
+                        selling_inc = (total_inc / qty) if qty else rate
+
+                        TrackerProduct.objects.create(
+                            order=order,
+                            sl_no=sl_no,
+                            item_name=item.name or (item.product.name if item.product else f"Item {sl_no}"),
+                            make_or_model=item.model or item.part_number or '',
+                            description=item.description or '',
+                            quantity=int(qty) if qty == int(qty) else max(1, int(qty)),
+                            uom=item.unit or 'Pcs',
+                            selling_price_ex_gst=rate,
+                            gst_percentage=tax_rate,
+                            selling_price_inc_gst=selling_inc,
+                            customer_stage='PI_GIVEN',
+                            created_by=doc.created_by
+                        )
+                        sl_no += 1
+
+                # Create DocumentLink
+                order_ct = ContentType.objects.get_for_model(order.__class__)
+                doc_ct = ContentType.objects.get_for_model(doc.__class__)
+                DocumentLink.objects.get_or_create(
+                    source_type=order_ct,
+                    source_id=str(order.id),
+                    target_type=doc_ct,
+                    target_id=str(doc.id),
+                    defaults={'link_type': 'order_document'}
+                )
+
+                # Update products in this order to PI_GIVEN if they haven't progressed further
+                doc_item_names = set(doc.items.exclude(name='').values_list('name', flat=True))
+                prods_to_update = order.products.filter(
+                    customer_stage__in=['', None, 'REQ_RECEIVED', 'QUOT_GIVEN', 'PO_RECEIVED']
+                )
+                if doc_item_names:
+                    matching_prods = prods_to_update.filter(item_name__in=doc_item_names)
+                    if matching_prods.exists():
+                        matching_prods.update(customer_stage='PI_GIVEN')
+                    else:
+                        prods_to_update.update(customer_stage='PI_GIVEN')
+                else:
+                    prods_to_update.update(customer_stage='PI_GIVEN')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).exception("Failed to sync approved PI to tracker: %s", e)
         return doc
 
 

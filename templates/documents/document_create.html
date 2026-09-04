@@ -376,6 +376,7 @@
                 <input type="hidden" name="ship_from_gstin" :value="enableShipFrom ? shipFromGstin : ''">
                 <input type="hidden" name="repeat_header" :value="repeatHeader ? 'true' : 'false'">
                 <input type="hidden" name="show_payment_summary" :value="sections.payment_summary ? 'true' : 'false'">
+                <input type="hidden" name="source_order_id" value="{% if source_order %}{{ source_order.id }}{% elif doc and doc.tracker_order %}{{ doc.tracker_order.id }}{% endif %}">
             </form>
 
             {# ── Tab Navigation ─────────────────────────────────── #}
@@ -419,6 +420,9 @@
                             </div>
                             <div class="relative" @click.away="showCustomerDropdown = false">
                                 <input type="hidden" name="contact" form="document-main-form" x-model="selectedCustomer">
+                                {% if source_order %}
+                                <input type="hidden" name="source_order_id" form="document-main-form" value="{{ source_order.id }}">
+                                {% endif %}
                                 <input type="text" x-model="customerSearch" @input="filterCustomers()" @focus="showCustomerDropdown = true; filterCustomers()"
                                     class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
                                     placeholder="Type to search customer..." required>
@@ -1584,7 +1588,7 @@ function documentForm() {
         items: {{ existing_items_json|default:"[]"|safe }},
         docNumber: '{{ next_number|escapejs }}',
         numberingMode: {% if doc %}'{{ doc.numbering_mode|default:"auto" }}'{% else %}(lastSettings ? lastSettings.numbering_mode : 'auto'){% endif %},
-        poRefNumber: '{{ doc.po_reference_number|default_if_none:""|escapejs }}',
+        poRefNumber: '{% if doc and doc.po_reference_number %}{{ doc.po_reference_number|escapejs }}{% elif source_order %}{{ source_order.order_number|escapejs }}{% endif %}',
         poRefDate: '{% if doc and doc.po_date %}{{ doc.po_date|date:"Y-m-d" }}{% endif %}',
         invoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
         originalInvoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
@@ -1735,8 +1739,8 @@ function documentForm() {
             { id: '{{ contact.id }}', name: '{{ contact.name|escapejs }}', email: '{{ contact.email|default:""|escapejs }}', phone: '{{ contact.phone|default:""|escapejs }}', gstin: '{{ contact.gstin|default:""|escapejs }}', address: '{{ contact.address|default:""|escapejs }}' },
             {% endfor %}
         ],
-        selectedCustomer: '{{ doc.contact.id|default:"" }}',
-        customerSearch: '',
+        selectedCustomer: '{% if doc and doc.contact %}{{ doc.contact.id }}{% elif matched_contact %}{{ matched_contact.id }}{% endif %}',
+        customerSearch: '{% if doc and doc.contact %}{{ doc.contact.name|escapejs }}{% elif matched_contact %}{{ matched_contact.name|escapejs }}{% endif %}',
         filteredCustomers: [],
         showCustomerDropdown: false,
         showCustomerModal: false,

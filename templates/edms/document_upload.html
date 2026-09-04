@@ -333,13 +333,27 @@
                         </div>
                         <!-- Category -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Category *</label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-semibold text-slate-500 uppercase">Category *</label>
+                                <button type="button" onclick="openAddCategoryModal()"
+                                        class="px-2 py-0.5 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors shadow-sm flex items-center gap-1"
+                                        title="Add new category">
+                                    + Add New
+                                </button>
+                            </div>
                             {{ meta_form.category }}
                             {% if meta_form.category.errors %}<p class="text-red-500 text-xs mt-1">{{ meta_form.category.errors }}</p>{% endif %}
                         </div>
                         <!-- Department -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1.5">Department</label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-semibold text-slate-500 uppercase">Department</label>
+                                <button type="button" onclick="openAddDepartmentModal()"
+                                        class="px-2 py-0.5 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 rounded-lg transition-colors shadow-sm flex items-center gap-1"
+                                        title="Add new department">
+                                    + Add New
+                                </button>
+                            </div>
                             {{ meta_form.department }}
                             {% if meta_form.department.errors %}<p class="text-red-500 text-xs mt-1">{{ meta_form.department.errors }}</p>{% endif %}
                         </div>
@@ -522,6 +536,101 @@
                         <button type="button" onclick="saveNewVendor()" id="save-vendor-btn"
                                 class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow hover:shadow-lg transition-all text-sm">
                             ✓ Save & Select
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Add New Category Modal ─────────────────────────────────── -->
+            <div id="add-category-modal" class="fixed inset-0 z-[9999] hidden">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAddCategoryModal()"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-base">📁</span>
+                            <h3 class="text-base font-bold text-slate-800">Add New Category</h3>
+                        </div>
+                        <button type="button" onclick="closeAddCategoryModal()" class="text-slate-400 hover:text-red-500 text-lg transition-colors">✕</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Category Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="modal-category-name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-800" placeholder="e.g. GeM Bids, Invoices, Purchase Orders">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Icon</label>
+                                <select id="modal-category-icon" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="📄">📄 Document</option>
+                                    <option value="🧾" selected>🧾 Invoice</option>
+                                    <option value="🛍️">🛍️ Purchase</option>
+                                    <option value="📜">📜 Tender</option>
+                                    <option value="📁">📁 Folder</option>
+                                    <option value="💰">💰 Finance</option>
+                                    <option value="⚖️">⚖️ Legal</option>
+                                    <option value="🛡️">🛡️ Compliance</option>
+                                    <option value="⚙️">⚙️ Engineering</option>
+                                    <option value="👥">👥 HR</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Color Badge</label>
+                                <select id="modal-category-color" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="#10b981" selected>🟢 Emerald</option>
+                                    <option value="#6366f1">🟣 Indigo</option>
+                                    <option value="#2563eb">🔵 Blue</option>
+                                    <option value="#ea580c">🟠 Orange</option>
+                                    <option value="#db2777">🌸 Pink</option>
+                                    <option value="#ca8a04">🟡 Gold</option>
+                                    <option value="#64748b">⚪ Slate</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Description (Optional)</label>
+                            <input type="text" id="modal-category-desc" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-700" placeholder="Brief description...">
+                        </div>
+                    </div>
+
+                    <p id="modal-category-error" class="text-red-500 text-xs mt-2.5 hidden font-semibold"></p>
+
+                    <div class="flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-slate-100">
+                        <button type="button" onclick="closeAddCategoryModal()" class="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors text-xs">Cancel</button>
+                        <button type="button" onclick="saveNewCategory()" id="save-category-btn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all text-xs">
+                            ✓ Create Category
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Add New Department Modal ───────────────────────────────── -->
+            <div id="add-department-modal" class="fixed inset-0 z-[9999] hidden">
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAddDepartmentModal()"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-base">🏢</span>
+                            <h3 class="text-base font-bold text-slate-800">Add New Department</h3>
+                        </div>
+                        <button type="button" onclick="closeAddDepartmentModal()" class="text-slate-400 hover:text-red-500 text-lg transition-colors">✕</button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Department Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="modal-department-name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800" placeholder="e.g. Purchase, Accounts, Sales, Engineering">
+                        </div>
+                    </div>
+
+                    <p id="modal-department-error" class="text-red-500 text-xs mt-2.5 hidden font-semibold"></p>
+
+                    <div class="flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-slate-100">
+                        <button type="button" onclick="closeAddDepartmentModal()" class="px-4 py-2 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors text-xs">Cancel</button>
+                        <button type="button" onclick="saveNewDepartment()" id="save-department-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-all text-xs">
+                            ✓ Create Department
                         </button>
                     </div>
                 </div>
@@ -1431,6 +1540,167 @@
                 errorEl.textContent = 'Error: ' + err.message;
                 errorEl.classList.remove('hidden');
             });
+    }
+
+    /* ── Add New Category Modal ─────────────────────────────────────────── */
+
+    function openAddCategoryModal() {
+        const modal = document.getElementById('add-category-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.getElementById('modal-category-name').value = '';
+            document.getElementById('modal-category-desc').value = '';
+            document.getElementById('modal-category-error').classList.add('hidden');
+            setTimeout(() => document.getElementById('modal-category-name').focus(), 100);
+        }
+    }
+
+    function closeAddCategoryModal() {
+        const modal = document.getElementById('add-category-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function saveNewCategory() {
+        const name = document.getElementById('modal-category-name').value.trim();
+        const icon = document.getElementById('modal-category-icon').value;
+        const color = document.getElementById('modal-category-color').value;
+        const description = document.getElementById('modal-category-desc').value.trim();
+        const errBox = document.getElementById('modal-category-error');
+        const btn = document.getElementById('save-category-btn');
+
+        if (!name) {
+            errBox.textContent = 'Category name is required.';
+            errBox.classList.remove('hidden');
+            return;
+        }
+
+        errBox.classList.add('hidden');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch(`{% url 'edms:api_category_quick_create' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                name: name,
+                icon: icon,
+                color: color,
+                description: description,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Category';
+
+            if (data.error) {
+                errBox.textContent = data.error;
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            // Find category select element
+            const catSelect = document.getElementById('id_category') || document.querySelector('select[name="category"]');
+            if (catSelect) {
+                let existingOpt = Array.from(catSelect.options).find(o => o.value == data.id);
+                if (!existingOpt) {
+                    existingOpt = new Option(data.name, data.id, true, true);
+                    catSelect.add(existingOpt);
+                }
+                catSelect.value = data.id;
+                catSelect.dispatchEvent(new Event('change'));
+            }
+
+            closeAddCategoryModal();
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Category';
+            errBox.textContent = 'Error: ' + err.message;
+            errBox.classList.remove('hidden');
+        });
+    }
+
+    /* ── Add New Department Modal ───────────────────────────────────────── */
+
+    function openAddDepartmentModal() {
+        const modal = document.getElementById('add-department-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.getElementById('modal-department-name').value = '';
+            document.getElementById('modal-department-error').classList.add('hidden');
+            setTimeout(() => document.getElementById('modal-department-name').focus(), 100);
+        }
+    }
+
+    function closeAddDepartmentModal() {
+        const modal = document.getElementById('add-department-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function saveNewDepartment() {
+        const name = document.getElementById('modal-department-name').value.trim();
+        const errBox = document.getElementById('modal-department-error');
+        const btn = document.getElementById('save-department-btn');
+
+        if (!name) {
+            errBox.textContent = 'Department name is required.';
+            errBox.classList.remove('hidden');
+            return;
+        }
+
+        errBox.classList.add('hidden');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        fetch(`{% url 'edms:api_department_quick_create' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+                name: name,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Department';
+
+            if (data.error) {
+                errBox.textContent = data.error;
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            // Find department select element
+            const deptSelect = document.getElementById('id_department') || document.querySelector('select[name="department"]');
+            if (deptSelect) {
+                let existingOpt = Array.from(deptSelect.options).find(o => o.value == data.id);
+                if (!existingOpt) {
+                    existingOpt = new Option(data.name, data.id, true, true);
+                    deptSelect.add(existingOpt);
+                }
+                deptSelect.value = data.id;
+                deptSelect.dispatchEvent(new Event('change'));
+            }
+
+            closeAddDepartmentModal();
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.textContent = '✓ Create Department';
+            errBox.textContent = 'Error: ' + err.message;
+            errBox.classList.remove('hidden');
+        });
     }
 
 </script>

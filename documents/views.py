@@ -738,10 +738,19 @@ def search_products(request):
 
 # ─── Create / Edit Document ─────────────────────────────────────────────────────
 def document_form(request, doc=None, default_type='QTN'):
+    if default_type == 'PI':
+        default_type = 'PRO'
+    elif default_type == 'DC':
+        default_type = 'CHL'
+
     if request.method == 'POST':
         action = request.POST.get('action', 'save_as_new') # 'update' or 'save_as_new'
         contact_id = request.POST.get('contact')
-        doc_type = request.POST.get('type', 'QTN')
+        doc_type = request.POST.get('type', default_type)
+        if doc_type == 'PI':
+            doc_type = 'PRO'
+        elif doc_type == 'DC':
+            doc_type = 'CHL'
         currency = request.POST.get('currency', 'INR').strip()
         terms_and_conditions = request.POST.get('terms_and_conditions')
         show_gst = request.POST.get('show_gst') in ('on', 'true', True)
@@ -931,6 +940,15 @@ def document_form(request, doc=None, default_type='QTN'):
             convert_from_id = request.GET.get('convert_from')
             if convert_from_id:
                 source_doc = Document.objects.filter(id=convert_from_id).first()
+
+            source_order_id = request.POST.get('source_order_id') or request.GET.get('source_order')
+            source_order = None
+            if source_order_id:
+                try:
+                    from tracker.models import Order
+                    source_order = Order.objects.filter(id=source_order_id).first()
+                except Exception:
+                    pass
                 
             target_doc = DocumentService.create_document(
                 doc_type,
@@ -950,6 +968,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 po_date=po_date,
                 invoice_date=invoice_date,
                 source_document=source_doc,
+                source_order=source_order,
                 place_of_supply=place_of_supply,
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
@@ -1011,6 +1030,8 @@ def document_form(request, doc=None, default_type='QTN'):
     
     # Pre-populate items if editing or converting
     existing_items = []
+    source_order = None
+    matched_contact = None
     if doc:
         for di in doc.items.all():
             gross = float(di.quantity) * float(di.unit_price)
@@ -1043,6 +1064,12 @@ def document_form(request, doc=None, default_type='QTN'):
             try:
                 from tracker.models import Order
                 source_order = Order.objects.prefetch_related('products').get(id=source_order_id)
+                if source_order.customer_name or source_order.customer_phone:
+                    matched_contact = Contact.objects.filter(
+                        Q(name__iexact=source_order.customer_name) |
+                        Q(phone__iexact=source_order.customer_phone) |
+                        Q(name__icontains=source_order.customer_name)
+                    ).first()
                 selected_prod_ids = request.GET.get('product_ids', '').strip()
                 selected_set = set(selected_prod_ids.split(',')) if selected_prod_ids else None
                 
@@ -1174,6 +1201,8 @@ def document_form(request, doc=None, default_type='QTN'):
         'contacts': contacts,
         'recent_docs': recent_docs,
         'doc': doc,
+        'source_order': source_order,
+        'matched_contact': matched_contact,
         'is_conversion': is_conversion,
         'default_type': default_type,
         'existing_items_json': json.dumps(existing_items),
@@ -1188,7 +1217,12 @@ def document_form(request, doc=None, default_type='QTN'):
 
 @require_permission('DOCUMENTS', 'write')
 def create_document(request):
-    return document_form(request, default_type='QTN')
+    req_type = request.GET.get('type', 'QTN').upper()
+    if req_type == 'PI':
+        req_type = 'PRO'
+    elif req_type == 'DC':
+        req_type = 'CHL'
+    return document_form(request, default_type=req_type)
 
 @require_permission('DOCUMENTS', 'write')
 def create_quotation(request):
@@ -1337,24 +1371,27 @@ def cost_sheet(request):
 def send_to_tracker_api(request, document_id):
     try:
         from tracker.models import Order as TrackerOrder, Product as TrackerProduct
-        doc = get_object_or_404(Document, id=document_id)
-        data = json.loads(request.body)
-        order_number = data.get('order_number', '').strip()
-        customer_phone = data.get('customer_phone', '').strip()
+        from core.models import DocumentLink
+        from django.contrib.contenttypes.models import ContentType
 
-        if not order_number or not customer_phone:
-            return JsonResponse({'success': False, 'error': 'Order Number and Customer Phone are required.'})
+        doc = get_object_or_404(Document, id=document_id)
+        data = json.loads(request.body) if request.body else {}
+        order_number = data.get('order_number', '').strip() or doc.po_reference_number or doc.number
+        customer_phone = data.get('customer_phone', '').strip() or (doc.contact.phone if doc.contact else '') or 'N/A'
+
+        if not order_number:
+            return JsonResponse({'success': False, 'error': 'Order Number could not be determined.'})
 
         if doc.is_in_tracker:
             return JsonResponse({'success': False, 'error': f'This document is already linked to Tracker Order "{doc.tracker_order.order_number}".'})
 
         if TrackerOrder.objects.filter(order_number=order_number).exists():
-            return JsonResponse({'success': False, 'error': f'Order Number "{order_number}" already exists in Tracking Dashboard.'})
+            order_number = f"{order_number}-TRK"
 
         # Create Order
         tracker_order = TrackerOrder.objects.create(
             order_number=order_number,
-            customer_name=doc.contact.name,
+            customer_name=doc.contact.name if doc.contact else 'Customer',
             customer_phone=customer_phone,
             created_by=request.user,
             remark=f"Imported from {doc.get_type_display()} {doc.number}"
@@ -1362,21 +1399,40 @@ def send_to_tracker_api(request, document_id):
 
         # Create Products
         sl_no = 1
+        is_approved_pi = (doc.type == 'PRO' and doc.status == 'Approved')
         for item in doc.items.all():
+            qty = item.quantity if item.quantity else Decimal('1.00')
+            rate = item.unit_price if item.unit_price else Decimal('0.00')
+            tax_rate = item.tax_rate if item.tax_rate else Decimal('18.00')
+            total_inc = item.total if item.total else (qty * rate * (1 + tax_rate / Decimal('100.00')))
+            selling_inc = (total_inc / qty) if qty else rate
+
             TrackerProduct.objects.create(
                 order=tracker_order,
                 sl_no=sl_no,
-                item_name=item.name or item.product.name or 'Unknown Product',
+                item_name=item.name or (item.product.name if item.product else 'Product'),
                 make_or_model=item.model or item.part_number or '',
                 description=item.description or '',
-                quantity=item.quantity,
+                quantity=int(qty) if qty == int(qty) else max(1, int(qty)),
                 uom=item.unit or 'Pcs',
-                selling_price_ex_gst=item.unit_price,
-                gst_percentage=item.tax_rate,
-                selling_price_inc_gst=item.unit_price * (1 + item.tax_rate / 100),
+                selling_price_ex_gst=rate,
+                gst_percentage=tax_rate,
+                selling_price_inc_gst=selling_inc,
+                customer_stage='PI_GIVEN' if is_approved_pi else None,
                 created_by=request.user
             )
             sl_no += 1
+
+        # Create DocumentLink
+        order_ct = ContentType.objects.get_for_model(TrackerOrder)
+        doc_ct = ContentType.objects.get_for_model(Document)
+        DocumentLink.objects.get_or_create(
+            source_type=order_ct,
+            source_id=str(tracker_order.id),
+            target_type=doc_ct,
+            target_id=str(doc.id),
+            defaults={'link_type': 'order_document'}
+        )
 
         from django.urls import reverse
         return JsonResponse({

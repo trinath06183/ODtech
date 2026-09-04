@@ -18,6 +18,7 @@ urlpatterns = [
     path('settings/', include('config.urls')),
     path('payments/', include('payments.urls')),
     path('reports/',  include('reporting.urls')),
+    path('reporting/', include('reporting.urls')),
     path('tracker/',  include('tracker.urls')),
     path('mobile/',   include('mobile_upload.urls')),
     
