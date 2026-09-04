@@ -153,16 +153,42 @@ def financial_dashboard(request):
     invoice_category_id = ''
     try:
         from edms.models import EDMSDocumentCategory
-        invoice_cat = EDMSDocumentCategory.objects.filter(name__icontains='invoice', is_active=True).first()
+        # Priority: Exact match for Invoices or Purchase/Vendor Invoices, strictly excluding Proforma Invoices
+        invoice_cat = (
+            EDMSDocumentCategory.objects.filter(is_active=True)
+            .filter(
+                Q(name__iexact='Invoices') |
+                Q(name__iexact='Purchase Invoices') |
+                Q(name__iexact='Purchase Invoice') |
+                Q(name__iexact='Vendor Invoices') |
+                Q(name__iexact='Vendor Invoice')
+            ).first()
+            or EDMSDocumentCategory.objects.filter(is_active=True, name__icontains='invoice')
+                .exclude(name__icontains='proforma')
+                .first()
+        )
         if invoice_cat:
             invoice_category_id = invoice_cat.id
 
+        # Query purchase invoices in EDMS:
+        # Match purchase document type or purchase/invoice category (strictly excluding proforma invoices)
+        purchase_q = Q(document_type='purchase')
+        if invoice_cat:
+            if 'purchase' in invoice_cat.name.lower() or 'vendor' in invoice_cat.name.lower():
+                purchase_q |= Q(category=invoice_cat)
+            else:
+                purchase_q |= Q(category=invoice_cat, document_type='purchase') | Q(category=invoice_cat, vendor__isnull=False) | Q(category=invoice_cat, contact_vendor__isnull=False)
+
+        date_q = (
+            Q(invoice_date__gte=start_date, invoice_date__lte=end_date) |
+            Q(invoice_date__isnull=True, issue_date__gte=start_date, issue_date__lte=end_date)
+        )
+
         edms_all_invoices = EDMSDocument.objects.filter(
             is_deleted=False,
-            category=invoice_cat,
-            invoice_date__gte=start_date,
-            invoice_date__lte=end_date,
-        )
+        ).filter(purchase_q).filter(date_q).exclude(
+            category__name__icontains='proforma'
+        ).distinct()
 
         total_purchases = edms_all_invoices.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         purchases_count = edms_all_invoices.count()
