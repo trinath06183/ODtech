@@ -227,7 +227,7 @@ def financial_dashboard(request):
         ).order_by('-date')
         total_expenses = expenses_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         expenses_count = expenses_qs.count()
-        total_payments_given = total_expenses + po_payments_total
+        total_payments_given = total_purchases + total_expenses
 
         # Expense detail list for collapsible
         expense_detail_list = list(expenses_qs.values(
@@ -399,6 +399,144 @@ def financial_dashboard(request):
     except Exception:
         pass
 
+    # ── 8. DETAILED RECEIVABLES & PAYABLES WITH ORDER NUMBERS ─────────────────
+    receivables_list = []
+    total_receivables_due = Decimal('0')
+    payables_list = []
+    total_payables_due = Decimal('0')
+
+    try:
+        from tracker.models import Order
+
+        # Pre-fetch all payments by document_ref in bulk to avoid N+1 queries
+        all_doc_payments = dict(
+            Payment.objects.filter(document_ref__isnull=False)
+            .values('document_ref')
+            .annotate(total_paid=Sum('amount'))
+            .values_list('document_ref', 'total_paid')
+        )
+
+        # Build order number lookup map (case-insensitive)
+        order_map = {}
+        for o in Order.objects.all().only('id', 'order_number'):
+            if o.order_number:
+                order_map[o.order_number.strip().lower()] = o.id
+
+        # 1. RECEIVABLES: Approved Tax Invoices with outstanding balance
+        invoices_with_dues = Document.objects.filter(
+            type='INV', status='Approved'
+        ).select_related('contact').order_by('-date')
+
+        for inv in invoices_with_dues:
+            paid = all_doc_payments.get(inv.number, Decimal('0'))
+            due = inv.grand_total - paid
+            if due > Decimal('0.01'):
+                total_receivables_due += due
+                order_ref = (inv.po_reference_number or inv.project_name or '').strip()
+                matched_order_id = order_map.get(order_ref.lower()) if order_ref else None
+                receivables_list.append({
+                    'id': inv.id,
+                    'number': inv.number,
+                    'order_ref': order_ref or '',
+                    'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
+                    'contact_name': inv.contact.name if inv.contact else '—',
+                    'date': inv.date,
+                    'total': inv.grand_total,
+                    'paid': paid,
+                    'due': due,
+                    'link': f"/documents/{inv.id}/preview/",
+                    'is_period': (start_date <= inv.date <= end_date) if inv.date else False,
+                })
+
+        # 2. PAYABLES:
+        # A) Approved Purchase Orders with pending balance
+        pos_with_dues = Document.objects.filter(
+            type='PO', status='Approved'
+        ).select_related('contact').order_by('-date')
+
+        for po in pos_with_dues:
+            paid = all_doc_payments.get(po.number, Decimal('0'))
+            due = po.grand_total - paid
+            if due > Decimal('0.01'):
+                total_payables_due += due
+                order_ref = (po.project_name or po.po_reference_number or '').strip()
+                matched_order_id = order_map.get(order_ref.lower()) if order_ref else None
+                payables_list.append({
+                    'id': po.id,
+                    'number': po.number,
+                    'order_ref': order_ref or '',
+                    'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
+                    'type': 'Purchase Order',
+                    'contact_name': po.contact.name if po.contact else '—',
+                    'date': po.date,
+                    'total': po.grand_total,
+                    'paid': paid,
+                    'due': due,
+                    'link': f"/documents/{po.id}/preview/",
+                    'is_period': (start_date <= po.date <= end_date) if po.date else False,
+                })
+
+        # B) EDMS Purchase Invoices / Bills that are unpaid or partial
+        unpaid_edms_bills = EDMSDocument.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(payment_status__in=['unpaid', 'partial']) |
+            Q(payment_status='', amount__gt=0)
+        ).filter(
+            Q(document_type='purchase') |
+            Q(category__name__icontains='purchase') |
+            Q(category__name__icontains='vendor')
+        ).exclude(
+            category__name__icontains='proforma'
+        ).select_related('vendor', 'category').order_by('-invoice_date')[:60]
+
+        for b in unpaid_edms_bills:
+            b_amount = b.amount or Decimal('0')
+            if b_amount > Decimal('0'):
+                total_payables_due += b_amount
+                order_ref = (b.po_number or b.reference_number or '').strip()
+                matched_order_id = order_map.get(order_ref.lower()) if order_ref else None
+                b_date = b.invoice_date or b.issue_date
+                payables_list.append({
+                    'id': str(b.id),
+                    'number': b.invoice_number or b.bill_number or b.title,
+                    'order_ref': order_ref or '',
+                    'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
+                    'type': 'EDMS Bill',
+                    'contact_name': b.vendor.name if b.vendor else (b.party_name or '—'),
+                    'date': b_date,
+                    'total': b_amount,
+                    'paid': Decimal('0'),
+                    'due': b_amount,
+                    'link': f"/edms/document/{b.id}/",
+                    'is_period': (start_date <= b_date <= end_date) if b_date else False,
+                })
+
+        # C) Pending Expenses
+        for exp in Expense.objects.filter(status='Pending').order_by('-date')[:50]:
+            total_payables_due += exp.amount
+            payables_list.append({
+                'id': exp.id,
+                'number': f"EXP-{exp.id}",
+                'order_ref': '',
+                'order_url': None,
+                'type': f"Expense ({exp.expense_type})",
+                'contact_name': exp.paid_to or '—',
+                'date': exp.date,
+                'total': exp.amount,
+                'paid': Decimal('0'),
+                'due': exp.amount,
+                'link': "/payments/expenses/",
+                'is_period': (start_date <= exp.date <= end_date) if exp.date else False,
+            })
+
+    except Exception:
+        pass
+
+    receivables_count = len(receivables_list)
+    payables_count = len(payables_list)
+    net_dues_balance = total_receivables_due - total_payables_due
+
     periods = [
         ('today', 'Today'),
         ('this_week', 'This Week'),
@@ -457,6 +595,14 @@ def financial_dashboard(request):
         # Credit/Debit Notes
         'credit_notes': credit_notes,
         'debit_notes': debit_notes,
+        # Outstanding Dues & Order Breakdown
+        'receivables_list': receivables_list,
+        'receivables_count': receivables_count,
+        'total_receivables_due': total_receivables_due,
+        'payables_list': payables_list,
+        'payables_count': payables_count,
+        'total_payables_due': total_payables_due,
+        'net_dues_balance': net_dues_balance,
         # Reminders
         'reminders': reminders,
         'reminder_count': len(reminders),
