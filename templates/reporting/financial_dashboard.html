@@ -1071,20 +1071,22 @@ function showDuesToast(msg) {
                                         ₹{{ item.due|floatformat:2 }}
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <button type="button"
-                                                    onclick="openSettleModal('INV', '{{ item.id }}', '{{ item.number|escapejs }}', '{{ item.contact_name|escapejs }}', '{{ item.due|floatformat:2 }}', 'receivable')"
-                                                    class="settle-btn px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 cursor-pointer"
-                                                    title="Record full payment of ₹{{ item.due|floatformat:2 }} to settle this invoice">
-                                                <span>⚡ Settle</span>
-                                            </button>
-                                            <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
+                                        <div class="inline-flex flex-nowrap items-center justify-center gap-1.5 whitespace-nowrap">
+                                            <a href="{{ item.link }}" target="_blank" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 whitespace-nowrap">
                                                 Open Invoice ↗
                                             </a>
                                             {% if item.order_url %}
-                                            <a href="{{ item.order_url }}" target="_blank" class="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1">
+                                            <a href="{{ item.order_url }}" target="_blank" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-[11px] font-bold transition-all inline-flex items-center gap-1 whitespace-nowrap">
                                                 Order ↗
                                             </a>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.is_staff or request.user.role == 'Admin' or request.user.role == 'Managing Director' or request.user.role == 'Director' %}
+                                            <button type="button"
+                                                    onclick="openSettleModal('INV', '{{ item.id }}', '{{ item.number|escapejs }}', '{{ item.contact_name|escapejs }}', '{{ item.due|floatformat:2 }}', 'receivable')"
+                                                    class="settle-btn px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                                    title="Record full payment of ₹{{ item.due|floatformat:2 }} to settle this invoice">
+                                                <span>⚡ Settle</span>
+                                            </button>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -1169,20 +1171,22 @@ function showDuesToast(msg) {
                                         ₹{{ item.due|floatformat:2 }}
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <button type="button"
-                                                    onclick="openSettleModal('{{ item.doc_type }}', '{{ item.id }}', '{{ item.number|escapejs }}', '{{ item.contact_name|escapejs }}', '{{ item.due|floatformat:2 }}', 'payable')"
-                                                    class="settle-btn px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 cursor-pointer"
-                                                    title="Record full payment of ₹{{ item.due|floatformat:2 }} to settle this payable">
-                                                <span>⚡ Settle</span>
-                                            </button>
-                                            <a href="{{ item.link }}" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1">
+                                        <div class="inline-flex flex-nowrap items-center justify-center gap-1.5 whitespace-nowrap">
+                                            <a href="{{ item.link }}" target="_blank" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 whitespace-nowrap">
                                                 Open Doc ↗
                                             </a>
                                             {% if item.order_url %}
-                                            <a href="{{ item.order_url }}" target="_blank" class="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1">
+                                            <a href="{{ item.order_url }}" target="_blank" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-[11px] font-bold transition-all inline-flex items-center gap-1 whitespace-nowrap">
                                                 Order ↗
                                             </a>
+                                            {% endif %}
+                                            {% if request.user.is_superuser or request.user.is_staff or request.user.role == 'Admin' or request.user.role == 'Managing Director' or request.user.role == 'Director' %}
+                                            <button type="button"
+                                                    onclick="openSettleModal('{{ item.doc_type }}', '{{ item.id }}', '{{ item.number|escapejs }}', '{{ item.contact_name|escapejs }}', '{{ item.due|floatformat:2 }}', 'payable')"
+                                                    class="settle-btn px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-all hover:scale-105 inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                                    title="Record full payment of ₹{{ item.due|floatformat:2 }} to settle this payable">
+                                                <span>⚡ Settle</span>
+                                            </button>
                                             {% endif %}
                                         </div>
                                     </td>

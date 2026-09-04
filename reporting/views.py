@@ -1466,7 +1466,17 @@ def settle_due_transaction(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST method required.'}, status=405)
 
+    # Only administrative users can execute settlements
+    is_admin = (
+        request.user.is_superuser or
+        request.user.is_staff or
+        getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    )
+    if not is_admin:
+        return JsonResponse({'success': False, 'error': 'Permission denied: Only administrative users can settle transactions.'}, status=403)
+
     try:
+
         if request.content_type == 'application/json' and request.body:
             data = json.loads(request.body)
         else:
