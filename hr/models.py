@@ -138,7 +138,7 @@ class LeaveRequest(TimeStampedModel):
         delta = (self.to_date - self.from_date).days + 1
         working = sum(
             1 for i in range(delta)
-            if (self.from_date + timedelta(days=i)).weekday() < 5
+            if (self.from_date + timedelta(days=i)).weekday() < 6  # Mon-Sat are working days; Sunday is off
         )
         if self.session in [self.SESSION_FIRST, self.SESSION_SECOND]:
             working = max(working - 0.5, 0.5)

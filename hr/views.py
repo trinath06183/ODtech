@@ -73,7 +73,7 @@ def _build_calendar(user, year, month):
                 week_data.append({'date': day, 'outside': True, 'record': None, 'is_holiday': False})
                 continue
             is_holiday = day in holidays
-            is_weekend = day.weekday() >= 5
+            is_weekend = day.weekday() == 6  # Only Sunday is offday
             record = records.get(day)
             week_data.append({
                 'date': day,
@@ -188,7 +188,7 @@ def mark_attendance(request):
     existing = {r.employee_id: r for r in AttendanceRecord.objects.filter(date=selected_date)}
     holidays = Holiday.objects.filter(date=selected_date)
     is_holiday = holidays.exists()
-    is_weekend  = selected_date.weekday() >= 5
+    is_weekend  = selected_date.weekday() == 6  # Only Sunday is offday
 
     # Approved leaves on this date
     leaves_on_date = {
@@ -384,7 +384,7 @@ def review_leave(request, leave_id):
             if obj.status == 'APPROVED':
                 current = obj.from_date
                 while current <= obj.to_date:
-                    if current.weekday() < 5:  # weekday
+                    if current.weekday() != 6:  # Monday to Saturday are working days
                         AttendanceRecord.objects.update_or_create(
                             employee=obj.employee,
                             date=current,
@@ -463,7 +463,7 @@ def attendance_report(request):
     holidays = set(Holiday.objects.filter(date__year=year, date__month=month).values_list('date', flat=True))
     _, days_in_month = calendar.monthrange(year, month)
     all_dates = [date(year, month, d) for d in range(1, days_in_month + 1)]
-    working_dates = [d for d in all_dates if d.weekday() < 5 and d not in holidays]
+    working_dates = [d for d in all_dates if d.weekday() != 6 and d not in holidays]
 
     records = AttendanceRecord.objects.filter(
         date__year=year, date__month=month
