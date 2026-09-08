@@ -7,7 +7,15 @@
   <div class="flex items-center justify-between flex-wrap gap-4">
     <div>
       <a href="{% url 'hr:dashboard' %}" class="text-sm text-violet-600 hover:underline">← HR Dashboard</a>
-      <h1 class="text-2xl font-bold text-slate-800 mt-1">Attendance Report — {{ month_name }} {{ year }}</h1>
+      <div class="flex items-center gap-3 mt-1 flex-wrap">
+        <h1 class="text-2xl font-bold text-slate-800">Attendance Report — {{ month_name }} {{ year }}</h1>
+        {% if can_edit %}
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 border border-violet-200 text-violet-700 text-xs rounded-full font-medium shadow-sm">
+          <svg class="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          Direct Edit Enabled — click any cell to change
+        </span>
+        {% endif %}
+      </div>
     </div>
     <a href="?{{ request.GET.urlencode }}&download=csv" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 shadow transition-all">
       ⬇ Download CSV
@@ -36,29 +44,29 @@
 
   <!-- Report Table -->
   {% if report_data %}
-  <div class="glass rounded-2xl overflow-hidden">
+  <div class="glass rounded-2xl overflow-hidden shadow-sm">
     <div class="overflow-x-auto">
       <table class="text-xs w-full">
-        <thead class="bg-slate-50/70 text-slate-500 uppercase tracking-wider">
+        <thead class="bg-slate-50/70 text-slate-500 uppercase tracking-wider select-none">
           <tr>
-            <th class="px-4 py-3 text-left sticky left-0 bg-slate-50/70 whitespace-nowrap">Employee</th>
-            <th class="px-2 py-3 text-center bg-slate-50/70 whitespace-nowrap">Working<br>Days</th>
+            <th class="px-4 py-3 text-left sticky left-0 bg-slate-50/90 backdrop-blur-sm whitespace-nowrap z-10">Employee</th>
+            <th class="px-2 py-3 text-center bg-slate-50/90 whitespace-nowrap">Working<br>Days</th>
             {% for d in all_dates %}
             <th class="px-1 py-3 text-center whitespace-nowrap {% if d.weekday == 6 %}bg-slate-100 text-rose-500 font-bold{% elif d in holidays %}bg-amber-50 text-amber-700{% endif %}">
               {{ d|date:"j" }}<br>
               <span class="text-[9px] font-normal {% if d.weekday == 6 %}text-rose-400 font-bold{% endif %}">{{ d|date:"D" }}</span>
             </th>
             {% endfor %}
-            <th class="px-2 py-3 text-center text-green-600 whitespace-nowrap">P</th>
-            <th class="px-2 py-3 text-center text-yellow-600 whitespace-nowrap">½</th>
-            <th class="px-2 py-3 text-center text-purple-600 whitespace-nowrap">L</th>
-            <th class="px-2 py-3 text-center text-red-500 whitespace-nowrap">A</th>
+            <th class="px-2 py-3 text-center text-green-600 whitespace-nowrap" title="Present">P</th>
+            <th class="px-2 py-3 text-center text-yellow-600 whitespace-nowrap" title="Half Day">½</th>
+            <th class="px-2 py-3 text-center text-purple-600 whitespace-nowrap" title="On Leave">L</th>
+            <th class="px-2 py-3 text-center text-red-500 whitespace-nowrap" title="Absent">A</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           {% for row in report_data %}
-          <tr class="hover:bg-violet-50/20 transition-colors">
-            <td class="px-4 py-3 sticky left-0 bg-white whitespace-nowrap">
+          <tr class="hover:bg-violet-50/20 transition-colors" data-user-id="{{ row.user.id }}">
+            <td class="px-4 py-3 sticky left-0 bg-white whitespace-nowrap z-10">
               <div class="font-semibold text-slate-800">
                 <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold mr-1.5">{{ row.user.empid|default:row.user.username }}</span>
                 {{ row.user.get_full_name|default:row.user.username }}
@@ -66,37 +74,43 @@
             </td>
             <td class="px-2 py-3 text-center font-semibold text-slate-700">{{ row.working_days }}</td>
             {% for d in all_dates %}
-            <td class="px-1 py-3 text-center {% if d.weekday == 6 %}bg-slate-50/80{% elif d in holidays %}bg-amber-50/50{% endif %}">
+            <td class="px-1 py-2.5 text-center transition-colors {% if d.weekday == 6 %}bg-slate-50/80{% elif d in holidays %}bg-amber-50/50{% endif %} {% if can_edit %}att-cell cursor-pointer hover:bg-violet-100/70 relative select-none{% endif %}"
+                {% if can_edit %}
+                data-user-id="{{ row.user.id }}"
+                data-user-name="{{ row.user.get_full_name|default:row.user.username }}"
+                data-user-empid="{{ row.user.empid|default:row.user.username }}"
+                data-date="{{ d|date:'Y-m-d' }}"
+                data-date-display="{{ d|date:'D, j M Y' }}"
+                title="Click to change attendance"
+                {% endif %}>
               {% for rd, r in row.records.items %}
                 {% if rd == d %}
-                  <span class="inline-block w-6 h-6 rounded text-[10px] font-bold leading-6
+                  <span class="att-badge inline-block w-6 h-6 rounded text-[10px] font-bold leading-6 transition-transform hover:scale-110
                     {% if r.status == 'PRESENT' %}bg-green-100 text-green-700
                     {% elif r.status == 'ABSENT' %}bg-red-100 text-red-700
                     {% elif r.status == 'HALF_DAY' %}bg-yellow-100 text-yellow-700
                     {% elif r.status == 'WFH' %}bg-blue-100 text-blue-700
                     {% elif r.status == 'ON_LEAVE' %}bg-purple-100 text-purple-700
                     {% elif r.status == 'WEEKLY_OFF' %}bg-slate-100 text-slate-400
-                    {% else %}bg-gray-100 text-gray-500{% endif %}" title="{{ r.get_status_display }}">
-                    {% if r.status == 'PRESENT' %}P{% elif r.status == 'ABSENT' %}A{% elif r.status == 'HALF_DAY' %}½{% elif r.status == 'WFH' %}W{% elif r.status == 'ON_LEAVE' %}L{% elif r.status == 'WEEKLY_OFF' %}WO{% else %}—{% endif %}
-                  </span>
+                    {% else %}bg-gray-100 text-gray-500{% endif %}" title="{{ r.get_status_display }}">{% if r.status == 'PRESENT' %}P{% elif r.status == 'ABSENT' %}A{% elif r.status == 'HALF_DAY' %}½{% elif r.status == 'WFH' %}W{% elif r.status == 'ON_LEAVE' %}L{% elif r.status == 'WEEKLY_OFF' %}WO{% else %}—{% endif %}</span>
                 {% endif %}
               {% empty %}{% endfor %}
               {# If no record #}
               {% if d not in row.records %}
                 {% if d.weekday == 6 %}
-                  <span class="inline-block w-6 h-6 rounded text-[10px] font-semibold text-slate-400 leading-6 bg-slate-100" title="Weekly Off (Sunday)">WO</span>
+                  <span class="att-badge inline-block w-6 h-6 rounded text-[10px] font-semibold text-slate-400 leading-6 bg-slate-100 transition-transform hover:scale-110" title="Weekly Off (Sunday)">WO</span>
                 {% elif d in holidays %}
-                  <span class="inline-block w-6 h-6 rounded text-[10px] font-semibold text-amber-600 leading-6 bg-amber-100" title="Holiday">H</span>
+                  <span class="att-badge inline-block w-6 h-6 rounded text-[10px] font-semibold text-amber-600 leading-6 bg-amber-100 transition-transform hover:scale-110" title="Holiday">H</span>
                 {% else %}
-                  <span class="inline-block w-6 h-6 rounded text-[10px] text-slate-300 leading-6">—</span>
+                  <span class="att-badge inline-block w-6 h-6 rounded text-[10px] text-slate-300 leading-6 transition-transform hover:scale-110">—</span>
                 {% endif %}
               {% endif %}
             </td>
             {% endfor %}
-            <td class="px-2 py-3 text-center font-bold text-green-600">{{ row.present }}</td>
-            <td class="px-2 py-3 text-center font-bold text-yellow-600">{{ row.half_day }}</td>
-            <td class="px-2 py-3 text-center font-bold text-purple-600">{{ row.on_leave }}</td>
-            <td class="px-2 py-3 text-center font-bold text-red-500">{{ row.absent }}</td>
+            <td class="px-2 py-3 text-center font-bold text-green-600 total-present">{{ row.present }}</td>
+            <td class="px-2 py-3 text-center font-bold text-yellow-600 total-half-day">{{ row.half_day }}</td>
+            <td class="px-2 py-3 text-center font-bold text-purple-600 total-on-leave">{{ row.on_leave }}</td>
+            <td class="px-2 py-3 text-center font-bold text-red-500 total-absent">{{ row.absent }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -123,4 +137,226 @@
   {% endif %}
 
 </div>
+
+{% if can_edit %}
+<!-- Quick Attendance Status Popover Menu -->
+<div id="attendance-popover" class="hidden fixed z-50 bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl border border-slate-200 p-3.5 w-64 transition-all duration-150">
+  <!-- Header -->
+  <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100">
+    <div class="truncate mr-2">
+      <div id="popover-emp-name" class="font-bold text-slate-800 text-xs truncate"></div>
+      <div id="popover-date" class="text-[11px] text-slate-500 font-medium"></div>
+    </div>
+    <button type="button" id="popover-close-btn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Status Options Grid -->
+  <div class="grid grid-cols-2 gap-1.5 text-xs">
+    <button type="button" data-status="PRESENT" class="status-btn flex items-center gap-2 p-1.5 rounded-xl hover:bg-green-50 text-slate-700 hover:text-green-700 border border-transparent hover:border-green-200 transition text-left font-medium">
+      <span class="w-5 h-5 rounded-lg bg-green-100 text-green-700 text-center leading-5 font-bold text-[10px]">P</span>
+      <span>Present</span>
+    </button>
+    <button type="button" data-status="ABSENT" class="status-btn flex items-center gap-2 p-1.5 rounded-xl hover:bg-red-50 text-slate-700 hover:text-red-700 border border-transparent hover:border-red-200 transition text-left font-medium">
+      <span class="w-5 h-5 rounded-lg bg-red-100 text-red-700 text-center leading-5 font-bold text-[10px]">A</span>
+      <span>Absent</span>
+    </button>
+    <button type="button" data-status="HALF_DAY" class="status-btn flex items-center gap-2 p-1.5 rounded-xl hover:bg-yellow-50 text-slate-700 hover:text-yellow-700 border border-transparent hover:border-yellow-200 transition text-left font-medium">
+      <span class="w-5 h-5 rounded-lg bg-yellow-100 text-yellow-700 text-center leading-5 font-bold text-[10px]">½</span>
+      <span>Half Day</span>
+    </button>
+    <button type="button" data-status="WFH" class="status-btn flex items-center gap-2 p-1.5 rounded-xl hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-transparent hover:border-blue-200 transition text-left font-medium">
+      <span class="w-5 h-5 rounded-lg bg-blue-100 text-blue-700 text-center leading-5 font-bold text-[10px]">W</span>
+      <span>WFH</span>
+    </button>
+    <button type="button" data-status="ON_LEAVE" class="status-btn flex items-center gap-2 p-1.5 rounded-xl hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-transparent hover:border-purple-200 transition text-left font-medium">
+      <span class="w-5 h-5 rounded-lg bg-purple-100 text-purple-700 text-center leading-5 font-bold text-[10px]">L</span>
+      <span>On Leave</span>
+    </button>
+    <button type="button" data-status="WEEKLY_OFF" class="status-btn flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-transparent hover:border-slate-200 transition text-left font-medium">
+      <span class="w-5 h-5 rounded-lg bg-slate-100 text-slate-500 text-center leading-5 font-bold text-[10px]">WO</span>
+      <span>Weekly Off</span>
+    </button>
+  </div>
+
+  <!-- Footer Actions -->
+  <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+    <button type="button" data-status="CLEAR" class="status-btn text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg transition font-medium">
+      ✕ Clear / Reset
+    </button>
+    <span id="popover-spinner" class="hidden text-[11px] text-violet-600 font-semibold animate-pulse">Saving...</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  const popover = document.getElementById('attendance-popover');
+  if (!popover) return;
+
+  let activeCell = null;
+  const empNameEl = document.getElementById('popover-emp-name');
+  const dateEl = document.getElementById('popover-date');
+  const spinnerEl = document.getElementById('popover-spinner');
+  const closeBtn = document.getElementById('popover-close-btn');
+
+  function closePopover() {
+    popover.classList.add('hidden');
+    if (activeCell) {
+      activeCell.classList.remove('ring-2', 'ring-violet-400');
+      activeCell = null;
+    }
+  }
+
+  closeBtn.addEventListener('click', closePopover);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closePopover();
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!popover.classList.contains('hidden')) {
+      if (!popover.contains(e.target) && !e.target.closest('.att-cell')) {
+        closePopover();
+      }
+    }
+  });
+
+  document.querySelectorAll('.att-cell').forEach(function(cell) {
+    cell.addEventListener('click', function(e) {
+      e.stopPropagation();
+
+      if (activeCell) {
+        activeCell.classList.remove('ring-2', 'ring-violet-400');
+      }
+      activeCell = cell;
+      activeCell.classList.add('ring-2', 'ring-violet-400');
+
+      const empName = cell.getAttribute('data-user-name');
+      const empId = cell.getAttribute('data-user-empid');
+      const dateDisplay = cell.getAttribute('data-date-display');
+
+      empNameEl.textContent = (empId ? empId + ' — ' : '') + empName;
+      dateEl.textContent = dateDisplay;
+
+      // Show and position popover
+      popover.classList.remove('hidden');
+      const rect = cell.getBoundingClientRect();
+      const popoverWidth = 260;
+      const popoverHeight = 230;
+
+      let left = rect.left + (rect.width / 2) - (popoverWidth / 2);
+      if (left + popoverWidth > window.innerWidth - 12) {
+        left = window.innerWidth - popoverWidth - 12;
+      }
+      if (left < 12) left = 12;
+
+      let top = rect.bottom + 6;
+      if (top + popoverHeight > window.innerHeight - 12) {
+        top = rect.top - popoverHeight - 6;
+      }
+      if (top < 12) top = 12;
+
+      popover.style.left = `${left}px`;
+      popover.style.top = `${top}px`;
+    });
+  });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const statusBtns = popover.querySelectorAll('.status-btn');
+  statusBtns.forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!activeCell) return;
+
+      const newStatus = btn.getAttribute('data-status');
+      const employeeId = activeCell.getAttribute('data-user-id');
+      const dateStr = activeCell.getAttribute('data-date');
+      const row = activeCell.closest('tr');
+
+      spinnerEl.classList.remove('hidden');
+      statusBtns.forEach(b => b.disabled = true);
+
+      const csrfToken = getCookie('csrftoken') || (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
+
+      fetch("{% url 'hr:quick_update_attendance' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          employee_id: employeeId,
+          date: dateStr,
+          status: newStatus
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        spinnerEl.classList.add('hidden');
+        statusBtns.forEach(b => b.disabled = false);
+
+        if (data.success) {
+          // Update the cell badge
+          let badge = activeCell.querySelector('.att-badge');
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'att-badge inline-block w-6 h-6 rounded text-[10px] leading-6 font-bold';
+            activeCell.innerHTML = '';
+            activeCell.appendChild(badge);
+          }
+          badge.className = `att-badge inline-block w-6 h-6 rounded text-[10px] leading-6 font-bold transition-transform hover:scale-110 ${data.badge_color}`;
+          badge.textContent = data.badge_char;
+          badge.title = data.status_display;
+
+          // Update summary totals for the employee row
+          if (data.totals && row) {
+            const pEl = row.querySelector('.total-present');
+            const hEl = row.querySelector('.total-half-day');
+            const lEl = row.querySelector('.total-on-leave');
+            const aEl = row.querySelector('.total-absent');
+            if (pEl) pEl.textContent = data.totals.present;
+            if (hEl) hEl.textContent = data.totals.half_day;
+            if (lEl) lEl.textContent = data.totals.on_leave;
+            if (aEl) aEl.textContent = data.totals.absent;
+          }
+
+          // Brief celebratory flash
+          activeCell.classList.remove('ring-violet-400');
+          activeCell.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-50/50');
+          setTimeout(() => {
+            activeCell.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-50/50');
+          }, 800);
+
+          closePopover();
+        } else {
+          alert(data.error || 'Failed to update attendance.');
+        }
+      })
+      .catch(err => {
+        spinnerEl.classList.add('hidden');
+        statusBtns.forEach(b => b.disabled = false);
+        alert('Network error while updating attendance: ' + err);
+      });
+    });
+  });
+})();
+</script>
+{% endif %}
+
 {% endblock %}

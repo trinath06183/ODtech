@@ -15,6 +15,7 @@ urlpatterns = [
     path('attendance/history/<int:user_id>/', views.attendance_history, name='employee_attendance_history'),
     path('attendance/report/', views.attendance_report, name='attendance_report'),
     path('attendance/report/', views.attendance_report, name='report'),
+    path('attendance/quick-update/', views.quick_update_attendance, name='quick_update_attendance'),
 
     # Leave — Employee self-service
     path('leave/apply/', views.apply_leave, name='apply_leave'),

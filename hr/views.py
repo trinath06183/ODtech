@@ -527,9 +527,118 @@ def attendance_report(request):
         'month_name': calendar.month_name[month],
         'holidays': holidays,
         'is_hr_admin': _is_hr_admin(request.user),
+        'can_edit': _is_hr_admin(request.user) or request.user.has_section_perm('HR_ATTENDANCE', 'write'),
         'employee_id': employee_id,
     }
     return render(request, 'hr/report.html', context)
+
+
+@login_required
+@require_permission('HR_ATTENDANCE', 'write')
+@require_POST
+def quick_update_attendance(request):
+    """AJAX endpoint to quickly update or clear attendance from report grid."""
+    import json
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        employee_id = data.get('employee_id')
+        date_str    = data.get('date')
+        new_status  = (data.get('status') or '').strip().upper()
+
+        if not employee_id or not date_str:
+            return JsonResponse({'success': False, 'error': 'Missing employee_id or date.'}, status=400)
+
+        record_date = date.fromisoformat(date_str)
+        employee = get_object_or_404(User, id=employee_id)
+
+        valid_statuses = [s[0] for s in AttendanceRecord.STATUS_CHOICES]
+
+        if new_status in valid_statuses:
+            rec, created = AttendanceRecord.objects.update_or_create(
+                employee=employee,
+                date=record_date,
+                defaults={
+                    'status': new_status,
+                    'marked_by': request.user,
+                }
+            )
+            status_display = rec.get_status_display()
+        elif new_status in ('CLEAR', 'NONE', ''):
+            AttendanceRecord.objects.filter(employee=employee, date=record_date).delete()
+            status_display = 'Not Marked'
+            new_status = 'NOT_MARKED'
+        else:
+            return JsonResponse({'success': False, 'error': f'Invalid status: {new_status}'}, status=400)
+
+        # Recalculate employee monthly counts
+        year = record_date.year
+        month = record_date.month
+        holidays = set(Holiday.objects.filter(date__year=year, date__month=month).values_list('date', flat=True))
+        _, days_in_month = calendar.monthrange(year, month)
+        all_dates = [date(year, month, d) for d in range(1, days_in_month + 1)]
+        working_dates = [d for d in all_dates if d.weekday() != 6 and d not in holidays]
+
+        emp_records = {r.date: r for r in AttendanceRecord.objects.filter(employee=employee, date__year=year, date__month=month)}
+        present  = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status in ['PRESENT', 'WFH'])
+        half_day = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status == 'HALF_DAY')
+        on_leave = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status == 'ON_LEAVE')
+        absent   = sum(1 for d in working_dates if not emp_records.get(d) or emp_records[d].status == 'ABSENT')
+
+        badge_chars = {
+            'PRESENT': 'P',
+            'ABSENT': 'A',
+            'HALF_DAY': '½',
+            'WFH': 'W',
+            'ON_LEAVE': 'L',
+            'WEEKLY_OFF': 'WO',
+            'HOLIDAY': 'H',
+        }
+
+        badge_colors = {
+            'PRESENT': 'bg-green-100 text-green-700 font-bold',
+            'ABSENT': 'bg-red-100 text-red-700 font-bold',
+            'HALF_DAY': 'bg-yellow-100 text-yellow-700 font-bold',
+            'WFH': 'bg-blue-100 text-blue-700 font-bold',
+            'ON_LEAVE': 'bg-purple-100 text-purple-700 font-bold',
+            'WEEKLY_OFF': 'bg-slate-100 text-slate-400 font-semibold',
+            'HOLIDAY': 'bg-amber-100 text-amber-600 font-semibold',
+        }
+
+        if new_status == 'NOT_MARKED':
+            if record_date.weekday() == 6:
+                badge_char = 'WO'
+                badge_color = 'bg-slate-100 text-slate-400 font-semibold'
+                status_display = 'Weekly Off (Sunday)'
+            elif record_date in holidays:
+                badge_char = 'H'
+                badge_color = 'bg-amber-100 text-amber-600 font-semibold'
+                status_display = 'Holiday'
+            else:
+                badge_char = '—'
+                badge_color = 'text-slate-300'
+        else:
+            badge_char = badge_chars.get(new_status, '—')
+            badge_color = badge_colors.get(new_status, 'text-slate-300')
+
+        return JsonResponse({
+            'success': True,
+            'status': new_status,
+            'status_display': status_display,
+            'badge_char': badge_chars.get(new_status, '—'),
+            'badge_color': badge_colors.get(new_status, 'text-slate-300'),
+            'totals': {
+                'present': present,
+                'half_day': half_day,
+                'on_leave': on_leave,
+                'absent': absent,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 # ─── Leave Allocations ────────────────────────────────────────────────────────
