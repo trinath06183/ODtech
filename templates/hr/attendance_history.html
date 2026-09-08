@@ -9,7 +9,7 @@
     <div>
       <a href="{% url 'hr:dashboard' %}" class="text-sm text-violet-600 hover:underline">← HR Dashboard</a>
       <h1 class="text-2xl font-bold text-slate-800 mt-1">
-        Attendance — {{ employee.get_full_name|default:employee.username }}
+        Attendance — {{ employee.empid|default:employee.username }}{% if employee.get_full_name %} ({{ employee.get_full_name }}){% endif %}
       </h1>
     </div>
     <!-- Employee switcher (HR only) -->
@@ -20,7 +20,9 @@
       <select name="emp" onchange="window.location='/hr/attendance/history/'+this.value+'/?year={{ year }}&month={{ month }}'"
               class="rounded-xl border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
         {% for u in all_employees %}
-        <option value="{{ u.id }}" {% if u.id == employee.id %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+        <option value="{{ u.id }}" {% if u.id == employee.id %}selected{% endif %}>
+          {{ u.empid|default:u.username }}{% if u.get_full_name %} — {{ u.get_full_name }}{% endif %}
+        </option>
         {% endfor %}
       </select>
     </form>

@@ -30,6 +30,13 @@ class User(AbstractUser, TimeStampedModel):
     is_email_verified = models.BooleanField(default=False)
     is_onboarded = models.BooleanField(default=True)
 
+    def __str__(self):
+        code = self.empid or self.username
+        full_name = self.get_full_name().strip()
+        if full_name:
+            return f"{code} — {full_name}"
+        return code
+
     def has_section_perm(self, section, access_type='read'):
         """
         Check if user has permission for a specific section.

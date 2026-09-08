@@ -63,7 +63,10 @@
             {% for item in employees_data %}
             <tr class="hover:bg-violet-50/20 transition-colors">
               <td class="px-6 py-3">
-                <div class="font-semibold text-slate-800">{{ item.user.get_full_name|default:item.user.username }}</div>
+                <div class="font-semibold text-slate-800">
+                  <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold mr-1.5">{{ item.user.empid|default:item.user.username }}</span>
+                  {{ item.user.get_full_name|default:item.user.username }}
+                </div>
                 <div class="text-xs text-slate-400">{{ item.user.designation|default:item.user.role }}</div>
                 {% if item.leave %}<div class="text-xs text-purple-600 font-semibold mt-0.5">✈️ On {{ item.leave.leave_type.name }}</div>{% endif %}
               </td>

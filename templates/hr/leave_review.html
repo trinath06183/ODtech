@@ -13,7 +13,10 @@
   <div class="glass rounded-2xl p-6 space-y-4">
     <div class="flex items-start justify-between">
       <div>
-        <div class="text-lg font-bold text-slate-800">{{ leave_req.employee.get_full_name|default:leave_req.employee.username }}</div>
+        <div class="text-lg font-bold text-slate-800">
+          <span class="font-mono text-sm bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold mr-2">{{ leave_req.employee.empid|default:leave_req.employee.username }}</span>
+          {{ leave_req.employee.get_full_name|default:leave_req.employee.username }}
+        </div>
         <div class="text-sm text-slate-500">{{ leave_req.employee.designation|default:leave_req.employee.role }}</div>
       </div>
       <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold

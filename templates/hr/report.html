@@ -59,7 +59,10 @@
           {% for row in report_data %}
           <tr class="hover:bg-violet-50/20 transition-colors">
             <td class="px-4 py-3 sticky left-0 bg-white whitespace-nowrap">
-              <div class="font-semibold text-slate-800">{{ row.user.get_full_name|default:row.user.username }}</div>
+              <div class="font-semibold text-slate-800">
+                <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold mr-1.5">{{ row.user.empid|default:row.user.username }}</span>
+                {{ row.user.get_full_name|default:row.user.username }}
+              </div>
             </td>
             <td class="px-2 py-3 text-center font-semibold text-slate-700">{{ row.working_days }}</td>
             {% for d in working_dates %}

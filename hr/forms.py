@@ -74,6 +74,13 @@ class LeaveAllocationForm(forms.ModelForm):
             'days_carried_forward': forms.NumberInput(attrs={'class': 'w-full rounded-xl border-slate-200 bg-slate-50 px-3 py-2 text-sm', 'step': '0.5'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['user'].queryset = User.objects.filter(is_active=True).order_by('empid', 'first_name')
+        self.fields['user'].label_from_instance = lambda obj: (
+            f"{obj.empid or obj.username} — {obj.get_full_name()}" if obj.get_full_name() else (obj.empid or obj.username)
+        )
+
 
 class HolidayForm(forms.ModelForm):
     class Meta:
@@ -92,7 +99,6 @@ class AttendanceFilterForm(forms.Form):
         'July','August','September','October','November','December'
     ], 1)]
 
-    import datetime
     year  = forms.IntegerField(min_value=2020, max_value=2100,
         widget=forms.NumberInput(attrs={'class': 'rounded-xl border-slate-200 px-3 py-2 text-sm w-28'}))
     month = forms.ChoiceField(choices=MONTH_CHOICES,
@@ -108,4 +114,7 @@ class AttendanceFilterForm(forms.Form):
             self.fields['year'].initial = now.year
         if not self.data.get('month'):
             self.fields['month'].initial = now.month
-        self.fields['employee'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        self.fields['employee'].queryset = User.objects.filter(is_active=True).order_by('empid', 'first_name')
+        self.fields['employee'].label_from_instance = lambda obj: (
+            f"{obj.empid or obj.username} — {obj.get_full_name()}" if obj.get_full_name() else (obj.empid or obj.username)
+        )

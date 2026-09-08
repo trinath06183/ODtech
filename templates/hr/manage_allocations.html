@@ -54,7 +54,10 @@
           <tbody class="divide-y divide-slate-100">
             {% for alloc in allocations %}
             <tr class="hover:bg-violet-50/20">
-              <td class="px-6 py-3 font-semibold text-slate-800">{{ alloc.user.get_full_name|default:alloc.user.username }}</td>
+              <td class="px-6 py-3 font-semibold text-slate-800">
+                <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold mr-1.5">{{ alloc.user.empid|default:alloc.user.username }}</span>
+                {{ alloc.user.get_full_name|default:alloc.user.username }}
+              </td>
               <td class="px-4 py-3">
                 <span class="text-xs px-2 py-0.5 rounded font-bold" style="background: {{ alloc.leave_type.color }}22; color: {{ alloc.leave_type.color }}">{{ alloc.leave_type.code }}</span>
                 <span class="ml-1 text-slate-500">{{ alloc.leave_type.name }}</span>

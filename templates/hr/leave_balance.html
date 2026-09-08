@@ -35,7 +35,10 @@
           {% for row in data %}
           <tr class="hover:bg-violet-50/20 transition-colors">
             <td class="px-6 py-4 sticky left-0 bg-white">
-              <div class="font-semibold text-slate-800">{{ row.user.get_full_name|default:row.user.username }}</div>
+              <div class="font-semibold text-slate-800">
+                <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold mr-1.5">{{ row.user.empid|default:row.user.username }}</span>
+                {{ row.user.get_full_name|default:row.user.username }}
+              </div>
               <div class="text-xs text-slate-400">{{ row.user.designation|default:row.user.role }}</div>
             </td>
             {% for lt in leave_types %}
