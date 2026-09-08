@@ -1633,7 +1633,11 @@ def toggle_bookmark(request, product_id):
     referer = request.META.get('HTTP_REFERER')
     if referer:
         return redirect(referer)
-    return redirect('tracker:order_detail', order_id=product.order.id)
+    if product.order_id:
+        return redirect('tracker:order_detail', order_id=product.order_id)
+    elif product.lot_id:
+        return redirect('tracker:lot_detail', lot_id=product.lot_id)
+    return redirect('tracker:dashboard')
 
 
 
@@ -2612,7 +2616,7 @@ def _process_price_update(request, product, new_buying_ex, new_buying_inc, new_s
                 user=su,
                 title="Price Approval Required",
                 message=f"A price update for '{product.item_name}' by {request.user.get_full_name() or request.user.username} requires approval.",
-                link=f"/product/{product.id}/"
+                link=f"/tracker/product/{product.id}/"
             )
         return {'requires_approval': True, 'request': req}
     else:
@@ -2660,7 +2664,7 @@ def approve_price_request(request, request_id):
                 user=req.requested_by,
                 title="Price Request Approved",
                 message=f"Your price update for '{req.product.item_name}' was approved.",
-                link=f"/product/{req.product.id}/"
+                link=f"/tracker/product/{req.product.id}/"
             )
             
         messages.success(request, f"Price request for {req.product.item_name} approved and applied.")
@@ -2696,7 +2700,7 @@ def reject_price_request(request, request_id):
                 user=req.requested_by,
                 title="Price Request Rejected",
                 message=f"Your price update for '{req.product.item_name}' was rejected.",
-                link=f"/product/{req.product.id}/"
+                link=f"/tracker/product/{req.product.id}/"
             )
             
         messages.success(request, f"Price request for {req.product.item_name} rejected.")

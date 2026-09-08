@@ -7,6 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from django.views.generic import TemplateView
+import tracker.views as tracker_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -21,6 +22,10 @@ urlpatterns = [
     path('reporting/', include('reporting.urls')),
     path('tracker/',  include('tracker.urls')),
     path('mobile/',   include('mobile_upload.urls')),
+    
+    # Root aliases for tracker products
+    path('product/<uuid:product_id>/', tracker_views.product_detail_view, name='root_product_detail'),
+    path('product/<uuid:product_id>/bookmark/', tracker_views.toggle_bookmark, name='root_toggle_bookmark'),
     
     # PWA Routes
     path('manifest.json', TemplateView.as_view(template_name='pwa/manifest.json', content_type='application/json'), name='manifest'),

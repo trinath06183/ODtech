@@ -1180,7 +1180,7 @@
                                     x-show="editingRowId !== '{{ product.id }}'">
                                     {% if product.id in bookmarked_ids %}
                                     <button type="button"
-                                        @click="bookmarkProductId = '{{ product.id }}'; bookmarkAction = 'remove'; $nextTick(() => { $refs.bookmarkForm.submit(); });"
+                                        @click="bookmarkProductId = '{{ product.id }}'; bookmarkAction = 'remove'; $nextTick(() => { if ($refs.bookmarkForm) { $refs.bookmarkForm.action = '/tracker/product/{{ product.id }}/bookmark/'; $refs.bookmarkForm.submit(); } });"
                                         class="text-yellow-600 hover:text-yellow-900" title="Remove Bookmark">
                                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd"
@@ -1841,7 +1841,7 @@
                         </div>
                     </div>
                 </div>
-                <form x-ref="bookmarkForm" :action="`/product/${bookmarkProductId}/bookmark/`" method="post"
+                <form x-ref="bookmarkForm" :action="`/tracker/product/${bookmarkProductId}/bookmark/`" method="post"
                     class="mt-5 sm:mt-6">
                     {% csrf_token %}
                     <input type="hidden" name="action" :value="bookmarkAction">
