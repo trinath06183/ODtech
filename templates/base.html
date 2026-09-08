@@ -640,11 +640,11 @@
                         <a href="{% url 'hr:leave_balance' %}"
                             class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">⚖️ Leave Balance</a>
                         {% if request.user|has_write_perm:'HR_ATTENDANCE' %}
-                        <a href="{% url 'hr:attendance_mark' %}"
+                        <a href="{% url 'hr:mark_attendance' %}"
                             class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">✏️ Mark Attendance</a>
                         <a href="{% url 'hr:leave_requests' %}"
                             class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📋 Leave Requests</a>
-                        <a href="{% url 'hr:report' %}"
+                        <a href="{% url 'hr:attendance_report' %}"
                             class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📈 Monthly Report</a>
                         <a href="{% url 'hr:manage_allocations' %}"
                             class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">👥 Allocations</a>
