@@ -610,6 +610,51 @@
                 </a>
                 {% endif %}
 
+                <!-- HR & Attendance -->
+                {% if request.user|has_read_perm:'HR_ATTENDANCE' %}
+                <div x-data="{ open: false }" class="mb-1">
+                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
+                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-rose-50 hover:text-rose-700 transition-colors focus:outline-none"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="HR & Attendance">
+                        <svg class="w-6 h-6 flex-shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <div x-show="sidebarOpen" style="display: none;"
+                            class="flex-1 flex items-center justify-between ml-3">
+                            <span class="whitespace-nowrap font-medium">HR & Attendance</span>
+                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </button>
+                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
+                        <a href="{% url 'hr:dashboard' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📊 Overview</a>
+                        <a href="{% url 'hr:attendance_history' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📅 My Attendance</a>
+                        <a href="{% url 'hr:apply_leave' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">✈️ Apply Leave</a>
+                        <a href="{% url 'hr:leave_balance' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">⚖️ Leave Balance</a>
+                        {% if request.user|has_write_perm:'HR_ATTENDANCE' %}
+                        <a href="{% url 'hr:attendance_mark' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">✏️ Mark Attendance</a>
+                        <a href="{% url 'hr:leave_requests' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📋 Leave Requests</a>
+                        <a href="{% url 'hr:report' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📈 Monthly Report</a>
+                        <a href="{% url 'hr:manage_allocations' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">👥 Allocations</a>
+                        <a href="{% url 'hr:manage_holidays' %}"
+                            class="block text-sm text-gray-500 hover:text-rose-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🎉 Holidays</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
                 {% if request.user|has_read_perm:'REPORTING' or request.user|has_read_perm:'DOCUMENTS' %}
                 <!-- Other Office Tools -->
                 <div x-show="sidebarOpen" style="display: none;"

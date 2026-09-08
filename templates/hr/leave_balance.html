@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Leave Balance — HR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <a href="{% url 'hr:dashboard' %}" class="text-sm text-violet-600 hover:underline">← HR Dashboard</a>
+      <h1 class="text-2xl font-bold text-slate-800 mt-1">Leave Balance — {{ year }}</h1>
+    </div>
+    <form method="GET" class="flex items-center gap-2">
+      <select name="year" onchange="this.form.submit()" class="rounded-xl border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="glass rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+          <tr>
+            <th class="px-6 py-3 text-left sticky left-0 bg-slate-50/70">Employee</th>
+            {% for lt in leave_types %}
+            <th class="px-4 py-3 text-center whitespace-nowrap" title="{{ lt.name }}">
+              <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold" style="background: {{ lt.color }}22; color: {{ lt.color }}">{{ lt.code }}</span>
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in data %}
+          <tr class="hover:bg-violet-50/20 transition-colors">
+            <td class="px-6 py-4 sticky left-0 bg-white">
+              <div class="font-semibold text-slate-800">{{ row.user.get_full_name|default:row.user.username }}</div>
+              <div class="text-xs text-slate-400">{{ row.user.designation|default:row.user.role }}</div>
+            </td>
+            {% for lt in leave_types %}
+            {% with bal=row.balances|default:{} %}
+            <td class="px-4 py-4 text-center">
+              {% for lt_id, b in row.balances.items %}
+                {% if lt_id == lt.id %}
+                  <div class="text-sm font-bold {% if b.remaining <= 1 %}text-red-600{% elif b.remaining <= 3 %}text-yellow-600{% else %}text-slate-800{% endif %}">
+                    {{ b.remaining }}
+                  </div>
+                  <div class="text-[10px] text-slate-400">/ {{ b.allocated }}</div>
+                {% endif %}
+              {% empty %}
+                <span class="text-slate-300 text-xs">—</span>
+              {% endfor %}
+            </td>
+            {% endwith %}
+            {% endfor %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="20" class="px-6 py-12 text-center text-slate-400">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="flex flex-wrap gap-4">
+    {% for lt in leave_types %}
+    <div class="flex items-center gap-2 text-xs text-slate-600">
+      <span class="inline-block px-2 py-0.5 rounded font-bold" style="background: {{ lt.color }}22; color: {{ lt.color }}">{{ lt.code }}</span>
+      {{ lt.name }}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if is_hr_admin %}
+  <div class="flex gap-3">
+    <a href="{% url 'hr:manage_allocations' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 shadow transition-all">
+      ✏️ Manage Allocations
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

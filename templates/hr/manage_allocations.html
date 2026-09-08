@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Manage Allocations — HR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <a href="{% url 'hr:dashboard' %}" class="text-sm text-violet-600 hover:underline">← HR Dashboard</a>
+      <h1 class="text-2xl font-bold text-slate-800 mt-1">Leave Allocations — {{ year }}</h1>
+    </div>
+    <form method="GET">
+      <select name="year" onchange="this.form.submit()" class="rounded-xl border-slate-200 px-3 py-2 text-sm">
+        {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Add Allocation Form -->
+    <div class="glass rounded-2xl p-6">
+      <h2 class="font-bold text-slate-800 mb-4">Add / Update Allocation</h2>
+      <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="w-full px-5 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 shadow transition-all">
+          Save Allocation
+        </button>
+      </form>
+    </div>
+
+    <!-- Existing Allocations -->
+    <div class="lg:col-span-2 glass rounded-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100">
+        <h2 class="font-bold text-slate-800">{{ year }} Allocations</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+            <tr>
+              <th class="px-6 py-3 text-left">Employee</th>
+              <th class="px-4 py-3 text-left">Leave Type</th>
+              <th class="px-4 py-3 text-center">Allocated</th>
+              <th class="px-4 py-3 text-center">Carried Fwd</th>
+              <th class="px-4 py-3 text-center">Total</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for alloc in allocations %}
+            <tr class="hover:bg-violet-50/20">
+              <td class="px-6 py-3 font-semibold text-slate-800">{{ alloc.user.get_full_name|default:alloc.user.username }}</td>
+              <td class="px-4 py-3">
+                <span class="text-xs px-2 py-0.5 rounded font-bold" style="background: {{ alloc.leave_type.color }}22; color: {{ alloc.leave_type.color }}">{{ alloc.leave_type.code }}</span>
+                <span class="ml-1 text-slate-500">{{ alloc.leave_type.name }}</span>
+              </td>
+              <td class="px-4 py-3 text-center text-slate-700">{{ alloc.days_allocated }}</td>
+              <td class="px-4 py-3 text-center text-slate-500">{{ alloc.days_carried_forward }}</td>
+              <td class="px-4 py-3 text-center font-bold text-violet-700">{{ alloc.total_days }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-6 py-10 text-center text-slate-400">No allocations found for {{ year }}.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

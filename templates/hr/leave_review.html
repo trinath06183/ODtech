@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Review Leave — HR{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div>
+    <a href="{% url 'hr:leave_requests' %}" class="text-sm text-violet-600 hover:underline">← Leave Requests</a>
+    <h1 class="text-2xl font-bold text-slate-800 mt-1">Review Leave Request</h1>
+  </div>
+
+  <!-- Request Details -->
+  <div class="glass rounded-2xl p-6 space-y-4">
+    <div class="flex items-start justify-between">
+      <div>
+        <div class="text-lg font-bold text-slate-800">{{ leave_req.employee.get_full_name|default:leave_req.employee.username }}</div>
+        <div class="text-sm text-slate-500">{{ leave_req.employee.designation|default:leave_req.employee.role }}</div>
+      </div>
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold
+        {% if leave_req.status == 'APPROVED' %}bg-green-100 text-green-700
+        {% elif leave_req.status == 'REJECTED' %}bg-red-100 text-red-700
+        {% elif leave_req.status == 'CANCELLED' %}bg-slate-100 text-slate-500
+        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+        {{ leave_req.get_status_display }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Leave Type</div>
+        <div class="text-sm font-bold text-slate-800 mt-0.5">{{ leave_req.leave_type.name }} ({{ leave_req.leave_type.code }})</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Duration</div>
+        <div class="text-sm font-bold text-slate-800 mt-0.5">{{ leave_req.days_count }} day{{ leave_req.days_count|pluralize }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">From</div>
+        <div class="text-sm font-bold text-slate-800 mt-0.5">{{ leave_req.from_date|date:"d M Y" }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">To</div>
+        <div class="text-sm font-bold text-slate-800 mt-0.5">{{ leave_req.to_date|date:"d M Y" }}</div>
+      </div>
+      <div class="col-span-2">
+        <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Session</div>
+        <div class="text-sm text-slate-700 mt-0.5">{{ leave_req.get_session_display }}</div>
+      </div>
+      <div class="col-span-2">
+        <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Reason</div>
+        <div class="text-sm text-slate-700 mt-0.5 bg-slate-50 rounded-xl p-3">{{ leave_req.reason }}</div>
+      </div>
+    </div>
+
+    {% if leave_req.attachment %}
+    <div class="pt-2">
+      <a href="{{ leave_req.attachment.url }}" target="_blank" class="inline-flex items-center gap-2 text-sm text-violet-600 hover:underline font-semibold">
+        📎 View Attachment
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Balance info -->
+    {% if balance %}
+    <div class="bg-violet-50 border border-violet-100 rounded-xl p-4">
+      <div class="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">Leave Balance</div>
+      <div class="flex gap-6 text-sm">
+        <div><span class="text-slate-500">Allocated:</span> <span class="font-bold text-slate-800">{{ balance.allocated }}</span></div>
+        <div><span class="text-slate-500">Used:</span> <span class="font-bold text-slate-800">{{ balance.used }}</span></div>
+        <div><span class="text-slate-500">Remaining:</span> <span class="font-bold {% if balance.remaining < leave_req.days_count %}text-red-600{% else %}text-green-600{% endif %}">{{ balance.remaining }}</span></div>
+      </div>
+      {% if balance.remaining < leave_req.days_count %}
+      <div class="text-xs text-red-600 mt-2 font-semibold">⚠️ Requested days exceed remaining balance.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Already reviewed -->
+  {% if leave_req.status != 'PENDING' %}
+  <div class="glass rounded-2xl p-5 bg-slate-50">
+    <div class="text-sm font-semibold text-slate-700">
+      {{ leave_req.get_status_display }} by {{ leave_req.reviewed_by.get_full_name|default:leave_req.reviewed_by.username|default:"—" }}
+      {% if leave_req.reviewed_at %}on {{ leave_req.reviewed_at|date:"d M Y H:i" }}{% endif %}
+    </div>
+    {% if leave_req.reviewer_note %}<div class="text-sm text-slate-500 mt-1 italic">{{ leave_req.reviewer_note }}</div>{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Review Form -->
+  {% if leave_req.status == 'PENDING' %}
+  <div class="glass rounded-2xl p-6">
+    <h3 class="font-bold text-slate-800 mb-4">Your Decision</h3>
+    <form method="POST">
+      {% csrf_token %}
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Decision</label>
+          {{ form.status }}
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Note to Employee <span class="text-slate-400 font-normal">(optional)</span></label>
+          {{ form.reviewer_note }}
+        </div>
+      </div>
+      <div class="mt-6 flex gap-3 justify-end">
+        <a href="{% url 'hr:leave_requests' %}" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors">Cancel</a>
+        <button type="submit" class="px-6 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 shadow transition-all">Submit Decision</button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div class="flex justify-end">
+    <a href="{% url 'hr:leave_requests' %}" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors">← Back to List</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

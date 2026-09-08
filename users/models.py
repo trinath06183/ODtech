@@ -38,6 +38,14 @@ class User(AbstractUser, TimeStampedModel):
         """
         if self.role in ['Admin', 'Managing Director']:
             return True
+
+        # HR role has full access to HR_ATTENDANCE
+        if self.role == 'HR' and section == 'HR_ATTENDANCE':
+            return True
+
+        # All authenticated employees can view HR & Attendance (apply leave, view personal history)
+        if section == 'HR_ATTENDANCE' and access_type == 'read':
+            return True
             
         perm = self.section_permissions.filter(section=section).first()
         if not perm:
@@ -58,6 +66,7 @@ class AppSection(models.TextChoices):
     REPORTING = 'REPORTING', 'Reporting'
     TRACKER = 'TRACKER', 'Manufacturing Tracker'
     DOCUMENTS = 'DOCUMENTS', 'Invoices & Estimates'
+    HR_ATTENDANCE = 'HR_ATTENDANCE', 'HR & Attendance'
 
 
 class UserSectionPermission(models.Model):

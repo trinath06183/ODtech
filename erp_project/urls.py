@@ -22,6 +22,7 @@ urlpatterns = [
     path('reporting/', include('reporting.urls')),
     path('tracker/',  include('tracker.urls')),
     path('mobile/',   include('mobile_upload.urls')),
+    path('hr/',       include('hr.urls', namespace='hr')),
     
     # Root aliases for tracker products
     path('product/<uuid:product_id>/', tracker_views.product_detail_view, name='root_product_detail'),

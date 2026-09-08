@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "tracker",
     "documents",
     "mobile_upload",  # QR-code mobile document upload
+    "hr",             # HR & Attendance Tracking
     "compressor",
     "axes",
     "django_apscheduler",
