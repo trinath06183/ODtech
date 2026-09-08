@@ -242,7 +242,7 @@ def verify_email_view(request, uidb64, token):
         user.save()
 
         # Auto-login the user once verified
-        login(request, user)
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         messages.success(request, f'Email verified successfully! Welcome to your dashboard, {user.username}.')
         return redirect('dashboard')
     else:
