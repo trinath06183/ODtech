@@ -3,7 +3,7 @@ import os
 from .base import *
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = False
+DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("true", "1")
 
 DATABASES = {
     "default": {
