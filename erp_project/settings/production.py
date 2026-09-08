@@ -3,7 +3,20 @@ import os
 from .base import *
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("true", "1")
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() in ("true", "1")
+
+env_hosts = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+ALLOWED_HOSTS = list(set([
+    "localhost",
+    "127.0.0.1",
+    ".ngrok-free.dev",
+    ".ngrok.app",
+    ".ngrok.io",
+] + env_hosts))
 
 DATABASES = {
     "default": {
