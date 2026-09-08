@@ -100,6 +100,13 @@
         <div class="flex items-start gap-4">
             <div class="text-4xl">{{ document.file_extension|file_type_badge }}</div>
             <div class="flex-1">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                    {% if document.document_id %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-mono font-bold bg-violet-100 text-violet-800 border border-violet-200">
+                        {{ document.document_id }}
+                    </span>
+                    {% endif %}
+                </div>
                 <h1 class="text-xl font-bold text-slate-800 leading-tight">{{ document.title }}</h1>
                 <div class="flex flex-wrap items-center gap-2 mt-2">
                     {{ document.approval_status|approval_badge }}
@@ -120,6 +127,12 @@
 
         <!-- Metadata grid -->
         <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            {% if document.document_id %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Document ID</p>
+                <p class="font-mono font-bold text-violet-700">{{ document.document_id }}</p>
+            </div>
+            {% endif %}
             <div>
                 <p class="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Category</p>
                 <p class="font-medium text-slate-700">{{ document.category.name }}</p>

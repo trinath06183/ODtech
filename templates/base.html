@@ -1780,7 +1780,7 @@
                         <ul class="text-sm text-gray-700 bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
                             <template x-for="item in results.documents" :key="item.id">
                                 <li>
-                                    <a :href="`/documents/${item.id}/preview/`" class="group flex items-center justify-between px-4 py-2 hover:bg-rose-50 hover:text-rose-900 transition-colors">
+                                    <a :href="item.url || `/documents/${item.id}/preview/`" class="group flex items-center justify-between px-4 py-2 hover:bg-rose-50 hover:text-rose-900 transition-colors">
                                         <div class="flex items-center">
                                             <span class="w-8 h-8 rounded bg-rose-100 text-rose-600 flex items-center justify-center mr-3 font-semibold text-xs shrink-0" x-text="item.type"></span>
                                             <div>
@@ -1788,7 +1788,7 @@
                                                 <div class="text-xs text-gray-500 group-hover:text-rose-400" x-text="item.contact_name"></div>
                                             </div>
                                         </div>
-                                        <div class="text-xs font-bold text-gray-900 group-hover:text-rose-700" x-text="`₹${item.grand_total}`"></div>
+                                        <div class="text-xs font-bold text-gray-900 group-hover:text-rose-700" x-text="item.grand_total ? `₹${item.grand_total}` : ''"></div>
                                     </a>
                                 </li>
                             </template>

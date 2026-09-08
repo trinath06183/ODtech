@@ -238,12 +238,21 @@ def search_linkable_documents(request):
             edms_qs = edms_qs.exclude(id__in=excluded_edms_ids)
 
         if query:
-            edms_qs = edms_qs.filter(
+            import re
+            clean_id = re.sub(r'^(edms|doc)[-_\s]*0*', '', query, flags=re.IGNORECASE).strip()
+            q_edms_filter = (
+                Q(document_id__icontains=query) |
                 Q(title__icontains=query) | 
                 Q(invoice_number__icontains=query) |
                 Q(po_number__icontains=query) |
-                Q(file_number__icontains=query)
+                Q(party_name__icontains=query) |
+                Q(reference_number__icontains=query)
             )
+            if clean_id.isdigit():
+                doc_num = int(clean_id)
+                q_edms_filter |= Q(doc_seq=doc_num) | Q(document_id__iexact=f"EDMS{doc_num:08d}")
+            edms_qs = edms_qs.filter(q_edms_filter)
+
         edms_docs = list(edms_qs.order_by('-created_at')[:20])
         
         for doc in edms_docs:
@@ -254,7 +263,7 @@ def search_linkable_documents(request):
             except Exception:
                 preview_url = f'/edms/document/{doc.id}/preview/'
 
-            ref_num = doc.invoice_number or doc.po_number or doc.reference_number or doc.title
+            ref_num = doc.document_id or doc.invoice_number or doc.po_number or doc.reference_number or doc.title
             date_str = doc.created_at.strftime('%d %b %Y') if doc.created_at else ''
 
             results.append({
@@ -263,8 +272,9 @@ def search_linkable_documents(request):
                 'doc_type': 'EDMS',
                 'doc_type_display': type_display,
                 'number': ref_num,
+                'document_id': doc.document_id or '',
                 'title': doc.title,
-                'subtitle': f"EDMS Record • {type_display} • {date_str}",
+                'subtitle': f"{doc.document_id + ' • ' if doc.document_id else ''}EDMS Record • {type_display} • {date_str}",
                 'customer_name': doc.party_name or (doc.contact_vendor.name if doc.contact_vendor else ''),
                 'date': date_str,
                 'amount': float(doc.amount) if doc.amount else 0,

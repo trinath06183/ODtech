@@ -296,7 +296,9 @@ class SearchService:
 
         q = filters.get('q', '').strip()
         if q:
-            qs = qs.filter(
+            import re
+            q_filter = (
+                Q(document_id__icontains=q)        |
                 Q(title__icontains=q)              |
                 Q(description__icontains=q)        |
                 Q(keywords__icontains=q)           |
@@ -311,8 +313,19 @@ class SearchService:
                 Q(company__company_name__icontains=q) |
                 Q(company__gst_number__icontains=q)   |
                 Q(company__pan_number__icontains=q)   |
+                Q(party_name__icontains=q)         |
+                Q(contact_vendor__name__icontains=q) |
                 Q(tags__name__icontains=q)
-            ).distinct()
+            )
+
+            # Support direct ID search like EDMS00000001, EDMS-1, EDMS 23, or raw digits (like in expenses)
+            clean_id = re.sub(r'^(edms|doc)[-_\s]*0*', '', q, flags=re.IGNORECASE).strip()
+            if clean_id.isdigit():
+                doc_num = int(clean_id)
+                formatted_search_id = f"EDMS{doc_num:08d}"
+                q_filter |= Q(doc_seq=doc_num) | Q(document_id__iexact=formatted_search_id)
+
+            qs = qs.filter(q_filter).distinct()
 
         if cat := filters.get('category'):
             qs = qs.filter(category=cat)

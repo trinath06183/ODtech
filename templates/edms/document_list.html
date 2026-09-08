@@ -78,10 +78,17 @@
                             {% if doc.source_type == 'commercial' %}📋{% else %}{{ doc.file_extension|file_type_badge }}{% endif %}
                         </div>
                         <div class="min-w-0">
-                            <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
-                               class="font-semibold text-slate-800 hover:text-violet-700 truncate block max-w-[220px]">
-                                {{ doc.title }}
-                            </a>
+                            <div class="flex items-center gap-2">
+                                {% if doc.document_id %}
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-violet-100 text-violet-800 border border-violet-200/80 shrink-0" title="Document ID: {{ doc.document_id }}">
+                                    {{ doc.document_id }}
+                                </span>
+                                {% endif %}
+                                <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+                                   class="font-semibold text-slate-800 hover:text-violet-700 truncate block max-w-[260px]">
+                                    {{ doc.title }}
+                                </a>
+                            </div>
                             <div class="flex items-center gap-2 flex-wrap mt-0.5">
                                 {% if doc.source_type == 'commercial' %}
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">⚡ Commercial</span>

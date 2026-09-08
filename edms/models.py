@@ -259,6 +259,14 @@ class EDMSDocument(TimeStampedModel):
     # ── Primary Key ───────────────────────────────────────────────────────────
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    # ── Unique Human-Readable Document ID (e.g. EDMS00000001) ─────────────────
+    doc_seq     = models.PositiveIntegerField(unique=True, null=True, blank=True, db_index=True)
+    document_id = models.CharField(
+        max_length=30, unique=True, null=True, blank=True, db_index=True,
+        verbose_name='Document ID',
+        help_text='Unique human-friendly document ID, e.g. EDMS00000001'
+    )
+
     # ── Core Metadata ─────────────────────────────────────────────────────────
     title            = models.CharField(max_length=255, db_index=True)
     description      = models.TextField(blank=True)
@@ -420,8 +428,28 @@ class EDMSDocument(TimeStampedModel):
             Q(target_type=doc_ct, target_id=self.id)
         ).order_by('-created_at')
 
+    def save(self, *args, **kwargs):
+        if not self.doc_seq or not self.document_id:
+            from django.db.models import Max
+            max_seq = EDMSDocument.objects.aggregate(Max('doc_seq'))['doc_seq__max'] or 0
+            if max_seq == 0:
+                count = EDMSDocument.objects.exclude(id=self.id).count()
+                max_seq = count
+            self.doc_seq = max_seq + 1
+            self.document_id = f"EDMS{self.doc_seq:08d}"
+        super().save(*args, **kwargs)
+
+    @property
+    def edms_id(self):
+        return self.document_id or (f"EDMS{self.doc_seq:08d}" if self.doc_seq else "")
+
+    @property
+    def formatted_id(self):
+        return self.edms_id
+
     def __str__(self):
-        return f"{self.title} (v{self.current_version})"
+        prefix = f"[{self.edms_id}] " if self.edms_id else ""
+        return f"{prefix}{self.title} (v{self.current_version})"
 
     @property
     def latest_version(self):

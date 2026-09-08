@@ -417,13 +417,16 @@ def get_order_linked_documents(order):
             date_disp = ed.created_at.strftime('%d %b %Y') if ed.created_at else ''
             cust_name = ed.party_name or (ed.contact_vendor.name if ed.contact_vendor else '')
 
+            edms_doc_num = ed.document_id or ref_num
+
             results.append({
                 'id': str(ed.id),
                 'model': 'edms.edmsdocument',
                 'type': 'EDMS',
                 'type_display': f'EDMS ({type_disp})',
                 'badge_classes': 'bg-sky-50 text-sky-700 border-sky-300',
-                'number': ref_num,
+                'number': edms_doc_num,
+                'document_id': ed.document_id or '',
                 'title': ed.title,
                 'date': date_val,
                 'date_display': date_disp,

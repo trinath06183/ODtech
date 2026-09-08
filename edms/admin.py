@@ -87,7 +87,7 @@ class EDMSDocumentVersionInline(admin.TabularInline):
 @admin.register(EDMSDocument)
 class EDMSDocumentAdmin(admin.ModelAdmin):
     list_display  = (
-        'title', 'category', 'department', 'document_type',
+        'document_id', 'title', 'category', 'department', 'document_type',
         'approval_status', 'access_level', 'current_version',
         'is_confidential', 'is_deleted', 'created_at',
     )
@@ -96,11 +96,11 @@ class EDMSDocumentAdmin(admin.ModelAdmin):
         'approval_status', 'access_level', 'is_confidential', 'is_deleted',
     )
     search_fields = (
-        'title', 'description', 'keywords', 'reference_number',
+        'document_id', 'title', 'description', 'keywords', 'reference_number',
         'po_number', 'invoice_number', 'file_hash',
     )
     readonly_fields = (
-        'id', 'file_hash', 'file_size', 'mime_type',
+        'id', 'document_id', 'doc_seq', 'file_hash', 'file_size', 'mime_type',
         'file_extension', 'current_version', 'created_at', 'updated_at',
     )
     filter_horizontal = ('tags',)

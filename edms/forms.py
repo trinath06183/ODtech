@@ -200,7 +200,7 @@ class VersionUploadForm(forms.Form):
 
 class SearchForm(forms.Form):
     q               = forms.CharField(required=False, label='Search',
-                                      widget=forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Search documents…'}))
+                                      widget=forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Search ID (e.g. EDMS00000001), title, ref, vendor…'}))
     category        = forms.ModelChoiceField(queryset=EDMSDocumentCategory.objects.filter(is_active=True),
                                              required=False, empty_label='All Categories',
                                              widget=forms.Select(attrs={'class': TAILWIND_SELECT}))
@@ -238,6 +238,8 @@ class SearchForm(forms.Form):
         choices=[
             ('-created_at',  'Newest First'),
             ('created_at',   'Oldest First'),
+            ('-doc_seq',     'ID (Newest First)'),
+            ('doc_seq',      'ID (Oldest First)'),
             ('title',        'Title A–Z'),
             ('-title',       'Title Z–A'),
             ('expiry_date',  'Expiry (soonest)'),
