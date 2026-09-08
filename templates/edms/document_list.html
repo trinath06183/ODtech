@@ -57,6 +57,7 @@
                 <th class="px-6 py-3 text-left w-12">
                     <input type="checkbox" id="selectAllDocs" class="rounded border-slate-300 text-violet-600 focus:ring-violet-500">
                 </th>
+                <th class="px-4 py-3 text-left">ID</th>
                 <th class="px-6 py-3 text-left">Document</th>
                 <th class="px-6 py-3 text-left">Category</th>
                 <th class="px-6 py-3 text-left">Type</th>
@@ -72,6 +73,17 @@
                 <td class="px-6 py-4">
                     <input type="checkbox" name="doc_ids" value="{{ doc.id }}" class="doc-checkbox rounded border-slate-300 text-violet-600 focus:ring-violet-500">
                 </td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    {% if doc.document_id %}
+                    <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+                       class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-violet-100 text-violet-800 hover:bg-violet-200 border border-violet-200/80 transition-colors"
+                       title="Document ID: {{ doc.document_id }}">
+                        {{ doc.document_id }}
+                    </a>
+                    {% else %}
+                    <span class="text-xs text-slate-300 font-mono">—</span>
+                    {% endif %}
+                </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
                         <div class="text-lg flex-shrink-0">
@@ -79,13 +91,8 @@
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                {% if doc.document_id %}
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono font-bold bg-violet-100 text-violet-800 border border-violet-200/80 shrink-0" title="Document ID: {{ doc.document_id }}">
-                                    {{ doc.document_id }}
-                                </span>
-                                {% endif %}
                                 <a href="{% url 'edms:document_detail' doc_id=doc.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
-                                   class="font-semibold text-slate-800 hover:text-violet-700 truncate block max-w-[260px]">
+                                   class="font-semibold text-slate-800 hover:text-violet-700 truncate block max-w-md">
                                     {{ doc.title }}
                                 </a>
                             </div>
