@@ -21,22 +21,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='edmsdocument',
             name='doc_seq',
-            field=models.PositiveIntegerField(blank=True, db_index=True, null=True),
+            field=models.PositiveIntegerField(blank=True, null=True, unique=True),
         ),
         migrations.AddField(
             model_name='edmsdocument',
             name='document_id',
-            field=models.CharField(blank=True, db_index=True, help_text='Unique human-friendly document ID, e.g. EDMS00000001', max_length=30, null=True, verbose_name='Document ID'),
+            field=models.CharField(blank=True, help_text='Unique human-friendly document ID, e.g. EDMS00000001', max_length=30, null=True, unique=True, verbose_name='Document ID'),
         ),
         migrations.RunPython(populate_edms_ids, reverse_code=migrations.RunPython.noop),
-        migrations.AlterField(
-            model_name='edmsdocument',
-            name='doc_seq',
-            field=models.PositiveIntegerField(blank=True, db_index=True, null=True, unique=True),
-        ),
-        migrations.AlterField(
-            model_name='edmsdocument',
-            name='document_id',
-            field=models.CharField(blank=True, db_index=True, help_text='Unique human-friendly document ID, e.g. EDMS00000001', max_length=30, null=True, unique=True, verbose_name='Document ID'),
-        ),
     ]

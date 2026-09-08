@@ -260,9 +260,9 @@ class EDMSDocument(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # ── Unique Human-Readable Document ID (e.g. EDMS00000001) ─────────────────
-    doc_seq     = models.PositiveIntegerField(unique=True, null=True, blank=True, db_index=True)
+    doc_seq     = models.PositiveIntegerField(unique=True, null=True, blank=True)
     document_id = models.CharField(
-        max_length=30, unique=True, null=True, blank=True, db_index=True,
+        max_length=30, unique=True, null=True, blank=True,
         verbose_name='Document ID',
         help_text='Unique human-friendly document ID, e.g. EDMS00000001'
     )
