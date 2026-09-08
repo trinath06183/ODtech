@@ -497,13 +497,22 @@ def attendance_report(request):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="attendance_{year}_{month:02d}.csv"'
         writer = csv.writer(response)
-        header = ['Employee', 'Working Days'] + [d.strftime('%d %a') for d in working_dates] + ['Present', 'Half Day', 'On Leave', 'Absent']
+        header = ['Employee', 'Working Days'] + [d.strftime('%d %a') for d in all_dates] + ['Present', 'Half Day', 'On Leave', 'Absent']
         writer.writerow(header)
         for row in report_data:
-            record_cells = [row['records'].get(d, None) for d in working_dates]
-            cells = [r.get_status_display() if r else '—' for r in record_cells]
+            cells = []
+            for d in all_dates:
+                r = row['records'].get(d, None)
+                if r:
+                    cells.append(r.get_status_display())
+                elif d.weekday() == 6:
+                    cells.append('Weekly Off')
+                elif d in holidays:
+                    cells.append('Holiday')
+                else:
+                    cells.append('—')
             writer.writerow([
-                row['user'].get_full_name() or row['user'].username,
+                str(row['user']),
                 row['working_days'],
             ] + cells + [row['present'], row['half_day'], row['on_leave'], row['absent']])
         return response

@@ -43,10 +43,10 @@
           <tr>
             <th class="px-4 py-3 text-left sticky left-0 bg-slate-50/70 whitespace-nowrap">Employee</th>
             <th class="px-2 py-3 text-center bg-slate-50/70 whitespace-nowrap">Working<br>Days</th>
-            {% for d in working_dates %}
-            <th class="px-1 py-3 text-center whitespace-nowrap {% if d.weekday >= 5 %}text-slate-300{% endif %}">
+            {% for d in all_dates %}
+            <th class="px-1 py-3 text-center whitespace-nowrap {% if d.weekday == 6 %}bg-slate-100 text-rose-500 font-bold{% elif d in holidays %}bg-amber-50 text-amber-700{% endif %}">
               {{ d|date:"j" }}<br>
-              <span class="text-[9px] font-normal">{{ d|date:"D" }}</span>
+              <span class="text-[9px] font-normal {% if d.weekday == 6 %}text-rose-400 font-bold{% endif %}">{{ d|date:"D" }}</span>
             </th>
             {% endfor %}
             <th class="px-2 py-3 text-center text-green-600 whitespace-nowrap">P</th>
@@ -65,8 +65,8 @@
               </div>
             </td>
             <td class="px-2 py-3 text-center font-semibold text-slate-700">{{ row.working_days }}</td>
-            {% for d in working_dates %}
-            <td class="px-1 py-3 text-center">
+            {% for d in all_dates %}
+            <td class="px-1 py-3 text-center {% if d.weekday == 6 %}bg-slate-50/80{% elif d in holidays %}bg-amber-50/50{% endif %}">
               {% for rd, r in row.records.items %}
                 {% if rd == d %}
                   <span class="inline-block w-6 h-6 rounded text-[10px] font-bold leading-6
@@ -75,14 +75,21 @@
                     {% elif r.status == 'HALF_DAY' %}bg-yellow-100 text-yellow-700
                     {% elif r.status == 'WFH' %}bg-blue-100 text-blue-700
                     {% elif r.status == 'ON_LEAVE' %}bg-purple-100 text-purple-700
+                    {% elif r.status == 'WEEKLY_OFF' %}bg-slate-100 text-slate-400
                     {% else %}bg-gray-100 text-gray-500{% endif %}" title="{{ r.get_status_display }}">
-                    {% if r.status == 'PRESENT' %}P{% elif r.status == 'ABSENT' %}A{% elif r.status == 'HALF_DAY' %}½{% elif r.status == 'WFH' %}W{% elif r.status == 'ON_LEAVE' %}L{% else %}—{% endif %}
+                    {% if r.status == 'PRESENT' %}P{% elif r.status == 'ABSENT' %}A{% elif r.status == 'HALF_DAY' %}½{% elif r.status == 'WFH' %}W{% elif r.status == 'ON_LEAVE' %}L{% elif r.status == 'WEEKLY_OFF' %}WO{% else %}—{% endif %}
                   </span>
                 {% endif %}
               {% empty %}{% endfor %}
               {# If no record #}
               {% if d not in row.records %}
-                <span class="inline-block w-6 h-6 rounded text-[10px] text-slate-300 leading-6">—</span>
+                {% if d.weekday == 6 %}
+                  <span class="inline-block w-6 h-6 rounded text-[10px] font-semibold text-slate-400 leading-6 bg-slate-100" title="Weekly Off (Sunday)">WO</span>
+                {% elif d in holidays %}
+                  <span class="inline-block w-6 h-6 rounded text-[10px] font-semibold text-amber-600 leading-6 bg-amber-100" title="Holiday">H</span>
+                {% else %}
+                  <span class="inline-block w-6 h-6 rounded text-[10px] text-slate-300 leading-6">—</span>
+                {% endif %}
               {% endif %}
             </td>
             {% endfor %}
@@ -104,7 +111,9 @@
     <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-yellow-100 text-yellow-700 text-center leading-5 font-bold text-[10px]">½</span> Half Day</span>
     <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-blue-100 text-blue-700 text-center leading-5 font-bold text-[10px]">W</span> WFH</span>
     <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-purple-100 text-purple-700 text-center leading-5 font-bold text-[10px]">L</span> On Leave</span>
-    <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-gray-100 text-gray-500 text-center leading-5 font-bold text-[10px]">—</span> Not Marked</span>
+    <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-slate-100 text-slate-400 text-center leading-5 font-bold text-[10px]">WO</span> Weekly Off (Sunday)</span>
+    <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-amber-100 text-amber-600 text-center leading-5 font-bold text-[10px]">H</span> Holiday</span>
+    <span class="inline-flex items-center gap-1"><span class="w-5 h-5 rounded bg-gray-100 text-gray-400 text-center leading-5 font-bold text-[10px]">—</span> Not Marked</span>
   </div>
   {% else %}
   <div class="glass rounded-2xl p-16 text-center text-slate-400">
