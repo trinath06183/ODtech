@@ -80,7 +80,7 @@
   {% if leave_req.status != 'PENDING' %}
   <div class="glass rounded-2xl p-5 bg-slate-50">
     <div class="text-sm font-semibold text-slate-700">
-      {{ leave_req.get_status_display }} by {{ leave_req.reviewed_by.get_full_name|default:leave_req.reviewed_by.username|default:"—" }}
+      {{ leave_req.get_status_display }} by {{ leave_req.reviewed_by.get_full_name|default:leave_req.reviewed_by.username }}
       {% if leave_req.reviewed_at %}on {{ leave_req.reviewed_at|date:"d M Y H:i" }}{% endif %}
     </div>
     {% if leave_req.reviewer_note %}<div class="text-sm text-slate-500 mt-1 italic">{{ leave_req.reviewer_note }}</div>{% endif %}

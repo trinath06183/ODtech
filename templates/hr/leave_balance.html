@@ -39,7 +39,6 @@
               <div class="text-xs text-slate-400">{{ row.user.designation|default:row.user.role }}</div>
             </td>
             {% for lt in leave_types %}
-            {% with bal=row.balances|default:{} %}
             <td class="px-4 py-4 text-center">
               {% for lt_id, b in row.balances.items %}
                 {% if lt_id == lt.id %}
@@ -52,7 +51,6 @@
                 <span class="text-slate-300 text-xs">—</span>
               {% endfor %}
             </td>
-            {% endwith %}
             {% endfor %}
           </tr>
           {% empty %}
