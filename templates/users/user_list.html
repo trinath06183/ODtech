@@ -62,12 +62,12 @@
                             {{ u.username|slice:":1"|upper }}
                         </div>
                         <div>
-                            <div class="text-white font-semibold text-sm">{{ u.username }}
+                            <div class="text-white font-semibold text-sm">{{ u.username }} — {{ u.get_full_name|default:"No Name" }}
                                 {% if u == request.user %}
                                 <span class="ml-1 px-1.5 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded font-normal">You</span>
                                 {% endif %}
                             </div>
-                            <div class="text-gray-500 text-xs">{{ u.username}}</div>
+                            <div class="text-gray-500 text-xs">{{ u.email|default:"No Email" }}</div>
                         </div>
                     </div>
                 </td>

@@ -763,13 +763,13 @@
                         {{ user.username|make_list|first|upper }}
                     </div>
                     <div class="ml-3 overflow-hidden flex-1">
-                        <p class="text-sm font-bold text-slate-800 truncate" title="{{ user.username }}">{{ user.username }}</p>
+                        <p class="text-sm font-bold text-slate-800 truncate" title="{{ user.username }} — {{ user.get_full_name|default:'No Name' }}">{{ user.username }} — {{ user.get_full_name|default:'No Name' }}</p>
                         <p class="text-[11px] uppercase tracking-wider text-indigo-500 font-bold mt-0.5">{{ user.role }}</p>
                     </div>
                 </div>
                 <div x-show="!sidebarOpen" style="display: none;" class="mb-4 flex justify-center">
                     <div class="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-inner"
-                        title="{{ user.username }} ({{ user.role }})">
+                        title="{{ user.username }} — {{ user.get_full_name|default:'No Name' }} ({{ user.role }})">
                         {{ user.username|make_list|first|upper }}
                     </div>
                 </div>
