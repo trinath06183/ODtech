@@ -829,8 +829,10 @@ def lot_detail_view(request, lot_id):
 
 @require_permission('TRACKER', 'read')
 def product_detail_view(request, product_id):
+    from contacts.models import Contact
     product = get_object_or_404(Product, id=product_id)
     supplier_options = product.supplier_options.all()
+    vendor_contacts = Contact.objects.exclude(contact_type='Customer')
     
     create_form = SupplierCostOptionForm()
     update_form = None
@@ -977,7 +979,6 @@ def product_detail_view(request, product_id):
         .exclude(supplier_name='')
         .values('supplier_name', 'contact_email', 'contact_number', 'location')
         .order_by('-updated_at')
-        .order_by('-updated_at')
     )
     supplier_dict = {}
     for s in all_suppliers:
@@ -989,6 +990,18 @@ def product_detail_view(request, product_id):
                 'phone': s['contact_number'] or '',
                 'location': s['location'] or ''
             }
+    
+    # Also fetch from existing customer/vendor contacts table
+    for c in vendor_contacts:
+        name = (c.name or '').strip()
+        if name and name not in supplier_dict:
+            supplier_dict[name] = {
+                'name': name,
+                'email': c.email or '',
+                'phone': c.phone or '',
+                'location': c.address or ''
+            }
+            
     unique_suppliers = list(supplier_dict.values())
     unique_suppliers_json = json.dumps(unique_suppliers)
 
@@ -1039,12 +1052,15 @@ def product_detail_view(request, product_id):
         'product_expenses_json': product_expenses_json,
         'pending_request': pending_request,
         'approved_pis': get_order_approved_pis(product.order),
+        'vendor_contacts': vendor_contacts,
     }
     return render(request, 'tracker/product_detail.html', context)
 
 @require_permission('TRACKER', 'read')
 def product_modal_detail_view(request, product_id):
+    from contacts.models import Contact
     product = get_object_or_404(Product.objects.select_related('lot').prefetch_related('supplier_options', 'expenses'), id=product_id)
+    vendor_contacts = Contact.objects.exclude(contact_type='Customer')
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1204,7 +1220,7 @@ def product_modal_detail_view(request, product_id):
     supplier_options = product.supplier_options.all()
     create_form = SupplierCostOptionForm()
     
-    # Autofill supplier quotes suggestions list
+    # Autofill supplier quotes suggestions
     import json
     all_suppliers = (
         SupplierCostOption.objects
@@ -1222,6 +1238,18 @@ def product_modal_detail_view(request, product_id):
                 'phone': s['contact_number'] or '',
                 'location': s['location'] or ''
             }
+            
+    # Also fetch from existing customer/vendor contacts table
+    for c in vendor_contacts:
+        name = (c.name or '').strip()
+        if name and name not in supplier_dict:
+            supplier_dict[name] = {
+                'name': name,
+                'email': c.email or '',
+                'phone': c.phone or '',
+                'location': c.address or ''
+            }
+            
     unique_suppliers = list(supplier_dict.values())
     unique_suppliers_json = json.dumps(unique_suppliers)
     
@@ -1270,6 +1298,7 @@ def product_modal_detail_view(request, product_id):
         'product_expenses_json': product_expenses_json,
         'pending_request': pending_request,
         'approved_pis': get_order_approved_pis(product.order),
+        'vendor_contacts': vendor_contacts,
     }
     return render(request, 'tracker/partials/product_detail_modal_content.html', context)
 

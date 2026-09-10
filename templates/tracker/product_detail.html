@@ -394,8 +394,11 @@
                     <input type="hidden" name="action" value="create_supplier">
                     {% for field in create_form %}
                     <div>
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                            <span>{{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}</span>
+                            {% if field.name == 'supplier_name' %}
+                            <button type="button" onclick="fetchGSTDetails(this)" class="text-xs text-indigo-600 hover:text-indigo-800 focus:outline-none font-medium">Fetch by GSTIN</button>
+                            {% endif %}
                         </label>
                         {{ field }}
                         {% if field.errors %}
@@ -539,8 +542,11 @@
                             {% for field in form %}
                             <div>
                                 <label for="{{ field.id_for_label }}"
-                                    class="block text-sm font-medium text-gray-700 mb-1">
-                                    {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                    class="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                                    <span>{{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}</span>
+                                    {% if field.name == 'supplier_name' %}
+                                    <button type="button" onclick="fetchGSTDetails(this)" class="text-xs text-indigo-600 hover:text-indigo-800 focus:outline-none font-medium">Fetch by GSTIN</button>
+                                    {% endif %}
                                 </label>
                                 {{ field }}
                                 {% if field.errors %}
@@ -757,6 +763,37 @@
             if (phoneInput && !phoneInput.value) phoneInput.value = supplier.phone;
             if (locationInput && !locationInput.value) locationInput.value = supplier.location;
         }
+    }
+
+    function fetchGSTDetails(btn) {
+        const gst = prompt("Enter 15-digit GSTIN:");
+        if (!gst) return;
+        const originalText = btn.textContent;
+        btn.textContent = "Fetching...";
+        fetch(`/contacts/api/gstin-lookup/?gstin=${encodeURIComponent(gst)}`)
+        .then(r => r.json())
+        .then(data => {
+            btn.textContent = originalText;
+            if(data.success !== false) {
+                const form = btn.closest('form');
+                const nameStr = data.trade_name || data.legal_name || data.name;
+                if (nameStr) {
+                    const nameInput = form.querySelector('[name="supplier_name"]');
+                    if(nameInput) nameInput.value = nameStr;
+                }
+                const addrStr = data.address || data.place_of_supply;
+                if (addrStr) {
+                    const locInput = form.querySelector('[name="location"]');
+                    if(locInput) locInput.value = addrStr.substring(0, 200);
+                }
+            } else {
+                alert(data.error || "Failed to fetch details.");
+            }
+        })
+        .catch(e => {
+            btn.textContent = originalText;
+            alert("Error fetching GST details.");
+        });
     }
 </script>
 

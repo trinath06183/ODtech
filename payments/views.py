@@ -236,6 +236,7 @@ def expense_list(request):
 
     search = request.GET.get('search', '').strip()
     category = request.GET.get('category', '').strip()
+    status = request.GET.get('status', '').strip()
     start_date = request.GET.get('start_date', '').strip()
     end_date = request.GET.get('end_date', '').strip()
     employee_code = request.GET.get('employee_code', '').strip()
@@ -260,6 +261,8 @@ def expense_list(request):
         expenses = expenses.filter(search_q)
     if category:
         expenses = expenses.filter(expense_type=category)
+    if status:
+        expenses = expenses.filter(status=status)
     if start_date:
         expenses = expenses.filter(date__gte=start_date)
     if end_date:

@@ -56,7 +56,7 @@
 </div>
 <!-- Filter Bar -->
 <div class="bg-white rounded-2xl p-4 mb-6 border border-gray-200 shadow-sm">
-    <form method="get" class="grid grid-cols-1 lg:grid-cols-6 gap-4 items-end">
+    <form method="get" class="grid grid-cols-1 lg:grid-cols-7 gap-4 items-end">
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
             <input type="text" name="search" value="{{ request.GET.search }}" placeholder="ID (e-0000023), title, notes..."
@@ -80,6 +80,15 @@
                         {% endfor %}
                     </optgroup>
                 {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+            <select name="status" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white">
+                <option value="">All Statuses</option>
+                <option value="Pending" {% if request.GET.status == "Pending" %}selected{% endif %}>Pending</option>
+                <option value="Approved" {% if request.GET.status == "Approved" %}selected{% endif %}>Approved</option>
+                <option value="Rejected" {% if request.GET.status == "Rejected" %}selected{% endif %}>Rejected</option>
             </select>
         </div>
         <div>
