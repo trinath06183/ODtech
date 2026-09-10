@@ -1410,10 +1410,10 @@
         <!-- Filter Tabs -->
         <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1 text-xs border-b border-gray-100">
             <button type="button" @click="docFilter = 'ALL'"
-                :class="docFilter === 'ALL' ? 'bg-gray-900 text-white font-bold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                :class="docFilter === 'ALL' ? 'bg-slate-800 text-white font-bold' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
                 class="px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer">
-                <span>All</span>
-                <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="docFilter === 'ALL' ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-600'">{{ linked_documents|length }}</span>
+                <span :class="docFilter === 'ALL' ? 'text-white' : ''">All</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="docFilter === 'ALL' ? 'bg-slate-700 text-gray-200' : 'bg-gray-200 text-gray-600'">{{ linked_documents|length }}</span>
             </button>
             {% if linked_counts.inv %}
             <button type="button" @click="docFilter = 'INV'"
