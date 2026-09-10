@@ -747,10 +747,18 @@
     const supplierData = {{ unique_suppliers_json| safe }};
 
     function autofillSupplierDetails(inputElement) {
-        const val = inputElement.value.trim();
+        const val = (inputElement.value || '').trim();
         if (!val) return;
 
-        const supplier = supplierData.find(s => s.name === val);
+        // Auto-detect 15-character GSTIN
+        const gstinPattern = /^[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}[1-9A-Za-z]{1}[Zz]{1}[0-9A-Za-z]{1}$/;
+        if (gstinPattern.test(val)) {
+            fetchGSTDetails(inputElement, val);
+            return;
+        }
+
+        const valLower = val.toLowerCase();
+        const supplier = supplierData.find(s => (s.name && s.name.toLowerCase() === valLower) || (s.gstin && s.gstin.toLowerCase() === valLower));
         if (supplier) {
             const form = inputElement.closest('form');
             if (!form) return;
@@ -759,39 +767,58 @@
             const phoneInput = form.querySelector('input[name="contact_number"]');
             const locationInput = form.querySelector('input[name="location"]');
 
-            if (emailInput && !emailInput.value) emailInput.value = supplier.email;
-            if (phoneInput && !phoneInput.value) phoneInput.value = supplier.phone;
-            if (locationInput && !locationInput.value) locationInput.value = supplier.location;
+            if (inputElement.value !== supplier.name) inputElement.value = supplier.name;
+            if (emailInput && supplier.email) emailInput.value = supplier.email;
+            if (phoneInput && supplier.phone) phoneInput.value = supplier.phone;
+            if (locationInput && supplier.location) locationInput.value = supplier.location;
         }
     }
 
-    function fetchGSTDetails(btn) {
-        const gst = prompt("Enter 15-digit GSTIN:");
+    function fetchGSTDetails(btn, gstinPreset) {
+        let gst = gstinPreset;
+        if (!gst) {
+            gst = prompt("Enter 15-digit GSTIN:");
+        }
         if (!gst) return;
+        gst = gst.trim().toUpperCase();
+        if (gst.length !== 15) {
+            alert("GSTIN must be exactly 15 characters long.");
+            return;
+        }
+
+        const form = btn.closest('form');
         const originalText = btn.textContent;
-        btn.textContent = "Fetching...";
+        if (btn.tagName === 'BUTTON') btn.textContent = "Fetching...";
+
         fetch(`/contacts/api/gstin-lookup/?gstin=${encodeURIComponent(gst)}`)
         .then(r => r.json())
         .then(data => {
-            btn.textContent = originalText;
-            if(data.success !== false) {
-                const form = btn.closest('form');
+            if (btn.tagName === 'BUTTON') btn.textContent = originalText;
+            if(data.success !== false && (data.name || data.trade_name || data.legal_name)) {
                 const nameStr = data.trade_name || data.legal_name || data.name;
-                if (nameStr) {
+                if (nameStr && form) {
                     const nameInput = form.querySelector('[name="supplier_name"]');
                     if(nameInput) nameInput.value = nameStr;
                 }
                 const addrStr = data.address || data.place_of_supply;
-                if (addrStr) {
+                if (addrStr && form) {
                     const locInput = form.querySelector('[name="location"]');
                     if(locInput) locInput.value = addrStr.substring(0, 200);
+                }
+                if (data.phone && form) {
+                    const phoneInput = form.querySelector('[name="contact_number"]');
+                    if (phoneInput) phoneInput.value = data.phone;
+                }
+                if (data.email && form) {
+                    const emailInput = form.querySelector('[name="contact_email"]');
+                    if (emailInput) emailInput.value = data.email;
                 }
             } else {
                 alert(data.error || "Failed to fetch details.");
             }
         })
         .catch(e => {
-            btn.textContent = originalText;
+            if (btn.tagName === 'BUTTON') btn.textContent = originalText;
             alert("Error fetching GST details.");
         });
     }

@@ -84,6 +84,32 @@ def gstin_lookup_api(request):
     state_name = place_of_supply.split('-', 1)[-1] if '-' in place_of_supply else ''
     fetched = False
 
+    # ── Check existing Contact database first ────────────────────────────────
+    try:
+        from contacts.models import Contact
+        existing = Contact.objects.filter(gstin__iexact=gstin).first()
+        if existing:
+            return JsonResponse({
+                'success': True,
+                'fetched': True,
+                'source': 'database',
+                'gstin': gstin,
+                'pan': existing.pan or pan,
+                'place_of_supply': place_of_supply,
+                'state_name': state_name,
+                'legal_name': existing.name,
+                'trade_name': existing.name,
+                'name': existing.name,
+                'address': existing.address or '',
+                'phone': existing.phone or '',
+                'email': existing.email or '',
+                'status': 'Active',
+                'taxpayer_type': taxpayer_type,
+                'pincode': pincode,
+            })
+    except Exception:
+        pass
+
     # Create SSL context
     ctx = ssl.create_default_context()
     ctx.check_hostname = False

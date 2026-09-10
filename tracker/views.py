@@ -832,7 +832,7 @@ def product_detail_view(request, product_id):
     from contacts.models import Contact
     product = get_object_or_404(Product, id=product_id)
     supplier_options = product.supplier_options.all()
-    vendor_contacts = Contact.objects.exclude(contact_type='Customer')
+    vendor_contacts = Contact.objects.all().order_by('name')
     
     create_form = SupplierCostOptionForm()
     update_form = None
@@ -983,24 +983,43 @@ def product_detail_view(request, product_id):
     supplier_dict = {}
     for s in all_suppliers:
         name = s['supplier_name'].strip()
-        if name not in supplier_dict:
-            supplier_dict[name] = {
-                'name': name,
-                'email': s['contact_email'] or '',
-                'phone': s['contact_number'] or '',
-                'location': s['location'] or ''
-            }
+        if name:
+            key = name.lower()
+            if key not in supplier_dict:
+                supplier_dict[key] = {
+                    'name': name,
+                    'email': s['contact_email'] or '',
+                    'phone': s['contact_number'] or '',
+                    'location': s['location'] or '',
+                    'gstin': '',
+                    'type': 'Previous Quote'
+                }
     
     # Also fetch from existing customer/vendor contacts table
     for c in vendor_contacts:
         name = (c.name or '').strip()
-        if name and name not in supplier_dict:
-            supplier_dict[name] = {
-                'name': name,
-                'email': c.email or '',
-                'phone': c.phone or '',
-                'location': c.address or ''
-            }
+        if name:
+            key = name.lower()
+            if key not in supplier_dict:
+                supplier_dict[key] = {
+                    'name': name,
+                    'email': c.email or '',
+                    'phone': c.phone or '',
+                    'location': c.address or '',
+                    'gstin': (c.gstin or '').strip(),
+                    'type': c.contact_type or 'Contact'
+                }
+            else:
+                if c.gstin and not supplier_dict[key].get('gstin'):
+                    supplier_dict[key]['gstin'] = (c.gstin or '').strip()
+                if c.contact_type:
+                    supplier_dict[key]['type'] = c.contact_type
+                if c.address and not supplier_dict[key].get('location'):
+                    supplier_dict[key]['location'] = c.address
+                if c.phone and not supplier_dict[key].get('phone'):
+                    supplier_dict[key]['phone'] = c.phone
+                if c.email and not supplier_dict[key].get('email'):
+                    supplier_dict[key]['email'] = c.email
             
     unique_suppliers = list(supplier_dict.values())
     unique_suppliers_json = json.dumps(unique_suppliers)
@@ -1060,7 +1079,7 @@ def product_detail_view(request, product_id):
 def product_modal_detail_view(request, product_id):
     from contacts.models import Contact
     product = get_object_or_404(Product.objects.select_related('lot').prefetch_related('supplier_options', 'expenses'), id=product_id)
-    vendor_contacts = Contact.objects.exclude(contact_type='Customer')
+    vendor_contacts = Contact.objects.all().order_by('name')
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1231,24 +1250,43 @@ def product_modal_detail_view(request, product_id):
     supplier_dict = {}
     for s in all_suppliers:
         name = s['supplier_name'].strip()
-        if name not in supplier_dict:
-            supplier_dict[name] = {
-                'name': name,
-                'email': s['contact_email'] or '',
-                'phone': s['contact_number'] or '',
-                'location': s['location'] or ''
-            }
+        if name:
+            key = name.lower()
+            if key not in supplier_dict:
+                supplier_dict[key] = {
+                    'name': name,
+                    'email': s['contact_email'] or '',
+                    'phone': s['contact_number'] or '',
+                    'location': s['location'] or '',
+                    'gstin': '',
+                    'type': 'Previous Quote'
+                }
             
     # Also fetch from existing customer/vendor contacts table
     for c in vendor_contacts:
         name = (c.name or '').strip()
-        if name and name not in supplier_dict:
-            supplier_dict[name] = {
-                'name': name,
-                'email': c.email or '',
-                'phone': c.phone or '',
-                'location': c.address or ''
-            }
+        if name:
+            key = name.lower()
+            if key not in supplier_dict:
+                supplier_dict[key] = {
+                    'name': name,
+                    'email': c.email or '',
+                    'phone': c.phone or '',
+                    'location': c.address or '',
+                    'gstin': (c.gstin or '').strip(),
+                    'type': c.contact_type or 'Contact'
+                }
+            else:
+                if c.gstin and not supplier_dict[key].get('gstin'):
+                    supplier_dict[key]['gstin'] = (c.gstin or '').strip()
+                if c.contact_type:
+                    supplier_dict[key]['type'] = c.contact_type
+                if c.address and not supplier_dict[key].get('location'):
+                    supplier_dict[key]['location'] = c.address
+                if c.phone and not supplier_dict[key].get('phone'):
+                    supplier_dict[key]['phone'] = c.phone
+                if c.email and not supplier_dict[key].get('email'):
+                    supplier_dict[key]['email'] = c.email
             
     unique_suppliers = list(supplier_dict.values())
     unique_suppliers_json = json.dumps(unique_suppliers)
