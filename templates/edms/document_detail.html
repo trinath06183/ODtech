@@ -307,71 +307,81 @@
     </div>
 </div>
 
-<!-- Inline Preview -->
-{% if document.source_type == 'commercial' and document.commercial_doc_id %}
-{# Commercial doc: show the live rendered HTML invoice inside an iframe #}
-<div class="glass rounded-2xl p-4">
-    <div class="flex items-center justify-between mb-3">
-        <h2 class="font-semibold text-slate-700">📄 Document Preview</h2>
-        <a href="{% url 'document_preview' document.commercial_doc_id %}" target="_blank"
-           class="text-xs text-indigo-600 hover:underline">Open full screen →</a>
-    </div>
-    <div class="rounded-xl overflow-hidden bg-slate-100" style="height: 600px;">
-        <iframe src="{% url 'edms:document_preview' doc_id=document.id %}"
-                class="w-full h-full border-0" title="Document Preview"></iframe>
-    </div>
-</div>
-{% elif document.is_preview_supported %}
-<div class="glass rounded-2xl p-4">
-    <div class="flex items-center justify-between mb-3">
-        <h2 class="font-semibold text-slate-700">📄 Preview</h2>
-        <a href="{% url 'edms:document_preview' doc_id=document.id %}" target="_blank"
-           class="text-xs text-violet-600 hover:underline">Open full screen →</a>
-    </div>
-    <div class="rounded-xl overflow-hidden bg-slate-100" style="height: 480px;">
-        {% if document.file_extension == '.pdf' %}
-        <iframe src="{% url 'edms:document_preview' doc_id=document.id %}"
-                class="w-full h-full border-0" title="Document Preview"></iframe>
-        {% else %}
-        <img src="{% url 'edms:document_preview' doc_id=document.id %}"
-             class="w-full h-full object-contain" alt="{{ document.title }}" />
-        {% endif %}
-    </div>
-</div>
-{% endif %}
+<!-- Main Content Area: Preview & Activity -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-<!-- Recent Audit Log for this Document -->
-{% if can_audit %}
-<div class="glass rounded-2xl overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100">
-        <h2 class="font-semibold text-slate-700">🔒 Document Activity</h2>
+    <!-- Left Column: Document Preview -->
+    {% if document.source_type == 'commercial' and document.commercial_doc_id %}
+    <div class="lg:col-span-8">
+        <div class="glass rounded-2xl p-4 h-full flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-semibold text-slate-700">📄 Document Preview</h2>
+                <a href="{% url 'document_preview' document.commercial_doc_id %}" target="_blank"
+                   class="text-xs text-indigo-600 hover:underline">Open full screen →</a>
+            </div>
+            <div class="rounded-xl overflow-hidden bg-slate-100 flex-grow" style="height: 85vh; min-height: 800px;">
+                <iframe src="{% url 'edms:document_preview' doc_id=document.id %}"
+                        class="w-full h-full border-0" title="Document Preview"></iframe>
+            </div>
+        </div>
     </div>
-    <table class="w-full text-sm">
-        <thead>
-            <tr class="bg-slate-50/70 text-xs text-slate-400 uppercase">
-                <th class="px-6 py-3 text-left">Time</th>
-                <th class="px-6 py-3 text-left">User</th>
-                <th class="px-6 py-3 text-left">Action</th>
-                <th class="px-6 py-3 text-left">IP</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50">
-            {% for log in audit_logs %}
-            <tr class="hover:bg-slate-50/40">
-                <td class="px-6 py-2.5 text-xs text-slate-400">{{ log.timestamp|date:"d M Y H:i" }}</td>
-                <td class="px-6 py-2.5 font-medium text-slate-700">{{ log.user.empid|default:log.username_cached }}</td>
-                <td class="px-6 py-2.5">
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-violet-50 text-violet-700">{{ log.get_action_display }}</span>
-                </td>
-                <td class="px-6 py-2.5 text-xs text-slate-400 font-mono">{{ log.ip_address|default:"—" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="px-6 py-6 text-center text-slate-400">No activity recorded.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% elif document.is_preview_supported %}
+    <div class="lg:col-span-8">
+        <div class="glass rounded-2xl p-4 h-full flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-semibold text-slate-700">📄 Preview</h2>
+                <a href="{% url 'edms:document_preview' doc_id=document.id %}" target="_blank"
+                   class="text-xs text-violet-600 hover:underline">Open full screen →</a>
+            </div>
+            <div class="rounded-xl overflow-hidden bg-slate-100 flex-grow" style="height: 85vh; min-height: 800px;">
+                {% if document.file_extension == '.pdf' %}
+                <iframe src="{% url 'edms:document_preview' doc_id=document.id %}"
+                        class="w-full h-full border-0" title="Document Preview"></iframe>
+                {% else %}
+                <img src="{% url 'edms:document_preview' doc_id=document.id %}"
+                     class="w-full h-full object-contain" alt="{{ document.title }}" />
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Right Column: Document Activity -->
+    {% if can_audit %}
+    <div class="{% if document.is_preview_supported or document.source_type == 'commercial' and document.commercial_doc_id %}lg:col-span-4{% else %}lg:col-span-12{% endif %}">
+        <div class="glass rounded-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100">
+                <h2 class="font-semibold text-slate-700">🔒 Document Activity</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-slate-50/70 text-[11px] text-slate-400 uppercase">
+                            <th class="px-4 py-3 text-left">Time</th>
+                            <th class="px-4 py-3 text-left">User</th>
+                            <th class="px-4 py-3 text-left">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        {% for log in audit_logs %}
+                        <tr class="hover:bg-slate-50/40">
+                            <td class="px-4 py-2.5 text-[11px] text-slate-400 whitespace-nowrap">{{ log.timestamp|date:"d M H:i" }}</td>
+                            <td class="px-4 py-2.5 font-medium text-slate-700 text-xs truncate max-w-[80px]" title="{{ log.user.empid|default:log.username_cached }}">{{ log.user.empid|default:log.username_cached }}</td>
+                            <td class="px-4 py-2.5">
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 whitespace-nowrap">{{ log.get_action_display }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="px-4 py-6 text-center text-slate-400">No activity recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
-{% endif %}
 
 <script>
 document.addEventListener('keydown', function(e) {
