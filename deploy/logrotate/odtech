@@ -3,6 +3,7 @@
 
 /home/server_admin/backups/cron_backup.log
 /home/server_admin/ODtech/logs/*.log {
+    su server_admin server_admin
     daily
     missingok
     rotate 14

@@ -10,8 +10,11 @@ DEPLOY_DIR="$(dirname "$SCRIPT_DIR")"
 LOGROTATE_SRC="$DEPLOY_DIR/logrotate/odtech"
 LOGROTATE_DEST="/etc/logrotate.d/odtech"
 
-# Ensure logs dir exists
+# Ensure directories and files exist with correct permissions
 mkdir -p /home/server_admin/ODtech/logs
+chmod 755 /home/server_admin/ODtech/logs
+touch /home/server_admin/backups/cron_backup.log
+chmod 640 /home/server_admin/backups/cron_backup.log
 
 echo "[*] Installing logrotate configuration to $LOGROTATE_DEST..."
 sudo cp "$LOGROTATE_SRC" "$LOGROTATE_DEST"
