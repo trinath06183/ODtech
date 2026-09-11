@@ -164,10 +164,10 @@ def start():
         max_instances=1,
     )
 
-    # Daily database backup (at 11:30 PM)
+    # Daily database backup (at 11:30 PM IST)
     _scheduler.add_job(
         backup_db_job,
-        trigger=CronTrigger(hour=23, minute=30),
+        trigger=CronTrigger(hour=23, minute=30, timezone=timezone_str),
         id="backup_db_job",
         name="Daily database backup to admin email",
         replace_existing=True,
