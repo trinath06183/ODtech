@@ -38,14 +38,15 @@ echo "[*] Configuring Nginx with SSL certificate..."
 SSL_CERT="/etc/letsencrypt/live/${FQDN}/fullchain.pem"
 SSL_KEY="/etc/letsencrypt/live/${FQDN}/privkey.pem"
 
-if [ -f "$SSL_CERT" ] && [ -f "$SSL_KEY" ]; then
+if sudo test -f "$SSL_CERT" && sudo test -f "$SSL_KEY"; then
     echo "[+] Found issued certificate at $SSL_CERT"
 
     # Install SSL configuration in Nginx
     sudo bash -c "cat > /etc/nginx/conf.d/odtech_ssl.conf << 'EOF'
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
     server_name ${FQDN};
 
     ssl_certificate ${SSL_CERT};
