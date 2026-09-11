@@ -10,17 +10,15 @@ DEPLOY_DIR="$(dirname "$SCRIPT_DIR")"
 NGINX_CONF_SRC="$DEPLOY_DIR/nginx/odtech_compression.conf"
 NGINX_CONF_DEST="/etc/nginx/conf.d/odtech_compression.conf"
 
-# 1. Install Gzip compression config
+# 1. Clean up any existing gzip directives in /etc/nginx/nginx.conf to avoid duplicate errors
+echo "[*] Ensuring no duplicate gzip directives in /etc/nginx/nginx.conf..."
+sudo sed -i 's/^[[:space:]]*gzip[[:space:]]/# gzip /' /etc/nginx/nginx.conf 2>/dev/null || true
+sudo sed -i 's/^[[:space:]]*gzip_/# gzip_/' /etc/nginx/nginx.conf 2>/dev/null || true
+
+# 2. Install Gzip compression config
 echo "[*] Installing Gzip compression configuration to $NGINX_CONF_DEST..."
 sudo cp "$NGINX_CONF_SRC" "$NGINX_CONF_DEST"
 sudo chmod 644 "$NGINX_CONF_DEST"
-
-# 2. Ensure /etc/nginx/nginx.conf has gzip on enabled
-sudo sed -i 's/# gzip_vary on;/gzip_vary on;/' /etc/nginx/nginx.conf 2>/dev/null || true
-sudo sed -i 's/# gzip_proxied any;/gzip_proxied any;/' /etc/nginx/nginx.conf 2>/dev/null || true
-sudo sed -i 's/# gzip_comp_level 6;/gzip_comp_level 6;/' /etc/nginx/nginx.conf 2>/dev/null || true
-sudo sed -i 's/# gzip_buffers 16 8k;/gzip_buffers 16 8k;/' /etc/nginx/nginx.conf 2>/dev/null || true
-sudo sed -i 's/# gzip_http_version 1.1;/gzip_http_version 1.1;/' /etc/nginx/nginx.conf 2>/dev/null || true
 
 # 3. Test Nginx configuration
 echo "[*] Testing Nginx configuration..."
