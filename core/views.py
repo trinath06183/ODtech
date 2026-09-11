@@ -796,28 +796,53 @@ class SystemActivityLogView(ListView):
 def health_check(request):
     """
     Lightweight health check endpoint for uptime monitors / load balancers.
-    Accessible publicly without authentication.
-    Returns HTTP 200 with JSON if database is connected, 503 if disconnected.
+    Accessible publicly without authentication at /health/, /healthz, and /api/health/.
+    Returns HTTP 200 with system metrics if database is connected, 503 if disconnected.
     """
+    import time
+    import shutil
+    from django.http import JsonResponse
     from django.db import connection
 
     db_ok = True
     db_error = None
+    db_latency_ms = None
+
+    start_t = time.time()
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1;")
+        db_latency_ms = round((time.time() - start_t) * 1000, 2)
     except Exception as e:
         db_ok = False
         db_error = str(e)
 
+    # Disk usage on root partition
+    disk_stats = {}
+    try:
+        total, used, free = shutil.disk_usage('/')
+        disk_stats = {
+            'total_gb': round(total / (1024 ** 3), 1),
+            'used_gb': round(used / (1024 ** 3), 1),
+            'free_gb': round(free / (1024 ** 3), 1),
+            'percent_used': round((used / total) * 100, 1),
+        }
+    except Exception:
+        pass
+
     status_code = 200 if db_ok else 503
     payload = {
         'status': 'healthy' if db_ok else 'unhealthy',
-        'database': 'connected' if db_ok else 'disconnected',
+        'database': {
+            'status': 'connected' if db_ok else 'disconnected',
+            'latency_ms': db_latency_ms,
+        },
+        'disk': disk_stats,
         'timestamp': timezone.now().isoformat(),
         'version': '1.0',
     }
     if db_error:
-        payload['database_error'] = db_error
+        payload['database']['error'] = db_error
 
     return JsonResponse(payload, status=status_code)
+

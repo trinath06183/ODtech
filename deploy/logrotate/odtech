@@ -1,0 +1,13 @@
+# Logrotate configuration for ODtech ERP
+# Managed in /etc/logrotate.d/odtech
+
+/home/server_admin/backups/cron_backup.log
+/home/server_admin/ODtech/logs/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 server_admin server_admin
+}

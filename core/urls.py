@@ -13,6 +13,8 @@ urlpatterns = [
     # Health Check API
     path('api/health/', views.health_check, name='health_check'),
     path('health/', views.health_check, name='health_check_root'),
+    path('healthz/', views.health_check, name='healthz'),
+    path('healthz', views.health_check, name='healthz_no_slash'),
     
     # Global Search API
     path('api/global-search/', search_views.global_search, name='global_search'),
