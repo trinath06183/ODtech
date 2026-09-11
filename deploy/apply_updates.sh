@@ -39,6 +39,8 @@ if [ -n "$FOUND_SERVICE" ]; then
     echo "[+] Found active service: $FOUND_SERVICE. Restarting..."
     sudo systemctl restart "$FOUND_SERVICE"
     echo "[+] Service $FOUND_SERVICE restarted successfully."
+    echo "[*] Waiting 3 seconds for workers to initialize..."
+    sleep 3
 else
     echo "[!] No standard service name found (tried odtech, odtech-erp, gunicorn, django, erp)."
     echo "[*] If Gunicorn runs under a custom service name, check with: systemctl list-units --type=service | grep -iE 'odtech|gunicorn|django'"

@@ -9,11 +9,16 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-place
 
 DEBUG = False
 
-ALLOWED_HOSTS = [
+ALLOWED_HOSTS = list(set([
+    "localhost",
+    "127.0.0.1",
+    ".ts.net",
+    ".duckdns.org",
+] + [
     host.strip()
     for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
     if host.strip()
-]
+]))
 
 INSTALLED_APPS = [
     "django.contrib.admin",

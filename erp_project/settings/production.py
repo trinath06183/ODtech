@@ -13,6 +13,8 @@ env_hosts = [
 ALLOWED_HOSTS = list(set([
     "localhost",
     "127.0.0.1",
+    ".ts.net",
+    ".duckdns.org",
     ".ngrok-free.dev",
     ".ngrok.app",
     ".ngrok.io",
@@ -29,13 +31,16 @@ DATABASES = {
     }
 }
 
-# Include default ngrok trusted origins along with env origins so reverse proxy doesn't fail
+# Include default ngrok, Tailscale, and DuckDNS trusted origins along with env origins
 env_origins = [
     origin.strip()
     for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
     if origin.strip()
 ]
 CSRF_TRUSTED_ORIGINS = list(set([
+    "https://*.ts.net",
+    "https://*.duckdns.org",
+    "http://*.duckdns.org",
     "https://*.ngrok-free.dev",
     "https://*.ngrok.app",
     "https://*.ngrok.io",
