@@ -94,6 +94,36 @@ class Expense(TimeStampedModel):
     def formatted_id(self):
         return f"e-{self.id:07d}" if self.id else ""
 
+    @property
+    def display_employee_code(self):
+        if self.employee_code:
+            return self.employee_code.strip()
+        if self.submitted_by and getattr(self.submitted_by, 'empid', None):
+            return self.submitted_by.empid.strip()
+        return "N/A"
+
+    @property
+    def employee_user(self):
+        if hasattr(self, '_cached_employee_user'):
+            return self._cached_employee_user
+        code = (self.employee_code or '').strip()
+        if code:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            matched = User.objects.filter(models.Q(empid__iexact=code) | models.Q(username__iexact=code)).first()
+            if matched:
+                return matched
+        return self.submitted_by
+
+    @property
+    def employee_name(self):
+        if hasattr(self, '_cached_employee_name'):
+            return self._cached_employee_name
+        user = self.employee_user
+        if user:
+            return user.get_full_name().strip() or user.first_name or user.username
+        return ""
+
     def __str__(self):
         return f"{self.expense_id} - {self.title} - {self.amount} ({self.status})"
 

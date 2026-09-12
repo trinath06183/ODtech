@@ -232,7 +232,22 @@ from .forms import ExpenseForm
 
 @require_permission('PAYMENTS', 'read')
 def expense_list(request):
+    current_tab = request.GET.get('tab', 'all').strip().lower()
+    if current_tab != 'my':
+        current_tab = 'all'
+
+    my_q = Q(submitted_by=request.user)
+    if hasattr(request.user, 'empid') and request.user.empid:
+        my_q |= Q(employee_code__iexact=request.user.empid)
+    if request.user.username:
+        my_q |= Q(employee_code__iexact=request.user.username)
+
+    all_count = Expense.objects.count()
+    my_count = Expense.objects.filter(my_q).count()
+
     expenses = Expense.objects.all()
+    if current_tab == 'my':
+        expenses = expenses.filter(my_q)
 
     search = request.GET.get('search', '').strip()
     category = request.GET.get('category', '').strip()
@@ -311,6 +326,21 @@ def expense_list(request):
     paginator = Paginator(expenses, 30)
     page_obj = paginator.get_page(page_num)
 
+    User = get_user_model()
+    all_users = list(User.objects.all())
+    user_by_empid = {u.empid.strip().upper(): u for u in all_users if u.empid}
+    user_by_username = {u.username.strip().lower(): u for u in all_users if u.username}
+
+    for exp in page_obj:
+        code = (exp.employee_code or '').strip()
+        matched = user_by_empid.get(code.upper()) or user_by_username.get(code.lower())
+        if matched:
+            exp._cached_employee_user = matched
+            exp._cached_employee_name = matched.get_full_name().strip() or matched.first_name or matched.username
+        else:
+            exp._cached_employee_user = exp.submitted_by
+            exp._cached_employee_name = (exp.submitted_by.get_full_name().strip() or exp.submitted_by.first_name) if exp.submitted_by else ''
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         rows_html = render_to_string(
             'payments/partials/expense_rows.html',
@@ -330,13 +360,25 @@ def expense_list(request):
         'total_paid': total_paid,
         'total_unpaid': total_unpaid,
         'total_count': total_count,
+        'all_count': all_count,
+        'my_count': my_count,
+        'current_tab': current_tab,
         'has_next': page_obj.has_next(),
         'next_page': 2 if page_obj.has_next() else '',
     })
 
 @require_permission('PAYMENTS', 'read')
 def print_unpaid_expenses(request):
-    unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False).select_related('submitted_by').order_by('employee_code', 'date')
+    tab = request.GET.get('tab', 'all').strip().lower()
+    unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False)
+    if tab == 'my':
+        my_q = Q(submitted_by=request.user)
+        if hasattr(request.user, 'empid') and request.user.empid:
+            my_q |= Q(employee_code__iexact=request.user.empid)
+        if request.user.username:
+            my_q |= Q(employee_code__iexact=request.user.username)
+        unpaid_expenses = unpaid_expenses.filter(my_q)
+    unpaid_expenses = unpaid_expenses.select_related('submitted_by').order_by('employee_code', 'date')
     total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
 
     from collections import defaultdict
@@ -631,6 +673,15 @@ def expense_export_csv(request):
     status = request.GET.get('status', 'All')
     
     expenses = Expense.objects.select_related('submitted_by').all()
+    
+    tab = request.GET.get('tab', 'all').strip().lower()
+    if tab == 'my':
+        my_q = Q(submitted_by=request.user)
+        if hasattr(request.user, 'empid') and request.user.empid:
+            my_q |= Q(employee_code__iexact=request.user.empid)
+        if request.user.username:
+            my_q |= Q(employee_code__iexact=request.user.username)
+        expenses = expenses.filter(my_q)
     
     if search:
         expenses = expenses.filter(

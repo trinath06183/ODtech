@@ -49,12 +49,22 @@
                 <div class="text-gray-900 font-semibold text-lg">{{ expense.title }}</div>
             </div>
             
-            <div class="md:col-span-2">
+            <div>
                 <label class="block text-sm font-medium text-gray-500 mb-1">Employee Code</label>
-                <div class="text-gray-900 font-semibold">{{ expense.employee_code|default:expense.submitted_by.empid|default:"N/A" }}</div>
-                {% if expense.submitted_by %}
-                <div class="text-sm text-gray-500 mt-0.5">
-                    {{ expense.submitted_by.get_full_name|default:expense.submitted_by.first_name }}
+                <div class="text-gray-900 font-semibold">{{ expense.display_employee_code }}</div>
+                {% if expense.employee_name %}
+                <div class="text-sm text-gray-600 mt-0.5 font-medium">
+                    {{ expense.employee_name }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-1">Recorded By</label>
+                <div class="text-gray-900 font-semibold">{{ expense.submitted_by.get_full_name|default:expense.submitted_by.username }}</div>
+                {% if expense.submitted_by.empid and expense.submitted_by.empid != expense.display_employee_code %}
+                <div class="text-xs text-gray-400 mt-0.5">
+                    ID: {{ expense.submitted_by.empid }}
                 </div>
                 {% endif %}
             </div>
