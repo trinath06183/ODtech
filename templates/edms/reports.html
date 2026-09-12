@@ -2,10 +2,13 @@
 {% load edms_tags %}
 
 {% block edms_content %}
-<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-bold text-slate-800">📊 EDMS Reports</h1>
         <p class="text-sm text-slate-500">Analytics and data extraction</p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+        {% include 'edms/partials/edms_nav.html' %}
     </div>
 </div>
 

@@ -446,53 +446,16 @@
 
                 <!-- EDMS — Enterprise Document Management -->
                 {% if request.user|has_read_perm:'EDMS' %}
-                <div x-data="{ open: false }" class="mb-1">
-                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-violet-50 hover:text-violet-700 transition-colors focus:outline-none"
-                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Document Management">
-                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                        </svg>
-                        <div x-show="sidebarOpen" style="display: none;"
-                            class="flex-1 flex items-center justify-between ml-3">
-                            <span class="whitespace-nowrap font-medium">Doc Management</span>
-                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </button>
-                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
-                        <a href="{% url 'edms:dashboard' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🏠
-                            Dashboard</a>
-                        <a href="{% url 'edms:document_list' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📂
-                            All Documents</a>
-                        <a href="{% url 'edms:document_upload' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">⬆
-                            Upload</a>
-                        <a href="{% url 'edms:search' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🔍
-                            Search</a>
-                        <a href="{% url 'edms:vendor_list' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🏭
-                            Vendors</a>
-                        <a href="{% url 'edms:reports' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">📊
-                            Reports</a>
-                        {% if request.user|has_read_perm:'USERS' %}
-                        <a href="{% url 'edms:audit_log' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">🔒
-                            Audit Log</a>
-                        {% endif %}
-                        <a href="{% url 'payment_list' %}"
-                            class="block text-sm text-gray-500 hover:text-violet-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">💳
-                            Payments</a>
-                    </div>
-                </div>
+                <a href="{% url 'edms:dashboard' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-violet-50 hover:text-violet-700 transition-colors mb-1 {% if request.resolver_match.app_name == 'edms' %}bg-violet-50 text-violet-700 font-semibold{% endif %}"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Doc Management">
+                    <svg class="w-6 h-6 flex-shrink-0 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Doc Management</span>
+                </a>
                 {% endif %}
 
                 <!-- Expense Management -->

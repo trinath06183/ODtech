@@ -1,0 +1,37 @@
+{% load permissions %}
+<div class="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200 rounded-2xl shadow-inner max-w-full overflow-x-auto whitespace-nowrap">
+  <a href="{% url 'edms:dashboard' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'dashboard' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>🏠</span><span>Dashboard</span>
+  </a>
+  <a href="{% url 'edms:document_list' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'document_list document_detail document_edit version_history bulk_edit' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>📂</span><span>All Documents</span>
+  </a>
+  <a href="{% url 'edms:document_upload' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'document_upload' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>⬆️</span><span>Upload</span>
+  </a>
+  <a href="{% url 'edms:search' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'search save_search' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>🔍</span><span>Search</span>
+  </a>
+  <a href="{% url 'edms:vendor_list' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'vendor_list vendor_create vendor_edit' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>🏭</span><span>Vendors</span>
+  </a>
+  <a href="{% url 'edms:reports' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'reports download_center' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>📊</span><span>Reports</span>
+  </a>
+  {% if request.user|has_read_perm:'USERS' %}
+  <a href="{% url 'edms:audit_log' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'audit_log' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>🔒</span><span>Audit Log</span>
+  </a>
+  {% endif %}
+  <a href="{% url 'payment_list' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'payment_list payment_detail payment_create payment_edit' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>💳</span><span>Payments</span>
+  </a>
+</div>

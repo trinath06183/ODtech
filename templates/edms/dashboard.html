@@ -3,32 +3,35 @@
 
 {% block edms_content %}
 <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-<div class="flex items-center justify-between">
+<div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
     <div>
         <h1 class="text-2xl font-bold text-slate-800">📁 EDMS Dashboard</h1>
         <p class="text-sm text-slate-500 mt-1">Enterprise Document Management System</p>
     </div>
-    <div class="flex items-center gap-3">
-        <a href="{% url 'edms:document_list' %}"
-           class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700
-                  font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300
-                  transition-all duration-200 text-sm">
-            <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Show All Documents
-        </a>
-        {% if can_upload %}
-        <a href="{% url 'edms:document_upload' %}"
-           class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600
-                  text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5
-                  transition-all duration-200 text-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-            </svg>
-            Upload Document
-        </a>
-        {% endif %}
+    <div class="flex items-center gap-3 flex-wrap">
+        {% include 'edms/partials/edms_nav.html' %}
+        <div class="hidden sm:flex items-center gap-2">
+            <a href="{% url 'edms:document_list' %}"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700
+                      font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300
+                      transition-all duration-200 text-xs">
+                <svg class="w-3.5 h-3.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Show All Documents
+            </a>
+            {% if can_upload %}
+            <a href="{% url 'edms:document_upload' %}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600
+                      text-white font-semibold rounded-xl shadow-sm hover:shadow hover:-translate-y-0.5
+                      transition-all duration-200 text-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Upload Document
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 

@@ -2,16 +2,19 @@
 {% load edms_tags %}
 
 {% block edms_content %}
-<div class="flex items-center justify-between mb-6">
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-bold text-slate-800">🏭 Vendors</h1>
         <p class="text-sm text-slate-500">Manage EDMS vendor list</p>
     </div>
-    {% if request.user|edms_can:'upload' %}
-    <a href="{% url 'edms:vendor_create' %}" class="px-5 py-2.5 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors text-sm">
-        + Add Vendor
-    </a>
-    {% endif %}
+    <div class="flex items-center gap-3 flex-wrap">
+        {% include 'edms/partials/edms_nav.html' %}
+        {% if request.user|edms_can:'upload' %}
+        <a href="{% url 'edms:vendor_create' %}" class="px-4 py-2 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors text-xs shadow-sm">
+            + Add Vendor
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="glass rounded-2xl p-5 mb-6">
