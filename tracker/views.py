@@ -15,6 +15,8 @@ from django.views.generic import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponse, JsonResponse, FileResponse
 from django.contrib import messages
+from django.conf import settings
+from django.utils import timezone
 from .models import Order, Lot, Product, SupplierCostOption, ProductBookmark, Notification, InternalNote, AuditLog, PriceApprovalRequest, Task, OrderExpense
 from .forms import OrderForm, LotForm, ProductForm, SupplierCostOptionForm, CSVUploadForm, ProductPricingForm
 from django.views.decorators.http import require_POST
@@ -3152,10 +3154,19 @@ from .models import SystemSetting
 
 @user_passes_test(lambda u: u.is_authenticated and (u.is_superuser or u.is_staff or getattr(u, 'role', '') == 'Superadmin'))
 def system_backup(request):
-    """Generates a zip file containing database_backup.json and media/ directory."""
-    from django.core.management import call_command
+    """Generates a zip file containing database dump (.sql or .json) and media/ directory."""
+    import os
+    import shutil
+    import zipfile
     import tempfile
     import logging
+    import subprocess
+    from datetime import datetime
+    from django.conf import settings
+    from django.utils import timezone
+    from django.http import FileResponse
+    from django.contrib import messages
+    from django.core.management import call_command
 
     logger = logging.getLogger(__name__)
 
@@ -3163,7 +3174,7 @@ def system_backup(request):
     tmp_zip_path = None
 
     try:
-        media_root = settings.MEDIA_ROOT
+        media_root = getattr(settings, 'MEDIA_ROOT', '')
 
         # Update last backup date
         try:
@@ -3177,24 +3188,59 @@ def system_backup(request):
         with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp_zip:
             tmp_zip_path = tmp_zip.name
 
+        db_engine = settings.DATABASES['default'].get('ENGINE', '')
+        is_postgres = 'postgresql' in db_engine
+        dump_success = False
+
         with zipfile.ZipFile(tmp_zip_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zip_file:
-            # Dump database to JSON
-            with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json', encoding='utf-8') as tmp_dump:
-                tmp_dump_path = tmp_dump.name
-                call_command(
-                    'dumpdata',
-                    format='json',
-                    natural_foreign=True,
-                    natural_primary=True,
-                    exclude=['contenttypes', 'auth.permission', 'sessions', 'admin.logentry'],
-                    stdout=tmp_dump
-                )
-                tmp_dump.flush()
+            # 1. Fast PostgreSQL dump via pg_dump
+            if is_postgres:
+                pg_dump_bin = shutil.which("pg_dump") or "/usr/bin/pg_dump"
+                if os.path.isfile(pg_dump_bin):
+                    db_conf = settings.DATABASES['default']
+                    pg_env = os.environ.copy()
+                    pg_env['PGPASSWORD'] = str(db_conf.get('PASSWORD', ''))
 
-            zip_file.write(tmp_dump_path, 'database_backup.json')
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.sql') as tmp_dump:
+                        tmp_dump_path = tmp_dump.name
 
-            # Add media files
-            if os.path.exists(media_root):
+                    cmd = [
+                        pg_dump_bin,
+                        "--clean", "--if-exists",
+                        "-U", str(db_conf.get('USER', 'postgres')),
+                        "-h", str(db_conf.get('HOST', 'localhost')),
+                        "-p", str(db_conf.get('PORT', '5432')),
+                        str(db_conf.get('NAME', 'odtech_db')),
+                    ]
+                    try:
+                        with open(tmp_dump_path, 'wb') as dump_out:
+                            res = subprocess.run(cmd, env=pg_env, stdout=dump_out, stderr=subprocess.PIPE, timeout=45)
+                        if res.returncode == 0 and os.path.getsize(tmp_dump_path) > 0:
+                            zip_file.write(tmp_dump_path, 'database_backup.sql')
+                            dump_success = True
+                        else:
+                            err_msg = res.stderr.decode(errors='replace') if res.stderr else "unknown error"
+                            logger.warning("system_backup: pg_dump non-zero exit: %s", err_msg)
+                    except Exception as pg_err:
+                        logger.warning("system_backup: pg_dump exception: %s", pg_err)
+
+            # Fallback to dumpdata (for SQLite or if pg_dump is unavailable)
+            if not dump_success:
+                with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json', encoding='utf-8') as tmp_dump:
+                    tmp_dump_path = tmp_dump.name
+                    call_command(
+                        'dumpdata',
+                        format='json',
+                        natural_foreign=True,
+                        natural_primary=True,
+                        exclude=['contenttypes', 'auth.permission', 'sessions', 'admin.logentry'],
+                        stdout=tmp_dump
+                    )
+                    tmp_dump.flush()
+                zip_file.write(tmp_dump_path, 'database_backup.json')
+
+            # 2. Add media files
+            if media_root and os.path.exists(media_root):
                 for root, dirs, files in os.walk(media_root):
                     for file in files:
                         file_path = os.path.join(root, file)
@@ -3202,7 +3248,7 @@ def system_backup(request):
                         zip_file.write(file_path, arcname)
 
         current_date = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-        filename = f"backup_{current_date}.zip"
+        filename = f"odtech_backup_{current_date}.zip"
 
         response = FileResponse(open(tmp_zip_path, 'rb'), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -3212,10 +3258,7 @@ def system_backup(request):
     except Exception as e:
         logger.exception("System backup failed")
         messages.error(request, f"Backup failed: {str(e)}")
-        referer = request.META.get('HTTP_REFERER', '')
-        if 'system/admin/backup' in referer:
-            return redirect('tracker:system_admin_backup')
-        return redirect('tracker:dashboard')
+        return redirect('tracker:system_admin_backup')
 
     finally:
         if tmp_dump_path and os.path.exists(tmp_dump_path):
@@ -3231,26 +3274,55 @@ def system_restore(request):
     if request.method == 'POST':
         if 'backup_file' not in request.FILES:
             messages.error(request, 'No backup file provided.')
-            return redirect('tracker:dashboard')
+            return redirect('tracker:system_admin_backup')
 
         backup_file = request.FILES['backup_file']
         if not backup_file.name.endswith('.zip'):
             messages.error(request, 'Please upload a valid .zip backup file.')
-            return redirect('tracker:dashboard')
+            return redirect('tracker:system_admin_backup')
 
         try:
-            from django.core.management import call_command
+            import os
+            import shutil
+            import zipfile
             import tempfile
+            import subprocess
+            from django.conf import settings
+            from django.core.management import call_command
             from django.contrib.auth import get_user_model
             from django.db.models.signals import post_save
             from tracker.signals import create_user_field_visibility
 
-            media_root = settings.MEDIA_ROOT
+            media_root = getattr(settings, 'MEDIA_ROOT', '')
             User = get_user_model()
 
             with zipfile.ZipFile(backup_file, 'r') as zip_ref:
-                # Extract database
-                if 'database_backup.json' in zip_ref.namelist():
+                namelist = zip_ref.namelist()
+
+                # 1. Restore PostgreSQL .sql if present
+                if 'database_backup.sql' in namelist:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.sql') as tmp_sql:
+                        tmp_sql_path = tmp_sql.name
+                        with zip_ref.open('database_backup.sql') as src:
+                            shutil.copyfileobj(src, tmp_sql)
+
+                    db_conf = settings.DATABASES['default']
+                    psql_bin = shutil.which("psql") or "/usr/bin/psql"
+                    pg_env = os.environ.copy()
+                    pg_env['PGPASSWORD'] = str(db_conf.get('PASSWORD', ''))
+                    cmd = [
+                        psql_bin,
+                        "-U", str(db_conf.get('USER', 'postgres')),
+                        "-h", str(db_conf.get('HOST', 'localhost')),
+                        "-p", str(db_conf.get('PORT', '5432')),
+                        "-d", str(db_conf.get('NAME', 'odtech_db')),
+                        "-f", tmp_sql_path,
+                    ]
+                    subprocess.run(cmd, env=pg_env, check=True)
+                    os.remove(tmp_sql_path)
+
+                # 2. Restore JSON if present
+                elif 'database_backup.json' in namelist:
                     with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.json') as tmp_dump:
                         with zip_ref.open('database_backup.json') as source:
                             shutil.copyfileobj(source, tmp_dump)
@@ -3270,34 +3342,25 @@ def system_restore(request):
                         pass
 
                     os.remove(tmp_dump_path)
-                elif 'db.sqlite3' in zip_ref.namelist():
+                elif 'db.sqlite3' in namelist:
                     raise Exception("This backup uses the old SQLite format, which cannot be directly restored into PostgreSQL.")
 
-                # Extract media files
-                # Clear existing media
-                if os.path.exists(media_root):
-                    for item in os.listdir(media_root):
-                        item_path = os.path.join(media_root, item)
-                        if os.path.isfile(item_path):
-                            os.remove(item_path)
-                        elif os.path.isdir(item_path):
-                            shutil.rmtree(item_path)
-                else:
-                    os.makedirs(media_root)
+                # 3. Restore Media files
+                if media_root:
+                    os.makedirs(media_root, exist_ok=True)
+                    for file_info in zip_ref.filelist:
+                        if file_info.filename.startswith('media/') and not file_info.filename.endswith('/'):
+                            rel_path = file_info.filename[len('media/'):]
+                            dest_path = os.path.join(media_root, rel_path)
+                            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                            with zip_ref.open(file_info) as source, open(dest_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
 
-                for file_info in zip_ref.filelist:
-                    if file_info.filename.startswith('media/'):
-                        zip_ref.extract(file_info, settings.BASE_DIR)
-
-            messages.success(request, 'System restored successfully. Please MANUALLY RESTART the server to ensure all connections are refreshed.')
+            messages.success(request, 'System restored successfully. Please reload or restart the application.')
         except Exception as e:
             messages.error(request, f'Restore failed: {str(e)}')
 
-    # If the request comes from the new backup tab, redirect there. Otherwise dashboard.
-    referer = request.META.get('HTTP_REFERER', '')
-    if 'system/admin/backup' in referer:
-        return redirect('tracker:system_admin_backup')
-    return redirect('tracker:dashboard')
+    return redirect('tracker:system_admin_backup')
 
 @user_passes_test(lambda u: u.is_authenticated and (u.is_superuser or u.is_staff or getattr(u, 'role', '') == 'Superadmin'))
 def system_admin_backup_view(request):
