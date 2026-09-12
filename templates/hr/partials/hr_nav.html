@@ -1,0 +1,41 @@
+{% load permissions %}
+<div class="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200 rounded-2xl shadow-inner max-w-full overflow-x-auto whitespace-nowrap">
+  <a href="{% url 'hr:dashboard' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>📊</span><span>Overview</span>
+  </a>
+  <a href="{% url 'hr:attendance_history' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'attendance_history my_attendance employee_attendance_history' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>📅</span><span>My Attendance</span>
+  </a>
+  <a href="{% url 'hr:apply_leave' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'apply_leave cancel_leave' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>✈️</span><span>Apply Leave</span>
+  </a>
+  <a href="{% url 'hr:leave_balance' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name == 'leave_balance' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>⚖️</span><span>Leave Balance</span>
+  </a>
+  {% if request.user|has_write_perm:'HR_ATTENDANCE' %}
+  <a href="{% url 'hr:mark_attendance' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'mark_attendance attendance_mark' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>✏️</span><span>Mark Attendance</span>
+  </a>
+  <a href="{% url 'hr:leave_requests' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'leave_requests review_leave' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>📋</span><span>Leave Requests</span>
+  </a>
+  <a href="{% url 'hr:attendance_report' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'attendance_report report' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>📈</span><span>Monthly Report</span>
+  </a>
+  <a href="{% url 'hr:manage_allocations' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name == 'manage_allocations' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>👥</span><span>Allocations</span>
+  </a>
+  <a href="{% url 'hr:manage_holidays' %}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'manage_holidays delete_holiday' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <span>🎉</span><span>Holidays</span>
+  </a>
+  {% endif %}
+</div>

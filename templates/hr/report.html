@@ -4,22 +4,24 @@
 {% block content %}
 <div class="space-y-6">
 
-  <div class="flex items-center justify-between flex-wrap gap-4">
+  <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
     <div>
-      <a href="{% url 'hr:dashboard' %}" class="text-sm text-violet-600 hover:underline">← HR Dashboard</a>
-      <div class="flex items-center gap-3 mt-1 flex-wrap">
+      <div class="flex items-center gap-3 flex-wrap">
         <h1 class="text-2xl font-bold text-slate-800">Attendance Report — {{ month_name }} {{ year }}</h1>
         {% if can_edit %}
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 border border-violet-200 text-violet-700 text-xs rounded-full font-medium shadow-sm">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-violet-50 border border-violet-200 text-violet-700 text-xs rounded-full font-medium shadow-sm">
           <svg class="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
           Direct Edit Enabled — click any cell to change
         </span>
         {% endif %}
       </div>
     </div>
-    <a href="?{{ request.GET.urlencode }}&download=csv" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 shadow transition-all">
-      ⬇ Download CSV
-    </a>
+    <div class="flex items-center gap-3 flex-wrap">
+      {% include 'hr/partials/hr_nav.html' %}
+      <a href="?{{ request.GET.urlencode }}&download=csv" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 shadow transition-all whitespace-nowrap flex-shrink-0">
+        ⬇ Download CSV
+      </a>
+    </div>
   </div>
 
   <!-- Filters -->
