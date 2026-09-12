@@ -48,9 +48,15 @@ class ExpenseForm(forms.ModelForm):
     def clean_employee_code(self):
         code = self.cleaned_data.get('employee_code')
         if code:
+            code = code.strip()
             User = get_user_model()
-            if not User.objects.filter(empid=code).exists():
+            from django.db.models import Q
+            matched = User.objects.filter(Q(empid__iexact=code) | Q(username__iexact=code)).first()
+            if not matched:
                 raise forms.ValidationError("Invalid Employee Code. No such employee exists.")
+            if matched.empid:
+                return matched.empid.strip()
+            return matched.username.strip()
         return code
 
     def clean(self):

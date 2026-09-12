@@ -230,17 +230,38 @@ from django.utils import timezone
 from .models import Expense
 from .forms import ExpenseForm
 
+def get_user_expense_q(user):
+    """
+    Returns Q filter matching expenses that belong to `user`.
+    An expense belongs to `user` if:
+    1. employee_code matches user's empid or username.
+    2. OR employee_code is unassigned (empty/null) and user was the submitter.
+    If employee_code is explicitly set to someone else (e.g. EMP002), it belongs
+    to that employee, not the administrator who recorded it.
+    """
+    user_empid = getattr(user, 'empid', None)
+    username = getattr(user, 'username', '')
+
+    codes = []
+    if user_empid and user_empid.strip():
+        codes.append(user_empid.strip())
+    if username and username.strip():
+        codes.append(username.strip())
+
+    code_q = Q()
+    for c in codes:
+        code_q |= Q(employee_code__iexact=c)
+
+    unassigned_self_q = Q(submitted_by=user) & (Q(employee_code__isnull=True) | Q(employee_code=''))
+    return code_q | unassigned_self_q
+
 @require_permission('PAYMENTS', 'read')
 def expense_list(request):
     current_tab = request.GET.get('tab', 'all').strip().lower()
     if current_tab != 'my':
         current_tab = 'all'
 
-    my_q = Q(submitted_by=request.user)
-    if hasattr(request.user, 'empid') and request.user.empid:
-        my_q |= Q(employee_code__iexact=request.user.empid)
-    if request.user.username:
-        my_q |= Q(employee_code__iexact=request.user.username)
+    my_q = get_user_expense_q(request.user)
 
     all_count = Expense.objects.count()
     my_count = Expense.objects.filter(my_q).count()
@@ -372,12 +393,7 @@ def print_unpaid_expenses(request):
     tab = request.GET.get('tab', 'all').strip().lower()
     unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False)
     if tab == 'my':
-        my_q = Q(submitted_by=request.user)
-        if hasattr(request.user, 'empid') and request.user.empid:
-            my_q |= Q(employee_code__iexact=request.user.empid)
-        if request.user.username:
-            my_q |= Q(employee_code__iexact=request.user.username)
-        unpaid_expenses = unpaid_expenses.filter(my_q)
+        unpaid_expenses = unpaid_expenses.filter(get_user_expense_q(request.user))
     unpaid_expenses = unpaid_expenses.select_related('submitted_by').order_by('employee_code', 'date')
     total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
 
@@ -611,8 +627,12 @@ def employee_code_autocomplete(request):
             Q(last_name__icontains=query) |
             Q(username__icontains=query),
             is_active=True
-        ).exclude(empid__isnull=True).exclude(empid='')[:10]
-        results = [{'code': u.empid, 'name': f"{u.get_full_name()} ({u.username})".strip()} for u in users]
+        )[:10]
+        results = []
+        for u in users:
+            code = (u.empid or u.username).strip()
+            full_name = u.get_full_name().strip() or u.first_name or u.username
+            results.append({'code': code, 'name': f"{full_name} ({code})"})
     else:
         results = []
     return JsonResponse(results, safe=False)
@@ -676,12 +696,7 @@ def expense_export_csv(request):
     
     tab = request.GET.get('tab', 'all').strip().lower()
     if tab == 'my':
-        my_q = Q(submitted_by=request.user)
-        if hasattr(request.user, 'empid') and request.user.empid:
-            my_q |= Q(employee_code__iexact=request.user.empid)
-        if request.user.username:
-            my_q |= Q(employee_code__iexact=request.user.username)
-        expenses = expenses.filter(my_q)
+        expenses = expenses.filter(get_user_expense_q(request.user))
     
     if search:
         expenses = expenses.filter(

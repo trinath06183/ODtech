@@ -100,6 +100,8 @@ class Expense(TimeStampedModel):
             return self.employee_code.strip()
         if self.submitted_by and getattr(self.submitted_by, 'empid', None):
             return self.submitted_by.empid.strip()
+        if self.submitted_by and getattr(self.submitted_by, 'username', None):
+            return self.submitted_by.username.strip()
         return "N/A"
 
     @property
