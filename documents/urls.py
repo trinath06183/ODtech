@@ -69,6 +69,7 @@ urlpatterns = [
 
     # Quick update Place of Supply API
     path('api/<int:document_id>/update-place-of-supply/', views.update_place_of_supply_api, name='update_place_of_supply_api'),
+    path('api/<int:document_id>/update-quotation-asked-by/', views.update_quotation_asked_by_api, name='update_quotation_asked_by_api'),
 
     # Link existing payment APIs
     path('api/<int:document_id>/search-payments/', views.search_payments_for_document_api, name='search_payments_for_document_api'),

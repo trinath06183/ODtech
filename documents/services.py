@@ -359,6 +359,7 @@ class DocumentService:
             po_reference_number=po_ref_num,
             po_date=kwargs.get("po_date") or None,
             place_of_supply=kwargs.get("place_of_supply", "21-Odisha"),
+            quotation_asked_by=kwargs.get("quotation_asked_by") or None,
             transporter_details=kwargs.get("transporter_details", "Local Transportation"),
             vehicle_number=kwargs.get("vehicle_number") or None,
             transport_doc_no=kwargs.get("transport_doc_no") or None,
@@ -460,6 +461,8 @@ class DocumentService:
             document.date = kwargs["invoice_date"]
         if "place_of_supply" in kwargs:
             document.place_of_supply = kwargs.get("place_of_supply")
+        if "quotation_asked_by" in kwargs:
+            document.quotation_asked_by = kwargs.get("quotation_asked_by") or None
         if "currency" in kwargs:
             document.currency = kwargs.get("currency") or "INR"
         if "terms_and_conditions" in kwargs:
@@ -763,6 +766,7 @@ class DocumentBundleService:
                 'po_reference_number': doc.po_reference_number,
                 'po_date': doc.po_date.isoformat() if doc.po_date else None,
                 'place_of_supply': doc.place_of_supply,
+                'quotation_asked_by': doc.quotation_asked_by,
                 'transporter_details': doc.transporter_details,
                 'vehicle_number': doc.vehicle_number,
                 'transport_doc_no': doc.transport_doc_no,
@@ -855,6 +859,7 @@ class DocumentBundleService:
                 'po_reference_number': doc_dict.get('po_reference_number'),
                 'po_date': doc_dict.get('po_date'),
                 'place_of_supply': doc_dict.get('place_of_supply', '21-Odisha'),
+                'quotation_asked_by': doc_dict.get('quotation_asked_by'),
                 'transporter_details': doc_dict.get('transporter_details', 'Local Transportation'),
                 'vehicle_number': doc_dict.get('vehicle_number'),
                 'transport_doc_no': doc_dict.get('transport_doc_no'),

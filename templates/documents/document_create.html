@@ -549,6 +549,16 @@
                             </div>
                         </div>
 
+                        <!-- Quotation Asked By (Optional, shown for Quotations) -->
+                        <div x-show="docType === 'QTN'">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">
+                                Quotation Asked By <span class="text-xs text-gray-400 font-normal">(Optional)</span>
+                            </label>
+                            <input type="text" name="quotation_asked_by" form="document-main-form" x-model="quotationAskedBy"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500"
+                                placeholder="e.g. Mr. Rajesh Sharma / Contact Person">
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Currency</label>
                             <select name="currency" form="document-main-form" x-model="currency"
@@ -1594,6 +1604,7 @@ function documentForm() {
         originalInvoiceDate: '{% if doc and doc.date %}{{ doc.date|date:"Y-m-d" }}{% endif %}',
         isConversion: {% if doc and is_conversion %}true{% else %}false{% endif %},
         placeOfSupply: {% if doc %}'{{ doc.place_of_supply|default:"21-Odisha"|escapejs }}'{% else %}(lastSettings ? (lastSettings.place_of_supply || '21-Odisha') : '21-Odisha'){% endif %},
+        quotationAskedBy: {% if doc and doc.quotation_asked_by %}'{{ doc.quotation_asked_by|escapejs }}'{% else %}''{% endif %},
         currency: {% if doc %}'{{ doc.currency|default:"INR" }}'{% else %}(lastSettings && lastSettings.currency ? lastSettings.currency : '{{ company.default_currency|default:"INR" }}'){% endif %},
         currencySymbols: { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED', SAR: 'SAR', CAD: 'CA$', AUD: 'A$', SGD: 'S$', JPY: '¥' },
         currencySymbol() { return this.currencySymbols[this.currency] || '₹'; },

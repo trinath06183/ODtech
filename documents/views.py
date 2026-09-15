@@ -766,6 +766,7 @@ def document_form(request, doc=None, default_type='QTN'):
         po_date = request.POST.get('po_date', '').strip() or None
         invoice_date = request.POST.get('invoice_date', '').strip() or None
         place_of_supply = normalize_place_of_supply(request.POST.get('place_of_supply', '21-Odisha'))
+        quotation_asked_by = request.POST.get('quotation_asked_by', '').strip() or None
         enable_warranty = request.POST.get('enable_warranty') in ('on', 'true', True)
         shipping_address = request.POST.get('shipping_address', '').strip()
         shipping_name = request.POST.get('shipping_name', '').strip()
@@ -914,6 +915,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 po_date=po_date,
                 invoice_date=invoice_date,
                 place_of_supply=place_of_supply,
+                quotation_asked_by=quotation_asked_by,
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
                 shipping_name=shipping_name,
@@ -970,6 +972,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 source_document=source_doc,
                 source_order=source_order,
                 place_of_supply=place_of_supply,
+                quotation_asked_by=quotation_asked_by,
                 enable_warranty=enable_warranty,
                 shipping_address=shipping_address,
                 shipping_name=shipping_name,
@@ -1608,5 +1611,23 @@ def update_place_of_supply_api(request, document_id):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+
+@login_required
+@require_permission('DOCUMENTS', 'edit')
+def update_quotation_asked_by_api(request, document_id):
+    """Quick API to update quotation asked by for a document."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            quotation_asked_by = data.get('quotation_asked_by', '').strip() or None
+            doc = get_object_or_404(Document, id=document_id)
+            doc.quotation_asked_by = quotation_asked_by
+            doc.save(update_fields=['quotation_asked_by', 'updated_at'])
+            return JsonResponse({'success': True, 'quotation_asked_by': doc.quotation_asked_by or ''})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
 
 

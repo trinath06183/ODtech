@@ -240,6 +240,21 @@
                     <span>{{ doc.place_of_supply|default:"21-Odisha" }}</span>
                 </div>
             </div>
+            {% if doc.type == 'QTN' %}
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Quotation Asked By</span>
+                    <button type="button" onclick="openQuotationAskedByModal()"
+                        class="text-[11px] text-blue-600 hover:text-blue-700 font-bold hover:underline flex items-center gap-0.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        Edit
+                    </button>
+                </div>
+                <div id="preview-quotation-asked-by-display" class="text-slate-800 font-bold text-sm bg-white/70 border border-slate-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+                    <span>{{ doc.quotation_asked_by|default:"Not specified" }}</span>
+                </div>
+            </div>
+            {% endif %}
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Grand Total</div>
                 <div class="text-emerald-600 font-bold text-xl">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
@@ -1482,6 +1497,59 @@ async function savePlaceOfSupply() {
         btn.textContent = '✓ Update & Refresh';
     }
 }
+
+function openQuotationAskedByModal() {
+    const currentVal = (document.getElementById('preview-quotation-asked-by-display')?.querySelector('span')?.innerText || '{{ doc.quotation_asked_by|default:""|escapejs }}').trim();
+    const input = document.getElementById('modal-qab-input');
+    if (input) input.value = currentVal === 'Not specified' ? '' : currentVal;
+    document.getElementById('quotation-asked-by-modal').classList.remove('hidden');
+}
+
+function closeQuotationAskedByModal() {
+    document.getElementById('quotation-asked-by-modal').classList.add('hidden');
+}
+
+async function saveQuotationAskedBy() {
+    const input = document.getElementById('modal-qab-input');
+    const qabVal = (input ? input.value : '').trim();
+    const btn = document.getElementById('btn-save-qab');
+    const errorMsg = document.getElementById('qab-error-msg');
+    if (errorMsg) errorMsg.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+    try {
+        const csrfToken = (document.cookie.match(/(?:^|;\s*)(?:odtech_bom_csrftoken|csrftoken)=([^;]*)/) || [])[1] || '{{ csrf_token }}';
+        const res = await fetch("{% url 'update_quotation_asked_by_api' doc.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ quotation_asked_by: qabVal }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            const displayEl = document.getElementById('preview-quotation-asked-by-display');
+            if (displayEl) displayEl.querySelector('span').textContent = data.quotation_asked_by || 'Not specified';
+            closeQuotationAskedByModal();
+            const iframe = document.getElementById('doc-preview-frame');
+            if (iframe) iframe.src = iframe.src;
+        } else {
+            if (errorMsg) {
+                errorMsg.textContent = data.error || 'Failed to update Quotation Asked By.';
+                errorMsg.classList.remove('hidden');
+            }
+        }
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.textContent = 'Network error: ' + err.message;
+            errorMsg.classList.remove('hidden');
+        }
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Update & Refresh';
+    }
+}
 </script>
 
 <!-- ── Change Place of Supply Modal ── -->
@@ -1568,6 +1636,42 @@ async function savePlaceOfSupply() {
                 Cancel
             </button>
             <button type="button" onclick="savePlaceOfSupply()" id="btn-save-pos"
+                class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-500/25 transition"
+                style="color: #ffffff !important;">
+                ✓ Update & Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Change Quotation Asked By Modal ── -->
+<div id="quotation-asked-by-modal" class="fixed inset-0 z-[9999] hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeQuotationAskedByModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <span>👤</span> Quotation Asked By
+            </h3>
+            <button type="button" onclick="closeQuotationAskedByModal()" class="text-slate-400 hover:text-red-500 text-lg">✕</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">
+            Specify the contact person or person who requested this quotation (optional).
+        </p>
+        <div class="space-y-3.5">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Quotation Asked By</label>
+                <input type="text" id="modal-qab-input"
+                    class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. Mr. Rajesh Sharma">
+            </div>
+            <div id="qab-error-msg" class="hidden text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5"></div>
+        </div>
+        <div class="flex items-center gap-2.5 mt-6 pt-4 border-t border-slate-100">
+            <button type="button" onclick="closeQuotationAskedByModal()"
+                class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-sm transition">
+                Cancel
+            </button>
+            <button type="button" onclick="saveQuotationAskedBy()" id="btn-save-qab"
                 class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-blue-500/25 transition"
                 style="color: #ffffff !important;">
                 ✓ Update & Refresh

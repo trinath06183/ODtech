@@ -1,4 +1,4 @@
-﻿{% extends 'documents/base_print.html' %}
+{% extends 'documents/base_print.html' %}
 {% load static %}
 {% load document_filters %}
 
@@ -54,6 +54,12 @@
                 <td class="bold" style="padding-bottom: 3px; border:none;">Place of Supply:</td>
                 <td style="padding-bottom: 3px; border:none;">{{ doc.place_of_supply|default:"21-Odisha" }}</td>
             </tr>
+            {% if doc.quotation_asked_by %}
+            <tr>
+                <td class="bold" style="padding-bottom: 3px; border:none;">Quotation Asked By:</td>
+                <td style="padding-bottom: 3px; border:none;">{{ doc.quotation_asked_by }}</td>
+            </tr>
+            {% endif %}
         </table>
     </div>
     {% else %}
@@ -97,6 +103,12 @@
                 <td class="bold" style="padding-bottom: 4px; border:none;">Place of Supply:</td>
                 <td style="padding-bottom: 4px; border:none;">{{ doc.place_of_supply|default:"21-Odisha" }}</td>
             </tr>
+            {% if doc.quotation_asked_by %}
+            <tr>
+                <td class="bold" style="padding-bottom: 4px; border:none;">Quotation Asked By:</td>
+                <td style="padding-bottom: 4px; border:none;">{{ doc.quotation_asked_by }}</td>
+            </tr>
+            {% endif %}
         </table>
     </div>
     {% endif %}

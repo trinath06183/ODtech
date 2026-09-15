@@ -81,6 +81,7 @@ class Document(TimeStampedModel):
     po_reference_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="PO Reference Number")
     po_date = models.DateField(blank=True, null=True, verbose_name="PO Reference Date")
     place_of_supply = models.CharField(max_length=100, default='21-Odisha', blank=True, null=True, verbose_name="Place of Supply")
+    quotation_asked_by = models.CharField(max_length=255, blank=True, null=True, verbose_name="Quotation Asked By")
     source_document = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='converted_documents')
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
