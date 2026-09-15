@@ -35,3 +35,6 @@ db_dump.json
 complete_db_dump.json
 __pycache__/
 *.pyc
+*.md
+*.txt
+*.spec
