@@ -66,7 +66,6 @@ def send_otp_email(user, otp_token):
         'user': user,
         'otp': otp_token.otp,
         'expires_minutes': 10,
-        'logo_b64': _get_logo_b64(),
     }
     subject = "Your ODtech ERP Password Reset OTP"
     html_content = render_to_string('users/otp_email.html', context)
@@ -86,14 +85,9 @@ def send_otp_email(user, otp_token):
 
 def send_login_otp_email(user, otp_token):
     """Sends a 6-digit OTP for 2FA login verification."""
-    from django.core.mail import EmailMultiAlternatives
-    from django.template.loader import render_to_string
-    from django.utils.html import strip_tags
-
     context = {
         'user': user,
         'otp': otp_token.otp,
-        'logo_b64': _get_logo_b64(),
     }
     subject = "Login Verification OTP — ODtech ERP"
     html_content = render_to_string('users/login_otp_email.html', context)
@@ -111,7 +105,6 @@ def send_password_changed_alert(user, request=None):
     context = {
         'user': user,
         'timestamp': timezone.now(),
-        'logo_b64': _get_logo_b64(),
         'ip_address': (
             request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
             or request.META.get('REMOTE_ADDR', 'Unknown')
