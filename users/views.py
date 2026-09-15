@@ -1,3 +1,5 @@
+import base64
+import os
 from core.decorators import require_permission
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -11,9 +13,20 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from core.decorators import login_required, role_required, require_permission
 from .models import User, OTPToken, AppSection, UserSectionPermission
+
+
+def _get_logo_b64():
+    """Return the ODtech logo as a base64 data URI for inline email embedding."""
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'logo.png')
+    try:
+        with open(logo_path, 'rb') as f:
+            return 'data:image/png;base64,' + base64.b64encode(f.read()).decode()
+    except Exception:
+        return ''
 
 
 # ─── Email Helper Functions ───────────────────────────────────────────────────
@@ -53,6 +66,7 @@ def send_otp_email(user, otp_token):
         'user': user,
         'otp': otp_token.otp,
         'expires_minutes': 10,
+        'logo_b64': _get_logo_b64(),
     }
     subject = "Your ODtech ERP Password Reset OTP"
     html_content = render_to_string('users/otp_email.html', context)
@@ -79,6 +93,7 @@ def send_login_otp_email(user, otp_token):
     context = {
         'user': user,
         'otp': otp_token.otp,
+        'logo_b64': _get_logo_b64(),
     }
     subject = "Login Verification OTP — ODtech ERP"
     html_content = render_to_string('users/login_otp_email.html', context)
@@ -96,6 +111,7 @@ def send_password_changed_alert(user, request=None):
     context = {
         'user': user,
         'timestamp': timezone.now(),
+        'logo_b64': _get_logo_b64(),
         'ip_address': (
             request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
             or request.META.get('REMOTE_ADDR', 'Unknown')
@@ -263,26 +279,29 @@ def logout_view(request):
 @ensure_csrf_cookie
 def password_reset_request(request):
     """
-    Step 1 — User enters their email address.
-    We look up the account, generate a 6-digit OTP, and email it.
+    Step 1 — User enters their email address AND employee code.
+    Both must match an existing active account before an OTP is sent.
     The user's email is stored in session to carry it to step 2.
     """
     if request.user.is_authenticated:
         return redirect('dashboard')
 
     if request.method == 'POST':
-        email = request.POST.get('email', '').strip().lower()
-        if not email:
-            messages.error(request, 'Please enter your email address.')
+        email    = request.POST.get('email', '').strip().lower()
+        emp_code = request.POST.get('emp_code', '').strip()
+
+        if not email or not emp_code:
+            messages.error(request, 'Please enter both your email address and employee code.')
             return render(request, 'users/password_reset_form.html')
 
+        # Both email AND empid must match the same active user
         try:
-            user = User.objects.get(email__iexact=email, is_active=True)
+            user = User.objects.get(email__iexact=email, empid__iexact=emp_code, is_active=True)
         except User.DoesNotExist:
-            # Silently succeed to prevent email enumeration
-            messages.success(
+            # Generic message — don't reveal which field was wrong
+            messages.error(
                 request,
-                'If that email is registered, you will receive an OTP shortly.'
+                'No account found matching that email and employee code. Please check your details.'
             )
             return render(request, 'users/password_reset_form.html')
 
@@ -292,15 +311,15 @@ def password_reset_request(request):
             send_otp_email(user, otp_token)
         except Exception as e:
             print("Email sending failed:", str(e))
-            messages.error(request, f'Could not send email. Please try again later.')
+            messages.error(request, 'Could not send email. Please try again later.')
             return render(request, 'users/password_reset_form.html')
 
         # Store reset session data (email only, not OTP — never expose in session)
         request.session['otp_reset_email'] = user.email
-        request.session['otp_reset_uid'] = str(user.pk)
+        request.session['otp_reset_uid']   = str(user.pk)
         messages.success(
             request,
-            f'A 6-digit OTP has been sent to {email}. It expires in 10 minutes.'
+            f'A 6-digit OTP has been sent to {user.email}. It expires in 10 minutes.'
         )
         return redirect('password_reset_verify_otp')
 

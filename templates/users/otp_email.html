@@ -21,20 +21,20 @@
         }
         .header {
             background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
-            padding: 36px 40px;
+            padding: 28px 40px;
             text-align: center;
         }
-        .header-logo {
-            font-size: 26px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: -0.5px;
+        .header-logo img {
+            height: 56px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
+            filter: brightness(0) invert(1);
         }
-        .header-logo span { color: #bfdbfe; }
         .header-sub {
             font-size: 13px;
             color: #bfdbfe;
-            margin-top: 4px;
+            margin-top: 8px;
         }
         .body { padding: 40px; }
         .greeting {
@@ -113,7 +113,13 @@
         <div class="card">
             <!-- Header -->
             <div class="header">
-                <div class="header-logo">OD<span>tech</span> ERP</div>
+                <div class="header-logo">
+                    {% if logo_b64 %}
+                    <img src="{{ logo_b64 }}" alt="ODtech ERP" style="height:56px;width:auto;display:block;margin:0 auto;filter:brightness(0) invert(1);">
+                    {% else %}
+                    <span style="font-size:26px;font-weight:700;color:#fff;">ODtech ERP</span>
+                    {% endif %}
+                </div>
                 <div class="header-sub">Secure Password Reset</div>
             </div>
 
