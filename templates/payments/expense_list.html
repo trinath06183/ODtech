@@ -184,6 +184,7 @@
 
 <form id="bulk-expense-form" method="post" action="{% url 'bulk_expense_action' %}">
     {% csrf_token %}
+</form>
 {% endif %}
 
 <div class="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
@@ -234,9 +235,6 @@
     </div>
 </div>
 
-{% if request.user.is_superuser %}
-</form>
-{% endif %}
 
 <div id="scroll-sentinel" class="flex justify-center items-center py-4" data-next-page="{% if has_next %}{{ next_page }}{% endif %}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">

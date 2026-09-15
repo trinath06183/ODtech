@@ -544,7 +544,8 @@ def expense_delete(request, pk):
     if request.method == 'POST':
         expense.delete()
         messages.success(request, 'Expense deleted.')
-    return redirect('expense_list')
+    referer = request.META.get('HTTP_REFERER')
+    return redirect(referer) if referer else redirect('expense_list')
 
 @require_permission('PAYMENTS', 'write')
 def expense_mark_paid(request, pk):
@@ -559,7 +560,8 @@ def expense_mark_paid(request, pk):
         expense.paid_at = timezone.now()
         expense.save()
         messages.success(request, 'Expense marked as Paid.')
-    return redirect('expense_list')
+    referer = request.META.get('HTTP_REFERER')
+    return redirect(referer) if referer else redirect('expense_list')
 
 @require_permission('PAYMENTS', 'write')
 @user_passes_test(lambda u: u.is_superuser)
@@ -571,7 +573,8 @@ def expense_approve(request, pk, status):
         expense.approved_at = timezone.now()
         expense.save()
         messages.success(request, f'Expense {status.lower()} successfully.')
-    return redirect('expense_list')
+    referer = request.META.get('HTTP_REFERER')
+    return redirect(referer) if referer else redirect('expense_list')
 
 @require_permission('PAYMENTS', 'write')
 @user_passes_test(lambda u: u.is_superuser)
