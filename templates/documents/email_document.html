@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ doc_type_name }} {{ doc.number }} — {{ company_name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f1f5f9;
+      padding: 32px 16px;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+      padding: 32px 30px;
+      text-align: center;
+    }
+    .logo-img {
+      height: 46px;
+      max-height: 48px;
+      width: auto;
+      display: block;
+      margin: 0 auto 14px;
+      filter: brightness(0) invert(1);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #93c5fd;
+      margin-bottom: 8px;
+    }
+    .header-title {
+      font-size: 23px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0 0 6px;
+      letter-spacing: -0.3px;
+    }
+    .header-sub {
+      font-size: 13px;
+      color: #bfdbfe;
+    }
+    .body {
+      padding: 32px 30px;
+    }
+    .greeting {
+      font-size: 15px;
+      color: #0f172a;
+      margin-bottom: 12px;
+    }
+    .intro {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .summary-table td {
+      padding: 12px 18px;
+      font-size: 13px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .summary-label {
+      color: #64748b;
+      font-weight: 500;
+      width: 42%;
+    }
+    .summary-val {
+      color: #0f172a;
+      font-weight: 600;
+      text-align: right;
+    }
+    .total-row td {
+      background: #ecfdf5;
+      border-bottom: none;
+      padding: 14px 18px;
+    }
+    .total-label {
+      color: #065f46 !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+    }
+    .total-val {
+      color: #059669 !important;
+      font-weight: 800 !important;
+      font-size: 18px !important;
+      text-align: right;
+    }
+    .cta-container {
+      text-align: center;
+      margin: 28px 0 20px;
+    }
+    .cta-btn {
+      display: inline-block;
+      padding: 13px 32px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      letter-spacing: 0.2px;
+    }
+    .cta-sub {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 8px;
+    }
+    .attachment-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 20px 0 0;
+      text-align: center;
+      color: #1e40af;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .help-note {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+    .footer {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 20px 30px;
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .footer-brand {
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <!-- Header -->
+      <div class="header">
+        <img class="logo-img" src="{{ logo_url }}" alt="{{ company_name }}">
+        <div class="badge">Official Commercial Document</div>
+        <div class="header-title">{{ doc_type_name }} #{{ doc.number }}</div>
+        <div class="header-sub">Generated &amp; Transmitted by {{ company_name }}</div>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <div class="greeting">Dear <strong>{{ doc.contact.name }}</strong>,</div>
+        <div class="intro">
+          Greetings from <strong>{{ company_name }}</strong>! We have prepared your <strong>{{ doc_type_name|lower }}</strong>. Please find the document summary below for your review:
+        </div>
+
+        <!-- Summary Table -->
+        <div class="summary-card">
+          <table class="summary-table">
+            <tr>
+              <td class="summary-label">Document Number</td>
+              <td class="summary-val">{{ doc.number }}</td>
+            </tr>
+            <tr>
+              <td class="summary-label">Issue Date</td>
+              <td class="summary-val">{{ doc.date|date:"d M Y" }}</td>
+            </tr>
+            {% if doc.project_name %}
+            <tr>
+              <td class="summary-label">Project</td>
+              <td class="summary-val">{{ doc.project_name }}</td>
+            </tr>
+            {% endif %}
+            {% if doc.po_reference_number %}
+            <tr>
+              <td class="summary-label">PO Reference</td>
+              <td class="summary-val">{{ doc.po_reference_number }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+              <td class="summary-label total-label">Total Amount</td>
+              <td class="summary-val total-val">{{ total_formatted }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- CTA Button -->
+        <div class="cta-container">
+          <a class="cta-btn" href="{{ public_url }}" target="_blank">
+            View &amp; Download Document &rarr;
+          </a>
+          <div class="cta-sub">Secure digital access link &bull; Available 24/7</div>
+        </div>
+
+        <!-- Attachment Box -->
+        <div class="attachment-box">
+          📎 The official PDF document is also attached directly to this email.
+        </div>
+
+        <!-- Support note -->
+        <div class="help-note">
+          If you have any questions or require modifications, please feel free to reply directly to this email.
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-brand">{{ company_name }}</div>
+        <div>Official Digital Commercial Document &bull; Powered by ODtech ERP</div>
+        {% if company and company.gstin %}
+        <div style="margin-top: 4px; color: #94a3b8; font-size: 11px;">GSTIN: {{ company.gstin }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

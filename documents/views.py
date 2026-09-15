@@ -500,55 +500,17 @@ Best Regards,
 {company_name}
 """
 
-    # Rich responsive HTML body
-    html_body = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;color:#e2e8f0;">
-<div style="max-width:600px;margin:32px auto;border-radius:16px;overflow:hidden;border:1px solid #1e293b;background:#111827;">
-  <div style="background:linear-gradient(135deg,#1e3a5f,#1e293b);padding:28px 32px;">
-    <div style="font-size:12px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1px;">{company_name}</div>
-    <div style="font-size:24px;font-weight:800;color:#ffffff;margin-top:4px;">{doc_type_name} #{doc.number}</div>
-  </div>
-
-  <div style="padding:28px 32px;border-bottom:1px solid #1e293b;">
-    <p style="font-size:15px;color:#cbd5e1;margin-top:0;">Dear <strong>{doc.contact.name}</strong>,</p>
-    <p style="font-size:14px;color:#94a3b8;line-height:1.6;">
-      Greetings from <strong>{company_name}</strong>! Please find your <strong>{doc_type_name.lower()}</strong> summary below:
-    </p>
-
-    <table width="100%" style="margin:20px 0;background:#1e293b;border-radius:12px;border-collapse:collapse;overflow:hidden;">
-      <tr>
-        <td style="padding:12px 18px;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;">Document Number</td>
-        <td style="padding:12px 18px;color:#f8fafc;font-weight:700;font-size:13px;border-bottom:1px solid #334155;text-align:right;">{doc.number}</td>
-      </tr>
-      <tr>
-        <td style="padding:12px 18px;color:#94a3b8;font-size:13px;border-bottom:1px solid #334155;">Date</td>
-        <td style="padding:12px 18px;color:#f8fafc;font-weight:600;font-size:13px;border-bottom:1px solid #334155;text-align:right;">{doc.date.strftime('%d %b %Y') if doc.date else '—'}</td>
-      </tr>
-      <tr>
-        <td style="padding:14px 18px;color:#e2e8f0;font-size:14px;font-weight:700;">Total Amount</td>
-        <td style="padding:14px 18px;color:#34d399;font-weight:800;font-size:18px;text-align:right;">{total_formatted}</td>
-      </tr>
-    </table>
-
-    <div style="text-align:center;margin:28px 0 16px;">
-      <a href="{public_url}" style="display:inline-block;padding:12px 28px;background:#4f46e5;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;border-radius:10px;box-shadow:0 4px 14px rgba(79,70,229,0.4);">
-        View & Download Document
-      </a>
-    </div>
-
-    <p style="font-size:13px;color:#64748b;text-align:center;margin-bottom:0;">
-      📎 The official PDF document is also attached directly to this email.
-    </p>
-  </div>
-
-  <div style="padding:20px 32px;background:#0f172a;text-align:center;color:#475569;font-size:12px;">
-    {company_name} &bull; Official Digital Commercial Document
-  </div>
-</div>
-</body>
-</html>"""
+    # Rich responsive HTML body using styled template with ODtech logo
+    context = {
+        'doc': doc,
+        'company': company,
+        'company_name': company_name,
+        'doc_type_name': doc_type_name,
+        'public_url': public_url,
+        'total_formatted': total_formatted,
+        'logo_url': 'https://odtechsolutions.com/wp-content/uploads/2025/11/fvbb.png',
+    }
+    html_body = render_to_string('documents/email_document.html', context, request=request)
 
     msg = EmailMultiAlternatives(
         subject=subject,
