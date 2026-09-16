@@ -160,8 +160,28 @@ def document_list(request):
     except Exception:
         total_sum = Decimal('0')
 
+    from payments.models import Payment
+    try:
+        total_paid = Payment.objects.filter(
+            document_ref__in=qs.values('number')
+        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+    except Exception:
+        total_paid = Decimal('0')
+    total_remaining = max(Decimal('0'), total_sum - total_paid)
+
     paginator = Paginator(qs, 30)
     page_obj = paginator.get_page(page_num)
+
+    # Batch attach payment data for the current page
+    doc_numbers = [d.number for d in page_obj if d.number]
+    if doc_numbers:
+        direct_payments = Payment.objects.filter(
+            document_ref__in=doc_numbers
+        ).values('document_ref').annotate(t=Sum('amount'))
+        payment_map = {p['document_ref']: (p['t'] or Decimal('0')) for p in direct_payments}
+        for d in page_obj:
+            if d.number in payment_map:
+                d._cached_amount_paid = payment_map[d.number]
 
     # AJAX request — return only rows HTML + pagination metadata
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -180,6 +200,8 @@ def document_list(request):
         'documents': page_obj,
         'total_count': total_count,
         'total_sum': total_sum,
+        'total_paid': total_paid,
+        'total_remaining': total_remaining,
         'stats': stats,
         'filters': filters,
         'current_types': doc_types,
@@ -270,6 +292,8 @@ def document_preview_data(request, document_id):
         'subtotal': float(doc.subtotal),
         'tax_total': float(doc.tax_total),
         'grand_total': float(doc.grand_total),
+        'amount_paid': float(doc.amount_paid),
+        'balance_due': float(doc.balance_due),
         'items': items,
         'preview_url': f'/documents/{doc.id}/preview/',
         'pdf_url': f'/documents/{doc.id}/pdf/',
@@ -439,10 +463,12 @@ def public_document_view(request, token):
     if request.GET.get('pdf') == '1':
         return generate_pdf(request, doc.id)
 
+    company = CompanyProfile.objects.first()
     # Render branded public viewer page
     return render(request, 'documents/public_document_view.html', {
         'doc': doc,
         'token': token,
+        'company': company,
         'preview_html': PDFService.render_html(doc, request=request),
     })
 
@@ -1512,7 +1538,7 @@ def document_export_csv(request):
     response['Content-Disposition'] = 'attachment; filename="documents_export.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Number', 'Type', 'Contact', 'Status', 'Taxable Value', 'Total Tax', 'Grand Total'])
+    writer.writerow(['Date', 'Number', 'Type', 'Contact', 'Status', 'Taxable Value', 'Total Tax', 'Grand Total', 'Paid Amount', 'Remaining Amount'])
     
     for doc in docs:
         writer.writerow([
@@ -1523,7 +1549,9 @@ def document_export_csv(request):
             doc.status,
             doc.subtotal,
             doc.tax_total,
-            doc.grand_total
+            doc.grand_total,
+            doc.amount_paid,
+            doc.balance_due,
         ])
         
     return response

@@ -295,10 +295,14 @@ class Document(TimeStampedModel):
 
     @property
     def amount_paid(self):
+        if hasattr(self, '_cached_amount_paid'):
+            return self._cached_amount_paid
         from django.db.models import Sum
         from payments.models import Payment
         doc_numbers = self.get_all_linked_document_numbers()
-        return Payment.objects.filter(document_ref__in=doc_numbers).aggregate(t=Sum('amount'))['t'] or 0
+        val = Payment.objects.filter(document_ref__in=doc_numbers).aggregate(t=Sum('amount'))['t']
+        self._cached_amount_paid = Decimal(str(val)) if val is not None else Decimal('0.00')
+        return self._cached_amount_paid
 
     @property
     def payments_list(self):
@@ -308,7 +312,9 @@ class Document(TimeStampedModel):
 
     @property
     def balance_due(self):
-        return self.grand_total - self.amount_paid
+        gt = self.grand_total if self.grand_total is not None else Decimal('0.00')
+        bal = Decimal(str(gt)) - Decimal(str(self.amount_paid or 0))
+        return max(Decimal('0.00'), bal)
 
     @property
     def lifecycle_payment_status(self):

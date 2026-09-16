@@ -189,12 +189,20 @@
         </datalist>
         <!-- Filtered Results Summary -->
         <div
-            class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
+            class="flex flex-wrap items-center justify-between gap-4 bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
             <div class="text-sm text-slate-600">
                 Showing <span class="font-bold text-slate-900">{{ total_count }}</span> Document{% if total_count != 1 %}s{% endif %}
             </div>
-            <div class="text-sm text-slate-600">
-                Total Amount: <span class="font-bold text-emerald-600">₹{{ total_sum|floatformat:2 }}</span>
+            <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+                <div class="text-slate-600">
+                    Total Amount: <span class="font-bold text-slate-900">₹{{ total_sum|floatformat:2 }}</span>
+                </div>
+                <div class="text-slate-600">
+                    Total Paid: <span class="font-bold text-emerald-600">₹{{ total_paid|floatformat:2 }}</span>
+                </div>
+                <div class="text-slate-600">
+                    Total Remaining: <span class="font-bold text-rose-600">₹{{ total_remaining|floatformat:2 }}</span>
+                </div>
             </div>
         </div>
 
@@ -210,6 +218,8 @@
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('date')"><div class="flex items-center gap-1">Date <span class="{% if sort_by != 'date' and sort_by != '-date' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-date' %}↓{% else %}↑{% endif %}</span></div></th>
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('status')"><div class="flex items-center gap-1">Status <span class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div></th>
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group text-right" onclick="applySort('grand_total')"><div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div></th>
+                            <th class="px-6 py-4 font-medium text-right">Paid Amount</th>
+                            <th class="px-6 py-4 font-medium text-right">Remaining Amount</th>
                             <th class="px-6 py-4 font-medium text-center">Actions</th>
                         </tr>
                     </thead>
