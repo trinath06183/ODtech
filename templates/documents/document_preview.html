@@ -260,7 +260,10 @@
                 <div class="text-blue-600 font-bold text-xl">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
             </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
-                <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Paid Amount</div>
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Paid Amount</div>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {% if paid_percentage >= 100 %}bg-emerald-100 text-emerald-800 border border-emerald-300{% elif paid_percentage > 0 %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">{{ paid_percentage }}%</span>
+                </div>
                 <div class="text-emerald-600 font-bold text-xl">{{ doc.currency_symbol }} {{ total_paid|default:doc.amount_paid|floatformat:2 }}</div>
             </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl relative">

@@ -168,6 +168,7 @@ def document_list(request):
     except Exception:
         total_paid = Decimal('0')
     total_remaining = max(Decimal('0'), total_sum - total_paid)
+    total_paid_percentage = round((float(total_paid) / float(total_sum) * 100), 1) if total_sum and total_sum > 0 else 0.0
 
     paginator = Paginator(qs, 30)
     page_obj = paginator.get_page(page_num)
@@ -202,6 +203,7 @@ def document_list(request):
         'total_sum': total_sum,
         'total_paid': total_paid,
         'total_remaining': total_remaining,
+        'total_paid_percentage': total_paid_percentage,
         'stats': stats,
         'filters': filters,
         'current_types': doc_types,
@@ -236,6 +238,7 @@ def document_preview(request, document_id):
 
     total_paid = doc.amount_paid
     balance_due = doc.balance_due
+    paid_percentage = doc.payment_percentage
 
     # ── Previous / Next navigation (same doc type, ordered by id) ────────────
     prev_doc = Document.objects.filter(type=doc.type, id__lt=doc.id).order_by('-id').first()
@@ -250,6 +253,7 @@ def document_preview(request, document_id):
         'preview_html': preview_html,
         'total_paid': total_paid,
         'balance_due': balance_due,
+        'paid_percentage': paid_percentage,
         'document_types': Document.DOCUMENT_TYPES,
         'prev_doc': prev_doc,
         'next_doc': next_doc,
@@ -294,6 +298,7 @@ def document_preview_data(request, document_id):
         'grand_total': float(doc.grand_total),
         'amount_paid': float(doc.amount_paid),
         'balance_due': float(doc.balance_due),
+        'payment_percentage': float(doc.payment_percentage),
         'items': items,
         'preview_url': f'/documents/{doc.id}/preview/',
         'pdf_url': f'/documents/{doc.id}/pdf/',
@@ -1538,7 +1543,7 @@ def document_export_csv(request):
     response['Content-Disposition'] = 'attachment; filename="documents_export.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Number', 'Type', 'Contact', 'Status', 'Taxable Value', 'Total Tax', 'Grand Total', 'Paid Amount', 'Remaining Amount'])
+    writer.writerow(['Date', 'Number', 'Type', 'Contact', 'Status', 'Taxable Value', 'Total Tax', 'Grand Total', 'Paid Amount', 'Remaining Amount', '% Paid'])
     
     for doc in docs:
         writer.writerow([
@@ -1552,6 +1557,7 @@ def document_export_csv(request):
             doc.grand_total,
             doc.amount_paid,
             doc.balance_due,
+            f"{doc.payment_percentage}%",
         ])
         
     return response

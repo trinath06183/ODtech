@@ -33,8 +33,24 @@
         {% endif %}
     </td>
     <td class="px-6 py-4 text-right font-bold text-green-400">&#8377; {{ doc.grand_total|floatformat:2 }}</td>
-    <td class="px-6 py-4 text-right font-semibold text-emerald-400">&#8377; {{ doc.amount_paid|floatformat:2 }}</td>
-    <td class="px-6 py-4 text-right font-semibold {% if doc.balance_due > 0 %}text-rose-400{% else %}text-emerald-400/80{% endif %}">&#8377; {{ doc.balance_due|floatformat:2 }}</td>
+    <td class="px-6 py-4 text-right">
+        <div class="font-semibold text-emerald-400">&#8377; {{ doc.amount_paid|floatformat:2 }}</div>
+        <div class="text-[11px] font-medium mt-0.5 {% if doc.payment_percentage >= 100 %}text-emerald-400{% elif doc.payment_percentage > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">
+            {{ doc.payment_percentage|floatformat:1 }}% paid
+        </div>
+    </td>
+    <td class="px-6 py-4 text-right">
+        <div class="font-semibold {% if doc.balance_due > 0 %}text-rose-400{% else %}text-emerald-400/80{% endif %}">&#8377; {{ doc.balance_due|floatformat:2 }}</div>
+        <div class="text-[11px] mt-0.5">
+            {% if doc.balance_due <= 0 and doc.grand_total > 0 %}
+            <span class="text-emerald-400 font-medium">Settled</span>
+            {% elif doc.payment_percentage > 0 %}
+            <span class="text-amber-400/80 font-medium">Partial Due</span>
+            {% else %}
+            <span class="text-slate-500 font-medium">Full Due</span>
+            {% endif %}
+        </div>
+    </td>
     <td class="px-6 py-4">
         <div class="flex items-center justify-center space-x-2">
             <a href="{% url 'document_preview' doc.id %}"

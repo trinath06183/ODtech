@@ -197,8 +197,10 @@
                 <div class="text-slate-600">
                     Total Amount: <span class="font-bold text-slate-900">₹{{ total_sum|floatformat:2 }}</span>
                 </div>
-                <div class="text-slate-600">
-                    Total Paid: <span class="font-bold text-emerald-600">₹{{ total_paid|floatformat:2 }}</span>
+                <div class="text-slate-600 flex items-center gap-1.5">
+                    <span>Total Paid:</span>
+                    <span class="font-bold text-emerald-600">₹{{ total_paid|floatformat:2 }}</span>
+                    <span class="text-xs text-emerald-700 font-bold bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-full">({{ total_paid_percentage }}%)</span>
                 </div>
                 <div class="text-slate-600">
                     Total Remaining: <span class="font-bold text-rose-600">₹{{ total_remaining|floatformat:2 }}</span>

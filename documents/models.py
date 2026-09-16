@@ -317,6 +317,15 @@ class Document(TimeStampedModel):
         return max(Decimal('0.00'), bal)
 
     @property
+    def payment_percentage(self):
+        gt = self.grand_total if self.grand_total is not None else Decimal('0.00')
+        if not gt or gt <= 0:
+            return 0
+        paid = Decimal(str(self.amount_paid or 0))
+        pct = (paid / gt) * Decimal('100')
+        return round(float(pct), 1)
+
+    @property
     def lifecycle_payment_status(self):
         """
         Calculates payment status by checking if this document is an invoice
