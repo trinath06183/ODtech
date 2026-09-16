@@ -1292,6 +1292,253 @@
                         Save Customer
                     </button>
                 </div>
+        </div>
+    </div>
+
+    {# Customer GST Details & Field Selection Modal #}
+    <div x-show="showCustomerGstModal" style="display:flex; position:fixed; inset:0; z-index:1050; background:rgba(15,23,42,0.55); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding:1rem;" x-transition.opacity>
+        <div @click.away="showCustomerGstModal = false"
+            style="background:#ffffff; border:1px solid #cbd5e1; border-radius:1.25rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.3); position:relative; width:100%; max-width:640px; padding:1.75rem; max-height:90vh; display:flex; flex-direction:column; gap:1.25rem;">
+
+            <!-- Header -->
+            <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="width:2.5rem; height:2.5rem; border-radius:0.75rem; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:1.25rem; font-weight:bold;">
+                        🏛️
+                    </div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <h3 style="font-size:1.15rem; font-weight:800; color:#0f172a; margin:0;">GST Details Retrieved</h3>
+                            <span style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:9999px;"
+                                  :style="customerGstinData.status === 'Active' ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'"
+                                  x-text="customerGstinData.status || 'Active'"></span>
+                        </div>
+                        <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0 0;">Select which retrieved values to include for this customer</p>
+                    </div>
+                </div>
+                <button type="button" @click="showCustomerGstModal = false" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:6px;"
+                    onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">&times;</button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div style="overflow-y:auto; display:flex; flex-direction:column; gap:1rem; flex:1; padding-right:0.25rem;">
+
+                <!-- Meta Strip -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:0.6rem 0.85rem; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.75rem;">
+                    <div style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">GSTIN:</span> <strong style="font-family:monospace; color:#7e22ce;" x-text="customerGstinData.gstin"></strong>
+                    </div>
+                    <div x-show="customerGstinData.taxpayer_type" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">Type:</span> <strong style="color:#0f172a;" x-text="customerGstinData.taxpayer_type"></strong>
+                    </div>
+                    <div x-show="customerGstinData.constitution_of_business" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">Entity:</span> <strong style="color:#0f172a;" x-text="customerGstinData.constitution_of_business"></strong>
+                    </div>
+                    <div x-show="customerGstinData.einvoice_status" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">e-Invoice:</span> <strong :style="customerGstinData.einvoice_status === 'Yes' ? 'color:#15803d;' : 'color:#475569;'" x-text="customerGstinData.einvoice_status"></strong>
+                    </div>
+                    <div x-show="customerGstinData.place_of_supply" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">State:</span> <span style="color:#0f172a; font-weight:600;" x-text="customerGstinData.place_of_supply"></span>
+                    </div>
+                </div>
+
+                <!-- 1. Customer Name Option -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:0.875rem; display:flex; flex-direction:column; gap:0.6rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:700; color:#0f172a; cursor:pointer; margin:0;">
+                            <input type="checkbox" x-model="customerGstSelection.includeName" style="accent-color:#e31837; width:1rem; height:1rem;">
+                            Include Customer / Company Name
+                        </label>
+                        <span style="font-size:0.7rem; color:#64748b; font-weight:600;">Choose format</span>
+                    </div>
+
+                    <div x-show="customerGstSelection.includeName" style="display:flex; flex-direction:column; gap:0.5rem;">
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0.5rem;">
+                            <template x-if="customerGstinData.trade_name">
+                                <label style="display:flex; align-items:flex-start; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.5rem; border:1px solid; cursor:pointer; transition:all 0.15s;"
+                                       :style="customerGstSelection.nameOption === 'trade' ? 'background:#fff1f2; border-color:#fda4af;' : 'background:#ffffff; border-color:#e2e8f0;'">
+                                    <input type="radio" name="cust_name_opt" value="trade" @change="setCustomerNameOption('trade')" :checked="customerGstSelection.nameOption === 'trade'" style="margin-top:2px; accent-color:#e31837;">
+                                    <div>
+                                        <div style="font-size:0.72rem; font-weight:700; color:#e31837;">Trade Name</div>
+                                        <div style="font-size:0.8rem; font-weight:600; color:#0f172a;" x-text="customerGstinData.trade_name"></div>
+                                    </div>
+                                </label>
+                            </template>
+
+                            <template x-if="customerGstinData.legal_name">
+                                <label style="display:flex; align-items:flex-start; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.5rem; border:1px solid; cursor:pointer; transition:all 0.15s;"
+                                       :style="customerGstSelection.nameOption === 'legal' ? 'background:#fff1f2; border-color:#fda4af;' : 'background:#ffffff; border-color:#e2e8f0;'">
+                                    <input type="radio" name="cust_name_opt" value="legal" @change="setCustomerNameOption('legal')" :checked="customerGstSelection.nameOption === 'legal'" style="margin-top:2px; accent-color:#e31837;">
+                                    <div>
+                                        <div style="font-size:0.72rem; font-weight:700; color:#e31837;">Legal Registered Name</div>
+                                        <div style="font-size:0.8rem; font-weight:600; color:#0f172a;" x-text="customerGstinData.legal_name"></div>
+                                    </div>
+                                </label>
+                            </template>
+
+                            <template x-if="customerGstinData.trade_name && customerGstinData.legal_name && customerGstinData.trade_name.toLowerCase() !== customerGstinData.legal_name.toLowerCase()">
+                                <label style="grid-column:1 / -1; display:flex; align-items:flex-start; gap:0.5rem; padding:0.5rem 0.75rem; border-radius:0.5rem; border:1px solid; cursor:pointer; transition:all 0.15s;"
+                                       :style="customerGstSelection.nameOption === 'combined' ? 'background:#fff1f2; border-color:#fda4af;' : 'background:#ffffff; border-color:#e2e8f0;'">
+                                    <input type="radio" name="cust_name_opt" value="combined" @change="setCustomerNameOption('combined')" :checked="customerGstSelection.nameOption === 'combined'" style="margin-top:2px; accent-color:#e31837;">
+                                    <div>
+                                        <div style="font-size:0.72rem; font-weight:700; color:#e31837;">Combined Name</div>
+                                        <div style="font-size:0.8rem; font-weight:600; color:#0f172a;" x-text="`${customerGstinData.trade_name} (${customerGstinData.legal_name})`"></div>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+
+                        <div>
+                            <span style="display:block; font-size:0.7rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Final Customer Name (Editable):</span>
+                            <input type="text" x-model="customerGstSelection.customName" placeholder="Customer name..."
+                                   style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:0.5rem; padding:0.5rem 0.75rem; font-size:0.85rem; font-weight:600; color:#0f172a; outline:none; box-sizing:border-box;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. PAN -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:0.875rem;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:700; color:#0f172a; cursor:pointer; margin-bottom:0.5rem;">
+                            <input type="checkbox" x-model="customerGstSelection.includePan" style="accent-color:#e31837; width:1rem; height:1rem;">
+                            Include PAN
+                        </label>
+                        <input type="text" x-model="customerGstSelection.customPan" placeholder="PAN Number" maxlength="10"
+                               style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:0.5rem; padding:0.45rem 0.75rem; font-size:0.85rem; font-family:monospace; font-weight:600; color:#0f172a; text-transform:uppercase; outline:none; box-sizing:border-box;">
+                    </div>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:0.875rem; display:flex; flex-direction:column; justify-content:center;">
+                        <div style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Registration Date</div>
+                        <div style="font-size:0.85rem; font-weight:700; color:#0f172a;" x-text="customerGstinData.registration_date || 'N/A'"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Address Components Selection -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:0.875rem; display:flex; flex-direction:column; gap:0.6rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:700; color:#0f172a; cursor:pointer; margin:0;">
+                            <input type="checkbox" x-model="customerGstSelection.includeAddress" style="accent-color:#e31837; width:1rem; height:1rem;">
+                            Include Billing Address
+                        </label>
+                        <div x-show="customerGstSelection.includeAddress" style="display:flex; align-items:center; gap:0.5rem; font-size:0.72rem;">
+                            <button type="button" @click="toggleAllCustomerComponents(true)" style="background:none; border:none; color:#e31837; font-weight:700; cursor:pointer; padding:0;">Select All</button>
+                            <span style="color:#cbd5e1;">|</span>
+                            <button type="button" @click="toggleAllCustomerComponents(false)" style="background:none; border:none; color:#64748b; cursor:pointer; padding:0;">Clear All</button>
+                        </div>
+                    </div>
+
+                    <div x-show="customerGstSelection.includeAddress" style="display:flex; flex-direction:column; gap:0.6rem;">
+                        <p style="font-size:0.72rem; color:#64748b; margin:0;">Toggle components to add/remove them from the formatted address:</p>
+
+                        <!-- Address Chips -->
+                        <div style="display:flex; flex-wrap:wrap; gap:0.375rem;">
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.building_number">
+                                <button type="button" @click="toggleCustomerAddressComponent('building_number')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.building_number ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.building_number ? '✓' : '+'"></span>
+                                    <span>Bldg/Floor: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.building_number"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.building_name">
+                                <button type="button" @click="toggleCustomerAddressComponent('building_name')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.building_name ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.building_name ? '✓' : '+'"></span>
+                                    <span>Premises: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.building_name"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.street">
+                                <button type="button" @click="toggleCustomerAddressComponent('street')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.street ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.street ? '✓' : '+'"></span>
+                                    <span>Street: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.street"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.locality">
+                                <button type="button" @click="toggleCustomerAddressComponent('locality')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.locality ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.locality ? '✓' : '+'"></span>
+                                    <span>Locality: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.locality"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.location">
+                                <button type="button" @click="toggleCustomerAddressComponent('location')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.location ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.location ? '✓' : '+'"></span>
+                                    <span>City: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.location"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.district">
+                                <button type="button" @click="toggleCustomerAddressComponent('district')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.district ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.district ? '✓' : '+'"></span>
+                                    <span>District: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.district"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.state">
+                                <button type="button" @click="toggleCustomerAddressComponent('state')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.state ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.state ? '✓' : '+'"></span>
+                                    <span>State: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.state"></strong></span>
+                                </button>
+                            </template>
+
+                            <template x-if="customerGstinData.address_components && customerGstinData.address_components.pincode">
+                                <button type="button" @click="toggleCustomerAddressComponent('pincode')"
+                                    style="padding:0.3rem 0.6rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.3rem;"
+                                    :style="customerGstSelection.components.pincode ? 'background:#fff1f2; color:#be123c; border-color:#fecdd3;' : 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0; opacity:0.6;'">
+                                    <span x-text="customerGstSelection.components.pincode ? '✓' : '+'"></span>
+                                    <span>PIN: <strong style="color:#0f172a;" x-text="customerGstinData.address_components.pincode"></strong></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Live Assembled Address Textarea -->
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                                <span style="font-size:0.7rem; font-weight:700; color:#475569;">Live Assembled Address (Editable):</span>
+                                <span style="font-size:0.68rem; color:#e31837;">Updates as chips are toggled</span>
+                            </div>
+                            <textarea x-model="customerGstSelection.customAddress" rows="2" placeholder="Billing address..."
+                                style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:0.5rem; padding:0.5rem 0.75rem; font-size:0.8rem; color:#0f172a; outline:none; resize:none; height:3.8rem; box-sizing:border-box;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Additional Info -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:0.75rem; font-size:0.72rem; color:#64748b;">
+                    <div style="font-weight:700; color:#475569; margin-bottom:0.35rem;">Additional Information from Registry:</div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.35rem;">
+                        <div x-show="customerGstinData.nature_of_business">Activity: <strong style="color:#0f172a;" x-text="customerGstinData.nature_of_business"></strong></div>
+                        <div x-show="customerGstinData.state_jurisdiction">State Jurisdiction: <strong style="color:#0f172a;" x-text="customerGstinData.state_jurisdiction"></strong></div>
+                        <div x-show="customerGstinData.center_jurisdiction">Center Jurisdiction: <strong style="color:#0f172a;" x-text="customerGstinData.center_jurisdiction"></strong></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="display:flex; justify-content:flex-end; gap:0.75rem; border-top:1px solid #e2e8f0; padding-top:0.75rem; flex-shrink:0;">
+                <button type="button" @click="showCustomerGstModal = false"
+                    style="padding:0.6rem 1.25rem; background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; border-radius:0.625rem; font-size:0.85rem; font-weight:600; cursor:pointer; font-family:inherit;"
+                    onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                    Cancel
+                </button>
+                <button type="button" @click="applyCustomerGstDetails()"
+                    style="padding:0.6rem 1.4rem; background:linear-gradient(135deg, #e31837, #b91c3a); border:none; color:#ffffff; border-radius:0.625rem; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:inherit; box-shadow:0 4px 12px rgba(227,24,55,0.3); display:flex; align-items:center; gap:0.5rem;">
+                    <span>✓ Apply Selected Details</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1755,8 +2002,31 @@ function documentForm() {
         filteredCustomers: [],
         showCustomerDropdown: false,
         showCustomerModal: false,
+        showCustomerGstModal: false,
         fetchingGstin: false,
-        newCustomer: { name: '', email: '', phone: '', gstin: '', address: '' },
+        customerGstinData: {},
+        customerGstSelection: {
+            includeName: true,
+            nameOption: 'trade',
+            customName: '',
+            includePan: true,
+            customPan: '',
+            includeAddress: true,
+            components: {
+                building_number: true,
+                building_name: true,
+                floor_number: true,
+                street: true,
+                locality: true,
+                location: true,
+                district: true,
+                state: true,
+                pincode: true,
+                landmark: false
+            },
+            customAddress: ''
+        },
+        newCustomer: { name: '', email: '', phone: '', gstin: '', pan: '', address: '' },
 
         showProductModal: false,
         newProduct: { name: '', sku: '', price: '', tax_rate: '18', unit: 'Nos', hsn_code: '', warranty_months: '12', description: '' },
@@ -2622,14 +2892,8 @@ function documentForm() {
                 const res = await fetch(`/contacts/api/gstin-lookup/?gstin=${encodeURIComponent(gstin)}`);
                 const data = await res.json();
                 if (data.success) {
-                    if (data.name && !this.newCustomer.name) {
-                        this.newCustomer.name = data.name;
-                    } else if (data.name) {
-                        this.newCustomer.name = data.name;
-                    }
-                    if (data.address) {
-                        this.newCustomer.address = data.address;
-                    }
+                    this.initCustomerGstSelection(data);
+                    this.showCustomerGstModal = true;
                 } else {
                     alert(data.error || 'Could not fetch GSTIN details.');
                 }
@@ -2638,6 +2902,113 @@ function documentForm() {
             } finally {
                 this.fetchingGstin = false;
             }
+        },
+
+        initCustomerGstSelection(data) {
+            this.customerGstinData = data;
+            const addrComp = data.address_components || {};
+            const hasTrade = !!(data.trade_name && data.trade_name.trim());
+            const hasLegal = !!(data.legal_name && data.legal_name.trim());
+            const defaultNameOpt = hasTrade ? 'trade' : (hasLegal ? 'legal' : 'custom');
+            const defaultName = hasTrade ? data.trade_name : (hasLegal ? data.legal_name : (data.name || ''));
+
+            this.customerGstSelection = {
+                includeName: true,
+                nameOption: defaultNameOpt,
+                customName: defaultName,
+                includePan: !!data.pan,
+                customPan: data.pan || '',
+                includeAddress: !!(data.address || Object.values(addrComp).some(v => !!v)),
+                components: {
+                    building_number: !!addrComp.building_number,
+                    building_name: !!addrComp.building_name,
+                    floor_number: !!addrComp.floor_number,
+                    street: !!addrComp.street,
+                    locality: !!addrComp.locality,
+                    location: !!addrComp.location,
+                    district: !!addrComp.district,
+                    state: !!addrComp.state,
+                    pincode: !!addrComp.pincode,
+                    landmark: false
+                },
+                customAddress: data.address || ''
+            };
+            this.rebuildCustomerAddress();
+        },
+
+        setCustomerNameOption(opt) {
+            this.customerGstSelection.nameOption = opt;
+            if (opt === 'trade') {
+                this.customerGstSelection.customName = this.customerGstinData.trade_name || this.customerGstinData.name || '';
+            } else if (opt === 'legal') {
+                this.customerGstSelection.customName = this.customerGstinData.legal_name || this.customerGstinData.name || '';
+            } else if (opt === 'combined') {
+                const t = (this.customerGstinData.trade_name || '').trim();
+                const l = (this.customerGstinData.legal_name || '').trim();
+                if (t && l && t.toLowerCase() !== l.toLowerCase()) {
+                    this.customerGstSelection.customName = `${t} (${l})`;
+                } else {
+                    this.customerGstSelection.customName = t || l || this.customerGstinData.name || '';
+                }
+            }
+        },
+
+        toggleCustomerAddressComponent(key) {
+            this.customerGstSelection.components[key] = !this.customerGstSelection.components[key];
+            this.rebuildCustomerAddress();
+        },
+
+        toggleAllCustomerComponents(enable) {
+            const addrComp = this.customerGstinData.address_components || {};
+            for (let k in this.customerGstSelection.components) {
+                this.customerGstSelection.components[k] = enable && !!addrComp[k];
+            }
+            this.rebuildCustomerAddress();
+        },
+
+        rebuildCustomerAddress() {
+            const c = this.customerGstinData.address_components || {};
+            const sel = this.customerGstSelection.components;
+            const parts = [];
+
+            const addPart = (val) => {
+                const s = String(val || '').trim();
+                if (s && !parts.includes(s)) parts.push(s);
+            };
+
+            if (sel.building_number && c.building_number) addPart(c.building_number);
+            if (sel.building_name && c.building_name) addPart(c.building_name);
+            if (sel.floor_number && c.floor_number) addPart(c.floor_number);
+            if (sel.street && c.street) addPart(c.street);
+            if (sel.locality && c.locality) addPart(c.locality);
+            if (sel.location && c.location) addPart(c.location);
+            if (sel.landmark && c.landmark) addPart(c.landmark);
+            if (sel.district && c.district) addPart(c.district);
+            if (sel.state && c.state) addPart(c.state);
+
+            let addr = parts.join(', ');
+            if (sel.pincode && c.pincode) {
+                addr = addr ? `${addr} - ${c.pincode}` : `PIN: ${c.pincode}`;
+            }
+
+            if (!addr && this.customerGstinData.address) {
+                addr = this.customerGstinData.address;
+            }
+
+            this.customerGstSelection.customAddress = addr;
+        },
+
+        applyCustomerGstDetails() {
+            if (this.customerGstSelection.includeName && this.customerGstSelection.customName) {
+                this.newCustomer.name = this.customerGstSelection.customName;
+            }
+            if (this.customerGstSelection.includePan && this.customerGstSelection.customPan) {
+                this.newCustomer.pan = this.customerGstSelection.customPan;
+            }
+            if (this.customerGstSelection.includeAddress && this.customerGstSelection.customAddress) {
+                this.newCustomer.address = this.customerGstSelection.customAddress;
+            }
+            this.showCustomerGstModal = false;
         },
 
         // ── create customer via API ──────────────────────────────────
@@ -2651,12 +3022,12 @@ function documentForm() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    const nc = { id: String(data.id), name: data.name, email: this.newCustomer.email, phone: this.newCustomer.phone, gstin: this.newCustomer.gstin, address: this.newCustomer.address };
+                    const nc = { id: String(data.id), name: data.name, email: this.newCustomer.email, phone: this.newCustomer.phone, gstin: this.newCustomer.gstin, pan: this.newCustomer.pan, address: this.newCustomer.address };
                     this.customers.push(nc);
                     this.selectedCustomer = String(data.id);
                     this.customerSearch = nc.name;
                     this.showCustomerModal = false;
-                    this.newCustomer = { name: '', email: '', phone: '', gstin: '', address: '' };
+                    this.newCustomer = { name: '', email: '', phone: '', gstin: '', pan: '', address: '' };
                 } else { alert(data.error || 'Could not create customer.'); }
             } catch (e) { alert('Network error — could not reach server.'); }
         },

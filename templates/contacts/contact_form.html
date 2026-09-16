@@ -118,84 +118,297 @@
         </form>
     </div>
 
-    <!-- GSTIN Confirmation Modal -->
+    <!-- GSTIN Confirmation & Field Selection Modal -->
     <div x-show="showGstinModal" x-transition.opacity
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto"
         style="display: none;">
         <div @click.away="showGstinModal = false"
-            class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative space-y-5 text-left">
+            class="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-7 w-full max-w-2xl shadow-2xl relative space-y-5 text-left my-8 max-h-[90vh] flex flex-col">
             
-            <div class="flex items-center justify-between border-b border-white/10 pb-4">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-white/10 pb-4 flex-shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500/30 to-indigo-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 text-xl font-bold shadow-inner">
                         🏛️
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-white">GSTIN Details Found</h3>
-                        <p class="text-xs text-gray-400">Review details before applying to form</p>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            GST Details Retrieved
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                  :class="gstinData.status === 'Active' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
+                                  x-text="gstinData.status || 'Active'"></span>
+                        </h3>
+                        <p class="text-xs text-gray-400">Review all values returned from GST portal and choose what to include</p>
                     </div>
                 </div>
-                <button type="button" @click="showGstinModal = false" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
-            <div x-show="!gstinData.fetched" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300 flex items-start gap-2">
-                <span class="text-base">ℹ️</span>
-                <div>
-                    <strong>Basic Details Derived:</strong> State, PAN, & Entity Type parsed from GSTIN. To auto-fill registered Party Name & Address, configure your <strong>GST API Key</strong> under Settings.
-                </div>
+                <button type="button" @click="showGstinModal = false" class="text-gray-400 hover:text-white text-2xl font-semibold leading-none p-1 transition">&times;</button>
             </div>
 
-            <div class="space-y-3 bg-slate-800/60 p-4 rounded-2xl border border-white/5 text-sm">
-                <div class="flex justify-between items-center pb-2 border-b border-white/5">
-                    <span class="text-gray-400 text-xs">GSTIN Status & Entity</span>
-                    <div class="flex items-center gap-2">
-                        <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                              x-text="gstinData.taxpayer_type || 'Regular Taxpayer'"></span>
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold"
-                              :class="gstinData.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'"
-                              x-text="gstinData.status || 'Active'"></span>
+            <!-- Scrollable Content Area -->
+            <div class="space-y-4 overflow-y-auto pr-1 flex-1 custom-scrollbar">
+
+                <!-- Meta Badges Strip -->
+                <div class="bg-slate-800/60 p-3 rounded-2xl border border-white/5 flex flex-wrap items-center gap-2 text-xs">
+                    <div class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10">
+                        <span class="text-gray-400">GSTIN:</span>
+                        <span class="font-mono font-bold text-purple-300" x-text="gstinData.gstin"></span>
+                    </div>
+                    <div x-show="gstinData.taxpayer_type" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
+                        <span class="text-gray-400">Taxpayer:</span> <strong x-text="gstinData.taxpayer_type"></strong>
+                    </div>
+                    <div x-show="gstinData.constitution_of_business" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
+                        <span class="text-gray-400">Constitution:</span> <strong x-text="gstinData.constitution_of_business"></strong>
+                    </div>
+                    <div x-show="gstinData.einvoice_status" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
+                        <span class="text-gray-400">e-Invoice:</span> <strong :class="gstinData.einvoice_status === 'Yes' ? 'text-emerald-400' : 'text-gray-300'" x-text="gstinData.einvoice_status"></strong>
+                    </div>
+                    <div x-show="gstinData.place_of_supply" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
+                        <span class="text-gray-400">Place of Supply:</span> <span x-text="gstinData.place_of_supply"></span>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-1">Party / Business Name <span class="text-purple-400 text-[11px] font-normal">(Confirm / Edit below)</span></label>
-                    <input type="text" x-model="gstinData.name" placeholder="Type or enter Party Name..."
-                        class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm font-bold focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30">
-                </div>
-
-                <div x-show="gstinData.legal_name && gstinData.legal_name !== gstinData.trade_name" class="text-xs text-gray-400 italic">
-                    Legal Registered Name: <span class="text-gray-300 font-medium" x-text="gstinData.legal_name"></span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
-                    <div>
-                        <div class="text-xs text-gray-400">GSTIN</div>
-                        <div class="text-purple-300 font-mono font-semibold" x-text="gstinData.gstin"></div>
+                <!-- 1. Party / Company Name Selector -->
+                <div class="bg-slate-800/70 border border-white/10 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" x-model="gstSelection.includeName" class="w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-600 focus:ring-purple-500 focus:ring-offset-0">
+                            <span class="text-sm font-bold text-white">Include Party / Company Name</span>
+                        </label>
+                        <span class="text-[11px] text-gray-400">Select Name to Use</span>
                     </div>
-                    <div>
-                        <div class="text-xs text-gray-400">PAN Number</div>
-                        <div class="text-gray-200 font-mono font-semibold" x-text="gstinData.pan"></div>
+
+                    <div x-show="gstSelection.includeName" class="space-y-2.5 pt-1">
+                        <!-- Radio options if distinct trade / legal names exist -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <template x-if="gstinData.trade_name">
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
+                                       :class="gstSelection.nameOption === 'trade' ? 'bg-purple-600/15 border-purple-500/50 text-white' : 'bg-slate-900/60 border-white/5 text-gray-300 hover:border-white/20'">
+                                    <input type="radio" name="name_option" value="trade" @change="setNameOption('trade')" :checked="gstSelection.nameOption === 'trade'" class="mt-0.5 text-purple-600 bg-slate-900 border-slate-600 focus:ring-0">
+                                    <div>
+                                        <div class="font-bold text-purple-300">Trade Name</div>
+                                        <div class="text-xs text-gray-200 mt-0.5" x-text="gstinData.trade_name"></div>
+                                    </div>
+                                </label>
+                            </template>
+
+                            <template x-if="gstinData.legal_name">
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
+                                       :class="gstSelection.nameOption === 'legal' ? 'bg-purple-600/15 border-purple-500/50 text-white' : 'bg-slate-900/60 border-white/5 text-gray-300 hover:border-white/20'">
+                                    <input type="radio" name="name_option" value="legal" @change="setNameOption('legal')" :checked="gstSelection.nameOption === 'legal'" class="mt-0.5 text-purple-600 bg-slate-900 border-slate-600 focus:ring-0">
+                                    <div>
+                                        <div class="font-bold text-purple-300">Legal Registered Name</div>
+                                        <div class="text-xs text-gray-200 mt-0.5" x-text="gstinData.legal_name"></div>
+                                    </div>
+                                </label>
+                            </template>
+
+                            <template x-if="gstinData.trade_name && gstinData.legal_name && gstinData.trade_name.toLowerCase() !== gstinData.legal_name.toLowerCase()">
+                                <label class="sm:col-span-2 flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
+                                       :class="gstSelection.nameOption === 'combined' ? 'bg-purple-600/15 border-purple-500/50 text-white' : 'bg-slate-900/60 border-white/5 text-gray-300 hover:border-white/20'">
+                                    <input type="radio" name="name_option" value="combined" @change="setNameOption('combined')" :checked="gstSelection.nameOption === 'combined'" class="mt-0.5 text-purple-600 bg-slate-900 border-slate-600 focus:ring-0">
+                                    <div>
+                                        <div class="font-bold text-purple-300">Combined Name</div>
+                                        <div class="text-xs text-gray-200 mt-0.5" x-text="`${gstinData.trade_name} (${gstinData.legal_name})`"></div>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+
+                        <!-- Editable Target Name -->
+                        <div>
+                            <div class="text-[11px] font-semibold text-gray-400 mb-1">Final Name to Apply (Editable):</div>
+                            <input type="text" x-model="gstSelection.customName" placeholder="Enter party name..."
+                                   class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm font-semibold focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40">
+                        </div>
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-white/5">
-                    <div class="text-xs text-gray-400">Place of Supply / State</div>
-                    <div class="text-gray-200 font-medium" x-text="gstinData.place_of_supply"></div>
+                <!-- 2. Permanent Account Number (PAN) -->
+                <div class="bg-slate-800/70 border border-white/10 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" x-model="gstSelection.includePan" class="w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-600 focus:ring-purple-500 focus:ring-offset-0">
+                            <span class="text-sm font-bold text-white">Include PAN</span>
+                        </label>
+                        <span class="text-xs font-mono font-bold text-purple-300" x-text="gstinData.pan"></span>
+                    </div>
+                    <div x-show="gstSelection.includePan">
+                        <input type="text" x-model="gstSelection.customPan" placeholder="PAN Number" maxlength="10"
+                               class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm font-mono uppercase focus:outline-none focus:border-purple-500">
+                    </div>
                 </div>
 
-                <div class="pt-2 border-t border-white/5">
-                    <label class="block text-xs font-semibold text-gray-400 mb-1">Registered Address <span class="text-purple-400 text-[11px] font-normal">(Confirm / Edit below)</span></label>
-                    <textarea x-model="gstinData.address" rows="2" placeholder="Street, City, State, PIN"
-                        class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-xl text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500 resize-none"></textarea>
+                <!-- 3. Granular Address Component Selection -->
+                <div class="bg-slate-800/70 border border-white/10 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" x-model="gstSelection.includeAddress" class="w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-600 focus:ring-purple-500 focus:ring-offset-0">
+                            <span class="text-sm font-bold text-white">Include Billing Address</span>
+                        </label>
+                        <div x-show="gstSelection.includeAddress" class="flex items-center gap-2 text-xs">
+                            <button type="button" @click="toggleAllComponents(true)" class="text-purple-400 hover:text-purple-300 font-semibold transition">Select All</button>
+                            <span class="text-gray-600">|</span>
+                            <button type="button" @click="toggleAllComponents(false)" class="text-gray-400 hover:text-gray-300 transition">Clear All</button>
+                        </div>
+                    </div>
+
+                    <div x-show="gstSelection.includeAddress" class="space-y-3 pt-1">
+                        <p class="text-xs text-gray-400">Click any badge to toggle that component on or off in the final address:</p>
+
+                        <!-- Address Components Chips -->
+                        <div class="flex flex-wrap gap-2">
+                            <!-- Building Number -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.building_number">
+                                <button type="button" @click="toggleAddressComponent('building_number')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.building_number ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.building_number ? '✓' : '+'"></span>
+                                    <span>Bldg/Floor:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.building_number"></strong>
+                                </button>
+                            </template>
+
+                            <!-- Building Name -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.building_name">
+                                <button type="button" @click="toggleAddressComponent('building_name')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.building_name ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.building_name ? '✓' : '+'"></span>
+                                    <span>Premises:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.building_name"></strong>
+                                </button>
+                            </template>
+
+                            <!-- Street -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.street">
+                                <button type="button" @click="toggleAddressComponent('street')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.street ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.street ? '✓' : '+'"></span>
+                                    <span>Street:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.street"></strong>
+                                </button>
+                            </template>
+
+                            <!-- Locality -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.locality">
+                                <button type="button" @click="toggleAddressComponent('locality')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.locality ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.locality ? '✓' : '+'"></span>
+                                    <span>Locality:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.locality"></strong>
+                                </button>
+                            </template>
+
+                            <!-- Location / City -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.location">
+                                <button type="button" @click="toggleAddressComponent('location')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.location ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.location ? '✓' : '+'"></span>
+                                    <span>City:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.location"></strong>
+                                </button>
+                            </template>
+
+                            <!-- District -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.district">
+                                <button type="button" @click="toggleAddressComponent('district')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.district ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.district ? '✓' : '+'"></span>
+                                    <span>District:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.district"></strong>
+                                </button>
+                            </template>
+
+                            <!-- State -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.state">
+                                <button type="button" @click="toggleAddressComponent('state')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.state ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.state ? '✓' : '+'"></span>
+                                    <span>State:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.state"></strong>
+                                </button>
+                            </template>
+
+                            <!-- PIN Code -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.pincode">
+                                <button type="button" @click="toggleAddressComponent('pincode')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.pincode ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.pincode ? '✓' : '+'"></span>
+                                    <span>PIN:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.pincode"></strong>
+                                </button>
+                            </template>
+
+                            <!-- Landmark (if available) -->
+                            <template x-if="gstinData.address_components && gstinData.address_components.landmark">
+                                <button type="button" @click="toggleAddressComponent('landmark')"
+                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
+                                    :class="gstSelection.components.landmark ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    <span x-text="gstSelection.components.landmark ? '✓' : '+'"></span>
+                                    <span>Landmark:</span>
+                                    <strong class="text-white" x-text="gstinData.address_components.landmark"></strong>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Live Assembled Address Preview / Editable -->
+                        <div>
+                            <div class="text-[11px] font-semibold text-gray-400 mb-1 flex items-center justify-between">
+                                <span>Live Assembled Address Preview (Editable):</span>
+                                <span class="text-purple-400 text-[10px]">Updates automatically as chips are toggled</span>
+                            </div>
+                            <textarea x-model="gstSelection.customAddress" rows="3" placeholder="Registered office address..."
+                                      class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 resize-none font-normal"></textarea>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- 4. Other Registry & Jurisdiction Info (Collapsible / Informational) -->
+                <div class="bg-slate-800/40 border border-white/5 rounded-2xl p-4 text-xs space-y-2">
+                    <div class="font-bold text-gray-300 text-xs flex items-center gap-1.5">
+                        <span>ℹ️</span> Additional GST Registry Information:
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-400">
+                        <div x-show="gstinData.nature_of_business">
+                            <span class="text-gray-500">Nature of Activity:</span>
+                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.nature_of_business"></span>
+                        </div>
+                        <div x-show="gstinData.registration_date">
+                            <span class="text-gray-500">Registration Date:</span>
+                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.registration_date"></span>
+                        </div>
+                        <div x-show="gstinData.last_update_date">
+                            <span class="text-gray-500">Last Updated:</span>
+                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.last_update_date"></span>
+                        </div>
+                        <div x-show="gstinData.state_jurisdiction">
+                            <span class="text-gray-500">State Jurisdiction:</span>
+                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.state_jurisdiction"></span>
+                        </div>
+                        <div x-show="gstinData.center_jurisdiction">
+                            <span class="text-gray-500">Center Jurisdiction:</span>
+                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.center_jurisdiction"></span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="flex items-center justify-end gap-3 pt-2">
+            <!-- Modal Footer Actions -->
+            <div class="flex items-center justify-between pt-4 border-t border-white/10 flex-shrink-0">
                 <button type="button" @click="showGstinModal = false"
-                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 text-sm font-semibold rounded-xl transition">
+                    class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 text-sm font-semibold rounded-xl transition">
                     Cancel
                 </button>
                 <button type="button" @click="applyGstinDetails()"
-                    class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-purple-500/20 transition flex items-center gap-1.5">
-                    <span>✓ Apply to Form</span>
+                    class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-purple-500/25 transition flex items-center gap-2 hover:-translate-y-0.5">
+                    <span>✓ Apply Selected to Form</span>
                 </button>
             </div>
         </div>
@@ -217,6 +430,27 @@ function contactForm() {
         fetchingGstin: false,
         showGstinModal: false,
         gstinData: {},
+        gstSelection: {
+            includeName: true,
+            nameOption: 'trade',
+            customName: '',
+            includePan: true,
+            customPan: '',
+            includeAddress: true,
+            components: {
+                building_number: true,
+                building_name: true,
+                floor_number: true,
+                street: true,
+                locality: true,
+                location: true,
+                district: true,
+                state: true,
+                pincode: true,
+                landmark: false
+            },
+            customAddress: ''
+        },
         toast: { show: false, message: '', type: 'success' },
 
         showToast(msg, type = 'success') {
@@ -236,6 +470,100 @@ function contactForm() {
             }
         },
 
+        initGstSelection(data) {
+            this.gstinData = data;
+            const addrComp = data.address_components || {};
+            const hasTrade = !!(data.trade_name && data.trade_name.trim());
+            const hasLegal = !!(data.legal_name && data.legal_name.trim());
+            const defaultNameOpt = hasTrade ? 'trade' : (hasLegal ? 'legal' : 'custom');
+            const defaultName = hasTrade ? data.trade_name : (hasLegal ? data.legal_name : (data.name || ''));
+
+            this.gstSelection = {
+                includeName: true,
+                nameOption: defaultNameOpt,
+                customName: defaultName,
+                includePan: !!data.pan,
+                customPan: data.pan || '',
+                includeAddress: !!(data.address || Object.values(addrComp).some(v => !!v)),
+                components: {
+                    building_number: !!addrComp.building_number,
+                    building_name: !!addrComp.building_name,
+                    floor_number: !!addrComp.floor_number,
+                    street: !!addrComp.street,
+                    locality: !!addrComp.locality,
+                    location: !!addrComp.location,
+                    district: !!addrComp.district,
+                    state: !!addrComp.state,
+                    pincode: !!addrComp.pincode,
+                    landmark: false
+                },
+                customAddress: data.address || ''
+            };
+            this.rebuildAddress();
+        },
+
+        setNameOption(opt) {
+            this.gstSelection.nameOption = opt;
+            if (opt === 'trade') {
+                this.gstSelection.customName = this.gstinData.trade_name || this.gstinData.name || '';
+            } else if (opt === 'legal') {
+                this.gstSelection.customName = this.gstinData.legal_name || this.gstinData.name || '';
+            } else if (opt === 'combined') {
+                const t = (this.gstinData.trade_name || '').trim();
+                const l = (this.gstinData.legal_name || '').trim();
+                if (t && l && t.toLowerCase() !== l.toLowerCase()) {
+                    this.gstSelection.customName = `${t} (${l})`;
+                } else {
+                    this.gstSelection.customName = t || l || this.gstinData.name || '';
+                }
+            }
+        },
+
+        toggleAddressComponent(key) {
+            this.gstSelection.components[key] = !this.gstSelection.components[key];
+            this.rebuildAddress();
+        },
+
+        toggleAllComponents(enable) {
+            const addrComp = this.gstinData.address_components || {};
+            for (let k in this.gstSelection.components) {
+                this.gstSelection.components[k] = enable && !!addrComp[k];
+            }
+            this.rebuildAddress();
+        },
+
+        rebuildAddress() {
+            const c = this.gstinData.address_components || {};
+            const sel = this.gstSelection.components;
+            const parts = [];
+
+            const addPart = (val) => {
+                const s = String(val || '').trim();
+                if (s && !parts.includes(s)) parts.push(s);
+            };
+
+            if (sel.building_number && c.building_number) addPart(c.building_number);
+            if (sel.building_name && c.building_name) addPart(c.building_name);
+            if (sel.floor_number && c.floor_number) addPart(c.floor_number);
+            if (sel.street && c.street) addPart(c.street);
+            if (sel.locality && c.locality) addPart(c.locality);
+            if (sel.location && c.location) addPart(c.location);
+            if (sel.landmark && c.landmark) addPart(c.landmark);
+            if (sel.district && c.district) addPart(c.district);
+            if (sel.state && c.state) addPart(c.state);
+
+            let addr = parts.join(', ');
+            if (sel.pincode && c.pincode) {
+                addr = addr ? `${addr} - ${c.pincode}` : `PIN: ${c.pincode}`;
+            }
+
+            if (!addr && this.gstinData.address) {
+                addr = this.gstinData.address;
+            }
+
+            this.gstSelection.customAddress = addr;
+        },
+
         async fetchGstinDetails() {
             const g = (this.form.gstin || '').trim();
             if (g.length !== 15) {
@@ -253,7 +581,7 @@ function contactForm() {
                     return;
                 }
 
-                this.gstinData = data;
+                this.initGstSelection(data);
                 this.showGstinModal = true;
             } catch (e) {
                 this.fetchingGstin = false;
@@ -262,11 +590,17 @@ function contactForm() {
         },
 
         applyGstinDetails() {
-            if (this.gstinData.name) this.form.name = this.gstinData.name;
-            if (this.gstinData.pan) this.form.pan = this.gstinData.pan;
-            if (this.gstinData.address) this.form.address = this.gstinData.address;
+            if (this.gstSelection.includeName && this.gstSelection.customName) {
+                this.form.name = this.gstSelection.customName;
+            }
+            if (this.gstSelection.includePan && this.gstSelection.customPan) {
+                this.form.pan = this.gstSelection.customPan;
+            }
+            if (this.gstSelection.includeAddress && this.gstSelection.customAddress) {
+                this.form.address = this.gstSelection.customAddress;
+            }
             this.showGstinModal = false;
-            this.showToast('GSTIN details applied successfully! Please confirm details and save.');
+            this.showToast('Selected GST details applied successfully!');
         }
     }
 }

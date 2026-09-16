@@ -19,12 +19,13 @@ def create_customer_api(request):
             email = data.get('email', '')
             phone = data.get('phone', '')
             gstin = data.get('gstin', '')
+            pan = data.get('pan', '')
             address = data.get('address', '')
             if not name:
                 return JsonResponse({'error': 'Name is required'}, status=400)
             contact = Contact.objects.create(
                 name=name, contact_type='Customer',
-                email=email, phone=phone, gstin=gstin, address=address
+                email=email, phone=phone, gstin=gstin, pan=pan, address=address
             )
             return JsonResponse({'id': contact.id, 'name': contact.name, 'success': True})
         except Exception as e:
@@ -83,6 +84,27 @@ def gstin_lookup_api(request):
     pincode = ''
     state_name = place_of_supply.split('-', 1)[-1] if '-' in place_of_supply else ''
     fetched = False
+    constitution_of_business = ''
+    nature_of_business = ''
+    registration_date = ''
+    last_update_date = ''
+    center_jurisdiction = ''
+    center_jurisdiction_code = ''
+    state_jurisdiction = ''
+    state_jurisdiction_code = ''
+    einvoice_status = ''
+    addr_components = {
+        'building_number': '',
+        'building_name': '',
+        'floor_number': '',
+        'street': '',
+        'locality': '',
+        'location': '',
+        'district': '',
+        'state': state_name,
+        'pincode': '',
+        'landmark': ''
+    }
 
     # ── Check existing Contact database first ────────────────────────────────
     try:
@@ -101,11 +123,33 @@ def gstin_lookup_api(request):
                 'trade_name': existing.name,
                 'name': existing.name,
                 'address': existing.address or '',
-                'phone': existing.phone or '',
-                'email': existing.email or '',
+                'address_components': {
+                    'building_number': '',
+                    'building_name': '',
+                    'floor_number': '',
+                    'street': existing.address or '',
+                    'locality': '',
+                    'location': '',
+                    'district': '',
+                    'state': state_name,
+                    'pincode': '',
+                    'landmark': ''
+                },
                 'status': 'Active',
                 'taxpayer_type': taxpayer_type,
+                'constitution_of_business': '',
+                'nature_of_business': '',
+                'registration_date': '',
+                'last_update_date': '',
+                'center_jurisdiction': '',
+                'center_jurisdiction_code': '',
+                'state_jurisdiction': '',
+                'state_jurisdiction_code': '',
+                'einvoice_status': '',
+                'phone': existing.phone or '',
+                'email': existing.email or '',
                 'pincode': pincode,
+                'raw_data': {}
             })
     except Exception:
         pass
@@ -141,8 +185,21 @@ def gstin_lookup_api(request):
             'state_name': state_name,
             'legal_name': '', 'trade_name': '', 'name': '',
             'address': '', 'status': 'Active', 'taxpayer_type': taxpayer_type,
+            'constitution_of_business': '',
+            'nature_of_business': '',
+            'registration_date': '',
+            'last_update_date': '',
+            'center_jurisdiction': '',
+            'center_jurisdiction_code': '',
+            'state_jurisdiction': '',
+            'state_jurisdiction_code': '',
+            'einvoice_status': '',
+            'address_components': addr_components,
             'pincode': '',
+            'raw_data': {}
         })
+
+    raw_payload_d = {}
 
     # ── Primary: GST Insights API (gst-insights-api.p.rapidapi.com) ──────────
     if gst_api_key and not fetched:
@@ -169,6 +226,7 @@ def gstin_lookup_api(request):
                         d = inner
 
                 if isinstance(d, dict):
+                    raw_payload_d = d
                     # Legal / Trade name
                     t_name = (d.get('tradeName') or d.get('tradeNam') or d.get('trade_name')
                               or d.get('businessName') or d.get('BusinessName') or '')
@@ -177,38 +235,85 @@ def gstin_lookup_api(request):
                     st     = (d.get('status') or d.get('sts') or d.get('taxType') or 'Active')
                     ctb    = (d.get('taxType') or d.get('ctb') or d.get('taxpayer_type') or taxpayer_type)
 
-                    # ── Address: GST Insights uses additionalAddress list OR pradr.addr ──
-                    addr_str = ''
-                    # Try additionalAddress first (richer data)
-                    add_list = d.get('additionalAddress', [])
-                    if isinstance(add_list, list) and len(add_list) > 0:
-                        aobj = add_list[0]
-                        if isinstance(aobj, dict):
-                            a = aobj.get('address', aobj)
-                        else:
-                            a = {}
+                    constitution_of_business = str(d.get('constitutionOfBusiness') or '').strip()
+                    nature_acts = d.get('natureOfBusinessActivity', [])
+                    if isinstance(nature_acts, list):
+                        nature_of_business = ', '.join([str(x).strip() for x in nature_acts if str(x).strip()])
                     else:
-                        # Fallback to pradr.addr or pradr
+                        nature_of_business = str(nature_acts or '').strip()
+                    registration_date = str(d.get('registrationDate') or '').strip()
+                    last_update_date = str(d.get('lastUpdateDate') or '').strip()
+                    center_jurisdiction = str(d.get('centerJurisdiction') or '').strip()
+                    center_jurisdiction_code = str(d.get('centerJurisdictionCode') or '').strip()
+                    state_jurisdiction = str(d.get('stateJurisdiction') or '').strip()
+                    state_jurisdiction_code = str(d.get('stateJurisdictionCode') or '').strip()
+                    einvoice_status = str(d.get('eInvoiceStatus') or '').strip()
+
+                    # ── Address: GST Insights provides principalAddress, or additionalAddress list, or pradr.addr ──
+                    addr_str = ''
+                    a = {}
+                    pr_addr = d.get('principalAddress', {})
+                    if isinstance(pr_addr, dict):
+                        if isinstance(pr_addr.get('address'), dict):
+                            a = pr_addr.get('address')
+                        elif isinstance(pr_addr.get('addr'), dict):
+                            a = pr_addr.get('addr')
+                        elif pr_addr:
+                            a = pr_addr
+
+                    if not a or not isinstance(a, dict) or not any(a.values()):
+                        add_list = d.get('additionalAddress', [])
+                        if isinstance(add_list, list) and len(add_list) > 0:
+                            aobj = add_list[0]
+                            if isinstance(aobj, dict):
+                                a = aobj.get('address', aobj)
+
+                    if not a or not isinstance(a, dict) or not any(a.values()):
                         pradr = d.get('pradr', {})
-                        a = pradr.get('addr', pradr) if isinstance(pradr, dict) else {}
+                        if isinstance(pradr, dict):
+                            a = pradr.get('addr', pradr)
                         if not a:
                             a = d.get('address', {})
 
                     if isinstance(a, str):
                         addr_str = a
                     elif isinstance(a, dict):
-                        bno  = a.get('buildingNumber','') or a.get('bno','') or a.get('bnm','')
-                        bnm  = a.get('buildingName','') or a.get('flno','')
-                        st_v = a.get('street','') or a.get('st','')
-                        loc  = a.get('location','') or a.get('locality','') or a.get('loc','')
-                        lm   = a.get('landMark','') or a.get('landmark','')
-                        dst  = a.get('district','') or a.get('dst','') or a.get('city','')
-                        stcd = a.get('stateCode','') or a.get('state','') or a.get('stcd','') or state_name
-                        pncd = a.get('pincode','') or a.get('pncd','') or a.get('pin','')
+                        bno  = str(a.get('buildingNumber','') or a.get('bno','') or '').strip()
+                        bnm  = str(a.get('buildingName','') or a.get('bnm','') or '').strip()
+                        flno = str(a.get('floorNumber','') or a.get('flno','') or '').strip()
+                        st_v = str(a.get('street','') or a.get('st','') or '').strip()
+                        loc  = str(a.get('locality','') or a.get('loc','') or '').strip()
+                        city_v = str(a.get('location','') or a.get('city','') or '').strip()
+                        lm   = str(a.get('landMark','') or a.get('landmark','') or '').strip()
+                        # If landmark is just GPS coordinates (e.g. 77.53406...), skip
+                        if lm and any(c.isdigit() for c in lm) and not any(c.isalpha() for c in lm):
+                            lm = ''
+                        dst  = str(a.get('district','') or a.get('dst','') or '').strip()
+                        stcd = str(a.get('stateCode','') or a.get('state','') or a.get('stcd','') or state_name).strip()
+                        pncd = str(a.get('pincode','') or a.get('pncd','') or a.get('pin','') or '').strip()
                         if pncd:
                             pincode = str(pncd)
-                        parts = [p for p in [bno, bnm, st_v, loc, lm, dst, stcd,
-                                             (f"PIN: {pncd}" if pncd else '')] if p]
+
+                        addr_components = {
+                            'building_number': bno,
+                            'building_name': bnm,
+                            'floor_number': flno,
+                            'street': st_v,
+                            'locality': loc,
+                            'location': city_v,
+                            'district': dst,
+                            'state': stcd,
+                            'pincode': pncd,
+                            'landmark': lm
+                        }
+
+                        # Assemble parts cleanly, avoiding exact adjacent duplicates
+                        parts = []
+                        for val in [bno, bnm, flno, st_v, loc, city_v, lm, dst, stcd]:
+                            if val and val not in parts:
+                                parts.append(val)
+                        if pncd:
+                            parts.append(f"PIN: {pncd}")
                         addr_str = ', '.join(parts)
 
                     if l_name or t_name or addr_str:
@@ -242,6 +347,7 @@ def gstin_lookup_api(request):
                     if isinstance(d2, dict) and key in d2 and isinstance(d2[key], dict):
                         d2 = d2[key]
                 if isinstance(d2, dict):
+                    raw_payload_d = d2
                     t2 = d2.get('tradeNam') or d2.get('trade_name') or d2.get('tradeName') or ''
                     l2 = d2.get('lgnm') or d2.get('legal_name') or d2.get('legalName') or d2.get('name') or ''
                     a2_data = d2.get('pradr', {}).get('addr', {}) or d2.get('pradr', {}) or d2.get('address', '')
@@ -249,15 +355,31 @@ def gstin_lookup_api(request):
                     if isinstance(a2_data, str):
                         a2 = a2_data
                     elif isinstance(a2_data, dict):
-                        parts2 = [p for p in [
-                            a2_data.get('bno',''), a2_data.get('st',''),
-                            a2_data.get('loc',''), a2_data.get('dst',''),
-                            a2_data.get('stcd', state_name),
-                            f"PIN: {a2_data.get('pncd','')}" if a2_data.get('pncd') else ''
-                        ] if p]
+                        bno2 = str(a2_data.get('bno','')).strip()
+                        bnm2 = str(a2_data.get('bnm','')).strip()
+                        flno2 = str(a2_data.get('flno','')).strip()
+                        st2 = str(a2_data.get('st','')).strip()
+                        loc2 = str(a2_data.get('loc','')).strip()
+                        dst2 = str(a2_data.get('dst','')).strip()
+                        stcd2 = str(a2_data.get('stcd', state_name)).strip()
+                        pncd2 = str(a2_data.get('pncd','')).strip()
+                        if pncd2:
+                            pincode = str(pncd2)
+                        addr_components = {
+                            'building_number': bno2,
+                            'building_name': bnm2,
+                            'floor_number': flno2,
+                            'street': st2,
+                            'locality': loc2,
+                            'location': '',
+                            'district': dst2,
+                            'state': stcd2,
+                            'pincode': pncd2,
+                            'landmark': ''
+                        }
+                        parts2 = [p for p in [bno2, bnm2, flno2, st2, loc2, dst2, stcd2,
+                                              f"PIN: {pncd2}" if pncd2 else ''] if p]
                         a2 = ', '.join(parts2)
-                        if a2_data.get('pncd'):
-                            pincode = str(a2_data['pncd'])
                     if t2 or l2 or a2:
                         trade_name = str(t2).strip()
                         legal_name = str(l2).strip()
@@ -281,12 +403,23 @@ def gstin_lookup_api(request):
         'name': display_name,
         'status': status,
         'taxpayer_type': taxpayer_type,
+        'constitution_of_business': constitution_of_business,
+        'nature_of_business': nature_of_business,
+        'registration_date': registration_date,
+        'last_update_date': last_update_date,
+        'center_jurisdiction': center_jurisdiction,
+        'center_jurisdiction_code': center_jurisdiction_code,
+        'state_jurisdiction': state_jurisdiction,
+        'state_jurisdiction_code': state_jurisdiction_code,
+        'einvoice_status': einvoice_status,
         'address': address,
+        'address_components': addr_components,
         'place_of_supply': place_of_supply,
         'state_name': state_name,
         'pincode': pincode,
         'fetched': fetched,
-        'debug_error': last_error_msg
+        'debug_error': last_error_msg,
+        'raw_data': raw_payload_d
     })
 
 
