@@ -453,13 +453,13 @@ def contact_list(request):
         from django.template.loader import render_to_string
         rows_html = render_to_string(
             'contacts/partials/contact_rows.html',
-            {'contact_data': page_obj, 'request': request},
+            {'contact_data': page_obj, 'request': request, 'is_ajax': True},
             request=request,
         )
         return JsonResponse({
             'html': rows_html,
             'has_next': page_obj.has_next(),
-            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+            'next_page': page_obj.next_page_number() if page_obj.has_next() else '',
         })
 
     return render(request, 'contacts/contact_list.html', {
@@ -468,7 +468,7 @@ def contact_list(request):
         'query': query,
         'total_count': total_count,
         'has_next': page_obj.has_next(),
-        'next_page': 2 if page_obj.has_next() else None,
+        'next_page': 2 if page_obj.has_next() else '',
     })
 
 

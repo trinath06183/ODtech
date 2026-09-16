@@ -43,6 +43,7 @@
     </td>
 </tr>
 {% empty %}
+{% if not is_ajax %}
 <tr>
     <td colspan="6" class="px-6 py-16 text-center text-gray-500">
         No contacts found.
@@ -51,4 +52,5 @@
         {% endif %}
     </td>
 </tr>
+{% endif %}
 {% endfor %}

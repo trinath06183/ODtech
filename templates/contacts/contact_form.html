@@ -120,95 +120,95 @@
 
     <!-- GSTIN Confirmation & Field Selection Modal -->
     <div x-show="showGstinModal" x-transition.opacity
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto"
-        style="display: none;">
-        <div @click.away="showGstinModal = false"
-            class="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-7 w-full max-w-2xl shadow-2xl relative space-y-5 text-left my-8 max-h-[90vh] flex flex-col">
+        @click.self="showGstinModal = false"
+        style="position:fixed; inset:0; z-index:1050; background:rgba(15,23,42,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:1rem; overflow-y:auto; display:none;">
+        <div @click.stop
+            style="background:#ffffff; border:1px solid #cbd5e1; border-radius:1.25rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); position:relative; width:100%; max-width:680px; padding:1.75rem; max-height:90vh; display:flex; flex-direction:column; gap:1.25rem; text-align:left; margin:2rem 0; box-sizing:border-box;">
             
             <!-- Modal Header -->
-            <div class="flex items-center justify-between border-b border-white/10 pb-4 flex-shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500/30 to-indigo-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 text-xl font-bold shadow-inner">
+            <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="width:2.75rem; height:2.75rem; border-radius:0.875rem; background:#f3e8ff; border:1px solid #e9d5ff; display:flex; align-items:center; justify-content:center; font-size:1.35rem; color:#7c3aed; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
                         🏛️
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            GST Details Retrieved
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                  :class="gstinData.status === 'Active' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'"
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <h3 style="font-size:1.15rem; font-weight:800; color:#0f172a; margin:0;">GST Details Retrieved</h3>
+                            <span style="font-size:0.72rem; font-weight:700; padding:2px 10px; border-radius:9999px;"
+                                  :style="gstinData.status === 'Active' ? 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;' : 'background:#fef3c7; color:#b45309; border:1px solid #fde68a;'"
                                   x-text="gstinData.status || 'Active'"></span>
-                        </h3>
-                        <p class="text-xs text-gray-400">Review all values returned from GST portal and choose what to include</p>
+                        </div>
+                        <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0 0;">Review all values returned from GST portal and choose what to include</p>
                     </div>
                 </div>
-                <button type="button" @click="showGstinModal = false" class="text-gray-400 hover:text-white text-2xl font-semibold leading-none p-1 transition">&times;</button>
+                <button type="button" @click="showGstinModal = false" style="background:none; border:none; color:#94a3b8; font-size:1.6rem; cursor:pointer; line-height:1; padding:2px 8px; border-radius:6px; transition:all 0.15s;"
+                    onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">&times;</button>
             </div>
 
             <!-- Scrollable Content Area -->
-            <div class="space-y-4 overflow-y-auto pr-1 flex-1 custom-scrollbar">
+            <div style="overflow-y:auto; display:flex; flex-direction:column; gap:1rem; flex:1; padding-right:0.25rem;">
 
                 <!-- Meta Badges Strip -->
-                <div class="bg-slate-800/60 p-3 rounded-2xl border border-white/5 flex flex-wrap items-center gap-2 text-xs">
-                    <div class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10">
-                        <span class="text-gray-400">GSTIN:</span>
-                        <span class="font-mono font-bold text-purple-300" x-text="gstinData.gstin"></span>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:0.6rem 0.85rem; display:flex; flex-wrap:wrap; gap:0.5rem; font-size:0.75rem;">
+                    <div style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 9px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">GSTIN:</span> <strong style="font-family:monospace; color:#7c3aed;" x-text="gstinData.gstin"></strong>
                     </div>
-                    <div x-show="gstinData.taxpayer_type" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
-                        <span class="text-gray-400">Taxpayer:</span> <strong x-text="gstinData.taxpayer_type"></strong>
+                    <div x-show="gstinData.taxpayer_type" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 9px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">Taxpayer:</span> <strong style="color:#0f172a;" x-text="gstinData.taxpayer_type"></strong>
                     </div>
-                    <div x-show="gstinData.constitution_of_business" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
-                        <span class="text-gray-400">Constitution:</span> <strong x-text="gstinData.constitution_of_business"></strong>
+                    <div x-show="gstinData.constitution_of_business" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 9px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">Constitution:</span> <strong style="color:#0f172a;" x-text="gstinData.constitution_of_business"></strong>
                     </div>
-                    <div x-show="gstinData.einvoice_status" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
-                        <span class="text-gray-400">e-Invoice:</span> <strong :class="gstinData.einvoice_status === 'Yes' ? 'text-emerald-400' : 'text-gray-300'" x-text="gstinData.einvoice_status"></strong>
+                    <div x-show="gstinData.einvoice_status" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 9px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">e-Invoice:</span> <strong :style="gstinData.einvoice_status === 'Yes' ? 'color:#15803d;' : 'color:#475569;'" x-text="gstinData.einvoice_status"></strong>
                     </div>
-                    <div x-show="gstinData.place_of_supply" class="bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 text-gray-300">
-                        <span class="text-gray-400">Place of Supply:</span> <span x-text="gstinData.place_of_supply"></span>
+                    <div x-show="gstinData.place_of_supply" style="background:#ffffff; border:1px solid #cbd5e1; padding:3px 9px; border-radius:0.375rem;">
+                        <span style="color:#64748b;">Place of Supply:</span> <span style="color:#0f172a; font-weight:600;" x-text="gstinData.place_of_supply"></span>
                     </div>
                 </div>
 
                 <!-- 1. Party / Company Name Selector -->
-                <div class="bg-slate-800/70 border border-white/10 rounded-2xl p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" x-model="gstSelection.includeName" class="w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-600 focus:ring-purple-500 focus:ring-offset-0">
-                            <span class="text-sm font-bold text-white">Include Party / Company Name</span>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:1rem; display:flex; flex-direction:column; gap:0.65rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; font-weight:700; color:#0f172a; cursor:pointer; margin:0;">
+                            <input type="checkbox" x-model="gstSelection.includeName" style="accent-color:#7c3aed; width:1.05rem; height:1.05rem; cursor:pointer;">
+                            Include Party / Company Name
                         </label>
-                        <span class="text-[11px] text-gray-400">Select Name to Use</span>
+                        <span style="font-size:0.72rem; color:#64748b; font-weight:600;">Select Name to Use</span>
                     </div>
 
-                    <div x-show="gstSelection.includeName" class="space-y-2.5 pt-1">
+                    <div x-show="gstSelection.includeName" style="display:flex; flex-direction:column; gap:0.6rem; padding-top:0.25rem;">
                         <!-- Radio options if distinct trade / legal names exist -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0.5rem;">
                             <template x-if="gstinData.trade_name">
-                                <label class="flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
-                                       :class="gstSelection.nameOption === 'trade' ? 'bg-purple-600/15 border-purple-500/50 text-white' : 'bg-slate-900/60 border-white/5 text-gray-300 hover:border-white/20'">
-                                    <input type="radio" name="name_option" value="trade" @change="setNameOption('trade')" :checked="gstSelection.nameOption === 'trade'" class="mt-0.5 text-purple-600 bg-slate-900 border-slate-600 focus:ring-0">
+                                <label style="display:flex; align-items:flex-start; gap:0.5rem; padding:0.6rem 0.8rem; border-radius:0.625rem; border:1.5px solid; cursor:pointer; transition:all 0.15s;"
+                                       :style="gstSelection.nameOption === 'trade' ? 'background:#f3e8ff; border-color:#a855f7; box-shadow:0 1px 3px rgba(168,85,247,0.15);' : 'background:#ffffff; border-color:#e2e8f0;'">
+                                    <input type="radio" name="name_option" value="trade" @change="setNameOption('trade')" :checked="gstSelection.nameOption === 'trade'" style="margin-top:2px; accent-color:#7c3aed; cursor:pointer;">
                                     <div>
-                                        <div class="font-bold text-purple-300">Trade Name</div>
-                                        <div class="text-xs text-gray-200 mt-0.5" x-text="gstinData.trade_name"></div>
+                                        <div style="font-size:0.72rem; font-weight:700; color:#7c3aed;">Trade Name</div>
+                                        <div style="font-size:0.82rem; font-weight:600; color:#0f172a; margin-top:2px;" x-text="gstinData.trade_name"></div>
                                     </div>
                                 </label>
                             </template>
 
                             <template x-if="gstinData.legal_name">
-                                <label class="flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
-                                       :class="gstSelection.nameOption === 'legal' ? 'bg-purple-600/15 border-purple-500/50 text-white' : 'bg-slate-900/60 border-white/5 text-gray-300 hover:border-white/20'">
-                                    <input type="radio" name="name_option" value="legal" @change="setNameOption('legal')" :checked="gstSelection.nameOption === 'legal'" class="mt-0.5 text-purple-600 bg-slate-900 border-slate-600 focus:ring-0">
+                                <label style="display:flex; align-items:flex-start; gap:0.5rem; padding:0.6rem 0.8rem; border-radius:0.625rem; border:1.5px solid; cursor:pointer; transition:all 0.15s;"
+                                       :style="gstSelection.nameOption === 'legal' ? 'background:#f3e8ff; border-color:#a855f7; box-shadow:0 1px 3px rgba(168,85,247,0.15);' : 'background:#ffffff; border-color:#e2e8f0;'">
+                                    <input type="radio" name="name_option" value="legal" @change="setNameOption('legal')" :checked="gstSelection.nameOption === 'legal'" style="margin-top:2px; accent-color:#7c3aed; cursor:pointer;">
                                     <div>
-                                        <div class="font-bold text-purple-300">Legal Registered Name</div>
-                                        <div class="text-xs text-gray-200 mt-0.5" x-text="gstinData.legal_name"></div>
+                                        <div style="font-size:0.72rem; font-weight:700; color:#7c3aed;">Legal Registered Name</div>
+                                        <div style="font-size:0.82rem; font-weight:600; color:#0f172a; margin-top:2px;" x-text="gstinData.legal_name"></div>
                                     </div>
                                 </label>
                             </template>
 
                             <template x-if="gstinData.trade_name && gstinData.legal_name && gstinData.trade_name.toLowerCase() !== gstinData.legal_name.toLowerCase()">
-                                <label class="sm:col-span-2 flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition"
-                                       :class="gstSelection.nameOption === 'combined' ? 'bg-purple-600/15 border-purple-500/50 text-white' : 'bg-slate-900/60 border-white/5 text-gray-300 hover:border-white/20'">
-                                    <input type="radio" name="name_option" value="combined" @change="setNameOption('combined')" :checked="gstSelection.nameOption === 'combined'" class="mt-0.5 text-purple-600 bg-slate-900 border-slate-600 focus:ring-0">
+                                <label style="grid-column:1 / -1; display:flex; align-items:flex-start; gap:0.5rem; padding:0.6rem 0.8rem; border-radius:0.625rem; border:1.5px solid; cursor:pointer; transition:all 0.15s;"
+                                       :style="gstSelection.nameOption === 'combined' ? 'background:#f3e8ff; border-color:#a855f7; box-shadow:0 1px 3px rgba(168,85,247,0.15);' : 'background:#ffffff; border-color:#e2e8f0;'">
+                                    <input type="radio" name="name_option" value="combined" @change="setNameOption('combined')" :checked="gstSelection.nameOption === 'combined'" style="margin-top:2px; accent-color:#7c3aed; cursor:pointer;">
                                     <div>
-                                        <div class="font-bold text-purple-300">Combined Name</div>
-                                        <div class="text-xs text-gray-200 mt-0.5" x-text="`${gstinData.trade_name} (${gstinData.legal_name})`"></div>
+                                        <div style="font-size:0.72rem; font-weight:700; color:#7c3aed;">Combined Name</div>
+                                        <div style="font-size:0.82rem; font-weight:600; color:#0f172a; margin-top:2px;" x-text="`${gstinData.trade_name} (${gstinData.legal_name})`"></div>
                                     </div>
                                 </label>
                             </template>
@@ -216,184 +216,176 @@
 
                         <!-- Editable Target Name -->
                         <div>
-                            <div class="text-[11px] font-semibold text-gray-400 mb-1">Final Name to Apply (Editable):</div>
+                            <label style="display:block; font-size:0.72rem; font-weight:700; color:#475569; margin-bottom:0.3rem;">Final Name to Apply (Editable):</label>
                             <input type="text" x-model="gstSelection.customName" placeholder="Enter party name..."
-                                   class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm font-semibold focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40">
+                                   style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:0.5rem; padding:0.55rem 0.85rem; font-size:0.875rem; font-weight:600; color:#0f172a; outline:none; box-sizing:border-box;"
+                                   onfocus="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.2)'"
+                                   onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. Permanent Account Number (PAN) -->
-                <div class="bg-slate-800/70 border border-white/10 rounded-2xl p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" x-model="gstSelection.includePan" class="w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-600 focus:ring-purple-500 focus:ring-offset-0">
-                            <span class="text-sm font-bold text-white">Include PAN</span>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:1rem; display:flex; flex-direction:column; gap:0.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; font-weight:700; color:#0f172a; cursor:pointer; margin:0;">
+                            <input type="checkbox" x-model="gstSelection.includePan" style="accent-color:#7c3aed; width:1.05rem; height:1.05rem; cursor:pointer;">
+                            Include PAN
                         </label>
-                        <span class="text-xs font-mono font-bold text-purple-300" x-text="gstinData.pan"></span>
+                        <span style="font-size:0.85rem; font-family:monospace; font-weight:700; color:#7c3aed;" x-text="gstinData.pan"></span>
                     </div>
                     <div x-show="gstSelection.includePan">
                         <input type="text" x-model="gstSelection.customPan" placeholder="PAN Number" maxlength="10"
-                               class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm font-mono uppercase focus:outline-none focus:border-purple-500">
+                               style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:0.5rem; padding:0.5rem 0.85rem; font-size:0.875rem; font-family:monospace; font-weight:700; color:#0f172a; text-transform:uppercase; outline:none; box-sizing:border-box;"
+                               onfocus="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.2)'"
+                               onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'">
                     </div>
                 </div>
 
                 <!-- 3. Granular Address Component Selection -->
-                <div class="bg-slate-800/70 border border-white/10 rounded-2xl p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" x-model="gstSelection.includeAddress" class="w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-600 focus:ring-purple-500 focus:ring-offset-0">
-                            <span class="text-sm font-bold text-white">Include Billing Address</span>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.875rem; padding:1rem; display:flex; flex-direction:column; gap:0.65rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; font-weight:700; color:#0f172a; cursor:pointer; margin:0;">
+                            <input type="checkbox" x-model="gstSelection.includeAddress" style="accent-color:#7c3aed; width:1.05rem; height:1.05rem; cursor:pointer;">
+                            Include Billing Address
                         </label>
-                        <div x-show="gstSelection.includeAddress" class="flex items-center gap-2 text-xs">
-                            <button type="button" @click="toggleAllComponents(true)" class="text-purple-400 hover:text-purple-300 font-semibold transition">Select All</button>
-                            <span class="text-gray-600">|</span>
-                            <button type="button" @click="toggleAllComponents(false)" class="text-gray-400 hover:text-gray-300 transition">Clear All</button>
+                        <div x-show="gstSelection.includeAddress" style="display:flex; align-items:center; gap:0.5rem; font-size:0.72rem;">
+                            <button type="button" @click="toggleAllComponents(true)" style="background:none; border:none; color:#7c3aed; font-weight:700; cursor:pointer; padding:0;">Select All</button>
+                            <span style="color:#cbd5e1;">|</span>
+                            <button type="button" @click="toggleAllComponents(false)" style="background:none; border:none; color:#64748b; cursor:pointer; padding:0;">Clear All</button>
                         </div>
                     </div>
 
-                    <div x-show="gstSelection.includeAddress" class="space-y-3 pt-1">
-                        <p class="text-xs text-gray-400">Click any badge to toggle that component on or off in the final address:</p>
+                    <div x-show="gstSelection.includeAddress" style="display:flex; flex-direction:column; gap:0.65rem; padding-top:0.25rem;">
+                        <p style="font-size:0.72rem; color:#64748b; margin:0;">Click any badge to toggle that component on or off in the final address:</p>
 
                         <!-- Address Components Chips -->
-                        <div class="flex flex-wrap gap-2">
+                        <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
                             <!-- Building Number -->
                             <template x-if="gstinData.address_components && gstinData.address_components.building_number">
                                 <button type="button" @click="toggleAddressComponent('building_number')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.building_number ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.building_number ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.building_number ? '✓' : '+'"></span>
-                                    <span>Bldg/Floor:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.building_number"></strong>
+                                    <span>Bldg/Floor: <strong style="color:#0f172a;" x-text="gstinData.address_components.building_number"></strong></span>
                                 </button>
                             </template>
 
                             <!-- Building Name -->
                             <template x-if="gstinData.address_components && gstinData.address_components.building_name">
                                 <button type="button" @click="toggleAddressComponent('building_name')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.building_name ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.building_name ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.building_name ? '✓' : '+'"></span>
-                                    <span>Premises:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.building_name"></strong>
+                                    <span>Premises: <strong style="color:#0f172a;" x-text="gstinData.address_components.building_name"></strong></span>
                                 </button>
                             </template>
 
                             <!-- Street -->
                             <template x-if="gstinData.address_components && gstinData.address_components.street">
                                 <button type="button" @click="toggleAddressComponent('street')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.street ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.street ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.street ? '✓' : '+'"></span>
-                                    <span>Street:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.street"></strong>
+                                    <span>Street: <strong style="color:#0f172a;" x-text="gstinData.address_components.street"></strong></span>
                                 </button>
                             </template>
 
                             <!-- Locality -->
                             <template x-if="gstinData.address_components && gstinData.address_components.locality">
                                 <button type="button" @click="toggleAddressComponent('locality')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.locality ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.locality ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.locality ? '✓' : '+'"></span>
-                                    <span>Locality:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.locality"></strong>
+                                    <span>Locality: <strong style="color:#0f172a;" x-text="gstinData.address_components.locality"></strong></span>
                                 </button>
                             </template>
 
                             <!-- Location / City -->
                             <template x-if="gstinData.address_components && gstinData.address_components.location">
                                 <button type="button" @click="toggleAddressComponent('location')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.location ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.location ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.location ? '✓' : '+'"></span>
-                                    <span>City:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.location"></strong>
+                                    <span>City: <strong style="color:#0f172a;" x-text="gstinData.address_components.location"></strong></span>
                                 </button>
                             </template>
 
                             <!-- District -->
                             <template x-if="gstinData.address_components && gstinData.address_components.district">
                                 <button type="button" @click="toggleAddressComponent('district')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.district ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.district ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.district ? '✓' : '+'"></span>
-                                    <span>District:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.district"></strong>
+                                    <span>District: <strong style="color:#0f172a;" x-text="gstinData.address_components.district"></strong></span>
                                 </button>
                             </template>
 
                             <!-- State -->
                             <template x-if="gstinData.address_components && gstinData.address_components.state">
                                 <button type="button" @click="toggleAddressComponent('state')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.state ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.state ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.state ? '✓' : '+'"></span>
-                                    <span>State:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.state"></strong>
+                                    <span>State: <strong style="color:#0f172a;" x-text="gstinData.address_components.state"></strong></span>
                                 </button>
                             </template>
 
                             <!-- PIN Code -->
                             <template x-if="gstinData.address_components && gstinData.address_components.pincode">
                                 <button type="button" @click="toggleAddressComponent('pincode')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.pincode ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.pincode ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.pincode ? '✓' : '+'"></span>
-                                    <span>PIN:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.pincode"></strong>
+                                    <span>PIN: <strong style="color:#0f172a;" x-text="gstinData.address_components.pincode"></strong></span>
                                 </button>
                             </template>
 
                             <!-- Landmark (if available) -->
                             <template x-if="gstinData.address_components && gstinData.address_components.landmark">
                                 <button type="button" @click="toggleAddressComponent('landmark')"
-                                    class="px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition"
-                                    :class="gstSelection.components.landmark ? 'bg-purple-600/20 text-purple-200 border-purple-500/40' : 'bg-slate-900/60 text-gray-400 border-white/5 opacity-60'">
+                                    style="padding:0.35rem 0.65rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; border:1px solid; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:0.35rem;"
+                                    :style="gstSelection.components.landmark ? 'background:#f3e8ff; color:#6b21a8; border-color:#d8b4fe;' : 'background:#f1f5f9; color:#94a3b8; border-color:#e2e8f0; opacity:0.65; text-decoration:line-through;'">
                                     <span x-text="gstSelection.components.landmark ? '✓' : '+'"></span>
-                                    <span>Landmark:</span>
-                                    <strong class="text-white" x-text="gstinData.address_components.landmark"></strong>
+                                    <span>Landmark: <strong style="color:#0f172a;" x-text="gstinData.address_components.landmark"></strong></span>
                                 </button>
                             </template>
                         </div>
 
                         <!-- Live Assembled Address Preview / Editable -->
                         <div>
-                            <div class="text-[11px] font-semibold text-gray-400 mb-1 flex items-center justify-between">
-                                <span>Live Assembled Address Preview (Editable):</span>
-                                <span class="text-purple-400 text-[10px]">Updates automatically as chips are toggled</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                                <span style="font-size:0.72rem; font-weight:700; color:#475569;">Live Assembled Address Preview (Editable):</span>
+                                <span style="font-size:0.7rem; color:#7c3aed; font-weight:600;">Updates automatically as chips are toggled</span>
                             </div>
                             <textarea x-model="gstSelection.customAddress" rows="3" placeholder="Registered office address..."
-                                      class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 resize-none font-normal"></textarea>
+                                      style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:0.5rem; padding:0.55rem 0.85rem; font-size:0.8rem; color:#0f172a; line-height:1.45; outline:none; resize:none; box-sizing:border-box;"
+                                      onfocus="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.2)'"
+                                      onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none'"></textarea>
                         </div>
                     </div>
                 </div>
 
                 <!-- 4. Other Registry & Jurisdiction Info (Collapsible / Informational) -->
-                <div class="bg-slate-800/40 border border-white/5 rounded-2xl p-4 text-xs space-y-2">
-                    <div class="font-bold text-gray-300 text-xs flex items-center gap-1.5">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:0.75rem 1rem; font-size:0.75rem; color:#64748b;">
+                    <div style="font-weight:700; color:#475569; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.4rem;">
                         <span>ℹ️</span> Additional GST Registry Information:
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-400">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:0.4rem;">
                         <div x-show="gstinData.nature_of_business">
-                            <span class="text-gray-500">Nature of Activity:</span>
-                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.nature_of_business"></span>
+                            <span style="color:#64748b;">Activity:</span> <strong style="color:#0f172a;" x-text="gstinData.nature_of_business"></strong>
                         </div>
                         <div x-show="gstinData.registration_date">
-                            <span class="text-gray-500">Registration Date:</span>
-                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.registration_date"></span>
+                            <span style="color:#64748b;">Registration Date:</span> <strong style="color:#0f172a;" x-text="gstinData.registration_date"></strong>
                         </div>
                         <div x-show="gstinData.last_update_date">
-                            <span class="text-gray-500">Last Updated:</span>
-                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.last_update_date"></span>
+                            <span style="color:#64748b;">Last Updated:</span> <strong style="color:#0f172a;" x-text="gstinData.last_update_date"></strong>
                         </div>
                         <div x-show="gstinData.state_jurisdiction">
-                            <span class="text-gray-500">State Jurisdiction:</span>
-                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.state_jurisdiction"></span>
+                            <span style="color:#64748b;">State Jurisdiction:</span> <strong style="color:#0f172a;" x-text="gstinData.state_jurisdiction"></strong>
                         </div>
                         <div x-show="gstinData.center_jurisdiction">
-                            <span class="text-gray-500">Center Jurisdiction:</span>
-                            <span class="text-gray-200 font-medium ml-1" x-text="gstinData.center_jurisdiction"></span>
+                            <span style="color:#64748b;">Center Jurisdiction:</span> <strong style="color:#0f172a;" x-text="gstinData.center_jurisdiction"></strong>
                         </div>
                     </div>
                 </div>
@@ -401,13 +393,15 @@
             </div>
 
             <!-- Modal Footer Actions -->
-            <div class="flex items-center justify-between pt-4 border-t border-white/10 flex-shrink-0">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top:0.85rem; flex-shrink:0;">
                 <button type="button" @click="showGstinModal = false"
-                    class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 text-sm font-semibold rounded-xl transition">
+                    style="padding:0.6rem 1.25rem; background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; border-radius:0.625rem; font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.15s;"
+                    onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
                     Cancel
                 </button>
                 <button type="button" @click="applyGstinDetails()"
-                    class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-purple-500/25 transition flex items-center gap-2 hover:-translate-y-0.5">
+                    style="padding:0.65rem 1.5rem; background:linear-gradient(135deg, #7c3aed, #6d28d9); border:none; color:#ffffff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(124,58,237,0.35); display:flex; align-items:center; gap:0.5rem; transition:transform 0.15s;"
+                    onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
                     <span>✓ Apply Selected to Form</span>
                 </button>
             </div>

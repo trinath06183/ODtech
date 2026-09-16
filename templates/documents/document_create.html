@@ -1219,8 +1219,8 @@
     {# ══════════════════════ MODALS ══════════════════════════════ #}
 
     {# Customer Modal #}
-    <div x-show="showCustomerModal" style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
-        <div @click.away="showCustomerModal = false"
+    <div x-show="showCustomerModal" @click.self="showCustomerModal = false" style="display:flex; position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,0.45); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
+        <div @click.stop
             style="background:#ffffff; border:1px solid #e2e8f0; border-radius:1rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); position:relative; width:100%; max-width:440px; padding:1.5rem; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column;">
 
             <button type="button" @click="showCustomerModal = false" style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer; line-height:1; padding:2px 6px; border-radius:6px;"
@@ -1296,8 +1296,8 @@
     </div>
 
     {# Customer GST Details & Field Selection Modal #}
-    <div x-show="showCustomerGstModal" style="display:flex; position:fixed; inset:0; z-index:1050; background:rgba(15,23,42,0.55); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding:1rem;" x-transition.opacity>
-        <div @click.away="showCustomerGstModal = false"
+    <div x-show="showCustomerGstModal" @click.self="showCustomerGstModal = false" style="display:flex; position:fixed; inset:0; z-index:1050; background:rgba(15,23,42,0.55); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding:1rem;" x-transition.opacity>
+        <div @click.stop
             style="background:#ffffff; border:1px solid #cbd5e1; border-radius:1.25rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.3); position:relative; width:100%; max-width:640px; padding:1.75rem; max-height:90vh; display:flex; flex-direction:column; gap:1.25rem;">
 
             <!-- Header -->

@@ -77,7 +77,7 @@
 </div>
 <!-- Sentinel + Spinner for Infinite Scroll -->
 <div id="scroll-sentinel" class="flex justify-center items-center py-4"
-     data-next-page="{{ next_page }}"
+     data-next-page="{% if has_next %}{{ next_page }}{% endif %}"
      data-query="{{ query|urlencode }}"
      data-type="{{ contact_type|urlencode }}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
@@ -97,8 +97,15 @@
     const tbody    = document.getElementById('contact-tbody');
     let loading    = false;
     if (!sentinel) return;
+
+    function getNextPage() {
+        const np = (sentinel.dataset.nextPage || '').trim();
+        if (!np || np === 'None' || np === 'null' || isNaN(parseInt(np))) return null;
+        return np;
+    }
+
     async function loadMore() {
-        const nextPage = sentinel.dataset.nextPage || null;
+        const nextPage = getNextPage();
         if (!nextPage || loading) return;
         loading = true;
         spinner.classList.remove('hidden');
@@ -112,13 +119,32 @@
             const tmp = document.createElement('tbody');
             tmp.innerHTML = data.html;
             while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
-            if (data.has_next) { sentinel.dataset.nextPage = data.next_page; }
-            else { observer.unobserve(sentinel); spinner.classList.add('hidden'); endMsg.classList.remove('hidden'); loading = false; return; }
+            if (data.has_next && data.next_page) {
+                sentinel.dataset.nextPage = data.next_page;
+            } else {
+                sentinel.dataset.nextPage = '';
+                observer.unobserve(sentinel);
+                spinner.classList.add('hidden');
+                endMsg.classList.remove('hidden');
+                loading = false;
+                return;
+            }
         } catch(e) { console.error(e); }
-        spinner.classList.add('hidden'); loading = false;
+        spinner.classList.add('hidden');
+        loading = false;
     }
-    const observer = new IntersectionObserver((e) => { if (e[0].isIntersecting) loadMore(); }, { rootMargin: '200px' });
-    if (sentinel.dataset.nextPage) { observer.observe(sentinel); } else { endMsg.classList.remove('hidden'); }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && getNextPage()) {
+            loadMore();
+        }
+    }, { rootMargin: '200px' });
+
+    if (getNextPage()) {
+        observer.observe(sentinel);
+    } else {
+        endMsg.classList.remove('hidden');
+    }
 })();
 </script>
 {% endblock %}
