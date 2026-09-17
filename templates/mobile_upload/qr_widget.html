@@ -346,6 +346,14 @@
             const fileInput = document.getElementById('edms-file-input') || document.getElementById('id_file') || document.getElementById('id_receipt');
             if(fileInput){
                 fileInput.files = dataTransfer.files;
+                // QR code uploads must be saved directly without cropping or modification
+                const autoCropInput = document.getElementById('auto_crop_input');
+                if (autoCropInput) autoCropInput.value = 'false';
+                const cropPointsInput = document.getElementById('crop_points_input');
+                if (cropPointsInput) cropPointsInput.value = '';
+                const qrUploadFlag = document.getElementById('is_qr_upload_input');
+                if (qrUploadFlag) qrUploadFlag.value = 'true';
+
                 // Support both old (showPreview) and new (handleFileSelected) upload pages
                 if(typeof handleFileSelected === 'function') handleFileSelected();
                 else if(typeof showPreview === 'function') showPreview();

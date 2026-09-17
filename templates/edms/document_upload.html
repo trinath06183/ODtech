@@ -184,7 +184,8 @@
             <form method="POST" enctype="multipart/form-data" id="upload-form" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="crop_points" id="crop_points_input" value="">
-                <input type="hidden" name="auto_crop" id="auto_crop_input" value="true">
+                <input type="hidden" name="auto_crop" id="auto_crop_input" value="false">
+                <input type="hidden" name="is_qr_upload" id="is_qr_upload_input" value="false">
 
                 {% if meta_form.errors or file_form.errors %}
                 <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm mb-4">

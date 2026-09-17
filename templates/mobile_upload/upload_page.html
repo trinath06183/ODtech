@@ -901,15 +901,7 @@
             if (typeof onFileSelected === 'function') {
                 onFileSelected(file);
             }
-
-            if (capturedQuad) {
-                manualCropPoints = capturedQuad;
-                const adjBtn = document.getElementById('adjust-crop-btn');
-                if (adjBtn) adjBtn.textContent = "✓ Auto-Aligned";
-                const autoCb = document.getElementById('auto-crop');
-                if (autoCb) autoCb.checked = false;
-            }
-        }, 'image/jpeg', 0.92);
+        }, 'image/jpeg', 0.98);
     };
 })();
 </script>

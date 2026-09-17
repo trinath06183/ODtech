@@ -11,12 +11,6 @@ mobile_upload/views.py
 
 import os
 import mimetypes
-try:
-    from PIL import Image
-except ImportError:
-    Image = None
-from io import BytesIO
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
@@ -107,73 +101,6 @@ def mobile_upload_submit(request, token):
 
     uploaded = request.FILES['file']
 
-    # Check for crop flags
-    crop_points_str = request.POST.get('crop_points')
-    
-    crop_points = None
-    if crop_points_str:
-        import json
-        try:
-            crop_points = json.loads(crop_points_str)
-            if not isinstance(crop_points, list) or len(crop_points) != 4:
-                crop_points = None
-        except Exception:
-            crop_points = None
-
-    # Apply manual cropping if requested and OpenCV is available
-    if crop_points and uploaded.content_type and uploaded.content_type.startswith('image/'):
-        try:
-            from mobile_upload.utils import manual_crop_document
-            
-            cropped_bytes = manual_crop_document(uploaded.read(), crop_points)
-            
-            # Create a new InMemoryUploadedFile with the processed bytes
-            from django.core.files.uploadedfile import InMemoryUploadedFile
-            import os
-            
-            size = len(cropped_bytes)
-            output = BytesIO(cropped_bytes)
-            output.seek(0)
-            
-            uploaded = InMemoryUploadedFile(
-                output, 'ImageField', 
-                os.path.splitext(uploaded.name)[0] + ".jpg", 
-                'image/jpeg', size, None
-            )
-        except Exception as e:
-            print("Failed to auto-crop:", e)
-            uploaded.seek(0) # Reset pointer in case it failed
-
-    # Compress if it's an image and larger than 2MB, UNLESS client already compressed it
-    client_compressed = request.POST.get('client_compressed') == 'true'
-    
-    if not client_compressed and 'Image' in globals() and Image and uploaded.size > 2 * 1024 * 1024 and getattr(uploaded, 'content_type', '').startswith('image/'):
-        try:
-            img = Image.open(uploaded)
-            if img.mode != 'RGB': img = img.convert('RGB')
-            output = BytesIO()
-            img.save(output, format='JPEG', quality=45, optimize=True)
-            output.seek(0, os.SEEK_END)
-            
-            # If still > 2MB, resize it by 50%
-            if output.tell() > 2 * 1024 * 1024:
-                output = BytesIO()
-                # Use Resampling.LANCZOS if available, else Image.ANTIALIAS
-                resample = getattr(Image, 'Resampling', Image).LANCZOS
-                img = img.resize((img.width // 2, img.height // 2), resample)
-                img.save(output, format='JPEG', quality=45, optimize=True)
-                output.seek(0, os.SEEK_END)
-            
-            size = output.tell()
-            output.seek(0)
-            uploaded = InMemoryUploadedFile(
-                output, 'ImageField', 
-                os.path.splitext(uploaded.name)[0] + ".jpg", 
-                'image/jpeg', size, None
-            )
-        except Exception as e:
-            print("Compression failed:", e)
-
     # Size check (50 MB max, matching EDMS settings)
     max_bytes = getattr(__import__('django.conf', fromlist=['settings']).settings, 'EDMS_MAX_UPLOAD_BYTES', 50 * 1024 * 1024)
     if uploaded.size > max_bytes:
@@ -181,9 +108,9 @@ def mobile_upload_submit(request, token):
 
     # Detect MIME type
     mime, _ = mimetypes.guess_type(uploaded.name)
-    mime = mime or uploaded.content_type or 'application/octet-stream'
+    mime = mime or getattr(uploaded, 'content_type', None) or 'application/octet-stream'
 
-    # Save
+    # Save original raw file directly without any modification (no cropping, no color change, no compression)
     session.uploaded_file     = uploaded
     session.original_filename = uploaded.name
     session.file_size         = uploaded.size

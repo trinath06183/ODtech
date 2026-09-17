@@ -213,10 +213,12 @@ class DocumentUploadView(EDMSPermissionMixin, EDMSContextMixin, TemplateView):
             try:
                 uploaded = file_form.cleaned_data['file']
 
+                is_qr_upload = request.POST.get('is_qr_upload') == 'true'
                 auto_crop_str = request.POST.get('auto_crop')
                 crop_points_str = request.POST.get('crop_points')
                 
-                if uploaded.content_type and uploaded.content_type.startswith('image/'):
+                # If uploaded via QR code or not explicitly cropped, store directly without modification
+                if not is_qr_upload and uploaded.content_type and uploaded.content_type.startswith('image/'):
                     if crop_points_str:
                         import json
                         try:
