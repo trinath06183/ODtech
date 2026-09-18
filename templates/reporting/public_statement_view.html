@@ -83,124 +83,17 @@
                 <div class="bg-amber-50/80 rounded-2xl p-5 border border-amber-200 sm:text-right">
                     <div class="text-xs font-bold text-amber-900 uppercase tracking-wider">Total Outstanding Balance</div>
                     <div class="text-3xl font-black text-amber-950 font-mono mt-1">₹{{ ledger.closing_balance|floatformat:2 }}</div>
-                    <div class="text-[11px] text-amber-700 mt-1 font-mono">
-                        Invoiced (Debit): <strong class="text-rose-700">- ₹{{ ledger.total_debit|floatformat:2 }}</strong> &bull; Received (Credit): <strong class="text-emerald-700">+ ₹{{ ledger.total_credit|floatformat:2 }}</strong>
+                    <div class="text-[11px] text-amber-700 mt-1">
+                        Invoiced (Debit): <span class="font-mono font-bold text-rose-700">- ₹{{ ledger.total_debit|floatformat:2 }}</span> &bull; Received (Credit): <span class="font-mono font-bold text-emerald-700">+ ₹{{ ledger.total_credit|floatformat:2 }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Section 1: Bill-Wise Outstanding & Payment Reconciliation -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm print-shadow-none overflow-hidden print-break-inside-avoid">
-            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider">Bill-Wise Outstanding & Settlement Reconciliation</h3>
-                    <p class="text-[11px] text-slate-500">Breakdown of invoices, credits received against each bill, and remaining balance due.</p>
-                </div>
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="px-2.5 py-0.5 rounded-lg font-semibold bg-slate-100 text-slate-700">
-                        {{ ledger.bills_summary|length }} Bills
-                    </span>
-                    <span class="px-2.5 py-0.5 rounded-lg font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {{ ledger.paid_bills_count }} Settled
-                    </span>
-                    {% if ledger.unpaid_bills_count > 0 %}
-                    <span class="px-2.5 py-0.5 rounded-lg font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                        {{ ledger.unpaid_bills_count }} Due
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-xs">
-                    <thead class="bg-slate-100/75 text-slate-700 font-bold uppercase tracking-wider">
-                        <tr>
-                            <th class="py-2.5 px-4 text-left">Bill / Invoice No.</th>
-                            <th class="py-2.5 px-4 text-left">Date</th>
-                            <th class="py-2.5 px-4 text-left">Type</th>
-                            <th class="py-2.5 px-4 text-left">PO Ref.</th>
-                            <th class="py-2.5 px-4 text-right">Invoiced (Debit - ₹)</th>
-                            <th class="py-2.5 px-4 text-right">Credits Received (+ ₹)</th>
-                            <th class="py-2.5 px-4 text-right">Remaining Due (₹)</th>
-                            <th class="py-2.5 px-4 text-center">Status</th>
-                            <th class="py-2.5 px-4 text-left">Payment Credits Applied</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-slate-800">
-                        {% for bill in ledger.bills_summary %}
-                        <tr class="{% if bill.remaining_balance > 0 %}bg-rose-50/20{% endif %}">
-                            <td class="py-2.5 px-4 font-mono font-bold text-slate-900">{{ bill.doc_number }}</td>
-                            <td class="py-2.5 px-4 font-mono text-slate-600 whitespace-nowrap">{{ bill.date|date:"d M Y" }}</td>
-                            <td class="py-2.5 px-4 text-slate-600">{{ bill.type_display }}</td>
-                            <td class="py-2.5 px-4 font-mono text-slate-500">{{ bill.po_ref }}</td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold text-rose-600">- ₹{{ bill.total_amount|floatformat:2 }}</td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold text-emerald-600">
-                                {% if bill.paid_amount > 0 %}+ ₹{{ bill.paid_amount|floatformat:2 }}{% else %}—{% endif %}
-                            </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold {% if bill.remaining_balance > 0 %}text-rose-600{% else %}text-emerald-700{% endif %}">
-                                ₹{{ bill.remaining_balance|floatformat:2 }}
-                            </td>
-                            <td class="py-2.5 px-4 text-center">
-                                {% if bill.status == 'PAID' %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                    ✓ Paid in Full
-                                </span>
-                                {% elif bill.status == 'PARTIAL' %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                                    Partially Paid
-                                </span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                                    Unpaid
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td class="py-2.5 px-4">
-                                {% if bill.payments_applied %}
-                                <div class="space-y-0.5">
-                                    {% for p in bill.payments_applied %}
-                                    <div class="text-[11px] text-slate-600 flex flex-wrap items-center gap-1">
-                                        <span class="font-mono font-bold text-emerald-700">+ ₹{{ p.amount|floatformat:2 }}</span>
-                                        <span>via {{ p.mode }}</span>
-                                        <span class="text-slate-400 font-mono">({{ p.date|date:"d M Y" }})</span>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% else %}
-                                <span class="text-slate-400 italic text-[11px]">No credits applied</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="py-6 text-center text-slate-400">No invoices or bills recorded for this customer.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot class="bg-slate-100 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
-                        <tr>
-                            <td class="py-2.5 px-4" colspan="4">TOTALS (BILL BREAKDOWN)</td>
-                            <td class="py-2.5 px-4 text-right font-mono text-rose-600">- ₹{{ ledger.total_invoiced_bills|floatformat:2 }}</td>
-                            <td class="py-2.5 px-4 text-right font-mono text-emerald-600">+ ₹{{ ledger.total_paid_bills|floatformat:2 }}</td>
-                            <td class="py-2.5 px-4 text-right font-mono font-extrabold text-rose-600">₹{{ ledger.total_unpaid_balance|floatformat:2 }}</td>
-                            <td class="py-2.5 px-4" colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-
-        <!-- Section 2: Chronological Running-Balance Statement Ledger -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm print-shadow-none overflow-hidden print-break-inside-avoid">
-            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <div>
-                    <h3 class="font-bold text-slate-900 text-sm uppercase tracking-wider">Chronological Transaction Ledger</h3>
-                    <p class="text-[11px] text-slate-500">Timeline of all invoice debits, payments, and running account balance.</p>
-                </div>
-                <div class="text-xs text-slate-500 font-mono">
-                    {{ ledger.start_date|default:'All time' }} to {{ ledger.end_date|default:'Present' }}
-                </div>
+        <!-- Ledger Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm print-shadow-none overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 font-bold text-slate-900 text-sm">
+                Transaction Details & Running Balance
             </div>
 
             <div class="overflow-x-auto">
@@ -208,11 +101,11 @@
                     <thead class="bg-slate-100/75 text-slate-700 font-bold uppercase tracking-wider">
                         <tr>
                             <th class="py-3 px-4 text-left">Date</th>
-                            <th class="py-3 px-4 text-left">Particulars & Allocation Details</th>
-                            <th class="py-3 px-4 text-left">Doc / Voucher No.</th>
+                            <th class="py-3 px-4 text-left">Particulars</th>
+                            <th class="py-3 px-4 text-left">Doc / Ref No.</th>
                             <th class="py-3 px-4 text-right">Debit (Invoiced - ₹)</th>
                             <th class="py-3 px-4 text-right">Credit (Received + ₹)</th>
-                            <th class="py-3 px-4 text-right">Running Balance (₹)</th>
+                            <th class="py-3 px-4 text-right">Balance (₹)</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-800">
@@ -223,67 +116,73 @@
                         </tr>
                         {% for row in ledger.entries %}
                         <tr>
-                            <td class="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">{{ row.date|date:"d M Y" }}</td>
-                            <td class="py-3 px-4">
+                            <td class="py-3 px-4 font-mono text-slate-600 whitespace-nowrap align-top">{{ row.date|date:"d M Y" }}</td>
+                            <td class="py-3 px-4 align-top">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold {% if row.type == 'INVOICE' %}text-indigo-950{% elif row.type == 'PROFORMA' %}text-purple-950{% else %}text-emerald-950{% endif %}">
+                                        {{ row.type_display }}
+                                    </span>
+                                    {% if row.type == 'INVOICE' or row.type == 'PROFORMA' %}
+                                        {% if row.bill_status == 'PAID' %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            ✓ Paid in Full
+                                        </span>
+                                        {% elif row.bill_status == 'PARTIAL' %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            Partially Paid
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                            Unpaid
+                                        </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">{{ row.details }}</div>
+
                                 {% if row.type == 'INVOICE' or row.type == 'PROFORMA' %}
-                                <div class="font-bold {% if row.type == 'INVOICE' %}text-indigo-950{% else %}text-purple-950{% endif %}">
-                                    {{ row.type_display }}
-                                </div>
-                                <div class="text-[11px] text-slate-500">{{ row.details }}</div>
-                                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold {{ row.bill_status_badge_class }}">
-                                        {% if row.bill_status == 'PAID' %}✓ Paid in Full{% elif row.bill_status == 'PARTIAL' %}Partially Paid{% else %}Unpaid{% endif %}
-                                    </span>
-                                    <span class="text-slate-600 font-mono">Paid: <strong class="text-emerald-700">+ ₹{{ row.bill_paid|floatformat:2 }}</strong></span>
-                                    <span class="text-slate-400">&bull;</span>
-                                    <span class="text-slate-700 font-mono font-semibold">Remaining Due: <strong class="{% if row.bill_remaining > 0 %}text-rose-600{% else %}text-emerald-700{% endif %}">₹{{ row.bill_remaining|floatformat:2 }}</strong></span>
-                                </div>
-                                {% if row.payments_applied %}
-                                <div class="text-[10px] text-slate-500 mt-1 flex flex-wrap items-center gap-1.5">
-                                    <span class="text-slate-400">Credited by:</span>
-                                    {% for p in row.payments_applied %}
-                                    <span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
-                                        {{ p.date|date:"d M Y" }}: + ₹{{ p.amount|floatformat:2 }} ({{ p.mode }})
-                                    </span>
-                                    {% endfor %}
+                                <div class="text-[11px] text-slate-600 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 bg-slate-50 px-2 py-1 rounded border border-slate-100 font-mono">
+                                    <span>Paid: <strong class="text-emerald-700">+ ₹{{ row.bill_paid|floatformat:2 }}</strong></span>
+                                    <span>&bull;</span>
+                                    <span>Remaining: <strong class="{% if row.bill_remaining > 0 %}text-rose-700{% else %}text-slate-600{% endif %}">₹{{ row.bill_remaining|floatformat:2 }}</strong></span>
                                 </div>
                                 {% endif %}
-                                {% else %}
-                                <div class="font-bold text-emerald-950">
-                                    {{ row.type_display }}
-                                </div>
-                                <div class="text-[11px] text-slate-500">{{ row.details }}</div>
-                                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+
+                                {% if row.type == 'PAYMENT' %}
                                     {% if row.allocated_bills %}
-                                        {% for a in row.allocated_bills %}
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            <span>Applied to:</span>
-                                            <strong class="font-bold">{{ a.doc_type }} #{{ a.doc_number }}</strong>
-                                            <span class="font-mono text-emerald-700 font-bold">(+ ₹{{ a.allocated_amount|floatformat:2 }})</span>
-                                            {% if a.bill_is_settled %}
-                                            <span class="text-emerald-700 font-bold ml-0.5">&bull; ✓ Settled in Full</span>
-                                            {% else %}
-                                            <span class="text-rose-600 font-bold ml-0.5">&bull; Bill Rem: ₹{{ a.bill_remaining_after|floatformat:2 }}</span>
+                                    <div class="text-[11px] mt-1.5 space-y-1 bg-emerald-50/70 p-2 rounded border border-emerald-100">
+                                        {% for alloc in row.allocated_bills %}
+                                        <div class="text-emerald-950 flex flex-wrap items-center gap-x-1.5">
+                                            <span>↳ Paid against: <strong class="text-indigo-950">{{ alloc.doc_number }}</strong></span>
+                                            <span class="font-mono text-emerald-700 font-semibold">(+ ₹{{ alloc.amount|floatformat:2 }})</span>
+                                            <span class="text-slate-400">&bull;</span>
+                                            <span class="text-slate-600">Bill Rem: <strong class="font-mono">₹{{ alloc.bill_remaining|floatformat:2 }}</strong></span>
+                                            {% if alloc.is_settled %}
+                                            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-1 py-0.2 rounded">Settled</span>
                                             {% endif %}
-                                        </span>
+                                        </div>
                                         {% endfor %}
+                                        {% if row.advance_amount > 0 %}
+                                        <div class="text-amber-800 font-semibold text-[10px] pt-0.5">
+                                            ↳ Unallocated / Advance: + ₹{{ row.advance_amount|floatformat:2 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-[11px] text-amber-700 italic mt-1 bg-amber-50/60 px-2 py-0.5 rounded border border-amber-100">
+                                        General Payment / Advance
+                                    </div>
                                     {% endif %}
-                                    {% if row.is_advance and row.advance_amount > 0 %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                                        Advance / On Account: + ₹{{ row.advance_amount|floatformat:2 }}
-                                    </span>
-                                    {% endif %}
-                                </div>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-4 font-mono font-semibold text-slate-800">{{ row.doc_number }}</td>
-                            <td class="py-3 px-4 text-right font-mono {% if row.debit > 0 %}text-rose-600 font-bold{% else %}text-slate-400{% endif %}">
+                            <td class="py-3 px-4 font-mono align-top">{{ row.doc_number }}</td>
+                            <td class="py-3 px-4 text-right font-mono align-top {% if row.debit > 0 %}text-rose-600 font-bold{% else %}text-slate-400{% endif %}">
                                 {% if row.debit > 0 %}- ₹{{ row.debit|floatformat:2 }}{% else %}—{% endif %}
                             </td>
-                            <td class="py-3 px-4 text-right font-mono {% if row.credit > 0 %}text-emerald-600 font-bold{% else %}text-slate-400{% endif %}">
+                            <td class="py-3 px-4 text-right font-mono align-top {% if row.credit > 0 %}text-emerald-600 font-bold{% else %}text-slate-400{% endif %}">
                                 {% if row.credit > 0 %}+ ₹{{ row.credit|floatformat:2 }}{% else %}—{% endif %}
                             </td>
-                            <td class="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                            <td class="py-3 px-4 text-right font-mono font-bold text-slate-900 align-top">
                                 ₹{{ row.balance|floatformat:2 }}
                             </td>
                         </tr>
@@ -295,7 +194,7 @@
                     </tbody>
                     <tfoot class="bg-slate-100 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
                         <tr>
-                            <td class="py-3 px-4" colspan="3">TOTALS (CHRONOLOGICAL STATEMENT)</td>
+                            <td class="py-3 px-4" colspan="3">TOTALS</td>
                             <td class="py-3 px-4 text-right font-mono text-rose-600">- ₹{{ ledger.total_debit|floatformat:2 }}</td>
                             <td class="py-3 px-4 text-right font-mono text-emerald-600">+ ₹{{ ledger.total_credit|floatformat:2 }}</td>
                             <td class="py-3 px-4 text-right font-mono font-extrabold text-amber-950 text-sm">₹{{ ledger.closing_balance|floatformat:2 }}</td>
