@@ -1280,13 +1280,15 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'doc_number': bill.number,
             'doc_type': 'Tax Invoice' if bill.type == 'INV' else 'Proforma Invoice',
             'type': bill.type,
+            'date': bill.date or bill.created_at.date(),
+            'po_ref': getattr(bill, 'po_reference_number', '') or '—',
             'linked_nums': linked_nums,
             'grand_total': gt,
             'credits_paid': Decimal('0.00'),
+            'payments': [],
         }
 
-    # Tracking payment allocation notes
-    pay_alloc_info = {}
+    # Tracking unallocated amount per payment
     pay_unallocated = {p.id: Decimal(str(p.amount or 0)) for p in all_payments}
 
     def _apply(pay, b, amt):
@@ -1296,43 +1298,28 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
         b['credits_paid'] += alloc
         pay_unallocated[pay.id] -= alloc
         rem_after = b['grand_total'] - b['credits_paid']
-        if pay.id not in pay_alloc_info:
-            pay_alloc_info[pay.id] = []
-        pay_alloc_info[pay.id].append({
-            'doc_id': b['doc_id'],
-            'doc_number': b['doc_number'],
-            'doc_type': b['doc_type'],
+        b['payments'].append({
+            'date': pay.date,
+            'payment_mode': pay.payment_mode,
+            'reference_number': pay.reference_number,
+            'voucher_no': pay.document_ref,
+            'notes': pay.notes,
             'amount': alloc,
             'bill_remaining': rem_after,
-            'is_settled': (rem_after <= Decimal('0.00')),
         })
 
-    # Pass 1: Explicit document reference match
+    # Pass 1: Direct exact match on document_ref == bill.number
     for pay in all_payments:
         if not pay.document_ref or pay_unallocated[pay.id] <= Decimal('0.00'):
             continue
-        pref = pay.document_ref.strip()
-        matched = [b for b in bill_data.values() if pref == b['doc_number'] or pref in b['linked_nums']]
-        matched.sort(key=lambda b: 0 if b['type'] == 'INV' else 1)
-        for b in matched:
-            if pay_unallocated[pay.id] <= Decimal('0.00'):
-                break
-            _apply(pay, b, pay_unallocated[pay.id])
-
-    # Pass 2: Notes / reference match
-    for pay in all_payments:
-        if pay_unallocated[pay.id] <= Decimal('0.00'):
-            continue
-        txt = f"{pay.reference_number or ''} {pay.notes or ''}".lower()
-        if not txt.strip():
-            continue
+        pref = pay.document_ref.strip().lower()
         for b in bill_data.values():
-            if pay_unallocated[pay.id] <= Decimal('0.00'):
+            if b['doc_number'] and b['doc_number'].strip().lower() == pref:
+                if b['credits_paid'] < b['grand_total']:
+                    _apply(pay, b, pay_unallocated[pay.id])
                 break
-            if b['doc_number'] and b['doc_number'].lower() in txt:
-                _apply(pay, b, pay_unallocated[pay.id])
 
-    # Pass 3: Exact amount match
+    # Pass 2: Exact Amount Match where unpaid == payment amount
     for pay in all_payments:
         rem_p = pay_unallocated[pay.id]
         if rem_p <= Decimal('0.00'):
@@ -1343,7 +1330,41 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
                 _apply(pay, b, rem_p)
                 break
 
-    # Pass 4: FIFO oldest unpaid bill
+    # Pass 3: Notes / Reference text contains exact bill.number
+    for pay in all_payments:
+        if pay_unallocated[pay.id] <= Decimal('0.00'):
+            continue
+        txt = f"{pay.reference_number or ''} {pay.notes or ''}".lower()
+        if not txt.strip():
+            continue
+        for b in bill_data.values():
+            if pay_unallocated[pay.id] <= Decimal('0.00'):
+                break
+            if b['doc_number'] and b['doc_number'].strip().lower() in txt:
+                if b['credits_paid'] < b['grand_total']:
+                    _apply(pay, b, pay_unallocated[pay.id])
+
+    # Pass 4: Linked Document Number match (e.g. Quotation, Proforma, PO)
+    # Exclude other invoice numbers to avoid cross-invoice collision
+    other_invoice_numbers = {b['doc_number'].strip().lower() for b in bill_data.values() if b['doc_number']}
+    for pay in all_payments:
+        if pay_unallocated[pay.id] <= Decimal('0.00'):
+            continue
+        tokens = []
+        if pay.document_ref:
+            tokens.append(pay.document_ref.strip().lower())
+        if pay.reference_number:
+            tokens.append(pay.reference_number.strip().lower())
+        for b in bill_data.values():
+            if pay_unallocated[pay.id] <= Decimal('0.00'):
+                break
+            safe_linked = {str(n).strip().lower() for n in b['linked_nums'] if str(n).strip().lower() not in other_invoice_numbers or str(n).strip().lower() == (b['doc_number'] or '').strip().lower()}
+            for tok in tokens:
+                if tok in safe_linked and b['credits_paid'] < b['grand_total']:
+                    _apply(pay, b, pay_unallocated[pay.id])
+                    break
+
+    # Pass 5: FIFO oldest unpaid bill
     for pay in all_payments:
         if pay_unallocated[pay.id] <= Decimal('0.00'):
             continue
@@ -1353,87 +1374,67 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             if b['credits_paid'] < b['grand_total']:
                 _apply(pay, b, pay_unallocated[pay.id])
 
-    # Build chronological entries for filtered period
+    # Build document-wise entries: Document Number -> Debit -> Credit -> Remaining
     entries = []
 
-    period_invoices = [inv for inv in all_invoices if (not start_date or (inv.date or inv.created_at.date()) >= start_date) and (not end_date or (inv.date or inv.created_at.date()) <= end_date)]
-    period_pis = [pi for pi in unlinked_pis if (not start_date or (pi.date or pi.created_at.date()) >= start_date) and (not end_date or (pi.date or pi.created_at.date()) <= end_date)]
-    period_payments = [pay for pay in all_payments if (not start_date or pay.date >= start_date) and (not end_date or pay.date <= end_date)]
+    # 1. Document rows (Tax Invoices and Proformas)
+    for b in bill_data.values():
+        b_date = b['date']
+        if start_date and b_date < start_date:
+            continue
+        if end_date and b_date > end_date:
+            continue
 
-    for inv in period_invoices:
-        b_info = bill_data.get(inv.id, {})
-        gt = b_info.get('grand_total', Decimal(str(inv.grand_total or 0)))
-        paid = b_info.get('credits_paid', Decimal('0.00'))
+        gt = b['grand_total']
+        paid = b['credits_paid']
         rem = max(Decimal('0.00'), gt - paid)
         status = 'PAID' if rem <= Decimal('0.00') else ('PARTIAL' if paid > Decimal('0.00') else 'UNPAID')
+
         entries.append({
-            'date': inv.date or inv.created_at.date(),
-            'type': 'INVOICE',
-            'type_display': 'Tax Invoice',
-            'doc_number': inv.number,
-            'ref_no': inv.po_reference_number or '—',
-            'details': f"Tax Invoice #{inv.number}",
+            'date': b_date,
+            'doc_id': b['doc_id'],
+            'doc_number': b['doc_number'],
+            'type': b['type'],
+            'type_display': b['doc_type'],
+            'po_ref': b['po_ref'],
+            'details': f"{b['doc_type']} #{b['doc_number']}",
             'debit': gt,
-            'credit': Decimal('0.00'),
-            'doc_id': inv.id,
-            'bill_paid': paid,
-            'bill_remaining': rem,
-            'bill_status': status,
+            'credit': paid,
+            'remaining': rem,
+            'status': status,
+            'payments': b['payments'],
         })
 
-    for pi in period_pis:
-        b_info = bill_data.get(pi.id, {})
-        gt = b_info.get('grand_total', Decimal(str(pi.grand_total or 0)))
-        paid = b_info.get('credits_paid', Decimal('0.00'))
-        rem = max(Decimal('0.00'), gt - paid)
-        status = 'PAID' if rem <= Decimal('0.00') else ('PARTIAL' if paid > Decimal('0.00') else 'UNPAID')
-        entries.append({
-            'date': pi.date or pi.created_at.date(),
-            'type': 'PROFORMA',
-            'type_display': 'Proforma Invoice',
-            'doc_number': pi.number,
-            'ref_no': pi.po_reference_number or '—',
-            'details': f"Proforma Invoice #{pi.number}",
-            'debit': gt,
-            'credit': Decimal('0.00'),
-            'doc_id': pi.id,
-            'bill_paid': paid,
-            'bill_remaining': rem,
-            'bill_status': status,
-        })
-
-    for pay in period_payments:
-        allocs = pay_alloc_info.get(pay.id, [])
+    # 2. Any Unallocated Advance Payments (not tied to any bill)
+    for pay in all_payments:
+        if start_date and pay.date < start_date:
+            continue
+        if end_date and pay.date > end_date:
+            continue
         unalloc = pay_unallocated.get(pay.id, Decimal('0.00'))
-        entries.append({
-            'date': pay.date,
-            'type': 'PAYMENT',
-            'type_display': f"Payment ({pay.payment_mode})",
-            'doc_number': pay.document_ref or '—',
-            'ref_no': pay.reference_number or '—',
-            'details': f"Received via {pay.payment_mode}" + (f" ({pay.notes})" if pay.notes else ""),
-            'debit': Decimal('0.00'),
-            'credit': Decimal(str(pay.amount or 0)),
-            'doc_id': None,
-            'allocated_bills': allocs,
-            'advance_amount': unalloc,
-        })
+        if unalloc > Decimal('0.00'):
+            entries.append({
+                'date': pay.date,
+                'doc_id': None,
+                'doc_number': pay.document_ref or pay.reference_number or f"PAY-{pay.id}",
+                'type': 'PAYMENT',
+                'type_display': f"Payment ({pay.payment_mode})",
+                'po_ref': '—',
+                'details': f"Unallocated Advance / General Payment ({pay.payment_mode})" + (f" - {pay.notes}" if pay.notes else ""),
+                'debit': Decimal('0.00'),
+                'credit': unalloc,
+                'remaining': Decimal('0.00'),
+                'status': 'ADVANCE',
+                'payments': [],
+            })
 
     # Sort chronologically by date
     entries.sort(key=lambda x: x['date'])
 
-    # Compute running balance
-    running_balance = opening_balance
-    total_debit = Decimal('0.00')
-    total_credit = Decimal('0.00')
-
-    for item in entries:
-        running_balance += (item['debit'] - item['credit'])
-        item['balance'] = running_balance
-        total_debit += item['debit']
-        total_credit += item['credit']
-
-    closing_balance = running_balance
+    # Totals
+    total_debit = sum((item['debit'] for item in entries), Decimal('0.00'))
+    total_credit = sum((item['credit'] for item in entries), Decimal('0.00'))
+    closing_balance = opening_balance + total_debit - total_credit
 
     return {
         'contact': contact,
