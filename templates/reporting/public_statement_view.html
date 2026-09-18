@@ -81,10 +81,10 @@
                 </div>
 
                 <div class="bg-amber-50/80 rounded-2xl p-5 border border-amber-200 sm:text-right">
-                    <div class="text-xs font-bold text-amber-900 uppercase tracking-wider">Net Outstanding Balance</div>
+                    <div class="text-xs font-bold text-amber-900 uppercase tracking-wider">Total Outstanding Balance</div>
                     <div class="text-3xl font-black text-amber-950 font-mono mt-1">₹{{ ledger.closing_balance|floatformat:2 }}</div>
-                    <div class="text-[11px] text-amber-700 mt-1 font-mono">
-                        Debit (₹{{ ledger.total_debit|floatformat:2 }}) − Credit (₹{{ ledger.total_credit|floatformat:2 }})
+                    <div class="text-[11px] text-amber-700 mt-1">
+                        Invoiced (Debit): <span class="font-mono font-bold text-rose-700">- ₹{{ ledger.total_debit|floatformat:2 }}</span> &bull; Received (Credit): <span class="font-mono font-bold text-emerald-700">+ ₹{{ ledger.total_credit|floatformat:2 }}</span>
                     </div>
                 </div>
             </div>
@@ -103,9 +103,9 @@
                             <th class="py-3 px-4 text-left">Date</th>
                             <th class="py-3 px-4 text-left">Doc / Voucher No.</th>
                             <th class="py-3 px-4 text-left">Transaction Details & Receipts</th>
-                            <th class="py-3 px-4 text-right">Debit (Invoiced ₹)</th>
-                            <th class="py-3 px-4 text-right">Credit (Received ₹)</th>
-                            <th class="py-3 px-4 text-right">Remaining Balance (₹)</th>
+                            <th class="py-3 px-4 text-right">Debit (Invoiced - ₹)</th>
+                            <th class="py-3 px-4 text-right">Credit (Received + ₹)</th>
+                            <th class="py-3 px-4 text-right">Remaining (₹)</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-800">
@@ -161,10 +161,10 @@
                                 {% endif %}
                             </td>
                             <td class="py-3 px-4 text-right font-mono align-top {% if row.debit > 0 %}text-rose-600 font-bold{% else %}text-slate-400{% endif %}">
-                                {% if row.debit > 0 %}₹{{ row.debit|floatformat:2 }}{% else %}—{% endif %}
+                                {% if row.debit > 0 %}- ₹{{ row.debit|floatformat:2 }}{% else %}—{% endif %}
                             </td>
                             <td class="py-3 px-4 text-right font-mono align-top {% if row.credit > 0 %}text-emerald-600 font-bold{% else %}text-slate-400{% endif %}">
-                                {% if row.credit > 0 %}₹{{ row.credit|floatformat:2 }}{% else %}—{% endif %}
+                                {% if row.credit > 0 %}+ ₹{{ row.credit|floatformat:2 }}{% else %}—{% endif %}
                             </td>
                             <td class="py-3 px-4 text-right font-mono font-bold align-top {% if row.remaining > 0 %}text-rose-700{% else %}text-emerald-700{% endif %}">
                                 {% if row.remaining > 0 %}
@@ -184,9 +184,9 @@
                     </tbody>
                     <tfoot class="bg-slate-100 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
                         <tr>
-                            <td class="py-3 px-4" colspan="3">TOTALS (Debit − Credit = Outstanding)</td>
-                            <td class="py-3 px-4 text-right font-mono text-rose-600">₹{{ ledger.total_debit|floatformat:2 }}</td>
-                            <td class="py-3 px-4 text-right font-mono text-emerald-600">₹{{ ledger.total_credit|floatformat:2 }}</td>
+                            <td class="py-3 px-4" colspan="3">TOTALS</td>
+                            <td class="py-3 px-4 text-right font-mono text-rose-600">- ₹{{ ledger.total_debit|floatformat:2 }}</td>
+                            <td class="py-3 px-4 text-right font-mono text-emerald-600">+ ₹{{ ledger.total_credit|floatformat:2 }}</td>
                             <td class="py-3 px-4 text-right font-mono font-extrabold text-amber-950 text-sm">₹{{ ledger.closing_balance|floatformat:2 }}</td>
                         </tr>
                     </tfoot>
