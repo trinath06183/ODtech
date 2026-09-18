@@ -448,7 +448,7 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Document Type</label>
-                            <select name="type" form="document-main-form" x-model="docType" @change="onDocTypeChange($event)"
+                            <select name="type" form="document-main-form" x-model="docType"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
                                 {% for type_val, type_label in document_types %}
                                 <option value="{{ type_val }}">{{ type_label }}</option>
@@ -1543,41 +1543,6 @@
         </div>
     </div>
 
-    {# Document Type Change Approval Modal #}
-    <div x-show="showTypeChangeModal" x-cloak
-        style="display:flex; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem;">
-        <div @click.away="cancelTypeChange()"
-            style="background:#0f172a; border:1px solid #334155; border-radius:1rem; box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; width:100%; max-width:440px; padding:1.5rem;">
-            
-            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
-                <div style="width:2.5rem; height:2.5rem; border-radius:0.75rem; background:rgba(245,158,11,0.2); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.2rem;">
-                    ⚠️
-                </div>
-                <div>
-                    <h3 style="font-weight:700; font-size:1.1rem; color:#fff; margin:0;">Approve Document Type Change</h3>
-                    <p style="font-size:0.75rem; color:#94a3b8; margin:2px 0 0 0;">Auto-Assignment Approval</p>
-                </div>
-            </div>
-            
-            <p style="font-size:0.875rem; color:#cbd5e1; line-height:1.5; margin-bottom:1rem;">
-                Changing Document Type to <strong style="color:#fff;" x-text="getDocTypeLabel(pendingNewType)"></strong>.
-                <br>The document number will be automatically updated to the next available sequence number (<strong style="color:#10b981;">n+1</strong>):
-            </p>
-
-            <div style="font-family:monospace; font-weight:700; font-size:1.1rem; color:#10b981; background:#1e293b; padding:0.6rem 1rem; border-radius:0.5rem; text-align:center; border:1px solid #334155; margin-bottom:1.25rem;" x-text="pendingNextNumber"></div>
-
-            <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
-                <button type="button" @click="cancelTypeChange()"
-                    style="padding:0.55rem 1.25rem; background:#1e293b; border:1px solid #334155; color:#94a3b8; border-radius:0.625rem; font-size:0.875rem; cursor:pointer; font-family:inherit;">
-                    Cancel
-                </button>
-                <button type="button" @click="confirmTypeChange()"
-                    style="padding:0.55rem 1.4rem; background:#10b981; border:none; color:#fff; border-radius:0.625rem; font-size:0.875rem; font-weight:700; cursor:pointer; font-family:inherit;">
-                    Approve & Assign Number
-                </button>
-            </div>
-        </div>
-    </div>
 
     {# Product Modal #}
     <div x-show="showProductModal"
@@ -1791,10 +1756,6 @@ function documentForm() {
 
         formAction: '{% if doc and not is_conversion %}update{% else %}save_as_new{% endif %}',
         docType: '{% if is_conversion %}{{ default_type }}{% else %}{{ doc.type|default:default_type }}{% endif %}',
-        previousDocType: '{% if is_conversion %}{{ default_type }}{% else %}{{ doc.type|default:default_type }}{% endif %}',
-        showTypeChangeModal: false,
-        pendingNewType: '',
-        pendingNextNumber: '',
 
         getDocTypeLabel(t) {
             const types = {
@@ -1807,39 +1768,6 @@ function documentForm() {
                 'DBN': 'Debit Note'
             };
             return types[t] || t;
-        },
-
-        onDocTypeChange(event) {
-            const newType = event.target.value;
-            if (newType === this.previousDocType) return;
-            
-            this.pendingNewType = newType;
-            // Temporarily revert select dropdown until user confirms
-            this.docType = this.previousDocType;
-
-            const docId = '{% if doc and not is_conversion %}{{ doc.id }}{% endif %}';
-            fetch(`/documents/api/next-number/?type=${newType}&doc_id=${docId}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        this.pendingNextNumber = data.next_number;
-                        this.showTypeChangeModal = true;
-                    }
-                });
-        },
-
-        confirmTypeChange() {
-            this.docType = this.pendingNewType;
-            this.previousDocType = this.pendingNewType;
-            if (this.numberingMode === 'auto') {
-                this.docNumber = this.pendingNextNumber;
-            }
-            this.showTypeChangeModal = false;
-        },
-
-        cancelTypeChange() {
-            this.docType = this.previousDocType;
-            this.showTypeChangeModal = false;
         },
 
         items: {{ existing_items_json|default:"[]"|safe }},
@@ -2140,14 +2068,10 @@ function documentForm() {
             });
 
             this.$watch('docType', (newVal, oldVal) => {
-                // Only auto-load default terms when changing doc type on a new (non-edit, non-conversion) document
-                if (!isEditMode && !isConversion) {
-                    this.loadDefaultTerms();
-                }
-                this.calculateTotals();
-                if (newVal === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
-                
-                const prefixMap = { 'QTN': 'QTN', 'INV': 'INV', 'PRO': 'PI', 'PO': 'PO', 'CHL': 'CHL' };
+                if (!newVal || newVal === oldVal) return;
+
+                // 1. Immediate prefix replacement as instant visual feedback
+                const prefixMap = { 'QTN': 'QTN', 'INV': 'INV', 'PRO': 'PI', 'PO': 'PO', 'CHL': 'CHL', 'CRN': 'CRN', 'DBN': 'DBN' };
                 if (oldVal && prefixMap[oldVal] && prefixMap[newVal] && this.docNumber) {
                     const oldPrefix = prefixMap[oldVal] + '-';
                     const newPrefix = prefixMap[newVal] + '-';
@@ -2155,6 +2079,28 @@ function documentForm() {
                         this.docNumber = newPrefix + this.docNumber.substring(oldPrefix.length);
                     }
                 }
+
+                // 2. Fetch official next sequence number (n+1) from server if auto-increment is enabled
+                if (this.numberingMode === 'auto') {
+                    const docId = '{% if doc and not is_conversion %}{{ doc.id }}{% endif %}';
+                    fetch(`/documents/api/next-number/?type=${newVal}&doc_id=${docId}`, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && data.next_number) {
+                                this.docNumber = data.next_number;
+                            }
+                        })
+                        .catch(() => {});
+                }
+
+                // 3. Only auto-load default terms when changing doc type on a new document
+                if (!isEditMode && !isConversion) {
+                    this.loadDefaultTerms();
+                }
+                this.calculateTotals();
+                if (newVal === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
             });
             this.$watch('sections.tax_details', (val) => {
                 if (val) {
@@ -2177,7 +2123,19 @@ function documentForm() {
             this.$watch('enableWarranty', () => this.autoUpdateTerms());
             this.$watch('numberingMode', (newVal) => {
                 if (newVal === 'auto') {
-                    this.docNumber = '{{ next_number|escapejs }}';
+                    const docId = '{% if doc and not is_conversion %}{{ doc.id }}{% endif %}';
+                    fetch(`/documents/api/next-number/?type=${this.docType}&doc_id=${docId}`, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && data.next_number) {
+                                this.docNumber = data.next_number;
+                            }
+                        })
+                        .catch(() => {
+                            this.docNumber = '{{ next_number|escapejs }}';
+                        });
                 } else {
                     if (this.docNumber === '{{ next_number|escapejs }}' || this.docNumber === '') this.docNumber = '';
                 }
