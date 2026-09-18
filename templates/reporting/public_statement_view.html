@@ -98,34 +98,34 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-xs">
-                    <thead class="bg-slate-100/75 text-slate-700 font-bold uppercase tracking-wider">
+                    <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                         <tr>
-                            <th class="py-3 px-4 text-left">Date</th>
-                            <th class="py-3 px-4 text-left">Doc / Voucher No.</th>
-                            <th class="py-3 px-4 text-left">Transaction Details & Receipts</th>
-                            <th class="py-3 px-4 text-right">Debit (Invoiced - ₹)</th>
-                            <th class="py-3 px-4 text-right">Credit (Received + ₹)</th>
-                            <th class="py-3 px-4 text-right">Remaining (₹)</th>
+                            <th class="py-3.5 px-4 text-left whitespace-nowrap">Date</th>
+                            <th class="py-3.5 px-4 text-left whitespace-nowrap">Doc / Voucher No.</th>
+                            <th class="py-3.5 px-4 text-left">Transaction Details & Receipts</th>
+                            <th class="py-3.5 px-4 text-right whitespace-nowrap">Debit (- ₹)</th>
+                            <th class="py-3.5 px-4 text-right whitespace-nowrap">Credit (+ ₹)</th>
+                            <th class="py-3.5 px-4 text-right whitespace-nowrap">Remaining (₹)</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-800">
                         {% if ledger.opening_balance != 0 %}
                         <tr class="bg-amber-50/40 font-semibold">
-                            <td class="py-2.5 px-4 font-mono">{{ ledger.start_date|default:'—' }}</td>
-                            <td class="py-2.5 px-4 font-mono font-bold">OPENING BALANCE</td>
-                            <td class="py-2.5 px-4 text-slate-500">Balance brought forward</td>
-                            <td class="py-2.5 px-4 text-right font-mono">—</td>
-                            <td class="py-2.5 px-4 text-right font-mono">—</td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold">₹{{ ledger.opening_balance|floatformat:2 }}</td>
+                            <td class="py-3 px-4 font-mono">{{ ledger.start_date|default:'—' }}</td>
+                            <td class="py-3 px-4 font-mono font-bold">OPENING BALANCE</td>
+                            <td class="py-3 px-4 text-slate-500">Balance brought forward</td>
+                            <td class="py-3 px-4 text-right font-mono">—</td>
+                            <td class="py-3 px-4 text-right font-mono">—</td>
+                            <td class="py-3 px-4 text-right font-mono font-bold">₹{{ ledger.opening_balance|floatformat:2 }}</td>
                         </tr>
                         {% endif %}
                         {% for row in ledger.entries %}
-                        <tr>
-                            <td class="py-3 px-4 font-mono text-slate-600 whitespace-nowrap align-top">{{ row.date|date:"d M Y" }}</td>
-                            <td class="py-3 px-4 font-mono font-bold align-top text-indigo-950">{{ row.doc_number }}</td>
-                            <td class="py-3 px-4 align-top">
+                        <tr class="hover:bg-slate-50/75 transition-colors">
+                            <td class="py-3.5 px-4 font-mono text-slate-600 whitespace-nowrap align-top">{{ row.date|date:"d M Y" }}</td>
+                            <td class="py-3.5 px-4 font-mono font-bold align-top text-indigo-900 whitespace-nowrap">{{ row.doc_number }}</td>
+                            <td class="py-3.5 px-4 align-top">
                                 <div class="flex items-center gap-2">
-                                    <span class="font-bold {% if row.type == 'INVOICE' %}text-indigo-950{% elif row.type == 'PROFORMA' %}text-purple-950{% else %}text-emerald-950{% endif %}">
+                                    <span class="font-bold text-slate-900">
                                         {{ row.type_display }}
                                     </span>
                                     {% if row.status == 'PAID' %}
@@ -151,26 +151,29 @@
                                 {% if row.payments %}
                                 <div class="mt-2 space-y-1">
                                     {% for p in row.payments %}
-                                    <div class="text-[11px] bg-emerald-50/80 text-emerald-900 px-2.5 py-1 rounded-md border border-emerald-100 flex flex-wrap items-center gap-x-2">
-                                        <span class="font-semibold">↳ Received on {{ p.date|date:"d M Y" }}:</span>
-                                        <span class="text-slate-600">via {{ p.payment_mode }}{% if p.reference_number %} (Ref: {{ p.reference_number }}){% elif p.voucher_no %} (Doc: {{ p.voucher_no }}){% endif %}</span>
-                                        <span class="font-mono font-bold text-emerald-700 ml-auto">+ ₹{{ p.amount|floatformat:2 }}</span>
+                                    <div class="text-[11px] bg-slate-50 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-x-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-emerald-600 font-bold">↳</span>
+                                            <span class="font-semibold text-slate-800">Received on {{ p.date|date:"d M Y" }}</span>
+                                            <span class="text-slate-500">via {{ p.payment_mode }}{% if p.reference_number %} (Ref: {{ p.reference_number }}){% elif p.voucher_no %} (Doc: {{ p.voucher_no }}){% endif %}</span>
+                                        </div>
+                                        <span class="font-mono font-bold text-emerald-600">+ ₹{{ p.amount|floatformat:2 }}</span>
                                     </div>
                                     {% endfor %}
                                 </div>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-4 text-right font-mono align-top {% if row.debit > 0 %}text-rose-600 font-bold{% else %}text-slate-400{% endif %}">
+                            <td class="py-3.5 px-4 text-right font-mono align-top whitespace-nowrap {% if row.debit > 0 %}text-rose-600 font-bold{% else %}text-slate-300{% endif %}">
                                 {% if row.debit > 0 %}- ₹{{ row.debit|floatformat:2 }}{% else %}—{% endif %}
                             </td>
-                            <td class="py-3 px-4 text-right font-mono align-top {% if row.credit > 0 %}text-emerald-600 font-bold{% else %}text-slate-400{% endif %}">
+                            <td class="py-3.5 px-4 text-right font-mono align-top whitespace-nowrap {% if row.credit > 0 %}text-emerald-600 font-bold{% else %}text-slate-300{% endif %}">
                                 {% if row.credit > 0 %}+ ₹{{ row.credit|floatformat:2 }}{% else %}—{% endif %}
                             </td>
-                            <td class="py-3 px-4 text-right font-mono font-bold align-top {% if row.remaining > 0 %}text-rose-700{% else %}text-emerald-700{% endif %}">
+                            <td class="py-3.5 px-4 text-right font-mono font-bold align-top whitespace-nowrap {% if row.remaining > 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">
                                 {% if row.remaining > 0 %}
                                 ₹{{ row.remaining|floatformat:2 }}
                                 {% elif row.status == 'PAID' %}
-                                <span class="text-emerald-700">₹0.00</span>
+                                <span class="text-emerald-600">₹0.00</span>
                                 {% else %}
                                 —
                                 {% endif %}
@@ -184,10 +187,10 @@
                     </tbody>
                     <tfoot class="bg-slate-100 font-bold text-slate-900 text-xs border-t-2 border-slate-300">
                         <tr>
-                            <td class="py-3 px-4" colspan="3">TOTALS</td>
-                            <td class="py-3 px-4 text-right font-mono text-rose-600">- ₹{{ ledger.total_debit|floatformat:2 }}</td>
-                            <td class="py-3 px-4 text-right font-mono text-emerald-600">+ ₹{{ ledger.total_credit|floatformat:2 }}</td>
-                            <td class="py-3 px-4 text-right font-mono font-extrabold text-amber-950 text-sm">₹{{ ledger.closing_balance|floatformat:2 }}</td>
+                            <td class="py-3.5 px-4" colspan="3">TOTALS</td>
+                            <td class="py-3.5 px-4 text-right font-mono text-rose-600 whitespace-nowrap">- ₹{{ ledger.total_debit|floatformat:2 }}</td>
+                            <td class="py-3.5 px-4 text-right font-mono text-emerald-600 whitespace-nowrap">+ ₹{{ ledger.total_credit|floatformat:2 }}</td>
+                            <td class="py-3.5 px-4 text-right font-mono font-extrabold text-amber-950 text-sm whitespace-nowrap">₹{{ ledger.closing_balance|floatformat:2 }}</td>
                         </tr>
                     </tfoot>
                 </table>
