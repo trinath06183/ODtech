@@ -1233,47 +1233,205 @@ def profit_and_loss_api(request):
 
 def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
     """
-    Computes a clean chronological debit/credit running balance statement.
-    Invoices & Unlinked Proforma Invoices = Debit (+), Payments = Credit (-).
+    Computes a clean chronological debit/credit running balance statement
+    along with bill-wise reconciliation (which payment was credited against
+    which invoice/bill, remaining balance per bill, and settlement status).
     """
     from contacts.models import Contact
     from documents.models import Document
     from payments.models import Payment
     from config.models import CompanyProfile
+    from django.db.models import Sum
 
     company = CompanyProfile.objects.first()
 
     # Base querysets
-    invoices = Document.objects.filter(contact=contact, type='INV').exclude(status='Cancelled')
-    
-    # Proforma Invoices: only include PIs that are NOT linked to any Tax Invoice
-    all_pis = Document.objects.filter(contact=contact, type='PRO').exclude(status='Cancelled')
-    unlinked_pi_ids = [pi.id for pi in all_pis if not pi.has_linked_invoice]
-    unlinked_pis = Document.objects.filter(id__in=unlinked_pi_ids)
-    
-    payments = Payment.objects.filter(contact=contact)
+    all_invoices_qs = Document.objects.filter(contact=contact, type='INV').exclude(status='Cancelled')
+    all_pis_qs = Document.objects.filter(contact=contact, type='PRO').exclude(status='Cancelled')
+    unlinked_pi_ids = [pi.id for pi in all_pis_qs if not pi.has_linked_invoice]
+    unlinked_pis_qs = Document.objects.filter(id__in=unlinked_pi_ids)
+    all_payments_qs = Payment.objects.filter(contact=contact)
 
-    # Opening balance before start_date
+    # 1. Opening balance before start_date
     opening_balance = Decimal('0.00')
     if start_date:
-        prior_inv_debits = invoices.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
-        prior_pi_debits = unlinked_pis.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
-        prior_credits = payments.filter(date__lt=start_date).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        prior_inv_debits = all_invoices_qs.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
+        prior_pi_debits = unlinked_pis_qs.filter(date__lt=start_date).aggregate(total=Sum('grand_total'))['total'] or Decimal('0.00')
+        prior_credits = all_payments_qs.filter(date__lt=start_date).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         opening_balance = (prior_inv_debits + prior_pi_debits) - prior_credits
 
-        invoices = invoices.filter(date__gte=start_date)
-        unlinked_pis = unlinked_pis.filter(date__gte=start_date)
-        payments = payments.filter(date__gte=start_date)
+    # 2. Collect all lifetime bills and payments for accurate bill allocation
+    all_invoices = list(all_invoices_qs.order_by('date', 'created_at', 'id'))
+    unlinked_pis = list(unlinked_pis_qs.order_by('date', 'created_at', 'id'))
+    all_bills = all_invoices + unlinked_pis
+    all_bills.sort(key=lambda b: (b.date or b.created_at.date(), b.id))
 
-    if end_date:
-        invoices = invoices.filter(date__lte=end_date)
-        unlinked_pis = unlinked_pis.filter(date__lte=end_date)
-        payments = payments.filter(date__lte=end_date)
+    all_payments = list(all_payments_qs.order_by('date', 'created_at', 'id'))
 
-    # Build chronological entries
+    # Dictionary of bill tracking data
+    bill_dict = {}
+    for bill in all_bills:
+        linked_nums = set()
+        if hasattr(bill, 'get_all_linked_document_numbers'):
+            try:
+                linked_nums.update(bill.get_all_linked_document_numbers())
+            except Exception:
+                pass
+        if bill.number:
+            linked_nums.add(bill.number)
+
+        gt = Decimal(str(bill.grand_total or 0))
+        bill_dict[bill.id] = {
+            'bill': bill,
+            'doc_id': bill.id,
+            'doc_number': bill.number,
+            'date': bill.date or bill.created_at.date(),
+            'type': bill.type,
+            'type_display': 'Tax Invoice' if bill.type == 'INV' else 'Proforma Invoice',
+            'po_ref': bill.po_reference_number or '—',
+            'linked_numbers': linked_nums,
+            'grand_total': gt,
+            'allocated_credits': Decimal('0.00'),
+            'payments_applied': [],
+        }
+
+    # Tracking allocations for each payment
+    payment_allocations = {pay.id: [] for pay in all_payments}
+    payment_unallocated = {pay.id: Decimal(str(pay.amount or 0)) for pay in all_payments}
+
+    # Helper function to allocate an amount from payment to a bill
+    def _apply_payment_to_bill(pay, b, requested_amt):
+        alloc_amt = min(requested_amt, payment_unallocated[pay.id], b['grand_total'] - b['allocated_credits'])
+        if alloc_amt <= Decimal('0.00'):
+            return False
+        b['allocated_credits'] += alloc_amt
+        payment_unallocated[pay.id] -= alloc_amt
+        bal_after = b['grand_total'] - b['allocated_credits']
+
+        b['payments_applied'].append({
+            'payment_id': pay.id,
+            'date': pay.date,
+            'amount': alloc_amt,
+            'mode': pay.payment_mode,
+            'ref': pay.reference_number or pay.document_ref or '—',
+            'notes': pay.notes or '',
+        })
+        payment_allocations[pay.id].append({
+            'doc_id': b['doc_id'],
+            'doc_number': b['doc_number'],
+            'doc_type': b['type_display'],
+            'allocated_amount': alloc_amt,
+            'bill_remaining_after': bal_after,
+            'bill_is_settled': (bal_after <= Decimal('0.00')),
+        })
+        return True
+
+    # Pass 1: Explicit Document Reference match (direct number or in linked document numbers)
+    for pay in all_payments:
+        if not pay.document_ref:
+            continue
+        p_ref = pay.document_ref.strip()
+        if payment_unallocated[pay.id] <= Decimal('0.00'):
+            continue
+
+        matching_bills = [
+            b for b in bill_dict.values()
+            if (p_ref == b['doc_number'] or p_ref in b['linked_numbers'])
+        ]
+        matching_bills.sort(key=lambda b: 0 if b['type'] == 'INV' else 1)
+
+        for b in matching_bills:
+            if payment_unallocated[pay.id] <= Decimal('0.00'):
+                break
+            b_unpaid = b['grand_total'] - b['allocated_credits']
+            if b_unpaid > Decimal('0.00'):
+                _apply_payment_to_bill(pay, b, payment_unallocated[pay.id])
+
+    # Pass 2: Check for bill number mentioned in payment reference_number or notes
+    for pay in all_payments:
+        if payment_unallocated[pay.id] <= Decimal('0.00'):
+            continue
+        search_text = f"{pay.reference_number or ''} {pay.notes or ''}".lower()
+        if not search_text.strip():
+            continue
+
+        for b in bill_dict.values():
+            if payment_unallocated[pay.id] <= Decimal('0.00'):
+                break
+            if b['doc_number'] and b['doc_number'].lower() in search_text:
+                b_unpaid = b['grand_total'] - b['allocated_credits']
+                if b_unpaid > Decimal('0.00'):
+                    _apply_payment_to_bill(pay, b, payment_unallocated[pay.id])
+
+    # Pass 3: Exact Amount Matching for unallocated payments
+    for pay in all_payments:
+        rem_pay = payment_unallocated[pay.id]
+        if rem_pay <= Decimal('0.00'):
+            continue
+
+        for b in bill_dict.values():
+            b_unpaid = b['grand_total'] - b['allocated_credits']
+            if b_unpaid > Decimal('0.00') and b_unpaid == rem_pay:
+                _apply_payment_to_bill(pay, b, rem_pay)
+                break
+
+    # Pass 4: FIFO Allocation for any remaining unallocated credits
+    for pay in all_payments:
+        rem_pay = payment_unallocated[pay.id]
+        if rem_pay <= Decimal('0.00'):
+            continue
+
+        for b in bill_dict.values():
+            if payment_unallocated[pay.id] <= Decimal('0.00'):
+                break
+            b_unpaid = b['grand_total'] - b['allocated_credits']
+            if b_unpaid > Decimal('0.00'):
+                _apply_payment_to_bill(pay, b, payment_unallocated[pay.id])
+
+    # Finalize status and remaining balance on each bill
+    for b in bill_dict.values():
+        rem = max(Decimal('0.00'), b['grand_total'] - b['allocated_credits'])
+        b['remaining_balance'] = rem
+        if rem <= Decimal('0.00'):
+            b['status'] = 'PAID'
+            b['status_display'] = 'Paid in Full'
+            b['status_badge_class'] = 'bg-emerald-100 text-emerald-800'
+        elif b['allocated_credits'] > Decimal('0.00'):
+            b['status'] = 'PARTIAL'
+            b['status_display'] = 'Partially Paid'
+            b['status_badge_class'] = 'bg-amber-100 text-amber-800'
+        else:
+            b['status'] = 'UNPAID'
+            b['status_display'] = 'Unpaid'
+            b['status_badge_class'] = 'bg-rose-100 text-rose-800'
+
+    # Filter bills for the summary section
+    bills_summary = []
+    for b in bill_dict.values():
+        b_date = b['date']
+        is_in_range = (not start_date or b_date >= start_date) and (not end_date or b_date <= end_date)
+        has_pending_balance = b['remaining_balance'] > Decimal('0.00')
+        if is_in_range or has_pending_balance:
+            bills_summary.append(b)
+
+    bills_summary.sort(key=lambda b: (b['date'], b['doc_id']))
+
+    # Summary aggregations
+    total_invoiced_bills = sum((b['grand_total'] for b in bills_summary), Decimal('0.00'))
+    total_paid_bills = sum((b['allocated_credits'] for b in bills_summary), Decimal('0.00'))
+    total_unpaid_balance = sum((b['remaining_balance'] for b in bills_summary), Decimal('0.00'))
+    paid_bills_count = sum(1 for b in bills_summary if b['status'] == 'PAID')
+    unpaid_bills_count = sum(1 for b in bills_summary if b['status'] in ['PARTIAL', 'UNPAID'])
+
+    # 3. Build chronological entries for the ledger
     entries = []
 
-    for inv in invoices:
+    period_invoices = [inv for inv in all_invoices if (not start_date or (inv.date or inv.created_at.date()) >= start_date) and (not end_date or (inv.date or inv.created_at.date()) <= end_date)]
+    period_pis = [pi for pi in unlinked_pis if (not start_date or (pi.date or pi.created_at.date()) >= start_date) and (not end_date or (pi.date or pi.created_at.date()) <= end_date)]
+    period_payments = [pay for pay in all_payments if (not start_date or pay.date >= start_date) and (not end_date or pay.date <= end_date)]
+
+    for inv in period_invoices:
+        b_info = bill_dict.get(inv.id, {})
         entries.append({
             'date': inv.date or inv.created_at.date(),
             'type': 'INVOICE',
@@ -1284,9 +1442,17 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'debit': Decimal(str(inv.grand_total or 0)),
             'credit': Decimal('0.00'),
             'doc_id': inv.id,
+            'bill_total': b_info.get('grand_total', Decimal('0.00')),
+            'bill_paid': b_info.get('allocated_credits', Decimal('0.00')),
+            'bill_remaining': b_info.get('remaining_balance', Decimal('0.00')),
+            'bill_status': b_info.get('status', 'UNPAID'),
+            'bill_status_display': b_info.get('status_display', 'Unpaid'),
+            'bill_status_badge_class': b_info.get('status_badge_class', 'bg-rose-100 text-rose-800'),
+            'payments_applied': b_info.get('payments_applied', []),
         })
 
-    for pi in unlinked_pis:
+    for pi in period_pis:
+        b_info = bill_dict.get(pi.id, {})
         entries.append({
             'date': pi.date or pi.created_at.date(),
             'type': 'PROFORMA',
@@ -1297,9 +1463,18 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'debit': Decimal(str(pi.grand_total or 0)),
             'credit': Decimal('0.00'),
             'doc_id': pi.id,
+            'bill_total': b_info.get('grand_total', Decimal('0.00')),
+            'bill_paid': b_info.get('allocated_credits', Decimal('0.00')),
+            'bill_remaining': b_info.get('remaining_balance', Decimal('0.00')),
+            'bill_status': b_info.get('status', 'UNPAID'),
+            'bill_status_display': b_info.get('status_display', 'Unpaid'),
+            'bill_status_badge_class': b_info.get('status_badge_class', 'bg-rose-100 text-rose-800'),
+            'payments_applied': b_info.get('payments_applied', []),
         })
 
-    for pay in payments:
+    for pay in period_payments:
+        allocs = payment_allocations.get(pay.id, [])
+        unalloc_amt = payment_unallocated.get(pay.id, Decimal('0.00'))
         entries.append({
             'date': pay.date,
             'type': 'PAYMENT',
@@ -1310,6 +1485,9 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'debit': Decimal('0.00'),
             'credit': Decimal(str(pay.amount or 0)),
             'doc_id': None,
+            'allocated_bills': allocs,
+            'is_advance': (len(allocs) == 0 or unalloc_amt > Decimal('0.00')),
+            'advance_amount': unalloc_amt,
         })
 
     # Sort chronologically by date
@@ -1328,12 +1506,17 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
 
     closing_balance = running_balance
 
-
     return {
         'contact': contact,
         'company': company,
         'opening_balance': opening_balance,
         'entries': entries,
+        'bills_summary': bills_summary,
+        'total_invoiced_bills': total_invoiced_bills,
+        'total_paid_bills': total_paid_bills,
+        'total_unpaid_balance': total_unpaid_balance,
+        'paid_bills_count': paid_bills_count,
+        'unpaid_bills_count': unpaid_bills_count,
         'total_debit': total_debit,
         'total_credit': total_credit,
         'closing_balance': closing_balance,
