@@ -84,7 +84,7 @@
                     <div class="text-xs font-bold text-amber-900 uppercase tracking-wider">Total Outstanding Balance</div>
                     <div class="text-3xl font-black text-amber-950 font-mono mt-1">₹{{ ledger.closing_balance|floatformat:2 }}</div>
                     <div class="text-[11px] text-amber-700 mt-1">
-                        Invoiced (Debit): <span class="font-mono font-bold text-rose-700">- ₹{{ ledger.total_debit|floatformat:2 }}</span> &bull; Received (Credit): <span class="font-mono font-bold text-emerald-700">+ ₹{{ ledger.total_credit|floatformat:2 }}</span>
+                        Invoiced: <span class="font-mono font-bold text-rose-700">- ₹{{ ledger.total_debit|floatformat:2 }}</span> &bull; Received: <span class="font-mono font-bold text-emerald-700">+ ₹{{ ledger.total_credit|floatformat:2 }}</span> ({{ ledger.overall_percent_paid|floatformat:1 }}% Paid)
                     </div>
                 </div>
             </div>
@@ -106,6 +106,7 @@
                             <th class="py-3.5 px-4 text-right whitespace-nowrap">Debit (- ₹)</th>
                             <th class="py-3.5 px-4 text-right whitespace-nowrap">Credit (+ ₹)</th>
                             <th class="py-3.5 px-4 text-right whitespace-nowrap">Remaining (₹)</th>
+                            <th class="py-3.5 px-4 text-right whitespace-nowrap">% Paid</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-800">
@@ -117,6 +118,7 @@
                             <td class="py-3 px-4 text-right font-mono">—</td>
                             <td class="py-3 px-4 text-right font-mono">—</td>
                             <td class="py-3 px-4 text-right font-mono font-bold">₹{{ ledger.opening_balance|floatformat:2 }}</td>
+                            <td class="py-3 px-4 text-right font-mono">—</td>
                         </tr>
                         {% endif %}
                         {% for row in ledger.entries %}
@@ -178,10 +180,20 @@
                                 —
                                 {% endif %}
                             </td>
+                            <td class="py-3.5 px-4 text-right align-top whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-2">
+                                    <div class="w-12 bg-slate-200 rounded-full h-1.5 hidden sm:block overflow-hidden">
+                                        <div class="{% if row.percent_paid >= 100 %}bg-emerald-500{% elif row.percent_paid > 0 %}bg-amber-500{% else %}bg-slate-300{% endif %} h-1.5 rounded-full" style="width: {{ row.percent_paid|floatformat:0 }}%"></div>
+                                    </div>
+                                    <span class="font-mono font-bold text-xs {% if row.percent_paid >= 100 %}text-emerald-700{% elif row.percent_paid > 0 %}text-amber-700{% else %}text-slate-400{% endif %}">
+                                        {{ row.percent_paid|floatformat:1 }}%
+                                    </span>
+                                </div>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="py-8 text-center text-slate-400">No documents or transactions recorded for this period.</td>
+                            <td colspan="7" class="py-8 text-center text-slate-400">No documents or transactions recorded for this period.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -191,6 +203,7 @@
                             <td class="py-3.5 px-4 text-right font-mono text-rose-600 whitespace-nowrap">- ₹{{ ledger.total_debit|floatformat:2 }}</td>
                             <td class="py-3.5 px-4 text-right font-mono text-emerald-600 whitespace-nowrap">+ ₹{{ ledger.total_credit|floatformat:2 }}</td>
                             <td class="py-3.5 px-4 text-right font-mono font-extrabold text-amber-950 text-sm whitespace-nowrap">₹{{ ledger.closing_balance|floatformat:2 }}</td>
+                            <td class="py-3.5 px-4 text-right font-mono font-black text-emerald-700 text-xs whitespace-nowrap">{{ ledger.overall_percent_paid|floatformat:1 }}%</td>
                         </tr>
                     </tfoot>
                 </table>

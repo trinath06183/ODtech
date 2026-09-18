@@ -1389,6 +1389,7 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
         paid = b['credits_paid']
         rem = max(Decimal('0.00'), gt - paid)
         status = 'PAID' if rem <= Decimal('0.00') else ('PARTIAL' if paid > Decimal('0.00') else 'UNPAID')
+        pct_paid = min(Decimal('100.0'), max(Decimal('0.0'), (paid / gt * Decimal('100.0')))) if gt > Decimal('0.00') else Decimal('100.0')
 
         entries.append({
             'date': b_date,
@@ -1401,6 +1402,7 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'debit': gt,
             'credit': paid,
             'remaining': rem,
+            'percent_paid': pct_paid,
             'status': status,
             'payments': b['payments'],
         })
@@ -1424,6 +1426,7 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
                 'debit': Decimal('0.00'),
                 'credit': unalloc,
                 'remaining': Decimal('0.00'),
+                'percent_paid': Decimal('100.0'),
                 'status': 'ADVANCE',
                 'payments': [],
             })
@@ -1435,6 +1438,7 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
     total_debit = sum((item['debit'] for item in entries), Decimal('0.00'))
     total_credit = sum((item['credit'] for item in entries), Decimal('0.00'))
     closing_balance = opening_balance + total_debit - total_credit
+    overall_percent_paid = min(Decimal('100.0'), max(Decimal('0.0'), (total_credit / total_debit * Decimal('100.0')))) if total_debit > Decimal('0.00') else Decimal('0.00')
 
     return {
         'contact': contact,
@@ -1444,6 +1448,7 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
         'total_debit': total_debit,
         'total_credit': total_credit,
         'closing_balance': closing_balance,
+        'overall_percent_paid': overall_percent_paid,
         'start_date': start_date,
         'end_date': end_date,
     }
