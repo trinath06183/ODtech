@@ -938,10 +938,12 @@ class DocumentBundleService:
 
 class EWayBillService:
     @classmethod
-    def generate_nic_json(cls, doc, custom_distance=None, vehicle_number=None, transporter_id=None):
+    def generate_nic_json(cls, doc, custom_distance=None, vehicle_number=None, transporter_id=None, from_pincode=None, to_pincode=None):
         """
         Generates the standard Indian NIC E-Way Bill bulk upload JSON (version 1.0.0421).
         Compliant with the official schema for https://ewaybillgst.gov.in.
+        Note: When distance is 0, the Government E-Way Bill portal automatically
+        calculates the exact PIN-to-PIN road distance using fromPincode and toPincode.
         """
         import re
         from config.models import CompanyProfile
@@ -950,24 +952,33 @@ class EWayBillService:
         from_gstin = (company.gstin if company else '') or '21AAAC0000A1Z5'
         from_name = (company.name if company else 'ODtech Solutions')
         from_state_code = int(from_gstin[:2]) if len(from_gstin) >= 2 and from_gstin[:2].isdigit() else 21
-        from_pincode = 753011
+
+        # Attempt detecting dispatch PIN code
+        from_pin_val = 753011
+        if from_pincode and str(from_pincode).strip().isdigit() and len(str(from_pincode).strip()) == 6:
+            from_pin_val = int(str(from_pincode).strip())
+        else:
+            ship_addr = getattr(doc, 'ship_from_address', '') or getattr(doc, 'bill_from_address', '') or (company.header_address if company else '')
+            if ship_addr:
+                pin_match = re.search(r'\b[1-9][0-9]{5}\b', ship_addr)
+                if pin_match:
+                    from_pin_val = int(pin_match.group(0))
 
         contact = doc.contact
         to_gstin = (contact.gstin or 'URP').upper()
         to_name = contact.name
         to_state_code = int(to_gstin[:2]) if len(to_gstin) >= 2 and to_gstin[:2].isdigit() else from_state_code
-        to_pincode = 754001
 
-        # Attempt extracting 6-digit pin codes
-        if contact.address:
-            pin_match = re.search(r'\b[1-9][0-9]{5}\b', contact.address)
-            if pin_match:
-                to_pincode = int(pin_match.group(0))
-
-        if company and company.header_address:
-            pin_match = re.search(r'\b[1-9][0-9]{5}\b', company.header_address)
-            if pin_match:
-                from_pincode = int(pin_match.group(0))
+        # Attempt detecting destination PIN code
+        to_pin_val = 754001
+        if to_pincode and str(to_pincode).strip().isdigit() and len(str(to_pincode).strip()) == 6:
+            to_pin_val = int(str(to_pincode).strip())
+        else:
+            dest_addr = getattr(doc, 'shipping_address', '') or getattr(doc, 'billing_address', '') or (contact.address if contact else '')
+            if dest_addr:
+                pin_match = re.search(r'\b[1-9][0-9]{5}\b', dest_addr)
+                if pin_match:
+                    to_pin_val = int(pin_match.group(0))
 
         doc_type_map = {
             'INV': 'INV',
@@ -984,7 +995,15 @@ class EWayBillService:
         trans_name = doc.transporter_details or 'Direct Transport'
         trans_id = (transporter_id or '').strip().upper()
 
-        distance = int(custom_distance) if custom_distance else (50 if from_state_code == to_state_code else 250)
+        # Distance logic:
+        # If custom_distance is '0', 0, None, '', or 'auto', distance = 0 (auto-calculated by eway portal via PIN codes)
+        if custom_distance in (None, '', '0', 0, 'auto'):
+            distance = 0
+        else:
+            try:
+                distance = int(float(str(custom_distance).strip()))
+            except (ValueError, TypeError):
+                distance = 0
 
         is_interstate = (from_state_code != to_state_code) or doc.force_igst
         items_list = []
@@ -1050,7 +1069,7 @@ class EWayBillService:
             "fromAddr1": (company.header_address.split('\n')[0] if company and company.header_address else "Industrial Area")[:50],
             "fromAddr2": "",
             "fromPlace": "Bhubaneswar",
-            "fromPincode": from_pincode,
+            "fromPincode": from_pin_val,
             "actFromStateCode": from_state_code,
             "fromStateCode": from_state_code,
             "toGstin": to_gstin,
@@ -1058,7 +1077,7 @@ class EWayBillService:
             "toAddr1": (contact.address.split('\n')[0] if contact.address else "Customer Premises")[:50],
             "toAddr2": "",
             "toPlace": (contact.address.split(',')[-2].strip() if contact.address and len(contact.address.split(',')) > 1 else "Destination")[:50],
-            "toPincode": to_pincode,
+            "toPincode": to_pin_val,
             "actToStateCode": to_state_code,
             "toStateCode": to_state_code,
             "totalValue": round(tot_taxable, 2),
@@ -1068,7 +1087,7 @@ class EWayBillService:
             "cessValue": 0.0,
             "totInvValue": tot_inv_val,
             "transMode": "1",
-            "transDistance": str(distance),
+            "transDistance": int(distance),
             "transporterName": trans_name[:100],
             "transporterId": trans_id,
             "transDocNo": trans_doc,

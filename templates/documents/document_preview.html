@@ -605,58 +605,114 @@
 </style>
 
 <!-- E-Way Bill Export Modal -->
-<div id="ewayBillModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div class="bg-slate-800 border border-amber-500/30 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative text-white">
-        <div class="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-amber-500/20 text-amber-400 text-lg">📄</span>
+<div id="ewayBillModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative text-slate-800" style="background-color: #ffffff !important; color: #1e293b !important;">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xl border border-amber-200 flex-shrink-0">
+                    📄
+                </div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">Government E-Way Bill JSON Export</h3>
-                    <p class="text-xs text-slate-400">NIC E-Way Bill Schema v1.0.0421</p>
+                    <h3 class="text-lg font-bold text-slate-900">Government E-Way Bill JSON Export</h3>
+                    <p class="text-xs text-slate-500 font-medium">Official NIC E-Way Bill Schema v1.0.0421</p>
                 </div>
             </div>
-            <button type="button" onclick="closeEWayBillModal()" class="text-gray-400 hover:text-white text-lg font-bold">&times;</button>
+            <button type="button" onclick="closeEWayBillModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
         </div>
 
-        <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-            Generate and download the official NIC E-Way Bill JSON file for document <strong class="text-amber-400 font-mono">{{ doc.number }}</strong>.
-            You can directly upload this file to the Government portal (<a href="https://ewaybillgst.gov.in" target="_blank" class="text-blue-400 underline hover:text-blue-300">ewaybillgst.gov.in</a>) under <em>E-Waybill &rarr; Generate Bulk</em>.
+        <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+            Generate and download the official NIC E-Way Bill JSON file for document <strong class="text-indigo-600 font-mono font-bold">{{ doc.number }}</strong>.
+            You can directly upload this file to the Government portal (<a href="https://ewaybillgst.gov.in" target="_blank" class="text-blue-600 underline font-semibold hover:text-blue-800">ewaybillgst.gov.in</a>) under <em>E-Waybill &rarr; Generate Bulk</em>.
         </p>
 
-        <div class="space-y-3.5 bg-slate-900/60 p-4 rounded-xl border border-white/5 mb-5">
+        <!-- Configuration Box -->
+        <div class="space-y-3.5 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+            <!-- Postal PIN Codes -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Approx Distance (KM) *</label>
-                    <input type="number" id="ewayDistance" value="50" min="1" max="4000"
-                        class="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-amber-500">
-                    <span class="text-[10px] text-slate-400">Road travel distance</span>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Dispatch PIN Code (From) *
+                    </label>
+                    <input type="text" id="ewayFromPincode" value="{{ eway_from_pincode|default:'753011' }}" maxlength="6"
+                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        style="background-color: #ffffff !important; color: #0f172a !important;">
+                    <span class="text-[10px] text-slate-500">Origin / Seller PIN code</span>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Vehicle Number</label>
-                    <input type="text" id="ewayVehicleNo" value="{{ doc.vehicle_number|default:'' }}" placeholder="e.g. OD02AB1234"
-                        class="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white font-mono text-sm uppercase focus:outline-none focus:border-amber-500">
-                    <span class="text-[10px] text-slate-400">Without space or hyphen</span>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Delivery PIN Code (To) *
+                    </label>
+                    <input type="text" id="ewayToPincode" value="{{ eway_to_pincode|default:'754001' }}" maxlength="6"
+                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        style="background-color: #ffffff !important; color: #0f172a !important;">
+                    <span class="text-[10px] text-slate-500">Destination / Buyer PIN code</span>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Transporter GSTIN / Transporter ID</label>
-                <input type="text" id="ewayTransporterId" value="" placeholder="e.g. 21AAAAA0000A1Z5 (or leave blank if none)"
-                    class="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white font-mono text-sm uppercase focus:outline-none focus:border-amber-500">
-                <span class="text-[10px] text-slate-400">15-character GSTIN or 15-digit Transporter ID</span>
+            <!-- Auto-Calculate Distance via PIN Codes -->
+            <div class="p-3 bg-white rounded-xl border border-slate-200">
+                <div class="flex items-start gap-2.5">
+                    <input type="checkbox" id="ewayAutoDistance" checked onchange="toggleEwayDistanceMode(this.checked)"
+                        class="w-4 h-4 mt-0.5 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer">
+                    <div class="flex-1">
+                        <label for="ewayAutoDistance" class="text-xs font-bold text-slate-800 cursor-pointer flex flex-wrap items-center gap-1.5">
+                            Auto-calculate distance in Government Portal via Postal PIN Codes
+                            <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">Recommended</span>
+                        </label>
+                        <p class="text-[11px] text-slate-500 mt-1 leading-normal">
+                            Sets <code class="font-mono text-indigo-600 bg-slate-100 px-1 py-0.5 rounded">transDistance: 0</code>. The Government E-Way Bill portal will automatically compute the exact PIN-to-PIN road distance based on From PIN and To PIN upon bulk upload.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="manualDistanceField" class="mt-3 pt-3 border-t border-slate-100 hidden">
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Manual Distance (in KM)
+                    </label>
+                    <input type="number" id="ewayDistance" value="0" min="0" max="4000"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        style="background-color: #f8fafc !important; color: #0f172a !important;">
+                    <span class="text-[10px] text-slate-500">Enter custom road distance if portal auto-calculation is not desired.</span>
+                </div>
             </div>
 
-            <div class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2">
-                <span class="text-sm">💡</span>
-                <span>Values for Seller GSTIN, Buyer GSTIN, HSN codes, Taxable values, CGST, SGST, IGST will be automatically compiled according to GST rules.</span>
+            <!-- Vehicle Number & Transporter ID -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Vehicle Number</label>
+                    <input type="text" id="ewayVehicleNo" value="{{ doc.vehicle_number|default:'' }}" placeholder="e.g. OD02AB1234"
+                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm uppercase placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        style="background-color: #ffffff !important; color: #0f172a !important;">
+                    <span class="text-[10px] text-slate-500">Vehicle registration number</span>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Transporter GSTIN / ID</label>
+                    <input type="text" id="ewayTransporterId" value="" placeholder="e.g. 21AAAAA0000A1Z5"
+                        class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm uppercase placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        style="background-color: #ffffff !important; color: #0f172a !important;">
+                    <span class="text-[10px] text-slate-500">15-char GSTIN (optional)</span>
+                </div>
+            </div>
+
+            <!-- Information Tip -->
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <span class="text-base flex-shrink-0">💡</span>
+                <div class="leading-relaxed">
+                    <strong>Auto GST Compilation:</strong> Seller GSTIN, Buyer GSTIN, State Codes, Item HSN codes, Taxable values, CGST, SGST, IGST totals are automatically validated and formatted according to official NIC rules.
+                </div>
             </div>
         </div>
 
+        <!-- Action Buttons -->
         <div class="flex justify-end items-center gap-3">
-            <button type="button" onclick="closeEWayBillModal()" class="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 text-sm transition font-medium">Cancel</button>
+            <button type="button" onclick="closeEWayBillModal()" class="px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-sm transition font-semibold">
+                Cancel
+            </button>
             <button type="button" onclick="downloadEWayBillJson()" id="btnDownloadEWay"
-                class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 flex items-center gap-2 text-sm transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 flex items-center gap-2 text-sm transition cursor-pointer"
+                style="color: #ffffff !important;">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 Download NIC JSON
             </button>
         </div>
@@ -703,15 +759,33 @@ function closeEWayBillModal() {
     if (modal) modal.classList.add('hidden');
 }
 
+function toggleEwayDistanceMode(isAuto) {
+    const manualField = document.getElementById('manualDistanceField');
+    const distInput = document.getElementById('ewayDistance');
+    if (isAuto) {
+        if (manualField) manualField.classList.add('hidden');
+        if (distInput) distInput.value = '0';
+    } else {
+        if (manualField) manualField.classList.remove('hidden');
+        if (distInput && distInput.value === '0') distInput.value = '50';
+    }
+}
+
 function downloadEWayBillJson() {
-    const dist = document.getElementById('ewayDistance').value.trim() || '50';
-    const veh = document.getElementById('ewayVehicleNo').value.trim();
-    const trans = document.getElementById('ewayTransporterId').value.trim();
+    const autoCheckbox = document.getElementById('ewayAutoDistance');
+    const isAuto = autoCheckbox ? autoCheckbox.checked : true;
+    const dist = isAuto ? '0' : ((document.getElementById('ewayDistance') ? document.getElementById('ewayDistance').value.trim() : '0') || '0');
+    const veh = document.getElementById('ewayVehicleNo') ? document.getElementById('ewayVehicleNo').value.trim() : '';
+    const trans = document.getElementById('ewayTransporterId') ? document.getElementById('ewayTransporterId').value.trim() : '';
+    const fromPin = document.getElementById('ewayFromPincode') ? document.getElementById('ewayFromPincode').value.trim() : '';
+    const toPin = document.getElementById('ewayToPincode') ? document.getElementById('ewayToPincode').value.trim() : '';
 
     const params = new URLSearchParams({
         distance: dist,
         vehicle_number: veh,
-        transporter_id: trans
+        transporter_id: trans,
+        from_pincode: fromPin,
+        to_pincode: toPin
     });
 
     const url = "{% url 'export_eway_bill_json' doc.id %}?" + params.toString();

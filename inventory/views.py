@@ -10,7 +10,7 @@ from django.db.models import Q, Value, DecimalField
 from django.db.models.functions import Coalesce
 from django.db.models import Sum
 from core.decorators import login_required, role_required, require_permission
-from .models import Product, StockTransaction
+from .models import Product, StockTransaction, BillOfMaterials, BOMItem, AssemblyWorkOrder
 
 
 # ─── Product List ─────────────────────────────────────────────────────────────

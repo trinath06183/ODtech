@@ -13,6 +13,7 @@ from contacts.models import Contact
 from config.models import CompanyProfile
 from django.views.decorators.http import require_POST
 import json
+import re
 
 # ─── Offline Document Generator ───────────────────────────────────────────────
 def offline_document_view(request):
@@ -324,6 +325,24 @@ def document_preview(request, document_id):
     from .services import TrackingService
     tracking_url = TrackingService.get_tracking_url(doc.courier_partner, doc.transport_doc_no)
 
+    import re
+    from config.models import CompanyProfile
+    company = CompanyProfile.objects.first()
+
+    eway_from_pincode = '753011'
+    ship_addr = getattr(doc, 'ship_from_address', '') or getattr(doc, 'bill_from_address', '') or (company.header_address if company else '')
+    if ship_addr:
+        pin_m = re.search(r'\b[1-9][0-9]{5}\b', ship_addr)
+        if pin_m:
+            eway_from_pincode = pin_m.group(0)
+
+    eway_to_pincode = '754001'
+    dest_addr = getattr(doc, 'shipping_address', '') or getattr(doc, 'billing_address', '') or (doc.contact.address if doc.contact else '')
+    if dest_addr:
+        pin_m = re.search(r'\b[1-9][0-9]{5}\b', dest_addr)
+        if pin_m:
+            eway_to_pincode = pin_m.group(0)
+
     return render(request, 'documents/document_preview.html', {
         'doc': doc,
         'preview_html': preview_html,
@@ -339,6 +358,8 @@ def document_preview(request, document_id):
         'total_paid_all': total_paid_all,
         'tracking_url': tracking_url,
         'courier_carriers': TrackingService.CARRIERS,
+        'eway_from_pincode': eway_from_pincode,
+        'eway_to_pincode': eway_to_pincode,
     })
 
 
@@ -1716,15 +1737,19 @@ def export_eway_bill_json(request, document_id):
     from .services import EWayBillService
     doc = get_object_or_404(Document, id=document_id)
 
-    distance = request.GET.get('distance') or request.POST.get('distance')
+    distance = request.GET.get('distance') or request.POST.get('distance') or '0'
     vehicle_number = request.GET.get('vehicle_number') or request.POST.get('vehicle_number')
     transporter_id = request.GET.get('transporter_id') or request.POST.get('transporter_id')
+    from_pincode = request.GET.get('from_pincode') or request.POST.get('from_pincode')
+    to_pincode = request.GET.get('to_pincode') or request.POST.get('to_pincode')
 
     data = EWayBillService.generate_nic_json(
         doc,
         custom_distance=distance,
         vehicle_number=vehicle_number,
-        transporter_id=transporter_id
+        transporter_id=transporter_id,
+        from_pincode=from_pincode,
+        to_pincode=to_pincode
     )
 
     response = HttpResponse(
