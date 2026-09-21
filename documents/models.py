@@ -250,31 +250,32 @@ class Document(TimeStampedModel):
         queue = [self.id]
 
         doc_ct = ContentType.objects.get_for_model(self.__class__)
+        edms_ct = ContentType.objects.filter(app_label='edms', model='edmsdocument').first()
 
         while queue:
             curr_id = queue.pop(0)
 
             # 1. DocumentLink links
-            links = DocumentLink.objects.filter(
+            link_q = (
                 Q(source_type=doc_ct, source_id=str(curr_id)) |
                 Q(target_type=doc_ct, target_id=str(curr_id))
-            ).values_list('source_type_id', 'source_id', 'target_type_id', 'target_id')
+            )
+            if edms_ct:
+                link_q |= (Q(source_type=edms_ct, source_id=str(curr_id)) |
+                           Q(target_type=edms_ct, target_id=str(curr_id)))
+
+            links = DocumentLink.objects.filter(link_q).exclude(link_type='excluded').values_list(
+                'source_type_id', 'source_id', 'target_type_id', 'target_id'
+            )
 
             for s_ct_id, s_id, t_ct_id, t_id in links:
-                if s_ct_id == doc_ct.id:
+                for ct_id, oid in [(s_ct_id, s_id), (t_ct_id, t_id)]:
                     try:
-                        s_int = int(s_id)
-                        if s_int not in visited_ids:
-                            visited_ids.add(s_int)
-                            queue.append(s_int)
-                    except (ValueError, TypeError):
-                        pass
-                if t_ct_id == doc_ct.id:
-                    try:
-                        t_int = int(t_id)
-                        if t_int not in visited_ids:
-                            visited_ids.add(t_int)
-                            queue.append(t_int)
+                        doc_int = int(oid)
+                        if doc_int not in visited_ids:
+                            if ct_id == doc_ct.id or Document.objects.filter(id=doc_int).exists():
+                                visited_ids.add(doc_int)
+                                queue.append(doc_int)
                     except (ValueError, TypeError):
                         pass
 
@@ -380,10 +381,17 @@ class Document(TimeStampedModel):
         from core.models import DocumentLink
         
         doc_ct = ContentType.objects.get_for_model(self.__class__)
-        return DocumentLink.objects.filter(
+        edms_ct = ContentType.objects.filter(app_label='edms', model='edmsdocument').first()
+
+        q = (
             Q(source_type=doc_ct, source_id=str(self.id)) | 
             Q(target_type=doc_ct, target_id=str(self.id))
-        ).order_by('-created_at')
+        )
+        if edms_ct:
+            q |= Q(source_type=edms_ct, source_id=str(self.id))
+            q |= Q(target_type=edms_ct, target_id=str(self.id))
+
+        return DocumentLink.objects.filter(q).exclude(link_type='excluded').order_by('-created_at')
 
     @property
     def tracker_order(self):

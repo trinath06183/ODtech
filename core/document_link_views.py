@@ -22,6 +22,15 @@ def create_document_link(request):
         if not all([source_model, source_id, target_model, target_id]):
             return JsonResponse({'status': 'error', 'message': 'Missing required fields'}, status=400)
 
+        # Defensive auto-correction:
+        # If model is passed as edms.edmsdocument but id is numeric and matches a commercial Document, correct it
+        if target_model == 'edms.edmsdocument' and str(target_id).isdigit():
+            if Document.objects.filter(id=int(target_id)).exists():
+                target_model = 'documents.document'
+        if source_model == 'edms.edmsdocument' and str(source_id).isdigit():
+            if Document.objects.filter(id=int(source_id)).exists():
+                source_model = 'documents.document'
+
         source_app, source_model_name = source_model.split('.')
         target_app, target_model_name = target_model.split('.')
 

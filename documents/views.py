@@ -288,11 +288,31 @@ def document_preview(request, document_id):
         source_obj = _safe_resolve(link, 'source')
         target_obj = _safe_resolve(link, 'target')
 
+        # Auto-heal ContentType in DB if it was saved with EDMS ContentType for a commercial Document
+        try:
+            from django.contrib.contenttypes.models import ContentType
+            doc_ct = ContentType.objects.get_for_model(Document)
+            edms_ct = ContentType.objects.filter(app_label='edms', model='edmsdocument').first()
+            if edms_ct:
+                save_needed = False
+                if link.source_type_id == edms_ct.id and isinstance(source_obj, Document):
+                    link.source_type = doc_ct
+                    save_needed = True
+                if link.target_type_id == edms_ct.id and isinstance(target_obj, Document):
+                    link.target_type = doc_ct
+                    save_needed = True
+                if save_needed:
+                    link.save(update_fields=['source_type', 'target_type'])
+        except Exception:
+            pass
+
         # The "other" side is whichever side is NOT the current document
-        if link.source_id == doc_id_str:
+        if str(link.source_id) == doc_id_str:
             other_obj = target_obj
-        else:
+        elif str(link.target_id) == doc_id_str:
             other_obj = source_obj
+        else:
+            other_obj = target_obj or source_obj
 
         resolved_links.append({
             'link': link,
