@@ -122,6 +122,18 @@
                     Email PDF
                 </button>
                 {% endif %}
+                {% if doc.type == 'INV' or doc.type == 'CHL' %}
+                <button type="button"
+                   onclick="openEWayBillModal()"
+                   class="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-orange-500/20 text-sm"
+                   title="Export Government NIC E-Way Bill JSON (v1.0.0421)"
+                   style="color: #ffffff !important;">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    E-Way Bill JSON
+                </button>
+                {% endif %}
                 <a href="{% url 'export_document_bundle' doc.id %}"
                    class="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold rounded-xl flex items-center transition-all shadow-lg shadow-teal-500/25 text-sm"
                    title="Export full document package for instant transfer to live server"
@@ -388,6 +400,83 @@
             </div>
         </div>
         {% endif %}
+        <!-- Live Shipment & Courier Tracking Card -->
+        <div class="glass p-5 rounded-2xl flex flex-col gap-3.5 shadow-lg border border-indigo-500/20" style="position: relative; z-index: 10;">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                <h3 class="text-slate-800 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                    Shipment & Tracking
+                </h3>
+                <span id="trackingStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full border
+                    {% if doc.tracking_status == 'Delivered' %}bg-emerald-100 text-emerald-800 border-emerald-300
+                    {% elif doc.tracking_status == 'Out for Delivery' %}bg-cyan-100 text-cyan-800 border-cyan-300
+                    {% elif doc.tracking_status == 'In Transit' %}bg-blue-100 text-blue-800 border-blue-300
+                    {% elif doc.tracking_status == 'Delayed' %}bg-rose-100 text-rose-800 border-rose-300
+                    {% else %}bg-slate-100 text-slate-700 border-slate-200{% endif %}">
+                    {{ doc.tracking_status|default:"Booked" }}
+                </span>
+            </div>
+
+            <div class="space-y-2.5 text-xs">
+                <!-- Carrier Selector -->
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Courier / Freight Partner</label>
+                    <select id="courierPartnerSelect" class="w-full bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                        {% for code, info in courier_carriers.items %}
+                            <option value="{{ code }}" {% if doc.courier_partner == code %}selected{% endif %}>
+                                {{ info.name }} ({{ info.category }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- AWB / Tracking / Docket Number -->
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-1">AWB / Docket / LR No.</label>
+                    <input type="text" id="courierAwbInput" value="{{ doc.transport_doc_no|default:'' }}" placeholder="e.g. 1294829104"
+                        class="w-full bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-mono text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <!-- Status Selector -->
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Shipment Status</label>
+                    <select id="courierStatusSelect" class="w-full bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="Booked" {% if doc.tracking_status == 'Booked' %}selected{% endif %}>Booked / Docket Generated</option>
+                        <option value="In Transit" {% if doc.tracking_status == 'In Transit' %}selected{% endif %}>In Transit (On the road)</option>
+                        <option value="Out for Delivery" {% if doc.tracking_status == 'Out for Delivery' %}selected{% endif %}>Out for Delivery</option>
+                        <option value="Delivered" {% if doc.tracking_status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                        <option value="Delayed" {% if doc.tracking_status == 'Delayed' %}selected{% endif %}>Delayed / Exception</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-1 flex flex-col gap-2">
+                    <button type="button" onclick="saveTrackingInfo()" id="btnSaveTracking"
+                        class="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-all shadow-sm flex items-center justify-center gap-1.5 text-xs"
+                        style="color: #ffffff !important;">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Save Tracking Info
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <a id="liveTrackingBtn" href="{{ tracking_url|default:'#' }}" target="_blank"
+                            class="py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition text-center flex items-center justify-center gap-1 text-[11px] {% if not tracking_url %}hidden{% endif %}"
+                            style="color: #ffffff !important;" title="Open carrier's live tracking page">
+                            <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Track Live
+                        </a>
+                        <button type="button" onclick="shareTrackingWhatsApp()" id="shareTrackingWaBtn"
+                            class="py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition flex items-center justify-center gap-1 text-[11px] {% if not doc.transport_doc_no %}hidden{% endif %}"
+                            style="color: #ffffff !important;" title="Send tracking deep-link to customer on WhatsApp">
+                            <span>📲</span> WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Linked Payments -->
         <div class="glass p-5 rounded-2xl shadow-lg" style="position: relative; z-index: 10;">
             <div class="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
@@ -515,6 +604,65 @@
     }
 </style>
 
+<!-- E-Way Bill Export Modal -->
+<div id="ewayBillModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-slate-800 border border-amber-500/30 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative text-white">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+            <div class="flex items-center gap-2.5">
+                <span class="p-2 rounded-xl bg-amber-500/20 text-amber-400 text-lg">📄</span>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Government E-Way Bill JSON Export</h3>
+                    <p class="text-xs text-slate-400">NIC E-Way Bill Schema v1.0.0421</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEWayBillModal()" class="text-gray-400 hover:text-white text-lg font-bold">&times;</button>
+        </div>
+
+        <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+            Generate and download the official NIC E-Way Bill JSON file for document <strong class="text-amber-400 font-mono">{{ doc.number }}</strong>.
+            You can directly upload this file to the Government portal (<a href="https://ewaybillgst.gov.in" target="_blank" class="text-blue-400 underline hover:text-blue-300">ewaybillgst.gov.in</a>) under <em>E-Waybill &rarr; Generate Bulk</em>.
+        </p>
+
+        <div class="space-y-3.5 bg-slate-900/60 p-4 rounded-xl border border-white/5 mb-5">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Approx Distance (KM) *</label>
+                    <input type="number" id="ewayDistance" value="50" min="1" max="4000"
+                        class="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-amber-500">
+                    <span class="text-[10px] text-slate-400">Road travel distance</span>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Vehicle Number</label>
+                    <input type="text" id="ewayVehicleNo" value="{{ doc.vehicle_number|default:'' }}" placeholder="e.g. OD02AB1234"
+                        class="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white font-mono text-sm uppercase focus:outline-none focus:border-amber-500">
+                    <span class="text-[10px] text-slate-400">Without space or hyphen</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">Transporter GSTIN / Transporter ID</label>
+                <input type="text" id="ewayTransporterId" value="" placeholder="e.g. 21AAAAA0000A1Z5 (or leave blank if none)"
+                    class="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 text-white font-mono text-sm uppercase focus:outline-none focus:border-amber-500">
+                <span class="text-[10px] text-slate-400">15-character GSTIN or 15-digit Transporter ID</span>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2">
+                <span class="text-sm">💡</span>
+                <span>Values for Seller GSTIN, Buyer GSTIN, HSN codes, Taxable values, CGST, SGST, IGST will be automatically compiled according to GST rules.</span>
+            </div>
+        </div>
+
+        <div class="flex justify-end items-center gap-3">
+            <button type="button" onclick="closeEWayBillModal()" class="px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 text-sm transition font-medium">Cancel</button>
+            <button type="button" onclick="downloadEWayBillJson()" id="btnDownloadEWay"
+                class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 flex items-center gap-2 text-sm transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download NIC JSON
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Tracker Modal -->
 <div id="trackerModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
@@ -544,6 +692,144 @@
 </div>
 
 <script>
+// E-Way Bill Modal functions
+function openEWayBillModal() {
+    const modal = document.getElementById('ewayBillModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeEWayBillModal() {
+    const modal = document.getElementById('ewayBillModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function downloadEWayBillJson() {
+    const dist = document.getElementById('ewayDistance').value.trim() || '50';
+    const veh = document.getElementById('ewayVehicleNo').value.trim();
+    const trans = document.getElementById('ewayTransporterId').value.trim();
+
+    const params = new URLSearchParams({
+        distance: dist,
+        vehicle_number: veh,
+        transporter_id: trans
+    });
+
+    const url = "{% url 'export_eway_bill_json' doc.id %}?" + params.toString();
+    window.location.href = url;
+    closeEWayBillModal();
+    if (typeof showDocumentToast === 'function') {
+        showDocumentToast('E-Way Bill JSON downloaded! Ready for bulk portal upload.');
+    }
+}
+
+// Live Shipment & Courier Tracking functions
+async function saveTrackingInfo() {
+    const btn = document.getElementById('btnSaveTracking');
+    const carrier = document.getElementById('courierPartnerSelect').value;
+    const awb = document.getElementById('courierAwbInput').value.trim();
+    const status = document.getElementById('courierStatusSelect').value;
+
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Saving...';
+
+    try {
+        const resp = await fetch("{% url 'update_tracking_api' doc.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                courier_partner: carrier,
+                tracking_number: awb,
+                tracking_status: status
+            })
+        });
+
+        const data = await resp.json();
+        if (data.success) {
+            // Update badge
+            const badge = document.getElementById('trackingStatusBadge');
+            if (badge) {
+                badge.textContent = data.tracking_status;
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border ';
+                if (data.tracking_status === 'Delivered') {
+                    badge.className += 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                } else if (data.tracking_status === 'Out for Delivery') {
+                    badge.className += 'bg-cyan-100 text-cyan-800 border-cyan-300';
+                } else if (data.tracking_status === 'In Transit') {
+                    badge.className += 'bg-blue-100 text-blue-800 border-blue-300';
+                } else if (data.tracking_status === 'Delayed') {
+                    badge.className += 'bg-rose-100 text-rose-800 border-rose-300';
+                } else {
+                    badge.className += 'bg-slate-100 text-slate-700 border-slate-200';
+                }
+            }
+
+            // Update live tracking button
+            const liveBtn = document.getElementById('liveTrackingBtn');
+            if (liveBtn) {
+                if (data.tracking_url) {
+                    liveBtn.href = data.tracking_url;
+                    liveBtn.classList.remove('hidden');
+                } else {
+                    liveBtn.classList.add('hidden');
+                }
+            }
+
+            // Update WhatsApp button visibility
+            const waBtn = document.getElementById('shareTrackingWaBtn');
+            if (waBtn) {
+                if (data.tracking_number) {
+                    waBtn.classList.remove('hidden');
+                } else {
+                    waBtn.classList.add('hidden');
+                }
+            }
+
+            if (typeof showDocumentToast === 'function') {
+                showDocumentToast('Shipment tracking details saved successfully!');
+            } else {
+                alert('Shipment tracking saved!');
+            }
+        } else {
+            alert('Failed to save tracking: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Network error while saving tracking: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+    }
+}
+
+function shareTrackingWhatsApp() {
+    const carrierSelect = document.getElementById('courierPartnerSelect');
+    const carrierName = carrierSelect.options[carrierSelect.selectedIndex].text.split('(')[0].trim();
+    const awb = document.getElementById('courierAwbInput').value.trim();
+    const status = document.getElementById('courierStatusSelect').value;
+    const phone = "{{ doc.contact.phone|default:''|escapejs }}";
+    const docNo = "{{ doc.number|escapejs }}";
+    const docType = "{{ doc.get_type_display|escapejs }}";
+    const customerName = "{{ doc.contact.name|escapejs }}";
+    const liveBtn = document.getElementById('liveTrackingBtn');
+    const trackingUrl = (liveBtn && !liveBtn.classList.contains('hidden')) ? liveBtn.href : '';
+
+    let cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+
+    let msg = `Dear ${customerName},\n\nYour order for *${docType} ${docNo}* has been dispatched via *${carrierName}*.\n`;
+    if (awb) msg += `*AWB / Tracking No:* ${awb}\n`;
+    msg += `*Status:* ${status}\n`;
+    if (trackingUrl && trackingUrl !== '#' && !trackingUrl.endsWith('#')) {
+        msg += `\n*Track your shipment live here:*\n${trackingUrl}\n`;
+    }
+    msg += `\nThank you,\nODtech Solutions`;
+
+    const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+}
 function openTrackerModal(docId, suggestedOrderNum, customerPhone) {
     document.getElementById('trackerDocId').value = docId;
     document.getElementById('trackerOrderNumber').value = suggestedOrderNum || '';

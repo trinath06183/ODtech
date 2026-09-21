@@ -321,6 +321,9 @@ def document_preview(request, document_id):
             'target_obj': target_obj,
         })
 
+    from .services import TrackingService
+    tracking_url = TrackingService.get_tracking_url(doc.courier_partner, doc.transport_doc_no)
+
     return render(request, 'documents/document_preview.html', {
         'doc': doc,
         'preview_html': preview_html,
@@ -334,6 +337,8 @@ def document_preview(request, document_id):
         'resolved_links': resolved_links,
         'all_linked_payments': all_linked_payments,
         'total_paid_all': total_paid_all,
+        'tracking_url': tracking_url,
+        'courier_carriers': TrackingService.CARRIERS,
     })
 
 
@@ -1699,6 +1704,75 @@ def update_quotation_asked_by_api(request, document_id):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+
+# ─── E-Way Bill & Shipment Tracking APIs ──────────────────────────────────────
+@login_required
+@require_permission('DOCUMENTS', 'read')
+def export_eway_bill_json(request, document_id):
+    """
+    Exports a downloadable Indian NIC E-Way Bill JSON file for https://ewaybillgst.gov.in.
+    """
+    from .services import EWayBillService
+    doc = get_object_or_404(Document, id=document_id)
+
+    distance = request.GET.get('distance') or request.POST.get('distance')
+    vehicle_number = request.GET.get('vehicle_number') or request.POST.get('vehicle_number')
+    transporter_id = request.GET.get('transporter_id') or request.POST.get('transporter_id')
+
+    data = EWayBillService.generate_nic_json(
+        doc,
+        custom_distance=distance,
+        vehicle_number=vehicle_number,
+        transporter_id=transporter_id
+    )
+
+    response = HttpResponse(
+        json.dumps(data, indent=2),
+        content_type='application/json'
+    )
+    clean_number = re.sub(r'[^A-Za-z0-9_-]', '_', doc.number)
+    response['Content-Disposition'] = f'attachment; filename="EWayBill_{clean_number}.json"'
+    return response
+
+
+@login_required
+@require_permission('DOCUMENTS', 'edit')
+def update_tracking_api(request, document_id):
+    """
+    Updates courier partner, tracking/AWB number, and shipment status.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+    doc = get_object_or_404(Document, id=document_id)
+    try:
+        data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+        courier_partner = (data.get('courier_partner') or 'OTHER').strip()
+        tracking_number = (data.get('tracking_number') or '').strip()
+        tracking_status = (data.get('tracking_status') or 'Booked').strip()
+
+        doc.courier_partner = courier_partner
+        if tracking_number:
+            doc.transport_doc_no = tracking_number
+        doc.tracking_status = tracking_status
+        doc.save(update_fields=['courier_partner', 'transport_doc_no', 'tracking_status', 'updated_at'])
+
+        from .services import TrackingService
+        tracking_url = TrackingService.get_tracking_url(courier_partner, doc.transport_doc_no)
+        carrier_name = TrackingService.CARRIERS.get(courier_partner, {}).get('name', courier_partner)
+
+        return JsonResponse({
+            'success': True,
+            'courier_partner': courier_partner,
+            'carrier_name': carrier_name,
+            'tracking_number': doc.transport_doc_no or '',
+            'tracking_status': doc.tracking_status,
+            'tracking_url': tracking_url,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
 
 
 

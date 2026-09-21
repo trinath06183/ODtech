@@ -74,4 +74,8 @@ urlpatterns = [
     # Link existing payment APIs
     path('api/<int:document_id>/search-payments/', views.search_payments_for_document_api, name='search_payments_for_document_api'),
     path('api/<int:document_id>/link-payment/', views.link_payment_to_document_api, name='link_payment_to_document_api'),
+
+    # E-Way Bill & Shipment Tracking APIs
+    path('<int:document_id>/export-eway-json/', views.export_eway_bill_json, name='export_eway_bill_json'),
+    path('api/<int:document_id>/update-tracking/', views.update_tracking_api, name='update_tracking_api'),
 ]

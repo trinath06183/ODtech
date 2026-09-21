@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block header %}{{ title }}{% endblock %}
+{% block content %}
+
+<div class="max-w-4xl mx-auto" x-data="bomEditor()">
+    <div class="mb-6 flex items-center justify-between">
+        <a href="{% url 'bom_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to BOM List
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Header Card -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                <div class="w-10 h-10 rounded-xl bg-purple-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold text-lg">{{ title }}</h3>
+                    <p class="text-xs text-gray-400">Specify finished equipment and raw materials required for 1 finished unit</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <!-- Finished Product -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">
+                        Finished Product to Manufacture <span class="text-rose-400">*</span>
+                    </label>
+                    {% if bom %}
+                        <input type="hidden" name="finished_product" value="{{ bom.finished_product.id }}">
+                        <div class="p-3 bg-slate-900/80 rounded-xl text-sm font-bold text-cyan-300 border border-white/10">
+                            {{ bom.finished_product.name }} ({{ bom.finished_product.sku }})
+                        </div>
+                    {% else %}
+                        <select name="finished_product" required class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-purple-500 focus:outline-none">
+                            <option value="">-- Select Product --</option>
+                            {% for p in products %}
+                            <option value="{{ p.id }}">{{ p.name }} [SKU: {{ p.sku }}] (Current Stock: {{ p.current_stock }})</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+
+                <!-- BOM Number -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">BOM Code / Number</label>
+                    <input type="text" name="bom_number" value="{{ bom.bom_number|default:'' }}" placeholder="Auto-generated if blank (e.g. BOM-2026-001)"
+                           class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white font-mono text-sm focus:border-purple-500 focus:outline-none">
+                </div>
+
+                <!-- Specification Name -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Specification Title</label>
+                    <input type="text" name="name" value="{{ bom.name|default:'' }}" placeholder="e.g. Standard 250A Wire Feeder Assembly"
+                           class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-purple-500 focus:outline-none">
+                </div>
+
+                <!-- Version & Active -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Version</label>
+                        <input type="text" name="version" value="{{ bom.version|default:'1.0' }}" placeholder="1.0"
+                               class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-purple-500 focus:outline-none font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Active</label>
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-900/60 border border-white/10 rounded-xl cursor-pointer">
+                            <input type="checkbox" name="is_active" {% if not bom or bom.is_active %}checked{% endif %} class="w-4 h-4 rounded text-purple-600 focus:ring-0">
+                            <span class="text-xs text-gray-300 font-semibold">Active BOM</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Labor Cost & Overhead -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Direct Labor Cost (₹ / unit)</label>
+                    <input type="number" step="0.01" name="labor_cost" x-model.number="laborCost" value="{{ bom.labor_cost|default:'0.00' }}"
+                           class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-purple-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Overhead Cost (₹ / unit)</label>
+                    <input type="number" step="0.01" name="overhead_cost" x-model.number="overheadCost" value="{{ bom.overhead_cost|default:'0.00' }}"
+                           class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-purple-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Engineering Notes / Assembly Instructions</label>
+                <textarea name="notes" rows="2" placeholder="Wiring guidelines, welding torque, special tools..."
+                          class="w-full px-3.5 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-xs focus:border-purple-500 focus:outline-none">{{ bom.notes|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Components / Items Table -->
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h4 class="text-white font-bold text-base">Raw Components & Sub-parts</h4>
+                    <p class="text-xs text-gray-400">List all materials required to assemble 1 unit of this product</p>
+                </div>
+                <button type="button" @click="addRow()"
+                    class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-xs flex items-center gap-1 transition shadow-md shadow-purple-500/20">
+                    + Add Part
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="text-gray-400 uppercase font-semibold border-b border-white/10">
+                        <tr>
+                            <th class="pb-3 w-7/12">Component / Raw Material</th>
+                            <th class="pb-3 w-2/12">Qty Required</th>
+                            <th class="pb-3 w-1/12">Unit</th>
+                            <th class="pb-3 w-1/12">Scrap %</th>
+                            <th class="pb-3 text-right">Cost (₹)</th>
+                            <th class="pb-3 text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        <template x-for="(row, idx) in rows" :key="idx">
+                            <tr>
+                                <td class="py-2.5 pr-3">
+                                    <select name="component_product[]" x-model="row.productId" @change="updatePrice(row)" required
+                                        class="w-full px-3 py-2 bg-slate-900/70 border border-white/10 rounded-lg text-white text-xs focus:border-purple-500 focus:outline-none">
+                                        <option value="">-- Choose Component --</option>
+                                        <template x-for="p in productList" :key="p.id">
+                                            <option :value="p.id" x-text="`${p.name} [SKU: ${p.sku}] (₹${p.price})`"></option>
+                                        </template>
+                                    </select>
+                                </td>
+                                <td class="py-2.5 pr-3">
+                                    <input type="number" step="0.0001" min="0.0001" name="quantity_required[]" x-model.number="row.qty" required
+                                        class="w-full px-2.5 py-2 bg-slate-900/70 border border-white/10 rounded-lg text-white font-mono text-xs focus:border-purple-500 focus:outline-none">
+                                </td>
+                                <td class="py-2.5 pr-3">
+                                    <input type="text" name="unit[]" x-model="row.unit"
+                                        class="w-20 px-2.5 py-2 bg-slate-900/70 border border-white/10 rounded-lg text-white text-xs focus:border-purple-500 focus:outline-none">
+                                </td>
+                                <td class="py-2.5 pr-3">
+                                    <input type="number" step="0.1" min="0" name="scrap_percentage[]" x-model.number="row.scrap"
+                                        class="w-16 px-2 py-2 bg-slate-900/70 border border-white/10 rounded-lg text-white font-mono text-xs focus:border-purple-500 focus:outline-none text-center">
+                                </td>
+                                <td class="py-2.5 text-right font-mono text-gray-300 font-semibold" x-text="'₹' + ((row.qty * (1 + (row.scrap||0)/100)) * (row.unitPrice || 0)).toFixed(2)"></td>
+                                <td class="py-2.5 text-center pl-2">
+                                    <button type="button" @click="removeRow(idx)" class="text-rose-400 hover:text-rose-300 p-1 text-sm" title="Remove part">&times;</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Cost Summary Footer -->
+            <div class="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs">
+                <div class="text-gray-400">
+                    Total Components: <span class="font-bold text-white" x-text="rows.length"></span>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div>
+                        <span class="text-gray-400">Material Cost:</span>
+                        <span class="font-bold font-mono text-white ml-1" x-text="'₹' + totalMaterialCost.toFixed(2)"></span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Labor + Overhead:</span>
+                        <span class="font-bold font-mono text-white ml-1" x-text="'₹' + (Number(laborCost||0) + Number(overheadCost||0)).toFixed(2)"></span>
+                    </div>
+                    <div class="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
+                        <span class="text-emerald-300 font-bold uppercase tracking-wider text-[11px]">Est. Unit Production Cost:</span>
+                        <span class="font-extrabold font-mono text-emerald-300 text-sm ml-1" x-text="'₹' + (totalMaterialCost + Number(laborCost||0) + Number(overheadCost||0)).toFixed(2)"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+            <a href="{% url 'bom_list' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 font-semibold rounded-xl text-sm transition">Cancel</a>
+            <button type="submit" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-purple-500/25">
+                Save Bill of Materials
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function bomEditor() {
+    const productsData = [
+        {% for p in products %}
+        { id: {{ p.id }}, name: "{{ p.name|escapejs }}", sku: "{{ p.sku|escapejs }}", unit: "{{ p.unit|escapejs }}", price: {{ p.purchase_price|default:0 }} },
+        {% endfor %}
+    ];
+
+    const initialRows = [
+        {% if bom %}
+            {% for it in bom.items.all %}
+            {
+                productId: {{ it.component_product.id }},
+                qty: {{ it.quantity_required }},
+                unit: "{{ it.unit|escapejs }}",
+                scrap: {{ it.scrap_percentage }},
+                unitPrice: {{ it.component_product.purchase_price|default:0 }}
+            },
+            {% endfor %}
+        {% else %}
+            { productId: '', qty: 1, unit: 'Nos', scrap: 0, unitPrice: 0 }
+        {% endif %}
+    ];
+
+    return {
+        productList: productsData,
+        rows: initialRows.length > 0 ? initialRows : [{ productId: '', qty: 1, unit: 'Nos', scrap: 0, unitPrice: 0 }],
+        laborCost: {{ bom.labor_cost|default:0 }},
+        overheadCost: {{ bom.overhead_cost|default:0 }},
+
+        addRow() {
+            this.rows.push({ productId: '', qty: 1, unit: 'Nos', scrap: 0, unitPrice: 0 });
+        },
+
+        removeRow(idx) {
+            if (this.rows.length > 1) {
+                this.rows.splice(idx, 1);
+            }
+        },
+
+        updatePrice(row) {
+            const p = this.productList.find(item => String(item.id) === String(row.productId));
+            if (p) {
+                row.unitPrice = p.price || 0;
+                row.unit = p.unit || 'Nos';
+            } else {
+                row.unitPrice = 0;
+            }
+        },
+
+        get totalMaterialCost() {
+            return this.rows.reduce((sum, r) => {
+                const qty = Number(r.qty || 0);
+                const scrap = Number(r.scrap || 0);
+                const price = Number(r.unitPrice || 0);
+                const effective = qty * (1 + (scrap / 100));
+                return sum + (effective * price);
+            }, 0);
+        }
+    }
+}
+</script>
+
+{% endblock %}

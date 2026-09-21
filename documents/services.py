@@ -934,3 +934,212 @@ class DocumentBundleService:
             )
 
         return doc, created
+
+
+class EWayBillService:
+    @classmethod
+    def generate_nic_json(cls, doc, custom_distance=None, vehicle_number=None, transporter_id=None):
+        """
+        Generates the standard Indian NIC E-Way Bill bulk upload JSON (version 1.0.0421).
+        Compliant with the official schema for https://ewaybillgst.gov.in.
+        """
+        import re
+        from config.models import CompanyProfile
+        company = CompanyProfile.objects.first()
+
+        from_gstin = (company.gstin if company else '') or '21AAAC0000A1Z5'
+        from_name = (company.name if company else 'ODtech Solutions')
+        from_state_code = int(from_gstin[:2]) if len(from_gstin) >= 2 and from_gstin[:2].isdigit() else 21
+        from_pincode = 753011
+
+        contact = doc.contact
+        to_gstin = (contact.gstin or 'URP').upper()
+        to_name = contact.name
+        to_state_code = int(to_gstin[:2]) if len(to_gstin) >= 2 and to_gstin[:2].isdigit() else from_state_code
+        to_pincode = 754001
+
+        # Attempt extracting 6-digit pin codes
+        if contact.address:
+            pin_match = re.search(r'\b[1-9][0-9]{5}\b', contact.address)
+            if pin_match:
+                to_pincode = int(pin_match.group(0))
+
+        if company and company.header_address:
+            pin_match = re.search(r'\b[1-9][0-9]{5}\b', company.header_address)
+            if pin_match:
+                from_pincode = int(pin_match.group(0))
+
+        doc_type_map = {
+            'INV': 'INV',
+            'CHL': 'CHL',
+            'PRO': 'INV',
+            'CRN': 'CNT',
+            'DBN': 'DBT',
+        }
+        nic_doc_type = doc_type_map.get(doc.type, 'INV')
+        sub_supply_type = "1" if doc.type in ['INV', 'PRO'] else "8"
+
+        veh_no = (vehicle_number or doc.vehicle_number or '').replace(' ', '').replace('-', '').upper()
+        trans_doc = doc.transport_doc_no or doc.eway_bill or ''
+        trans_name = doc.transporter_details or 'Direct Transport'
+        trans_id = (transporter_id or '').strip().upper()
+
+        distance = int(custom_distance) if custom_distance else (50 if from_state_code == to_state_code else 250)
+
+        is_interstate = (from_state_code != to_state_code) or doc.force_igst
+        items_list = []
+        tot_taxable = 0.0
+        tot_cgst = 0.0
+        tot_sgst = 0.0
+        tot_igst = 0.0
+
+        for idx, item in enumerate(doc.items.select_related('product').all(), 1):
+            hsn = (item.product.hsn_code if item.product else getattr(item, 'hsn_code', '')) or '8515'
+            hsn_num = int(''.join(filter(str.isdigit, str(hsn))) or 8515)
+            taxable = float(item.total)
+            rate = float(item.tax_rate)
+
+            if is_interstate:
+                cgst_r = 0.0
+                sgst_r = 0.0
+                igst_r = rate
+                cgst_v = 0.0
+                sgst_v = 0.0
+                igst_v = round(taxable * (rate / 100.0), 2)
+            else:
+                cgst_r = rate / 2.0
+                sgst_r = rate / 2.0
+                igst_r = 0.0
+                cgst_v = round(taxable * (cgst_r / 100.0), 2)
+                sgst_v = round(taxable * (sgst_r / 100.0), 2)
+                igst_v = 0.0
+
+            tot_taxable += taxable
+            tot_cgst += cgst_v
+            tot_sgst += sgst_v
+            tot_igst += igst_v
+
+            items_list.append({
+                "itemNo": idx,
+                "productName": item.product.name if item.product else (item.name or "Industrial Product"),
+                "productDesc": (item.description or item.name or "")[:100],
+                "hsnCode": hsn_num,
+                "quantity": float(item.quantity),
+                "qtyUnit": (item.unit or "NOS").upper()[:3],
+                "taxableAmount": round(taxable, 2),
+                "sgstRate": cgst_r,
+                "cgstRate": sgst_r,
+                "igstRate": igst_r,
+                "cessRate": 0.0,
+                "cessNonAdvol": 0.0
+            })
+
+        tot_inv_val = round(tot_taxable + tot_cgst + tot_sgst + tot_igst, 2)
+
+        bill_data = {
+            "userGstin": from_gstin,
+            "supplyType": "O",
+            "subSupplyType": sub_supply_type,
+            "subSupplyDesc": "Commercial Outward Supply" if sub_supply_type == "1" else "Delivery Challan Movement",
+            "docType": nic_doc_type,
+            "docNo": doc.number,
+            "docDate": doc.date.strftime("%d/%m/%Y"),
+            "transType": "1",
+            "fromGstin": from_gstin,
+            "fromTrdName": from_name,
+            "fromAddr1": (company.header_address.split('\n')[0] if company and company.header_address else "Industrial Area")[:50],
+            "fromAddr2": "",
+            "fromPlace": "Bhubaneswar",
+            "fromPincode": from_pincode,
+            "actFromStateCode": from_state_code,
+            "fromStateCode": from_state_code,
+            "toGstin": to_gstin,
+            "toTrdName": to_name[:100],
+            "toAddr1": (contact.address.split('\n')[0] if contact.address else "Customer Premises")[:50],
+            "toAddr2": "",
+            "toPlace": (contact.address.split(',')[-2].strip() if contact.address and len(contact.address.split(',')) > 1 else "Destination")[:50],
+            "toPincode": to_pincode,
+            "actToStateCode": to_state_code,
+            "toStateCode": to_state_code,
+            "totalValue": round(tot_taxable, 2),
+            "cgstValue": round(tot_cgst, 2),
+            "sgstValue": round(tot_sgst, 2),
+            "igstValue": round(tot_igst, 2),
+            "cessValue": 0.0,
+            "totInvValue": tot_inv_val,
+            "transMode": "1",
+            "transDistance": str(distance),
+            "transporterName": trans_name[:100],
+            "transporterId": trans_id,
+            "transDocNo": trans_doc,
+            "transDocDate": (doc.transport_doc_date or doc.date).strftime("%d/%m/%Y"),
+            "vehicleNo": veh_no,
+            "vehicleType": "R",
+            "itemList": items_list
+        }
+
+        return {
+            "version": "1.0.0421",
+            "billLists": [bill_data]
+        }
+
+
+class TrackingService:
+    CARRIERS = {
+        'BLUEDART': {
+            'name': 'Blue Dart Express',
+            'url_template': 'https://www.bluedart.com/tracking?trackNumber={awb}',
+            'category': 'Courier'
+        },
+        'DELHIVERY': {
+            'name': 'Delhivery',
+            'url_template': 'https://www.delhivery.com/track/package/{awb}',
+            'category': 'Courier'
+        },
+        'DTDC': {
+            'name': 'DTDC Courier',
+            'url_template': 'https://www.dtdc.in/tracking/tracking_results.asp?Ttype=awb_no&strCnno={awb}',
+            'category': 'Courier'
+        },
+        'TRACKON': {
+            'name': 'Trackon Couriers',
+            'url_template': 'http://trackon.in/Tracking/TrackingResult?awbNo={awb}',
+            'category': 'Courier'
+        },
+        'VRL': {
+            'name': 'VRL Logistics',
+            'url_template': 'https://www.vrlgroup.in/track_consignment.aspx?lrno={awb}',
+            'category': 'Heavy Freight / Road'
+        },
+        'TCI': {
+            'name': 'TCI Express',
+            'url_template': 'https://www.tciexpress.in/tracking.aspx?dkt={awb}',
+            'category': 'Heavy Freight / Road'
+        },
+        'GATI': {
+            'name': 'Gati-KWE',
+            'url_template': 'https://www.gati.com/track/?dkt={awb}',
+            'category': 'Heavy Freight / Road'
+        },
+        'SPEEDPOST': {
+            'name': 'India Post Speed Post',
+            'url_template': 'https://www.indiapost.gov.in/_layouts/15/dpt.cept.tracking/trackconsignment.aspx',
+            'category': 'Postal'
+        },
+        'OTHER': {
+            'name': 'Other / Local Transporter',
+            'url_template': '',
+            'category': 'Road Freight'
+        }
+    }
+
+    @classmethod
+    def get_tracking_url(cls, carrier_code, awb_number):
+        if not awb_number:
+            return ''
+        awb = str(awb_number).strip().replace(' ', '')
+        carrier_info = cls.CARRIERS.get(carrier_code.upper() if carrier_code else '')
+        if carrier_info and carrier_info['url_template']:
+            return carrier_info['url_template'].format(awb=awb)
+        return ''
+

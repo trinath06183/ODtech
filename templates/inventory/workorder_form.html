@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block header %}Create Assembly Work Order{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto" x-data="workOrderCreator()">
+    <div class="mb-6 flex items-center justify-between">
+        <a href="{% url 'workorder_list' %}" class="flex items-center text-gray-400 hover:text-white transition-colors text-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Work Orders
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                <div class="w-10 h-10 rounded-xl bg-amber-600/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold text-lg">Schedule Assembly Work Order</h3>
+                    <p class="text-xs text-gray-400">Select BOM specification and quantity to manufacture</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Select BOM -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">
+                        Assembly Specification (BOM) <span class="text-rose-400">*</span>
+                    </label>
+                    <select name="bom" x-model="selectedBomId" @change="loadBomDetails()" required
+                        class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-amber-500 focus:outline-none">
+                        <option value="">-- Choose BOM Specification --</option>
+                        {% for b in boms %}
+                        <option value="{{ b.id }}" {% if request.GET.bom == b.id|stringformat:"s" %}selected{% endif %}>
+                            {{ b.bom_number }} - {{ b.finished_product.name }} ({{ b.name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Quantity & Technician -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">
+                            Batch Quantity to Assemble <span class="text-rose-400">*</span>
+                        </label>
+                        <input type="number" min="1" step="1" name="quantity_to_produce" x-model.number="quantity" @input="loadBomDetails()" required
+                            class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white font-mono text-sm focus:border-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Assigned Technician / Supervisor</label>
+                        <input type="text" name="assigned_technician" placeholder="e.g. Rajesh Kumar"
+                            class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-amber-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Dates -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Start Date</label>
+                        <input type="date" name="start_date"
+                            class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Target Completion Date</label>
+                        <input type="date" name="target_date"
+                            class="w-full px-3.5 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:border-amber-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase mb-1.5">Work Order Remarks</label>
+                    <textarea name="notes" rows="2" placeholder="Specific customer order requirements, custom wiring, priority..."
+                        class="w-full px-3.5 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-xs focus:border-amber-500 focus:outline-none"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Component Availability Preview -->
+        <div x-show="bomDetails" class="glass rounded-2xl p-6 border border-white/10" style="display:none;">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="text-white font-bold text-sm flex items-center gap-2">
+                    <span>📦 Material Availability Check</span>
+                </h4>
+                <template x-if="bomDetails && bomDetails.check.is_sufficient">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        ✓ All Materials in Stock
+                    </span>
+                </template>
+                <template x-if="bomDetails && !bomDetails.check.is_sufficient">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        ⚠️ Material Shortage Detected
+                    </span>
+                </template>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="text-gray-400 uppercase font-semibold border-b border-white/10">
+                        <tr>
+                            <th class="pb-2">Component</th>
+                            <th class="pb-2 text-center">Required</th>
+                            <th class="pb-2 text-center">In Stock</th>
+                            <th class="pb-2 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        <template x-for="item in (bomDetails ? bomDetails.check.items : [])" :key="item.item_id">
+                            <tr>
+                                <td class="py-2 text-white font-medium">
+                                    <span x-text="item.component_name"></span>
+                                    <span class="block text-[10px] text-gray-500 font-mono" x-text="item.component_sku"></span>
+                                </td>
+                                <td class="py-2 text-center font-mono text-gray-300" x-text="`${item.required_qty} ${item.unit}`"></td>
+                                <td class="py-2 text-center font-mono" :class="item.has_enough ? 'text-emerald-400' : 'text-rose-400'" x-text="`${item.available_qty} ${item.unit}`"></td>
+                                <td class="py-2 text-center">
+                                    <template x-if="item.has_enough">
+                                        <span class="text-emerald-400 font-bold">✓ Ready</span>
+                                    </template>
+                                    <template x-if="!item.has_enough">
+                                        <span class="text-rose-400 font-bold" x-text="`Shortage: -${item.shortage_qty}`"></span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+            <a href="{% url 'workorder_list' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 font-semibold rounded-xl text-sm transition">Cancel</a>
+            <button type="submit" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-amber-500/25">
+                Schedule Work Order
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function workOrderCreator() {
+    return {
+        selectedBomId: "{{ request.GET.bom|default:'' }}",
+        quantity: 1,
+        bomDetails: null,
+
+        init() {
+            if (this.selectedBomId) {
+                this.loadBomDetails();
+            }
+        },
+
+        async loadBomDetails() {
+            if (!this.selectedBomId) {
+                this.bomDetails = null;
+                return;
+            }
+            try {
+                const res = await fetch(`/inventory/api/bom/${this.selectedBomId}/details/?qty=${this.quantity || 1}`);
+                const data = await res.json();
+                this.bomDetails = data;
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    }
+}
+</script>
+
+{% endblock %}

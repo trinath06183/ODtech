@@ -117,3 +117,106 @@ class WarrantyClaim(TimeStampedModel):
 
     def __str__(self):
         return f"Claim {self.claim_number} [{self.status}]"
+
+
+# --- Bill of Materials (BOM) & Assembly Work Orders ----------------------------
+class BillOfMaterials(TimeStampedModel):
+    finished_product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='boms',
+        help_text="Finished product manufactured or assembled"
+    )
+    bom_number = models.CharField(max_length=50, unique=True, help_text="e.g. BOM-2026-001")
+    name = models.CharField(max_length=255, help_text="e.g. Standard MIG-250 Assembly Specification")
+    version = models.CharField(max_length=20, default="1.0")
+    is_active = models.BooleanField(default=True)
+    labor_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, help_text="Direct labor cost per unit")
+    overhead_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, help_text="Overhead cost per unit")
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Bill of Materials"
+        verbose_name_plural = "Bills of Materials"
+
+    @property
+    def total_component_cost(self):
+        from decimal import Decimal
+        total = Decimal('0.00')
+        for item in self.items.select_related('component_product').all():
+            total += item.line_cost
+        return total
+
+    @property
+    def unit_production_cost(self):
+        from decimal import Decimal
+        return self.total_component_cost + (self.labor_cost or Decimal('0.00')) + (self.overhead_cost or Decimal('0.00'))
+
+    def __str__(self):
+        return f"{self.bom_number}: {self.finished_product.name} (v{self.version})"
+
+
+class BOMItem(TimeStampedModel):
+    bom = models.ForeignKey(BillOfMaterials, on_delete=models.CASCADE, related_name='items')
+    component_product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name='bom_usages',
+        help_text="Raw material or sub-component item"
+    )
+    quantity_required = models.DecimalField(max_digits=15, decimal_places=4, help_text="Quantity required per 1 finished unit")
+    unit = models.CharField(max_length=50, default='Nos')
+    scrap_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, help_text="Expected scrap/wastage %")
+    notes = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        ordering = ['id']
+
+    @property
+    def effective_quantity(self):
+        from decimal import Decimal
+        scrap = (self.scrap_percentage or Decimal('0.00')) / Decimal('100.00')
+        return self.quantity_required * (Decimal('1.00') + scrap)
+
+    @property
+    def line_cost(self):
+        from decimal import Decimal
+        price = self.component_product.purchase_price or Decimal('0.00')
+        return self.effective_quantity * price
+
+    def __str__(self):
+        return f"{self.component_product.name} x {self.quantity_required} {self.unit}"
+
+
+class AssemblyWorkOrder(TimeStampedModel):
+    STATUS_CHOICES = [
+        ('Draft', 'Draft'),
+        ('Scheduled', 'Scheduled'),
+        ('In Production', 'In Production'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
+    ]
+
+    order_number = models.CharField(max_length=50, unique=True, help_text="e.g. WO-2026-0001")
+    bom = models.ForeignKey(BillOfMaterials, on_delete=models.PROTECT, related_name='work_orders')
+    finished_product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='work_orders')
+    quantity_to_produce = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
+    assigned_technician = models.CharField(max_length=150, blank=True, null=True, help_text="Technician or supervisor name")
+    start_date = models.DateField(blank=True, null=True)
+    target_date = models.DateField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+    serial_numbers_produced = models.TextField(blank=True, null=True, help_text="Comma or newline-separated serial numbers of completed units")
+    notes = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(
+        'users.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='assembly_work_orders'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    @property
+    def total_cost(self):
+        from decimal import Decimal
+        return self.bom.unit_production_cost * Decimal(self.quantity_to_produce)
+
+    def __str__(self):
+        return f"{self.order_number} ({self.finished_product.name} x {self.quantity_to_produce}) - {self.status}"

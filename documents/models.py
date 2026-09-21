@@ -89,12 +89,14 @@ class Document(TimeStampedModel):
         verbose_name='Created By',
     )
     
-    # Transporter Details (For Delivery Challan)
+    # Transporter & Courier Details
     transporter_details = models.CharField(max_length=255, blank=True, null=True, default='Local Transportation', verbose_name="Transporter Details")
     vehicle_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Transporter Vehicle No.")
     transport_doc_no = models.CharField(max_length=100, blank=True, null=True, verbose_name="Transporter Doc No.")
     transport_doc_date = models.DateField(blank=True, null=True, verbose_name="Transporter Doc Date")
     transport_reason = models.TextField(blank=True, null=True, default='Refilling only, No Commercial involvement.', verbose_name="Transport Reason")
+    courier_partner = models.CharField(max_length=50, blank=True, null=True, default='OTHER', verbose_name="Courier / Carrier Partner")
+    tracking_status = models.CharField(max_length=50, blank=True, null=True, default='Booked', verbose_name="Tracking Status")
     
     # Totals
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)

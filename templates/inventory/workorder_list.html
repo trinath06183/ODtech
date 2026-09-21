@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block header %}Assembly Work Orders{% endblock %}
+{% block content %}
+
+<!-- Header & Nav Bar -->
+<div class="glass p-4 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-600/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-white font-bold text-lg">Assembly Work Orders</h2>
+            <p class="text-gray-400 text-xs">Manage production batches, shop-floor assembly, and inventory conversion</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{% url 'inventory_list' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700">
+            📦 Stock List
+        </a>
+        <a href="{% url 'bom_list' %}" class="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 font-semibold rounded-xl text-xs transition border border-purple-500/30">
+            📋 Bill of Materials
+        </a>
+        <a href="{% url 'workorder_create' %}" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition shadow-lg shadow-amber-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            + Create Work Order
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="glass p-4 rounded-2xl mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
+        <a href="?{% if query %}q={{ query }}&{% endif %}"
+           class="px-3.5 py-1.5 rounded-xl transition {% if not status_filter %}bg-white text-slate-900 font-bold shadow-sm{% else %}text-gray-400 hover:text-white bg-slate-900/60{% endif %}">
+            All Work Orders
+        </a>
+        {% for s_val, s_label in status_choices %}
+        <a href="?status={{ s_val }}{% if query %}&q={{ query }}{% endif %}"
+           class="px-3.5 py-1.5 rounded-xl transition {% if status_filter == s_val %}bg-white text-slate-900 font-bold shadow-sm{% else %}text-gray-400 hover:text-white bg-slate-900/60{% endif %}">
+            {{ s_label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <form method="get" class="flex items-center gap-2">
+        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+        <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search WO#, equipment, technician..."
+               class="px-3.5 py-1.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-xs placeholder-gray-500 focus:outline-none focus:border-amber-500">
+        <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition">Search</button>
+    </form>
+</div>
+
+<!-- Work Orders Table -->
+<div class="glass rounded-2xl overflow-hidden shadow-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left whitespace-nowrap text-sm">
+            <thead class="bg-slate-900/60 text-xs uppercase text-gray-400 font-semibold border-b border-white/10">
+                <tr>
+                    <th class="px-6 py-4">Work Order #</th>
+                    <th class="px-6 py-4">Equipment / Finished Product</th>
+                    <th class="px-6 py-4 text-center">Batch Qty</th>
+                    <th class="px-6 py-4">Technician / Assigned</th>
+                    <th class="px-6 py-4">Target Date</th>
+                    <th class="px-6 py-4 text-center">Status</th>
+                    <th class="px-6 py-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-gray-300">
+                {% for wo in work_orders %}
+                <tr class="hover:bg-white/5 transition-colors cursor-pointer" onclick="window.location='{% url 'workorder_detail' wo.id %}';">
+                    <td class="px-6 py-4 font-mono font-bold text-amber-400">
+                        {{ wo.order_number }}
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-white">
+                        {{ wo.finished_product.name }}
+                        <span class="block text-xs text-gray-500 font-mono">{{ wo.bom.name }} (v{{ wo.bom.version }})</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/30">
+                            {{ wo.quantity_to_produce }} {{ wo.finished_product.unit }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-300 font-medium text-xs">
+                        {{ wo.assigned_technician|default:"Unassigned" }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-400 text-xs">
+                        {{ wo.target_date|date:"d M Y"|default:"Not specified" }}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        {% if wo.status == 'Completed' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">✓ Completed</span>
+                        {% elif wo.status == 'In Production' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">⚙️ In Production</span>
+                        {% elif wo.status == 'Scheduled' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">Scheduled</span>
+                        {% elif wo.status == 'Cancelled' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">Cancelled</span>
+                        {% else %}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-500/20 text-gray-300 border border-gray-500/30">Draft</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right" onclick="event.stopPropagation();">
+                        <a href="{% url 'workorder_detail' wo.id %}" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition border border-white/10">
+                            View & Execute &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                        <div class="text-3xl mb-2">⚙️</div>
+                        <p class="text-base font-semibold text-gray-400 mb-1">No Work Orders found</p>
+                        <p class="text-xs text-gray-600 mb-4">Start an assembly work order to schedule equipment production and convert raw materials into finished stock.</p>
+                        <a href="{% url 'workorder_create' %}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl text-xs transition">
+                            + Create Work Order
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
