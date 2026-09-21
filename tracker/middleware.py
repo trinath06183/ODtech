@@ -20,6 +20,7 @@ import json
 import logging
 from django.conf import settings
 from django.shortcuts import render
+from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 from .models import ErrorLog
 
@@ -89,7 +90,6 @@ class ErrorLoggingMiddleware(MiddlewareMixin):
 
         # For regular web page requests, render 500.html with full error details
         if not settings.DEBUG:
-            from django.utils import timezone as tz
             context = {
                 'reference_id': ref_id,
                 'error_type': exception.__class__.__name__,
@@ -97,7 +97,7 @@ class ErrorLoggingMiddleware(MiddlewareMixin):
                 'stack_trace': traceback.format_exc(),
                 'url': request.build_absolute_uri(),
                 'method': request.method,
-                'timestamp': tz.now(),
+                'timestamp': timezone.now(),
             }
             return render(request, '500.html', context, status=500)
 

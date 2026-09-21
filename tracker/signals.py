@@ -1,4 +1,4 @@
-﻿import json
+import json
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
@@ -134,6 +134,10 @@ def check_backup_age_on_login(sender, user, request, **kwargs):
         try:
             setting = SystemSetting.objects.get(key='last_backup_date')
             last_backup_date = datetime.fromisoformat(setting.value)
+            # Make naive datetimes timezone-aware so comparison with timezone.now() works
+            if last_backup_date.tzinfo is None:
+                import django.utils.timezone as tz_util
+                last_backup_date = tz_util.make_aware(last_backup_date)
             days_since_backup = (timezone.now() - last_backup_date).days
             if days_since_backup >= 10:
                 messages.warning(request, f"It has been {days_since_backup} days since the last system backup. Please download a new backup from the dashboard.")

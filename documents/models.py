@@ -337,26 +337,32 @@ class Document(TimeStampedModel):
             elif self.amount_paid > 0:
                 return 'Partially Paid'
             return 'Unpaid'
-            
+
         doc_numbers = self.get_all_linked_document_numbers()
-        linked_invoices = Document.objects.filter(number__in=doc_numbers, type='INV')
-        
-        if linked_invoices.exists():
+        linked_invoices = list(Document.objects.filter(number__in=doc_numbers, type='INV'))
+
+        if linked_invoices:
             total_invoiced = sum(inv.grand_total for inv in linked_invoices)
-            total_paid = sum(inv.amount_paid for inv in linked_invoices)
+            # Batch-fetch all payments for these invoices in ONE query (avoids N+1)
+            from django.db.models import Sum
+            from payments.models import Payment
+            inv_numbers = [inv.number for inv in linked_invoices]
+            total_paid_agg = Payment.objects.filter(document_ref__in=inv_numbers).aggregate(t=Sum('amount'))['t']
+            total_paid = Decimal(str(total_paid_agg)) if total_paid_agg else Decimal('0.00')
             if total_invoiced > 0:
                 if total_paid >= total_invoiced:
                     return 'Paid'
                 elif total_paid > 0:
                     return 'Partially Paid'
                 return 'Unpaid'
-        
+
         if self.amount_paid > 0:
             if self.balance_due <= 0 and self.grand_total > 0:
                 return 'Paid'
             return 'Partially Paid'
-            
+
         return 'N/A'
+
 
     @property
     def has_linked_invoice(self):

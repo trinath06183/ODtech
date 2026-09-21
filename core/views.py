@@ -769,6 +769,11 @@ class SystemActivityLogView(ListView):
         from datetime import datetime
         try:
             unlock_time = datetime.fromisoformat(unlocked_until)
+            # Make naive datetimes timezone-aware so comparison with timezone.now() works
+            # (Python < 3.11 can't parse timezone-offset ISO strings via fromisoformat)
+            if unlock_time.tzinfo is None:
+                from django.utils.timezone import make_aware
+                unlock_time = make_aware(unlock_time)
             if timezone.now() > unlock_time:
                 messages.warning(request, "Your log access session has expired. Please re-enter your password.")
                 return redirect('log_unlock')

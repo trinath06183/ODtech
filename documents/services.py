@@ -97,7 +97,7 @@ class NumberingService:
                         if 'OD-' in fmt:
                             fmt = fmt.replace('OD-', 'OD-{TYPE}-')
                         else:
-                            fmt = f'{TYPE}-{fmt}'
+                            fmt = f'{type_code}-{fmt}'
                     
                 config_field = config_field_map.get(document_type)
                 if config_field:

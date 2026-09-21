@@ -385,7 +385,7 @@ def expense_list(request):
         'my_count': my_count,
         'current_tab': current_tab,
         'has_next': page_obj.has_next(),
-        'next_page': 2 if page_obj.has_next() else '',
+        'next_page': page_obj.next_page_number() if page_obj.has_next() else '',
     })
 
 @require_permission('PAYMENTS', 'read')
@@ -550,8 +550,9 @@ def expense_delete(request, pk):
 @require_permission('PAYMENTS', 'write')
 def expense_mark_paid(request, pk):
     expense = get_object_or_404(Expense, pk=pk, status='Approved', is_paid=False)
-    # Only submitter or admin can mark as paid
-    if not request.user.is_superuser and expense.submitted_by != request.user:
+    # Superusers, staff (admins), and the expense submitter can mark as paid
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'Admin'
+    if not is_admin and expense.submitted_by != request.user:
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('expense_list')
         
@@ -648,38 +649,45 @@ from django.http import HttpResponse
 def payment_export_csv(request):
     """Export payments list to CSV."""
     from payments.models import Payment
-    payment_type = request.GET.get('type', 'All')
     q = request.GET.get('q', '').strip()
-    
-    payments = Payment.objects.select_related('contact').all().order_by('-date', '-created_at')
-    
-    if payment_type != 'All':
-        payments = payments.filter(payment_type=payment_type)
+    payment_mode = request.GET.get('payment_mode', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+
+    payments = Payment.objects.select_related('contact').all().order_by('-date', '-id')
+
     if q:
         payments = payments.filter(
-            Q(receipt_number__icontains=q) |
             Q(contact__name__icontains=q) |
-            Q(document_ref__icontains=q)
+            Q(document_ref__icontains=q) |
+            Q(reference_number__icontains=q)
         )
+    if payment_mode:
+        payments = payments.filter(payment_mode=payment_mode)
+    if start_date:
+        payments = payments.filter(date__gte=start_date)
+    if end_date:
+        payments = payments.filter(date__lte=end_date)
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="payments_export.csv"'
-    
+
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Receipt No.', 'Type', 'Contact', 'Amount', 'Mode', 'Reference'])
-    
+    writer.writerow(['Date', 'Contact', 'Document Ref', 'Amount', 'Payment Mode', 'Reference No.', 'Notes'])
+
     for p in payments:
         writer.writerow([
             p.date.strftime('%d-%b-%Y') if p.date else '',
-            p.receipt_number,
-            p.get_payment_type_display(),
             p.contact.name if p.contact else '',
+            p.document_ref or '',
             p.amount,
-            p.get_mode_display(),
-            p.document_ref or ''
+            p.payment_mode or '',
+            p.reference_number or '',
+            p.notes or '',
         ])
-        
+
     return response
+
 
 @require_permission('PAYMENTS', 'read')
 def expense_export_csv(request):
