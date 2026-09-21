@@ -1111,9 +1111,14 @@ class TrackingService:
             'category': 'Courier'
         },
         'DELHIVERY': {
-            'name': 'Delhivery',
-            'url_template': 'https://www.delhivery.com/track/package/{awb}',
+            'name': 'Delhivery (Package / Express)',
+            'url_template': 'https://www.delhivery.com/track-v2/package/{awb}',
             'category': 'Courier'
+        },
+        'DELHIVERY_LR': {
+            'name': 'Delhivery Freight (LR / Cargo)',
+            'url_template': 'https://www.delhivery.com/track-v2/lr/{awb}',
+            'category': 'Heavy Freight / Cargo'
         },
         'DTDC': {
             'name': 'DTDC Courier',
@@ -1157,7 +1162,25 @@ class TrackingService:
         if not awb_number:
             return ''
         awb = str(awb_number).strip().replace(' ', '')
-        carrier_info = cls.CARRIERS.get(carrier_code.upper() if carrier_code else '')
+        if not awb:
+            return ''
+
+        # If user pasted a full tracking link directly
+        if awb.startswith('http://') or awb.startswith('https://'):
+            return awb
+
+        code = (carrier_code or '').upper().strip()
+
+        # Intelligent Delhivery routing: auto-route between LR (e.g. 314773331) and Package (e.g. 25732810091335)
+        if code in ('DELHIVERY', 'DELHIVERY_LR'):
+            clean_awb = awb.upper().replace('LR:', '').replace('LR-', '').replace('LR', '').strip()
+            # If explicit LR code or docket length <= 10 digits (standard Delhivery LR is 9-10 digits)
+            if code == 'DELHIVERY_LR' or 'LR' in awb.upper() or (clean_awb.isdigit() and len(clean_awb) <= 10):
+                return f'https://www.delhivery.com/track-v2/lr/{clean_awb}'
+            else:
+                return f'https://www.delhivery.com/track-v2/package/{clean_awb}'
+
+        carrier_info = cls.CARRIERS.get(code)
         if carrier_info and carrier_info['url_template']:
             return carrier_info['url_template'].format(awb=awb)
         return ''
