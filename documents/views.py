@@ -91,7 +91,7 @@ def document_list(request):
     query = request.GET.get('q', '').strip()
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
-    sort_by = request.GET.get('sort_by', '-id')
+    sort_by = request.GET.get('sort_by', '-date')
 
     qs = Document.objects.select_related('contact')
     if doc_types:
@@ -122,8 +122,9 @@ def document_list(request):
 
     allowed_sorts = ['date', '-date', 'grand_total', '-grand_total', '-id', 'type', '-type', 'contact__name', '-contact__name', 'status', '-status']
     if sort_by not in allowed_sorts:
-        sort_by = '-id'
+        sort_by = '-date'
     qs = qs.order_by(sort_by)
+
 
     type_counts = dict(Document.objects.values('type').annotate(c=Count('id')).values_list('type', 'c'))
 

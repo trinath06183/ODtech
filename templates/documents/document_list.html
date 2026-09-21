@@ -108,9 +108,9 @@
                         <span class="text-xs text-gray-400 font-medium">Sort By:</span>
                         <select name="sort_by" onchange="this.form.submit()"
                             class="px-3 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition cursor-pointer appearance-none pr-8 bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_0.5rem_center] bg-no-repeat">
-                            <option value="-id" {% if sort_by == '-id' or not sort_by %}selected{% endif %}>Default
+                            <option value="-id" {% if sort_by == '-id' %}selected{% endif %}>Default
                                 (Newest)</option>
-                            <option value="-date" {% if sort_by == '-date' %}selected{% endif %}>Date: Newest First
+                            <option value="-date" {% if sort_by == '-date' or not sort_by %}selected{% endif %}>Date: Newest First
                             </option>
                             <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Date: Oldest First</option>
                             <option value="-grand_total" {% if sort_by == '-grand_total' %}selected{% endif %}>Amount:
@@ -217,7 +217,7 @@
                             <th class="px-6 py-4 font-medium">Doc Number</th>
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('type')"><div class="flex items-center gap-1">Type <span class="{% if sort_by != 'type' and sort_by != '-type' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-type' %}↓{% else %}↑{% endif %}</span></div></th>
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('contact__name')"><div class="flex items-center gap-1">Customer <span class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div></th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('date')"><div class="flex items-center gap-1">Date <span class="{% if sort_by != 'date' and sort_by != '-date' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-date' %}↓{% else %}↑{% endif %}</span></div></th>
+                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('date')"><div class="flex items-center gap-1">Date <span class="{% if sort_by == 'date' or sort_by == '-date' %}text-blue-400{% else %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == 'date' %}↑{% else %}↓{% endif %}</span></div></th>
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('status')"><div class="flex items-center gap-1">Status <span class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div></th>
                             <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group text-right" onclick="applySort('grand_total')"><div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div></th>
                             <th class="px-6 py-4 font-medium text-right">Paid Amount</th>
@@ -544,8 +544,17 @@
             let sortSelect = form.querySelector('select[name=sort_by]');
             let currentSort = "{{ sort_by }}";
 
-            let newSort = column;
+            // Toggle: if currently sorted by this column (either direction), flip it;
+            // otherwise default to descending (newest/highest first)
+            let newSort;
             if (currentSort === column) {
+                // Was ascending → go descending
+                newSort = "-" + column;
+            } else if (currentSort === "-" + column) {
+                // Was descending → go ascending
+                newSort = column;
+            } else {
+                // New column — start with descending (newest/highest first)
                 newSort = "-" + column;
             }
 
