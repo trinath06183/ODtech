@@ -97,6 +97,7 @@ class Document(TimeStampedModel):
     transport_reason = models.TextField(blank=True, null=True, default='Refilling only, No Commercial involvement.', verbose_name="Transport Reason")
     courier_partner = models.CharField(max_length=50, blank=True, null=True, default='OTHER', verbose_name="Courier / Carrier Partner")
     tracking_status = models.CharField(max_length=50, blank=True, null=True, default='Booked', verbose_name="Tracking Status")
+    custom_tracking_url = models.CharField(max_length=500, blank=True, null=True, verbose_name="Manual / Custom Tracking URL")
     
     # Totals
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)

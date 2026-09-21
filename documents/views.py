@@ -323,7 +323,7 @@ def document_preview(request, document_id):
         })
 
     from .services import TrackingService
-    tracking_url = TrackingService.get_tracking_url(doc.courier_partner, doc.transport_doc_no)
+    tracking_url = TrackingService.get_tracking_url(doc.courier_partner, doc.transport_doc_no, getattr(doc, 'custom_tracking_url', None))
 
     import re
     from config.models import CompanyProfile
@@ -1776,15 +1776,17 @@ def update_tracking_api(request, document_id):
         courier_partner = (data.get('courier_partner') or 'OTHER').strip()
         tracking_number = (data.get('tracking_number') or '').strip()
         tracking_status = (data.get('tracking_status') or 'Booked').strip()
+        custom_tracking_url = (data.get('custom_tracking_url') or '').strip()
 
         doc.courier_partner = courier_partner
         if tracking_number:
             doc.transport_doc_no = tracking_number
         doc.tracking_status = tracking_status
-        doc.save(update_fields=['courier_partner', 'transport_doc_no', 'tracking_status', 'updated_at'])
+        doc.custom_tracking_url = custom_tracking_url
+        doc.save(update_fields=['courier_partner', 'transport_doc_no', 'tracking_status', 'custom_tracking_url', 'updated_at'])
 
         from .services import TrackingService
-        tracking_url = TrackingService.get_tracking_url(courier_partner, doc.transport_doc_no)
+        tracking_url = TrackingService.get_tracking_url(courier_partner, doc.transport_doc_no, doc.custom_tracking_url)
         carrier_name = TrackingService.CARRIERS.get(courier_partner, {}).get('name', courier_partner)
 
         return JsonResponse({
@@ -1792,6 +1794,7 @@ def update_tracking_api(request, document_id):
             'courier_partner': courier_partner,
             'carrier_name': carrier_name,
             'tracking_number': doc.transport_doc_no or '',
+            'custom_tracking_url': doc.custom_tracking_url or '',
             'tracking_status': doc.tracking_status,
             'tracking_url': tracking_url,
         })

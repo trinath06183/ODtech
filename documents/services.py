@@ -1150,6 +1150,11 @@ class TrackingService:
             'url_template': 'https://www.indiapost.gov.in/_layouts/15/dpt.cept.tracking/trackconsignment.aspx',
             'category': 'Postal'
         },
+        'CUSTOM': {
+            'name': 'Custom / Direct Tracking URL',
+            'url_template': '',
+            'category': 'Direct Link'
+        },
         'OTHER': {
             'name': 'Other / Local Transporter',
             'url_template': '',
@@ -1158,7 +1163,13 @@ class TrackingService:
     }
 
     @classmethod
-    def get_tracking_url(cls, carrier_code, awb_number):
+    def get_tracking_url(cls, carrier_code, awb_number, custom_url=None):
+        if custom_url and str(custom_url).strip():
+            c_url = str(custom_url).strip()
+            if not c_url.startswith(('http://', 'https://')):
+                c_url = 'https://' + c_url
+            return c_url
+
         if not awb_number:
             return ''
         awb = str(awb_number).strip().replace(' ', '')
