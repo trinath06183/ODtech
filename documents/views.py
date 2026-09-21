@@ -250,31 +250,52 @@ def document_preview(request, document_id):
 
     # Pre-resolve source/target objects safely so the template never triggers
     # GenericForeignKey.__get__ directly (which crashes with ValidationError when
-    # a DocumentLink stores a Document integer id but the ContentType is TrackerOrder with UUID pk)
+    # a DocumentLink stores a Document integer id but the ContentType is TrackerOrder with UUID pk).
+    # Falls back to looking up Document / EDMSDocument directly when GFK fails.
+    from edms.models import EDMSDocument as _EDMS
     doc_id_str = str(doc.id)
     resolved_links = []
-    for link in linked_documents_raw:
-        try:
-            source_obj = link.source_object
-        except Exception:
-            source_obj = None
-        try:
-            target_obj = link.target_object
-        except Exception:
-            target_obj = None
 
-        # Determine which side is "the other" document (not the current doc)
+    def _safe_resolve(link, side):
+        """Resolve one side of a DocumentLink safely, falling back on GFK failures."""
+        ct = link.source_type if side == 'source' else link.target_type
+        oid = link.source_id if side == 'source' else link.target_id
+        # 1. Try the normal GenericForeignKey path
+        try:
+            obj = link.source_object if side == 'source' else link.target_object
+            if obj is not None:
+                return obj
+        except Exception:
+            pass
+        # 2. Fallback: check by model name so we handle ContentType mismatches
+        model_name = ct.model.lower() if ct else ''
+        try:
+            if model_name == 'document':
+                return Document.objects.get(pk=int(oid))
+            elif model_name in ('edmsdocument',):
+                return _EDMS.objects.get(pk=oid)
+        except Exception:
+            pass
+        # 3. Last resort: try Document by int id regardless of ContentType
+        try:
+            return Document.objects.get(pk=int(oid))
+        except Exception:
+            pass
+        return None
+
+    for link in linked_documents_raw:
+        source_obj = _safe_resolve(link, 'source')
+        target_obj = _safe_resolve(link, 'target')
+
+        # The "other" side is whichever side is NOT the current document
         if link.source_id == doc_id_str:
             other_obj = target_obj
-            other_is_source = False
         else:
             other_obj = source_obj
-            other_is_source = True
 
         resolved_links.append({
             'link': link,
             'other_obj': other_obj,
-            'other_is_source': other_is_source,
             'source_obj': source_obj,
             'target_obj': target_obj,
         })
