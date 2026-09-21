@@ -115,6 +115,8 @@
             <select name="status" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white">
                 <option value="">All Statuses</option>
                 <option value="Pending" {% if request.GET.status == "Pending" %}selected{% endif %}>Pending</option>
+                <option value="Clarification" {% if request.GET.status == "Clarification" %}selected{% endif %}>Needs Clarification</option>
+                <option value="Clarification Provided" {% if request.GET.status == "Clarification Provided" %}selected{% endif %}>Clarification Provided</option>
                 <option value="Approved" {% if request.GET.status == "Approved" %}selected{% endif %}>Approved</option>
                 <option value="Rejected" {% if request.GET.status == "Rejected" %}selected{% endif %}>Rejected</option>
             </select>
@@ -394,6 +396,67 @@
     };
 })();
 </script>
-{% endif %}
+<!-- Admin Raise Clarification Modal -->
+<div id="clarificationModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-300">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span class="p-1.5 bg-amber-100 text-amber-700 rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                Raise Clarification
+            </h3>
+            <button type="button" onclick="closeClarificationModal()" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form id="clarificationForm" method="post" action="">
+            {% csrf_token %}
+            <div class="mb-4">
+                <div class="text-xs text-gray-500 font-medium mb-1">Expense:</div>
+                <div class="p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm font-semibold text-gray-800 flex justify-between items-center">
+                    <span id="modalExpenseTitle" class="truncate mr-2">Expense Details</span>
+                    <span id="modalExpenseAmount" class="text-indigo-600 font-bold whitespace-nowrap">₹0.00</span>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    What information or correction is needed? <span class="text-rose-500">*</span>
+                </label>
+                <textarea name="clarification_query" rows="4" required
+                    placeholder="e.g. Please upload the official fuel receipt and clarify the starting meter reading..."
+                    class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-amber-500 focus:ring-amber-500 shadow-sm"></textarea>
+                <p class="text-[11px] text-gray-400 mt-1">The submitter will receive an email and a popup alert upon their next login to correct this expense.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" onclick="closeClarificationModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition shadow-md flex items-center gap-1">
+                    Send Clarification Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openClarificationModal(expenseId, expenseFormattedId, title, amount) {
+    const modal = document.getElementById('clarificationModal');
+    const form = document.getElementById('clarificationForm');
+    form.action = `/payments/expenses/${expenseId}/raise-clarification/`;
+    document.getElementById('modalExpenseTitle').textContent = `${expenseFormattedId} - ${title}`;
+    document.getElementById('modalExpenseAmount').textContent = `₹${amount}`;
+    modal.classList.remove('hidden');
+}
+
+function closeClarificationModal() {
+    const modal = document.getElementById('clarificationModal');
+    modal.classList.add('hidden');
+}
+</script>
 
 {% endblock %}

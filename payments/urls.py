@@ -16,6 +16,8 @@ urlpatterns = [
     path('expenses/<int:pk>/edit/', views.expense_edit, name='expense_edit'),
     path('expenses/<int:pk>/delete/', views.expense_delete, name='expense_delete'),
     path('expenses/<int:pk>/approve/<str:status>/', views.expense_approve, name='expense_approve'),
+    path('expenses/<int:pk>/raise-clarification/', views.expense_raise_clarification, name='expense_raise_clarification'),
+    path('expenses/dismiss-clarification-popup/', views.dismiss_clarification_popup, name='dismiss_clarification_popup'),
     path('expenses/<int:pk>/mark_paid/', views.expense_mark_paid, name='expense_mark_paid'),
     path('api/employee-codes/', views.employee_code_autocomplete, name='employee_code_autocomplete'),
 ]

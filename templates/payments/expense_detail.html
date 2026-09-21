@@ -11,14 +11,42 @@
         </a>
         <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ title }}</h1>
     </div>
-    {% if request.user.is_superuser %}
-    <div>
+    <div class="flex items-center gap-2">
+        {% if request.user.is_superuser or request.user.is_staff or request.user.role == 'Admin' or request.user.role == 'Managing Director' or request.user.role == 'Director' %}
+            {% if expense.status == 'Pending' or expense.status == 'Clarification Provided' %}
+            <form method="post" action="{% url 'expense_approve' expense.id 'Approved' %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-md">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Approve
+                </button>
+            </form>
+            <button type="button" onclick="document.getElementById('clarificationModal').classList.remove('hidden')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-md">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Raise Clarification
+            </button>
+            <form method="post" action="{% url 'expense_approve' expense.id 'Rejected' %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-md">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Reject
+                </button>
+            </form>
+            {% elif expense.status == 'Clarification' %}
+            <button type="button" onclick="document.getElementById('clarificationModal').classList.remove('hidden')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-md">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Update Clarification
+            </button>
+            {% endif %}
+        {% endif %}
+
+        {% if expense.status in 'Pending,Clarification,Clarification Provided' or request.user.is_superuser %}
         <a href="{% url 'expense_edit' expense.id %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl text-sm flex items-center transition-colors shadow-md">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            Edit Expense
+            {% if expense.status == 'Clarification' %}Respond & Edit{% else %}Edit Expense{% endif %}
         </a>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 
 <div class="bg-white shadow-sm max-w-3xl rounded-xl border border-gray-200 p-6 md:p-8">
@@ -30,12 +58,17 @@
                     <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                         {{ expense.expense_id }}
                     </span>
-                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold
-                        {% if expense.status == 'Approved' %}bg-green-100 text-green-700
-                        {% elif expense.status == 'Rejected' %}bg-red-100 text-red-700
-                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
-                        {{ expense.status }}
-                    </span>
+                    {% if expense.status == 'Approved' %}
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Approved</span>
+                    {% elif expense.status == 'Rejected' %}
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Rejected</span>
+                    {% elif expense.status == 'Clarification' %}
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300 font-bold">Needs Clarification</span>
+                    {% elif expense.status == 'Clarification Provided' %}
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300 font-bold">Clarification Provided</span>
+                    {% else %}
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Pending</span>
+                    {% endif %}
                     {% if expense.is_paid %}
                     <span class="px-2.5 py-1 inline-block rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
                         Paid
@@ -43,6 +76,32 @@
                     {% endif %}
                 </div>
             </div>
+
+            {% if expense.clarification_query %}
+            <div class="md:col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="p-1 bg-amber-200 text-amber-800 rounded">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </span>
+                    <span class="font-bold text-sm text-amber-900">Clarification Request</span>
+                    <span class="text-xs text-amber-600 ml-auto font-medium">
+                        By {{ expense.clarification_raised_by.get_full_name|default:expense.clarification_raised_by.username|default:"Admin" }}
+                        {% if expense.clarification_raised_at %}• {{ expense.clarification_raised_at|date:"d M Y, h:i A" }}{% endif %}
+                    </span>
+                </div>
+                <div class="p-3 bg-white/80 rounded-lg text-xs font-mono text-amber-950 whitespace-pre-line border border-amber-200">
+                    {{ expense.clarification_query }}
+                </div>
+                {% if expense.clarification_response %}
+                <div class="mt-3 pt-3 border-t border-amber-200/60">
+                    <div class="text-xs font-bold text-blue-900 mb-1">User Explanation / Response:</div>
+                    <div class="p-3 bg-blue-50/80 rounded-lg text-xs font-mono text-blue-950 whitespace-pre-line border border-blue-200">
+                        {{ expense.clarification_response }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
 
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-500 mb-1">Title / Purpose</label>
@@ -184,6 +243,50 @@
                 </div>
             </div>
         </div>
+<!-- Admin Raise Clarification Modal -->
+<div id="clarificationModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-amber-300">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span class="p-1.5 bg-amber-100 text-amber-700 rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+                Raise Clarification
+            </h3>
+            <button type="button" onclick="document.getElementById('clarificationModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'expense_raise_clarification' expense.id %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <div class="text-xs text-gray-500 font-medium mb-1">Expense:</div>
+                <div class="p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm font-semibold text-gray-800 flex justify-between items-center">
+                    <span class="truncate mr-2">{{ expense.expense_id }} - {{ expense.title }}</span>
+                    <span class="text-indigo-600 font-bold whitespace-nowrap">&#8377;{{ expense.amount }}</span>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    What information or correction is needed? <span class="text-rose-500">*</span>
+                </label>
+                <textarea name="clarification_query" rows="4" required
+                    placeholder="e.g. Please upload the official fuel receipt and clarify the starting meter reading..."
+                    class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-amber-500 focus:ring-amber-500 shadow-sm">{{ expense.clarification_query|default:'' }}</textarea>
+                <p class="text-[11px] text-gray-400 mt-1">The submitter will receive an email and a popup alert upon their next login to correct this expense.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" onclick="document.getElementById('clarificationModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition shadow-md flex items-center gap-1">
+                    Send Clarification Request
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

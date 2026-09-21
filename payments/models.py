@@ -66,6 +66,8 @@ class Expense(TimeStampedModel):
     )
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
+        ('Clarification', 'Needs Clarification'),
+        ('Clarification Provided', 'Clarification Provided'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
     )
@@ -77,7 +79,7 @@ class Expense(TimeStampedModel):
     gst_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     date = models.DateField()
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submitted_expenses')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending')
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_expenses')
     approved_at = models.DateTimeField(null=True, blank=True)
     is_paid = models.BooleanField(default=False)
@@ -85,6 +87,18 @@ class Expense(TimeStampedModel):
     receipt = models.FileField(upload_to='expenses/receipts/', null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
     payload = models.JSONField(blank=True, null=True, default=dict)
+
+    # Clarification workflow fields
+    clarification_query = models.TextField(blank=True, null=True, help_text="Admin query on missing or incorrect information")
+    clarification_response = models.TextField(blank=True, null=True, help_text="User's explanation or response")
+    clarification_raised_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='clarifications_raised')
+    clarification_raised_at = models.DateTimeField(null=True, blank=True)
+    clarification_popup_seen = models.BooleanField(default=True, help_text="Set to False when admin raises clarification; True when user views/acknowledges")
+
+    @property
+    def is_clarification_unresolved(self):
+        """Returns True if a clarification query was raised and the expense is not yet marked as approved (or rejected)."""
+        return bool(self.clarification_query) and self.status not in ('Approved', 'Rejected')
 
     @property
     def expense_id(self):

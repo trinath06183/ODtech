@@ -7,11 +7,32 @@ def user_notifications(request):
         read = request.user.notifications.filter(is_read=True).order_by('-created_at')[:20]
         count = request.user.notifications.filter(is_read=False).count()
         all_users = User.objects.filter(is_active=True).values('username', 'first_name', 'last_name')
+
+        # Check for expenses requiring clarification from this user (for login alert popup)
+        pending_clarifications = []
+        try:
+            from payments.models import Expense
+            from django.db.models import Q
+            user_code = getattr(request.user, 'empid', None) or ''
+            q_filter = Q(submitted_by=request.user)
+            if user_code and user_code.strip():
+                q_filter |= Q(employee_code__iexact=user_code.strip())
+            pending_clarifications = list(
+                Expense.objects.filter(
+                    q_filter,
+                    status='Clarification',
+                    clarification_popup_seen=False,
+                ).order_by('-clarification_raised_at', '-date')[:5]
+            )
+        except Exception:
+            pass
+
         return {
             'unread_notifications': unread,
             'read_notifications': read,
             'unread_notifications_count': count,
-            'all_active_users': list(all_users)
+            'all_active_users': list(all_users),
+            'pending_clarification_expenses': pending_clarifications,
         }
     return {}
 

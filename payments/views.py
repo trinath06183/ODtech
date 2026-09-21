@@ -337,7 +337,7 @@ def expense_list(request):
     else:
         expenses = expenses.order_by('-created_at')
 
-    calc_expenses = expenses.exclude(status='Pending').exclude(status='Rejected')
+    calc_expenses = expenses.filter(status='Approved')
     total_expenses = calc_expenses.aggregate(total=Sum('amount'))['total'] or 0
     total_paid = calc_expenses.filter(is_paid=True).aggregate(total=Sum('amount'))['total'] or 0
     total_unpaid = calc_expenses.filter(is_paid=False).aggregate(total=Sum('amount'))['total'] or 0
@@ -486,13 +486,15 @@ def expense_create(request):
 
 @require_permission('PAYMENTS', 'write')
 def expense_edit(request, pk):
-    if request.user.is_superuser:
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if is_admin:
         expense = get_object_or_404(Expense, pk=pk)
     else:
         expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
         
-    if expense.status != 'Pending' and not request.user.is_superuser:
-        messages.error(request, 'You can only edit pending expenses.')
+    allowed_statuses = ['Pending', 'Clarification', 'Clarification Provided']
+    if expense.status not in allowed_statuses and not is_admin:
+        messages.error(request, 'You cannot edit an expense that has already been approved or rejected.')
         return redirect('expense_list')
         
     if request.method == 'POST':
@@ -516,13 +518,70 @@ def expense_edit(request, pk):
                     else:
                         payload[clean_key] = values[0]
             expense.payload = payload
+
+            # Handle clarification response
+            clarification_resp = request.POST.get('clarification_response', '').strip()
+            was_in_clarification = (expense.status == 'Clarification') or bool(clarification_resp)
+            if clarification_resp:
+                expense.clarification_response = clarification_resp
+            if was_in_clarification:
+                expense.status = 'Clarification Provided'
+                expense.clarification_popup_seen = True
             
             expense.save()
-            messages.success(request, 'Expense updated successfully.')
+
+            if was_in_clarification and clarification_resp:
+                from .services import ExpenseNotificationService
+                ExpenseNotificationService.notify_clarification_submitted(expense, request.user, request=request)
+                messages.success(request, 'Clarification and updated expense submitted successfully. Admin has been notified.')
+            else:
+                messages.success(request, 'Expense updated successfully.')
+
             return redirect('expense_list')
     else:
         form = ExpenseForm(instance=expense)
     return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Edit Expense', 'expense': expense})
+
+@require_permission('PAYMENTS', 'write')
+def expense_raise_clarification(request, pk):
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if not is_admin:
+        messages.error(request, 'Permission denied. Only Administrators can raise clarification.')
+        return redirect('expense_list')
+
+    expense = get_object_or_404(Expense, pk=pk)
+    if request.method == 'POST':
+        query = request.POST.get('clarification_query', '').strip()
+        if not query:
+            messages.error(request, 'Please enter the clarification request details.')
+            referer = request.META.get('HTTP_REFERER')
+            return redirect(referer) if referer else redirect('expense_list')
+
+        expense.status = 'Clarification'
+        expense.clarification_query = query
+        expense.clarification_raised_by = request.user
+        expense.clarification_raised_at = timezone.now()
+        expense.clarification_popup_seen = False
+        expense.save()
+
+        from .services import ExpenseNotificationService
+        ExpenseNotificationService.notify_clarification_raised(expense, request.user, request=request)
+
+        messages.success(request, f'Clarification raised for {expense.expense_id}. Submitter has been notified by registered email and login alert.')
+
+    referer = request.META.get('HTTP_REFERER')
+    return redirect(referer) if referer else redirect('expense_list')
+
+@require_permission('PAYMENTS', 'read')
+def dismiss_clarification_popup(request):
+    if request.method == 'POST' and request.user.is_authenticated:
+        user_code = getattr(request.user, 'empid', None) or ''
+        q_filter = Q(submitted_by=request.user)
+        if user_code:
+            q_filter |= Q(employee_code__iexact=user_code)
+        Expense.objects.filter(q_filter, status='Clarification', clarification_popup_seen=False).update(clarification_popup_seen=True)
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'ignored'}, status=400)
 
 @require_permission('PAYMENTS', 'read')
 def expense_detail(request, pk):
@@ -532,13 +591,14 @@ def expense_detail(request, pk):
 
 @require_permission('PAYMENTS', 'write')
 def expense_delete(request, pk):
-    if request.user.is_superuser:
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if is_admin:
         expense = get_object_or_404(Expense, pk=pk)
     else:
         expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
         
-    if not request.user.is_superuser and expense.status != 'Pending':
-        messages.error(request, 'You can only delete pending expenses.')
+    if not is_admin and expense.status not in ['Pending', 'Clarification', 'Clarification Provided']:
+        messages.error(request, 'You can only delete pending or unapproved expenses.')
         return redirect('expense_list')
         
     if request.method == 'POST':
@@ -551,7 +611,7 @@ def expense_delete(request, pk):
 def expense_mark_paid(request, pk):
     expense = get_object_or_404(Expense, pk=pk, status='Approved', is_paid=False)
     # Superusers, staff (admins), and the expense submitter can mark as paid
-    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') == 'Admin'
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
     if not is_admin and expense.submitted_by != request.user:
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('expense_list')
@@ -565,21 +625,34 @@ def expense_mark_paid(request, pk):
     return redirect(referer) if referer else redirect('expense_list')
 
 @require_permission('PAYMENTS', 'write')
-@user_passes_test(lambda u: u.is_superuser)
 def expense_approve(request, pk, status):
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if not is_admin:
+        messages.error(request, 'Permission denied. Only Administrators can approve/reject expenses.')
+        return redirect('expense_list')
+
     expense = get_object_or_404(Expense, pk=pk)
     if status in ['Approved', 'Rejected']:
         expense.status = status
         expense.approved_by = request.user
         expense.approved_at = timezone.now()
         expense.save()
+
+        if status == 'Approved':
+            from .services import ExpenseNotificationService
+            ExpenseNotificationService.notify_expense_approved(expense, request.user, request=request)
+
         messages.success(request, f'Expense {status.lower()} successfully.')
     referer = request.META.get('HTTP_REFERER')
     return redirect(referer) if referer else redirect('expense_list')
 
 @require_permission('PAYMENTS', 'write')
-@user_passes_test(lambda u: u.is_superuser)
 def bulk_expense_action(request):
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if not is_admin:
+        messages.error(request, 'Permission denied.')
+        return redirect('expense_list')
+
     if request.method != 'POST':
         return redirect('expense_list')
 
@@ -593,15 +666,20 @@ def bulk_expense_action(request):
     expenses = Expense.objects.filter(pk__in=expense_ids)
 
     if action == 'approve':
-        updated = expenses.filter(status='Pending').update(
-            status='Approved',
-            approved_by=request.user,
-            approved_at=timezone.now(),
-        )
-        messages.success(request, f'✅ {updated} expense(s) approved successfully.')
+        eligible = expenses.filter(status__in=['Pending', 'Clarification Provided'])
+        count = 0
+        from .services import ExpenseNotificationService
+        for exp in eligible:
+            exp.status = 'Approved'
+            exp.approved_by = request.user
+            exp.approved_at = timezone.now()
+            exp.save()
+            ExpenseNotificationService.notify_expense_approved(exp, request.user, request=request)
+            count += 1
+        messages.success(request, f'✅ {count} expense(s) approved successfully.')
 
     elif action == 'reject':
-        updated = expenses.filter(status='Pending').update(
+        updated = expenses.filter(status__in=['Pending', 'Clarification', 'Clarification Provided']).update(
             status='Rejected',
             approved_by=request.user,
             approved_at=timezone.now(),
