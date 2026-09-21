@@ -1,6 +1,7 @@
 from core.decorators import require_permission
 import json
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -32,6 +33,63 @@ def create_customer_api(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+# ── Quick-update Contact API (used from document preview & modals) ─────────────
+@login_required
+def contact_quick_update_api(request, contact_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid method'}, status=405)
+
+    if not (request.user.has_section_perm('CONTACTS', 'write') or request.user.has_section_perm('DOCUMENTS', 'write')):
+        return JsonResponse({'success': False, 'error': 'Permission denied. You cannot edit contact details.'}, status=403)
+
+    contact = get_object_or_404(Contact, id=contact_id)
+    try:
+        data = json.loads(request.body) if (request.content_type and 'application/json' in request.content_type) else request.POST
+        name = data.get('name', '').strip()
+        contact_type = data.get('contact_type', '').strip() or contact.contact_type
+        phone = data.get('phone', '').strip() or None
+        email = data.get('email', '').strip() or None
+        gstin = data.get('gstin', '').strip().upper() or None
+        pan = data.get('pan', '').strip().upper() or None
+        address = data.get('address', '').strip() or None
+
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Party Name is required.'}, status=400)
+
+        contact.name = name
+        contact.contact_type = contact_type
+        contact.phone = phone
+        contact.email = email
+        contact.gstin = gstin
+        contact.pan = pan
+        contact.address = address
+
+        try:
+            contact.full_clean(exclude=['created_at', 'updated_at'])
+        except ValidationError as ve:
+            err_dict = ve.message_dict if hasattr(ve, 'message_dict') else {}
+            first_err = next(iter(err_dict.values()))[0] if err_dict else str(ve)
+            return JsonResponse({'success': False, 'error': first_err}, status=400)
+
+        contact.save()
+
+        return JsonResponse({
+            'success': True,
+            'contact': {
+                'id': contact.id,
+                'name': contact.name,
+                'contact_type': contact.contact_type,
+                'phone': contact.phone or '',
+                'email': contact.email or '',
+                'gstin': contact.gstin or '',
+                'pan': contact.pan or '',
+                'address': contact.address or '',
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 # ── GSTIN Auto-Fetch API ────────────────────────────────────────────────────────
