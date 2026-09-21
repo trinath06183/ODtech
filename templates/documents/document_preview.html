@@ -403,8 +403,9 @@
             </div>
             
             <div class="flex flex-col gap-3 relative border-l-2 border-slate-200 ml-2 pl-4">
-                {% if linked_documents %}
-                    {% for link in linked_documents %}
+                {% if resolved_links %}
+                    {% for item in resolved_links %}
+                    {% with link=item.link other=item.other_obj %}
                     <div class="relative group">
                         <!-- Timeline Dot -->
                         <div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-blue-500 ring-4 ring-white"></div>
@@ -419,40 +420,24 @@
                                 </button>
                             </div>
                             
-                            {% if link.source_id|stringformat:"s" == doc.id|stringformat:"s" %}
-                                {# The linked document is the target #}
-                                {% with target=link.target_object %}
-                                {% if target %}
-                                <a href="{% if target.number %}{% url 'document_preview' target.id %}{% else %}{% url 'edms:document_detail' target.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
-                                    {% if target.number %}{{ target.get_type_display }} - {{ target.number }}{% else %}EDMS: {{ target.title }}{% endif %}
+                            {% if other %}
+                                <a href="{% if other.number %}{% url 'document_preview' other.id %}{% else %}{% url 'edms:document_detail' other.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
+                                    {% if other.number %}{{ other.get_type_display }} - {{ other.number }}{% else %}EDMS: {{ other.title }}{% endif %}
                                 </a>
-                                {% if target.type == 'INV' %}
+                                {% if other.type == 'INV' %}
                                 <div class="mt-1 flex gap-2">
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{{ target.lifecycle_payment_status }}</span>
-                                    <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ target.grand_total }}</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{{ other.lifecycle_payment_status }}</span>
+                                    <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ other.grand_total }}</span>
                                 </div>
                                 {% endif %}
-                                {% endif %}
-                                {% endwith %}
                             {% else %}
-                                {# The linked document is the source #}
-                                {% with source=link.source_object %}
-                                {% if source %}
-                                <a href="{% if source.number %}{% url 'document_preview' source.id %}{% else %}{% url 'edms:document_detail' source.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
-                                    {% if source.number %}{{ source.get_type_display }} - {{ source.number }}{% else %}EDMS: {{ source.title }}{% endif %}
-                                </a>
-                                {% if source.type == 'INV' %}
-                                <div class="mt-1 flex gap-2">
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{{ source.lifecycle_payment_status }}</span>
-                                    <span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ source.grand_total }}</span>
-                                </div>
-                                {% endif %}
-                                {% endif %}
-                                {% endwith %}
+                                <span class="text-xs text-slate-400 italic">Linked object unavailable</span>
                             {% endif %}
                         </div>
                     </div>
+                    {% endwith %}
                     {% endfor %}
+
                 {% else %}
                     <div class="text-xs text-slate-400 italic py-2">No linked documents found.</div>
                 {% endif %}

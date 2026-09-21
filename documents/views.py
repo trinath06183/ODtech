@@ -244,9 +244,40 @@ def document_preview(request, document_id):
     prev_doc = Document.objects.filter(type=doc.type, id__lt=doc.id).order_by('-id').first()
     next_doc = Document.objects.filter(type=doc.type, id__gt=doc.id).order_by('id').first()
 
-    linked_documents = doc.get_linked_documents()
+    linked_documents_raw = doc.get_linked_documents()
     all_linked_payments = doc.payments_list
     total_paid_all = doc.amount_paid
+
+    # Pre-resolve source/target objects safely so the template never triggers
+    # GenericForeignKey.__get__ directly (which crashes with ValidationError when
+    # a DocumentLink stores a Document integer id but the ContentType is TrackerOrder with UUID pk)
+    doc_id_str = str(doc.id)
+    resolved_links = []
+    for link in linked_documents_raw:
+        try:
+            source_obj = link.source_object
+        except Exception:
+            source_obj = None
+        try:
+            target_obj = link.target_object
+        except Exception:
+            target_obj = None
+
+        # Determine which side is "the other" document (not the current doc)
+        if link.source_id == doc_id_str:
+            other_obj = target_obj
+            other_is_source = False
+        else:
+            other_obj = source_obj
+            other_is_source = True
+
+        resolved_links.append({
+            'link': link,
+            'other_obj': other_obj,
+            'other_is_source': other_is_source,
+            'source_obj': source_obj,
+            'target_obj': target_obj,
+        })
 
     return render(request, 'documents/document_preview.html', {
         'doc': doc,
@@ -257,10 +288,12 @@ def document_preview(request, document_id):
         'document_types': Document.DOCUMENT_TYPES,
         'prev_doc': prev_doc,
         'next_doc': next_doc,
-        'linked_documents': linked_documents,
+        'linked_documents': linked_documents_raw,
+        'resolved_links': resolved_links,
         'all_linked_payments': all_linked_payments,
         'total_paid_all': total_paid_all,
     })
+
 
 
 # ─── HTML Preview (raw doc HTML inside iframe) ────────────────────────────────
