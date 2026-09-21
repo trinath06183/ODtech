@@ -24,17 +24,4 @@ urlpatterns = [
     path('warranty/admin/<int:claim_id>/status/',         views.warranty_admin_update_status,    name='warranty_admin_update_status'),
     path('warranty/admin/registration/<int:reg_id>/edit/', views.warranty_admin_edit_registration, name='warranty_admin_edit_registration'),
 
-    # -- Bill of Materials (BOM) --
-    path('bom/',                               views.bom_list,               name='bom_list'),
-    path('bom/new/',                           views.bom_create,             name='bom_create'),
-    path('bom/<int:bom_id>/edit/',             views.bom_edit,               name='bom_edit'),
-    path('bom/<int:bom_id>/delete/',           views.bom_delete,             name='bom_delete'),
-    path('api/bom/<int:bom_id>/details/',      views.api_bom_details,        name='api_bom_details'),
-
-    # -- Assembly Work Orders --
-    path('work-orders/',                       views.workorder_list,         name='workorder_list'),
-    path('work-orders/new/',                   views.workorder_create,       name='workorder_create'),
-    path('work-orders/<int:wo_id>/',           views.workorder_detail,       name='workorder_detail'),
-    path('work-orders/<int:wo_id>/complete/',  views.workorder_complete,     name='workorder_complete'),
-    path('work-orders/<int:wo_id>/status/',    views.workorder_status_update, name='workorder_status_update'),
 ]
