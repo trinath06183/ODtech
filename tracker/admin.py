@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Order, Lot, Product, SupplierCostOption
+from .models import Order, Lot, Product, SupplierCostOption, ErrorLog
 
 class BaseAdmin(admin.ModelAdmin):
     readonly_fields = ('created_by', 'updated_by', 'created_at', 'updated_at')
@@ -49,3 +49,44 @@ class SupplierCostOptionAdmin(BaseAdmin):
     list_display = ('supplier_name', 'product', 'base_price', 'total_inc_gst', 'is_selected')
     search_fields = ('supplier_name', 'product__item_name')
     list_filter = ('is_selected',)
+
+
+@admin.register(ErrorLog)
+class ErrorLogAdmin(admin.ModelAdmin):
+    list_display = (
+        'reference_id',
+        'status_code',
+        'error_type',
+        'error_message_short',
+        'http_method',
+        'url',
+        'user',
+        'timestamp',
+        'is_resolved',
+    )
+    list_filter = ('status_code', 'error_type', 'http_method', 'is_resolved', 'environment', 'timestamp')
+    search_fields = ('reference_id', 'error_type', 'error_message', 'url', 'stack_trace')
+    list_editable = ('is_resolved',)
+    readonly_fields = (
+        'reference_id',
+        'timestamp',
+        'environment',
+        'status_code',
+        'error_type',
+        'error_message',
+        'stack_trace',
+        'url',
+        'http_method',
+        'query_params',
+        'post_data',
+        'user',
+        'ip_address',
+        'user_agent',
+    )
+    ordering = ('-timestamp',)
+
+    @admin.display(description="Error Message")
+    def error_message_short(self, obj):
+        if not obj.error_message:
+            return "-"
+        return (obj.error_message[:80] + '...') if len(obj.error_message) > 80 else obj.error_message

@@ -846,3 +846,38 @@ def health_check(request):
 
     return JsonResponse(payload, status=status_code)
 
+
+def custom_500_view(request):
+    """Custom 500 error handler that renders error details on the webapp."""
+    import sys
+    import traceback
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    error_type = exc_type.__name__ if exc_type else "ServerError"
+    error_message = str(exc_value) if exc_value else "An unexpected error occurred."
+    stack_trace = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)) if exc_traceback else ""
+
+    is_api = (
+        request.path.startswith('/api/') or
+        '/api/' in request.path or
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        'application/json' in request.headers.get('accept', '')
+    )
+    if is_api:
+        return JsonResponse({
+            'success': False,
+            'error': f"{error_type}: {error_message}",
+            'error_type': error_type,
+            'error_message': error_message,
+            'stack_trace': stack_trace,
+        }, status=500)
+
+    context = {
+        'error_type': error_type,
+        'error_message': error_message,
+        'stack_trace': stack_trace,
+        'url': request.build_absolute_uri(),
+        'method': request.method,
+        'timestamp': timezone.now(),
+    }
+    return render(request, '500.html', context, status=500)
+

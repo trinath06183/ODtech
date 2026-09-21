@@ -35,3 +35,5 @@ urlpatterns = [
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+handler500 = 'core.views.custom_500_view'
+

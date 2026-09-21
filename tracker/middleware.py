@@ -45,6 +45,16 @@ class ErrorLoggingMiddleware(MiddlewareMixin):
                 else:
                     post_data[key] = value
 
+        # Check if request expects JSON / AJAX
+        is_api = (
+            request.path.startswith('/api/') or
+            '/api/' in request.path or
+            request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+            'application/json' in request.headers.get('accept', '') or
+            getattr(request, 'content_type', '') == 'application/json'
+        )
+
+        error_log = None
         try:
             error_log = ErrorLog.objects.create(
                 environment=getattr(settings, 'ENVIRONMENT', 'development') if settings.DEBUG else 'production',
@@ -60,14 +70,35 @@ class ErrorLoggingMiddleware(MiddlewareMixin):
                 ip_address=self.get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
-            
-            # If not in debug mode, return our custom 500 template with the reference ID
-            if not settings.DEBUG:
-                context = {'reference_id': error_log.reference_id}
-                return render(request, '500.html', context, status=500)
-                
         except Exception as e:
-            # If logging fails, fall back silently so we don't cause infinite error loops
             logger.error(f"Failed to save ErrorLog: {e}")
-            
+
+        ref_id = str(error_log.reference_id) if error_log else 'ERR-' + str(int(timezone.now().timestamp())) if 'timezone' in globals() else 'ERR-UNSAVED'
+
+        # If AJAX / API request, return JSON so frontend can display the exact error
+        if is_api:
+            from django.http import JsonResponse
+            return JsonResponse({
+                'success': False,
+                'error': f"{exception.__class__.__name__}: {str(exception)}",
+                'error_type': exception.__class__.__name__,
+                'error_message': str(exception),
+                'stack_trace': traceback.format_exc(),
+                'reference_id': ref_id,
+            }, status=500)
+
+        # For regular web page requests, render 500.html with full error details
+        if not settings.DEBUG:
+            from django.utils import timezone as tz
+            context = {
+                'reference_id': ref_id,
+                'error_type': exception.__class__.__name__,
+                'error_message': str(exception) or 'No error message provided.',
+                'stack_trace': traceback.format_exc(),
+                'url': request.build_absolute_uri(),
+                'method': request.method,
+                'timestamp': tz.now(),
+            }
+            return render(request, '500.html', context, status=500)
+
         return None
