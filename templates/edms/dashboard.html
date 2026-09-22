@@ -3,10 +3,19 @@
 
 {% block edms_content %}
 <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-<div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-800">📁 EDMS Dashboard</h1>
-        <p class="text-sm text-slate-500 mt-1">Enterprise Document Management System</p>
+<div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-violet-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-violet-200 shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">EDMS Dashboard</h1>
+            <p class="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                <span>Enterprise Document Management System</span>
+            </p>
+        </div>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
         {% include 'edms/partials/edms_nav.html' %}
@@ -16,7 +25,7 @@
                       font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300
                       transition-all duration-200 text-xs">
                 <svg class="w-3.5 h-3.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                 </svg>
                 Show All Documents
             </a>
@@ -36,42 +45,61 @@
 </div>
 
 <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
-<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
     <!-- Total Documents -->
-    <div class="glass rounded-2xl p-5 flex flex-col gap-2">
-        <span class="text-3xl">📂</span>
-        <p class="text-2xl font-bold text-slate-800">{{ total_documents }}</p>
-        <p class="text-xs text-slate-500 font-medium">Total Documents</p>
-    </div>
+    <a href="{% url 'edms:document_list' %}" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-violet-400 hover:shadow-md transition-all flex flex-col justify-between group">
+        <div>
+            <div class="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center font-bold mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            </div>
+            <p class="text-xs font-semibold text-slate-500">Total Documents</p>
+            <p class="text-2xl font-black text-slate-800 mt-1">{{ total_documents }}</p>
+        </div>
+        <p class="text-[11px] text-violet-600 font-semibold mt-3 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">Browse archive →</p>
+    </a>
     <!-- Today Uploads -->
-    <div class="glass rounded-2xl p-5 flex flex-col gap-2">
-        <span class="text-3xl">⬆️</span>
-        <p class="text-2xl font-bold text-green-600">{{ today_uploads }}</p>
-        <p class="text-xs text-slate-500 font-medium">Uploaded Today</p>
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+        <div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            </div>
+            <p class="text-xs font-semibold text-slate-500">Uploaded Today</p>
+            <p class="text-2xl font-black text-emerald-700 mt-1">{{ today_uploads }}</p>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3">Daily additions</p>
     </div>
     <!-- Today Downloads -->
-    <div class="glass rounded-2xl p-5 flex flex-col gap-2">
-        <span class="text-3xl">⬇️</span>
-        <p class="text-2xl font-bold text-blue-600">{{ today_downloads }}</p>
-        <p class="text-xs text-slate-500 font-medium">Downloads Today</p>
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+        <div>
+            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            </div>
+            <p class="text-xs font-semibold text-slate-500">Downloads Today</p>
+            <p class="text-2xl font-black text-blue-700 mt-1">{{ today_downloads }}</p>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3">User access today</p>
     </div>
     <!-- Expiring Soon -->
-    <div class="glass rounded-2xl p-5 flex flex-col gap-2">
-        <span class="text-3xl">⚠️</span>
-        <p class="text-2xl font-bold text-orange-600">{{ expiring_soon }}</p>
-        <p class="text-xs text-slate-500 font-medium">Expiring (30d)</p>
-    </div>
-    <!-- All Documents Action Card -->
-    <a href="{% url 'edms:document_list' %}"
-       class="glass rounded-2xl p-5 flex flex-col justify-between group hover:border-violet-400 hover:shadow-lg transition-all duration-200 cursor-pointer bg-gradient-to-br from-violet-50/50 to-indigo-50/50">
-        <div class="flex items-center justify-between">
-            <span class="text-3xl group-hover:scale-110 transition-transform duration-200">📑</span>
-            <span class="text-xs font-semibold text-violet-600 group-hover:translate-x-0.5 transition-transform">Browse →</span>
-        </div>
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
         <div>
-            <p class="text-lg font-bold text-slate-800 group-hover:text-violet-700 transition-colors">Show All</p>
-            <p class="text-xs text-slate-500 font-medium">All Documents</p>
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <p class="text-xs font-semibold text-slate-500">Expiring (30d)</p>
+            <p class="text-2xl font-black text-amber-700 mt-1">{{ expiring_soon }}</p>
         </div>
+        <p class="text-[11px] text-slate-400 mt-3">Requires renewal</p>
+    </div>
+    <!-- Pending Approvals (High-value summary metric) -->
+    <a href="{% url 'edms:document_list' %}?approval_status=pending" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all flex flex-col justify-between group">
+        <div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p class="text-xs font-semibold text-slate-500">Pending Approvals</p>
+            <p class="text-2xl font-black text-indigo-700 mt-1">{{ pending_approvals }}</p>
+        </div>
+        <p class="text-[11px] text-indigo-600 font-semibold mt-3 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">Review queue →</p>
     </a>
 </div>
 
@@ -79,25 +107,26 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- Left: Recently Uploaded ──────────────────────────────────────── -->
-    <div class="lg:col-span-2 glass rounded-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 class="font-semibold text-slate-700">Recently Uploaded</h2>
-            <a href="{% url 'edms:document_list' %}" class="text-violet-600 hover:underline text-xs font-medium">View all →</a>
+    <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-hidden">
+        <div class="pb-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-bold text-slate-800 text-base">Recently Uploaded</h2>
+            <a href="{% url 'edms:document_list' %}" class="text-violet-600 hover:underline text-xs font-semibold">View all →</a>
         </div>
-        <div class="divide-y divide-slate-50">
+        <div class="divide-y divide-slate-100 mt-2">
             {% for doc in recently_uploaded %}
-            <div class="px-6 py-3 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
+            <div class="py-3 flex items-center gap-4 hover:bg-slate-50/70 transition-colors rounded-xl px-2">
                 <div class="text-2xl">{{ doc.file_extension|file_type_badge }}</div>
                 <div class="flex-1 min-w-0">
                     <a href="{% url 'edms:document_detail' doc_id=doc.id %}"
-                       class="font-medium text-slate-800 hover:text-violet-700 text-sm truncate block">
+                       class="font-medium text-slate-800 hover:text-violet-700 text-sm truncate block"
+                       title="{{ doc.title }}">
                         {{ doc.title }}
                     </a>
-                    <p class="text-xs text-slate-400">{{ doc.category.name }} · {{ doc.created_at|date:"d M Y" }}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">{{ doc.category.name }} · {{ doc.created_at|date:"d M Y" }}</p>
                 </div>
             </div>
             {% empty %}
-            <div class="px-6 py-10 text-center text-slate-400 text-sm">
+            <div class="py-10 text-center text-slate-400 text-xs">
                 No documents yet. <a href="{% url 'edms:document_upload' %}" class="text-violet-600 hover:underline">Upload your first document →</a>
             </div>
             {% endfor %}
@@ -105,46 +134,47 @@
     </div>
 
     <!-- Right: Expiring Certificates + By Category ───────────────────── -->
-    <div class="space-y-4">
+    <div class="space-y-6">
 
         <!-- Expiring Certificates -->
-        <div class="glass rounded-2xl overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100">
-                <h2 class="font-semibold text-slate-700">🔔 Expiring (90d)</h2>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-hidden">
+            <div class="pb-3 border-b border-slate-100">
+                <h2 class="font-bold text-slate-800 text-base">Expiring Soon (90d)</h2>
             </div>
-            <div class="divide-y divide-slate-50">
+            <div class="divide-y divide-slate-100 mt-2">
                 {% for doc in expiring_certificates %}
-                <div class="px-5 py-2.5 flex items-center justify-between">
-                    <div class="min-w-0">
+                <div class="py-2.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
                         <a href="{% url 'edms:document_detail' doc_id=doc.id %}"
-                           class="text-sm font-medium text-slate-700 hover:text-violet-600 truncate block">
-                            {{ doc.title|truncatechars:30 }}
+                           class="text-xs font-medium text-slate-800 hover:text-violet-600 truncate block"
+                           title="{{ doc.title }}">
+                            {{ doc.title }}
                         </a>
-                        <p class="text-xs text-slate-400">{{ doc.category.name }}</p>
+                        <p class="text-[11px] text-slate-400">{{ doc.category.name }}</p>
                     </div>
-                    <span class="text-xs font-semibold {{ doc.expiry_date|expiry_color }} whitespace-nowrap ml-2">
+                    <span class="text-xs font-semibold {{ doc.expiry_date|expiry_color }} whitespace-nowrap">
                         {{ doc.expiry_date|date:"d M Y" }}
                     </span>
                 </div>
                 {% empty %}
-                <div class="px-5 py-6 text-center text-slate-400 text-xs">No expiring documents</div>
+                <div class="py-6 text-center text-slate-400 text-xs">No expiring documents</div>
                 {% endfor %}
             </div>
         </div>
 
         <!-- By Category -->
-        <div class="glass rounded-2xl overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100">
-                <h2 class="font-semibold text-slate-700">📊 By Category</h2>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-hidden">
+            <div class="pb-3 border-b border-slate-100">
+                <h2 class="font-bold text-slate-800 text-base">By Category</h2>
             </div>
-            <div class="divide-y divide-slate-50">
+            <div class="divide-y divide-slate-100 mt-2">
                 {% for row in by_category %}
-                <div class="px-5 py-2.5 flex items-center justify-between">
-                    <span class="text-sm text-slate-600">{{ row.category__name|default:"Uncategorized" }}</span>
-                    <span class="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">{{ row.count }}</span>
+                <div class="py-2 flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-700">{{ row.category__name|default:"Uncategorized" }}</span>
+                    <span class="text-xs font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100">{{ row.count }}</span>
                 </div>
                 {% empty %}
-                <div class="px-5 py-4 text-center text-slate-400 text-xs">No data</div>
+                <div class="py-4 text-center text-slate-400 text-xs">No data</div>
                 {% endfor %}
             </div>
         </div>
@@ -153,43 +183,54 @@
 
 <!-- ── Recent Activity ─────────────────────────────────────────────────── -->
 {% if can_audit %}
-<div class="glass rounded-2xl overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="font-semibold text-slate-700">🔍 Recent Activity</h2>
-        <a href="{% url 'edms:audit_log' %}" class="text-violet-600 hover:underline text-xs font-medium">Full Log →</a>
+<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-hidden">
+    <div class="pb-4 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="font-bold text-slate-800 text-base">Recent Activity</h2>
+        <a href="{% url 'edms:audit_log' %}" class="text-violet-600 hover:underline text-xs font-semibold">Full Log →</a>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+    <div class="overflow-x-auto mt-2">
+        <table class="w-full text-xs text-left">
             <thead>
-                <tr class="text-xs text-slate-400 uppercase bg-slate-50/50">
-                    <th class="px-6 py-3 text-left">Time</th>
-                    <th class="px-6 py-3 text-left">User</th>
-                    <th class="px-6 py-3 text-left">Action</th>
-                    <th class="px-6 py-3 text-left">Document</th>
-                    <th class="px-6 py-3 text-left">IP</th>
+                <tr class="text-slate-400 uppercase font-semibold border-b border-slate-100 bg-slate-50/70">
+                    <th class="px-4 py-2.5 w-32">Time</th>
+                    <th class="px-4 py-2.5 w-36">User</th>
+                    <th class="px-4 py-2.5 w-32">Action</th>
+                    <th class="px-4 py-2.5">Document</th>
+                    <th class="px-4 py-2.5 w-36 text-right">IP Address</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y divide-slate-100">
                 {% for log in recent_activities %}
-                <tr class="hover:bg-slate-50/40">
-                    <td class="px-6 py-3 text-xs text-slate-400 whitespace-nowrap">{{ log.timestamp|date:"d M H:i" }}</td>
-                    <td class="px-6 py-3 font-medium text-slate-700">{{ log.user.empid|default:log.username_cached|default:"—" }}</td>
-                    <td class="px-6 py-3">
-                        <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
-                            {% if log.action == 'upload' %}bg-green-100 text-green-700
-                            {% elif log.action == 'download' %}bg-blue-100 text-blue-700
-                            {% elif log.action == 'delete' %}bg-red-100 text-red-700
-                            {% elif log.action == 'approve' %}bg-violet-100 text-violet-700
-                            {% elif log.action == 'failed_access' %}bg-orange-100 text-orange-700
-                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                <tr class="hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3 text-slate-500 whitespace-nowrap">{{ log.timestamp|date:"d M H:i" }}</td>
+                    <td class="px-4 py-3 font-semibold text-slate-700">{{ log.user.empid|default:log.username_cached|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold
+                            {% if log.action == 'upload' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif log.action == 'download' %}bg-blue-50 text-blue-700 border border-blue-200
+                            {% elif log.action == 'delete' %}bg-rose-50 text-rose-700 border border-rose-200
+                            {% elif log.action == 'approve' %}bg-violet-50 text-violet-700 border border-violet-200
+                            {% elif log.action == 'preview' %}bg-indigo-50 text-indigo-700 border border-indigo-200
+                            {% elif log.action == 'failed_access' %}bg-amber-50 text-amber-700 border border-amber-200
+                            {% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
                             {{ log.get_action_display }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 text-slate-600 truncate max-w-xs">{{ log.document_title|default:"—" }}</td>
-                    <td class="px-6 py-3 text-xs text-slate-400 font-mono">{{ log.ip_address|default:"—" }}</td>
+                    <td class="px-4 py-3 text-slate-700">
+                        {% if log.document_id %}
+                        <a href="{% url 'edms:document_detail' doc_id=log.document_id %}"
+                           class="font-medium text-slate-800 hover:text-violet-700 hover:underline transition-colors block truncate max-w-md"
+                           title="{{ log.document_title }}">
+                            {{ log.document_title }}
+                        </a>
+                        {% else %}
+                        <span class="truncate block max-w-md text-slate-600" title="{{ log.document_title }}">{{ log.document_title|default:"—" }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-slate-500 font-mono text-right whitespace-nowrap">{{ log.ip_address|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No activity recorded yet.</td></tr>
+                <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">No activity recorded yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

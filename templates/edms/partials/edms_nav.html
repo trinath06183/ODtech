@@ -1,37 +1,45 @@
 {% load permissions %}
-<div class="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200 rounded-2xl shadow-inner max-w-full overflow-x-auto whitespace-nowrap">
+<div class="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200 rounded-xl shadow-2xs max-w-full overflow-x-auto whitespace-nowrap">
   <a href="{% url 'edms:dashboard' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'dashboard' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>🏠</span><span>Dashboard</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'dashboard' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    <span>Dashboard</span>
   </a>
   <a href="{% url 'edms:document_list' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'document_list document_detail document_edit version_history bulk_edit' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>📂</span><span>All Documents</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'document_list document_detail document_edit version_history bulk_edit' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+    <span>All Documents</span>
   </a>
   <a href="{% url 'edms:document_upload' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'document_upload' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>⬆️</span><span>Upload</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'document_upload' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+    <span>Upload</span>
   </a>
   <a href="{% url 'edms:search' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'search save_search' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>🔍</span><span>Search</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'search save_search' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    <span>Search</span>
   </a>
   <a href="{% url 'edms:vendor_list' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'vendor_list vendor_create vendor_edit' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>🏭</span><span>Vendors</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'vendor_list vendor_create vendor_edit' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+    <span>Vendors</span>
   </a>
   <a href="{% url 'edms:reports' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'reports download_center' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>📊</span><span>Reports</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name in 'reports download_center' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    <span>Reports</span>
   </a>
   {% if request.user|has_read_perm:'USERS' %}
   <a href="{% url 'edms:audit_log' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'audit_log' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>🔒</span><span>Audit Log</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.app_name == 'edms' and request.resolver_match.url_name == 'audit_log' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    <span>Audit Log</span>
   </a>
   {% endif %}
   <a href="{% url 'payment_list' %}"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'payment_list payment_detail payment_create payment_edit' %}bg-white text-violet-700 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
-    <span>💳</span><span>Payments</span>
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if request.resolver_match.url_name in 'payment_list payment_detail payment_create payment_edit' %}bg-white text-violet-700 shadow-2xs font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+    <span>Payments</span>
   </a>
 </div>

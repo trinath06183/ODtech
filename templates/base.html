@@ -557,7 +557,7 @@
                 </div>
 
                 <a href="{% url 'contact_list' %}"
-                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    class="nav-link rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1.5"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Customers & Vendors">
                     <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -568,12 +568,18 @@
                 </a>
                 {% endif %}
 
-                <!-- HR & Attendance -->
+                <!-- HR & People -->
                 {% if request.user|has_read_perm:'HR_ATTENDANCE' %}
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">People & Organization</div>
+                <div x-show="!sidebarOpen" style="display: none;" class="pt-6 pb-2 flex justify-center">
+                    <div class="h-px w-8 bg-gray-200"></div>
+                </div>
+
                 <a href="{% url 'hr:dashboard' %}"
-                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-rose-50 hover:text-rose-700 transition-colors mb-1 {% if request.resolver_match.app_name == 'hr' %}bg-rose-50 text-rose-700 font-semibold{% endif %}"
+                    class="nav-link rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-slate-100 hover:text-slate-800 transition-colors mb-1.5 {% if request.resolver_match.app_name == 'hr' %}bg-indigo-50 text-indigo-700 font-semibold{% endif %}"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="HR & Attendance">
-                    <svg class="w-6 h-6 flex-shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -591,9 +597,9 @@
                 </div>
 
                 <a href="{% url 'statement_of_account' %}"
-                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors mb-1"
+                    class="nav-link rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors mb-1.5"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Statement of Account">
-                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -601,9 +607,8 @@
                         class="whitespace-nowrap ml-3 font-medium">Statement of Account</span>
                 </a>
 
-
                 <a href="{% url 'document_offline' %}"
-                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 transition-colors mb-1"
+                    class="nav-link rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 transition-colors mb-1.5"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Offline Document Generator (Works without server)">
                     <svg class="w-6 h-6 flex-shrink-0 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -625,20 +630,18 @@
                     <div class="h-px w-8 bg-gray-200"></div>
                 </div>
 
-
-
                 <a href="{% url 'user_list' %}"
-                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    class="nav-link rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1.5"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="User Management">
-                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-medium">Users</span>
                 </a>
                 <a href="{% url 'settings' %}"
-                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    class="nav-link rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1.5"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Settings">
                     <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
