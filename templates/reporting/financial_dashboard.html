@@ -298,20 +298,32 @@
                 </span>
             </div>
 
-            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1" id="reminders-list-container">
                 {% for r in reminders %}
-                <a href="{{ r.link }}" class="block p-3 rounded-xl border transition hover:shadow-sm {% if r.is_urgent %}bg-red-50/60 border-red-200 hover:border-red-400{% else %}bg-amber-50/60 border-amber-200 hover:border-amber-400{% endif %}">
+                <div id="reminder-item-{{ r.doc_type }}-{{ r.doc_id }}" class="group relative p-3 rounded-xl border transition hover:shadow-sm {% if r.is_urgent %}bg-red-50/60 border-red-200 hover:border-red-400{% else %}bg-amber-50/60 border-amber-200 hover:border-amber-400{% endif %}">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold {% if r.is_urgent %}text-red-700{% else %}text-amber-800{% endif %} truncate">
+                        <a href="{{ r.link }}" class="text-xs font-bold {% if r.is_urgent %}text-red-700 hover:text-red-800{% else %}text-amber-800 hover:text-amber-900{% endif %} truncate hover:underline flex-1 mr-2">
                             {{ r.title }}
-                        </span>
-                        <span class="text-xs font-black text-slate-800 whitespace-nowrap">₹{{ r.amount|floatformat:0 }}</span>
+                        </a>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-slate-800 whitespace-nowrap">₹{{ r.amount|floatformat:0 }}</span>
+                            {% if r.can_skip %}
+                            <button type="button" 
+                                    onclick="skipReminder('{{ r.doc_id }}', '{{ r.title|escapejs }}', this)" 
+                                    class="text-slate-400 hover:text-rose-600 hover:bg-rose-100 p-1 rounded-lg transition text-xs flex items-center justify-center" 
+                                    title="Skip / Dismiss this reminder">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                        <span>{{ r.party }}</span>
+                        <span class="truncate max-w-[150px]">{{ r.party }}</span>
                         <span>Due: {{ r.date|date:"d M Y" }}</span>
                     </div>
-                </a>
+                </div>
                 {% empty %}
                 <div class="text-center py-8 text-slate-400 text-xs">
                     <span class="text-2xl block mb-1">🎉</span>
@@ -356,21 +368,40 @@
 
         {# Top Customers #}
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h3 class="font-bold text-slate-800 text-base mb-1">Top Customers</h3>
-            <p class="text-slate-400 text-xs mb-4">Highest revenue in period</p>
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base">Top Customers</h3>
+                    <p class="text-slate-400 text-xs">Booked orders in decreasing order</p>
+                </div>
+                {% if top_customers %}
+                <span class="text-xs px-2.5 py-1 rounded-full font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    {{ top_customers|length }} Customer{{ top_customers|length|pluralize }}
+                </span>
+                {% endif %}
+            </div>
 
             {% if top_customers %}
-            <div class="space-y-3">
+            <div class="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
                 {% for c in top_customers %}
-                <div>
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="font-semibold text-slate-700 truncate pr-2">{{ c.contact__name }}</span>
-                        <span class="font-bold text-indigo-600 whitespace-nowrap">₹{{ c.total|floatformat:0 }}</span>
+                <div class="group">
+                    <div class="flex justify-between items-center text-xs mb-1">
+                        <div class="flex items-center gap-1.5 min-w-0 pr-2">
+                            <span class="text-[10px] font-mono font-bold w-4 h-4 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                                {{ forloop.counter }}
+                            </span>
+                            <span class="font-semibold text-slate-800 truncate" title="{{ c.contact__name }}">
+                                {{ c.contact__name }}
+                            </span>
+                        </div>
+                        <span class="font-bold text-indigo-600 whitespace-nowrap font-mono text-xs">₹{{ c.total|floatformat:0 }}</span>
                     </div>
                     <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div class="h-1.5 bg-indigo-500 rounded-full customer-bar" data-max="{{ top_customers.0.total }}" data-val="{{ c.total }}"></div>
+                        <div class="h-1.5 bg-indigo-500 rounded-full customer-bar transition-all duration-500" data-max="{{ top_customers.0.total }}" data-val="{{ c.total }}"></div>
                     </div>
-                    <div class="text-[10px] text-slate-400 mt-0.5">{{ c.count }} invoice{{ c.count|pluralize }}</div>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                        <span>{{ c.count }} invoice{{ c.count|pluralize }} booked</span>
+                        <span class="font-mono text-slate-500">₹{{ c.total|floatformat:2 }}</span>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -794,6 +825,56 @@ function showDuesToast(msg) {
     setTimeout(() => {
         toast.classList.add('hidden');
     }, 4500);
+}
+
+async function skipReminder(docId, docTitle, btn) {
+    if (!confirm(`Do you want to skip payment reminders for ${docTitle}?`)) {
+        return;
+    }
+    
+    if (btn) btn.disabled = true;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    try {
+        const resp = await fetch(`/documents/${docId}/toggle-skip-reminder/?format=json`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await resp.json();
+        if (data.success) {
+            const item = document.getElementById(`reminder-item-INV-${docId}`);
+            if (item) {
+                item.style.transition = 'all 0.3s ease';
+                item.style.opacity = '0';
+                item.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    item.remove();
+                    const container = document.getElementById('reminders-list-container');
+                    if (container && container.children.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-8 text-slate-400 text-xs">
+                                <span class="text-2xl block mb-1">🎉</span>
+                                No pending payment reminders!
+                            </div>
+                        `;
+                    }
+                }, 300);
+            }
+            showDuesToast(data.message || 'Reminder skipped successfully.');
+        } else {
+            alert(data.message || 'Could not skip reminder.');
+            if (btn) btn.disabled = false;
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Network error while skipping reminder.');
+        if (btn) btn.disabled = false;
+    }
 }
 </script>
 
@@ -1236,7 +1317,7 @@ function showDuesToast(msg) {
                         Outstanding Receivables &amp; Payables
                         <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/20">Live Audit</span>
                     </h2>
-                    <p class="text-xs text-indigo-200 font-medium">Customer Invoices to Collect &amp; Vendor Bills to Pay for <span class="text-white font-bold">{{ period_label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span> with Order References</p>
+                    <p class="text-xs text-indigo-200 font-medium">Customer Invoices to Collect &amp; Vendor Bills to Pay for <span class="text-white font-bold">{{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span> with Order References</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -1328,12 +1409,18 @@ function showDuesToast(msg) {
                                     </td>
                                     <td class="py-3 px-4 text-right font-medium text-slate-600 whitespace-nowrap font-mono">
                                         ₹{{ item.total|floatformat:2 }}
+                                        {% if item.currency and item.currency != 'INR' %}
+                                        <div class="text-[10px] text-slate-400 font-sans">({{ item.currency }} {{ item.orig_total|floatformat:2 }})</div>
+                                        {% endif %}
                                     </td>
                                     <td class="py-3 px-4 text-right font-medium text-slate-500 whitespace-nowrap font-mono">
                                         ₹{{ item.paid|floatformat:2 }}
                                     </td>
                                     <td class="balance-due-cell py-3 px-4 text-right font-black text-emerald-600 whitespace-nowrap font-mono text-sm">
                                         ₹{{ item.due|floatformat:2 }}
+                                        {% if item.currency and item.currency != 'INR' %}
+                                        <div class="text-[10px] text-emerald-600 font-sans font-medium">({{ item.currency }} {{ item.orig_total|floatformat:2 }})</div>
+                                        {% endif %}
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
                                         <div class="inline-flex flex-nowrap items-center justify-center gap-1.5 whitespace-nowrap">
@@ -1431,9 +1518,15 @@ function showDuesToast(msg) {
                                     </td>
                                     <td class="py-3 px-4 text-right font-medium text-slate-600 whitespace-nowrap font-mono">
                                         ₹{{ item.total|floatformat:2 }}
+                                        {% if item.currency and item.currency != 'INR' %}
+                                        <div class="text-[10px] text-slate-400 font-sans">({{ item.currency }} {{ item.orig_total|floatformat:2 }})</div>
+                                        {% endif %}
                                     </td>
                                     <td class="balance-due-cell py-3 px-4 text-right font-black text-rose-600 whitespace-nowrap font-mono text-sm">
                                         ₹{{ item.due|floatformat:2 }}
+                                        {% if item.currency and item.currency != 'INR' %}
+                                        <div class="text-[10px] text-amber-600 font-sans font-medium">({{ item.currency }} {{ item.orig_total|floatformat:2 }})</div>
+                                        {% endif %}
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
                                         <div class="inline-flex flex-nowrap items-center justify-center gap-1.5 whitespace-nowrap">

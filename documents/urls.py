@@ -19,6 +19,7 @@ urlpatterns = [
     path('<int:document_id>/',         views.document_preview,      name='document_detail'),
     path('<int:document_id>/preview/', views.document_preview,      name='document_preview'),
     path('<int:document_id>/change-status/', views.change_document_status, name='change_document_status'),
+    path('<int:document_id>/toggle-skip-reminder/', views.toggle_skip_reminder, name='toggle_skip_reminder'),
 
     # Raw HTML render (used inside iframe)
     path('<int:document_id>/html/',    views.document_html_preview,  name='document_html_preview'),

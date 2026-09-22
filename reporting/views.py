@@ -340,33 +340,63 @@ def financial_dashboard(request):
     # ── Payment Reminders & Urgent Alerts ──────────────────────────────────────
     reminders = []
     try:
+        # Pre-fetch all payments by document_ref for quick balance calculation
+        all_doc_payments = dict(
+            Payment.objects.filter(document_ref__isnull=False)
+            .values('document_ref')
+            .annotate(total_paid=Sum('amount'))
+            .values_list('document_ref', 'total_paid')
+        )
+
         overdue_docs = Document.objects.filter(
             type='INV', status='Approved',
+            skip_reminder=False,
             date__lt=today - timedelta(days=30)
-        ).select_related('contact').order_by('date')[:5]
+        ).select_related('contact').order_by('date')[:50]
+
+        count_added = 0
         for doc in overdue_docs:
+            total_inr = doc.grand_total_inr
+            paid_inr = all_doc_payments.get(doc.number, Decimal('0'))
+            due_inr = total_inr - paid_inr
+            # Skip if 100% paid or settled
+            if due_inr <= Decimal('0.01'):
+                continue
+
             reminders.append({
+                'id': doc.id,
+                'doc_id': doc.id,
+                'doc_type': 'INV',
                 'title': f"Overdue Invoice #{doc.number or doc.id}",
                 'party': doc.contact.name if doc.contact else "Customer",
-                'amount': doc.grand_total,
+                'amount': due_inr,
                 'date': doc.date,
                 'type': 'receivable',
                 'is_urgent': True,
-                'link': f"/documents/{doc.id}/preview/"
+                'link': f"/documents/{doc.id}/preview/",
+                'skip_url': f"/documents/{doc.id}/toggle-skip-reminder/",
+                'can_skip': True,
             })
+            count_added += 1
+            if count_added >= 5:
+                break
 
         pending_exp_list = Expense.objects.filter(
             status='Pending'
         ).order_by('-date')[:5]
         for exp in pending_exp_list:
             reminders.append({
+                'id': exp.id,
+                'doc_id': exp.id,
+                'doc_type': 'EXPENSE',
                 'title': f"Pending Expense: {exp.expense_type}",
                 'party': exp.paid_to or "Vendor",
                 'amount': exp.amount,
                 'date': exp.date,
                 'type': 'payable',
                 'is_urgent': False,
-                'link': "/payments/expenses/"
+                'link': "/payments/expenses/",
+                'can_skip': False,
             })
     except Exception:
         pass
@@ -423,14 +453,19 @@ def financial_dashboard(request):
     except Exception:
         pass
 
-    # ── Top customers by sales value ─────────────────────────────────────────
+    # ── Top customers by sales value (All customers who booked orders, in decreasing order) ──
     top_customers = []
     try:
-        top_customers = list(
-            sales_qs.values('contact__name')
-            .annotate(total=Sum('grand_total'), count=Count('id'))
-            .order_by('-total')[:5]
-        )
+        top_cust_map = {}
+        for doc in sales_qs.select_related('contact'):
+            cust_name = (doc.contact.name if doc.contact else 'Unknown Customer').strip()
+            val_inr = doc.grand_total_inr
+            if cust_name not in top_cust_map:
+                top_cust_map[cust_name] = {'contact__name': cust_name, 'total': Decimal('0'), 'count': 0}
+            top_cust_map[cust_name]['total'] += val_inr
+            top_cust_map[cust_name]['count'] += 1
+
+        top_customers = sorted(top_cust_map.values(), key=lambda x: x['total'], reverse=True)
     except Exception:
         pass
 

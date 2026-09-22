@@ -679,9 +679,11 @@
                         class="h-9 w-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
                         {{ user.username|make_list|first|upper }}
                     </div>
-                    <div class="ml-3 overflow-hidden flex-1">
-                        <p class="text-sm font-bold text-slate-800 truncate" title="{{ user.username }} — {{ user.get_full_name|default:'No Name' }}">{{ user.username }} — {{ user.get_full_name|default:'No Name' }}</p>
-                        <p class="text-[11px] uppercase tracking-wider text-indigo-500 font-bold mt-0.5">{{ user.role }}</p>
+                    <div class="ml-3 min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-800 leading-snug break-words" title="{{ user.username }} — {{ user.get_full_name|default:'No Name' }}">
+                            {{ user.username }}{% if user.get_full_name %} <span class="text-slate-500 font-normal">({{ user.get_full_name }})</span>{% endif %}
+                        </p>
+                        <p class="text-[10px] uppercase tracking-wider text-indigo-600 font-bold mt-0.5">{{ user.role }}</p>
                     </div>
                 </div>
                 <div x-show="!sidebarOpen" style="display: none;" class="mb-4 flex justify-center">

@@ -1005,6 +1005,25 @@ def change_document_status(request, document_id):
 
 
 @require_permission('DOCUMENTS', 'read')
+def toggle_skip_reminder(request, document_id):
+    doc = get_object_or_404(Document, id=document_id)
+    if request.method == 'POST':
+        doc.skip_reminder = not doc.skip_reminder
+        doc.save(update_fields=['skip_reminder', 'updated_at'])
+        action = "skipped from" if doc.skip_reminder else "restored to"
+        messages.success(request, f"Document {doc.number} reminder {action} payment reminders.")
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+            return JsonResponse({
+                'success': True,
+                'skip_reminder': doc.skip_reminder,
+                'message': f"Document {doc.number} reminder {action} payment reminders."
+            })
+        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or f"/documents/{doc.id}/preview/"
+        return redirect(next_url)
+    return redirect('document_preview', document_id=doc.id)
+
+
+@require_permission('DOCUMENTS', 'read')
 def get_next_number_api(request):
     """Returns the next available n+1 document number for a given document type."""
     doc_type = request.GET.get('type', 'QTN')

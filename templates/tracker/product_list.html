@@ -50,25 +50,25 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <button type="button" @click="exportModalOpen = true"
-                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                <svg class="h-4 w-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
                 Export...
             </button>
-            <div class="h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
+            <div class="h-6 w-px bg-slate-300 mx-1 hidden sm:block"></div>
             {% if lot %}
             <a href="{% url 'tracker:product_csv_upload_lot' lot.id %}"
-                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <svg class="h-4 w-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                <svg class="h-4 w-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
                 Bulk Upload
             </a>
             <a href="{% url 'tracker:product_create_lot' lot.id %}"
-                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2">
+                class="inline-flex items-center px-3.5 py-2 border border-transparent text-xs font-bold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                 <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -77,22 +77,22 @@
 
             {% else %}
             <button type="button" onclick="openVendorRfqModal()"
-                class="inline-flex items-center px-3 py-2 border border-amber-500/30 shadow-sm text-sm font-semibold rounded-md text-amber-900 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 mr-2 transition-colors">
+                class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                 <svg class="h-4 w-4 mr-1.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                 </svg>
-                Vendor RFQ Links
+                Vendor RFQ
             </button>
             <button type="button" onclick="openPartialDispatchModal()"
-                class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 mr-2 transition-all">
-                <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                <svg class="h-4 w-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
                 Generate Bill / DC
             </button>
             <a href="{% url 'tracker:lot_create' order.id %}"
-                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <svg class="h-4 w-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                <svg class="h-4 w-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
                     </path>
@@ -100,15 +100,15 @@
                 Add Lot
             </a>
             <a href="{% url 'tracker:product_csv_upload_order' order.id %}"
-                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <svg class="h-4 w-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                <svg class="h-4 w-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
                 Bulk Upload
             </a>
             <a href="{% url 'tracker:product_create_order' order.id %}"
-                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2">
+                class="inline-flex items-center px-3.5 py-2 border border-transparent text-xs font-bold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                 <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -743,42 +743,40 @@
                                 class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Photo</th>
                             <th scope="col"
-                                class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[280px]">
                                 Item Details</th>
                             <th scope="col"
-                                class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider w-24">
                                 Quantity</th>
                             {% if field_visibility.can_see_purchase_price %}
                             <th scope="col"
-                                class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Buying Price<br><span class="text-gray-400 text-[10px] normal-case">(Ex. GST /
-                                    Inc. GST)</span></th>
+                                class="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                Total Buying Price<br><span class="text-slate-500 text-xs font-normal lowercase tracking-normal">(Ex. GST / Inc. GST)</span></th>
                             {% endif %}
                             {% if field_visibility.can_see_selling_price %}
                             <th scope="col"
-                                class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Selling Price<br><span class="text-gray-400 text-[10px] normal-case">(Ex. GST /
-                                    Inc. GST)</span></th>
+                                class="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                Total Selling Price<br><span class="text-slate-500 text-xs font-normal lowercase tracking-normal">(Ex. GST / Inc. GST)</span></th>
                             {% endif %}
                             <th scope="col"
-                                class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                class="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider w-24">
                                 Purchased</th>
                             <th scope="col"
-                                class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 Status</th>
                             <th scope="col"
-                                class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
+                                class="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider min-w-[180px]">
                                 Stage
                                 <div class="flex justify-center gap-2 mt-0.5">
                                     <span
-                                        class="text-[9px] font-medium text-indigo-400 uppercase tracking-wider">Customer</span>
-                                    <span class="text-gray-300">/</span>
+                                        class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Cust</span>
+                                    <span class="text-slate-300">/</span>
                                     <span
-                                        class="text-[9px] font-medium text-amber-400 uppercase tracking-wider">Supplier</span>
+                                        class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Supp</span>
                                 </div>
                             </th>
                             <th scope="col"
-                                class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                class="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 Actions</th>
                         </tr>
                     </thead>
@@ -789,49 +787,57 @@
                         data-lot-group="{{ lot_group.grouper.id|default:'unassigned' }}">
 
                         <!-- Lot Grouping Header -->
-                        <tr class="bg-cyan-50/30 border-t-2 border-cyan-400 border-b border-cyan-200 cursor-pointer select-none group/lot"
+                        <tr class="bg-slate-100/90 hover:bg-slate-200/80 border-t-2 border-slate-300 border-b border-slate-200 cursor-pointer select-none group/lot transition-colors"
                             data-searchable data-lot-header="true"
                             data-lot-id="{{ lot_group.grouper.id|default:'unassigned' }}"
                             @click="toggleLot('{{ lot_group.grouper.id|default:'unassigned' }}')">
-                            <td x-show="bulkOpen" class="px-4 py-2" @click.stop>
+                            <td x-show="bulkOpen" class="px-4 py-2.5" @click.stop>
                                 <input type="checkbox"
                                     class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
                                     onclick="const checked = this.checked; this.closest('tbody').querySelectorAll('.product-checkbox').forEach(cb => cb.checked = checked)">
                             </td>
-                            <td colspan="12" class="px-6 py-2">
+                            <td colspan="12" class="px-6 py-2.5">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-bold text-cyan-800 uppercase tracking-wider flex items-center gap-2">
-                                        <span x-show="editingLotId !== '{{ lot_group.grouper.id|default:'unassigned' }}'">
-                                            {% if lot_group.grouper %}Lot: {{ lot_group.grouper.lot_name }}{% else %}Unassigned Products{% endif %}
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-black bg-indigo-600 text-white tracking-wide shadow-xs">
+                                            LOT
                                         </span>
-                                        <input x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
-                                               type="text"
-                                               x-model="editLotName"
-                                               @click.stop
-                                               @keydown.enter.stop="saveLotName('{{ lot_group.grouper.id|default:'unassigned' }}')"
-                                               @keydown.escape.stop="editingLotId = null"
-                                               class="border-cyan-300 rounded text-xs px-2 py-1 text-cyan-900 uppercase focus:ring-cyan-500 focus:border-cyan-500 w-48 shadow-sm">
-                                        
-                                        <button type="button" @click.stop="startEditLot('{{ lot_group.grouper.id|default:'unassigned' }}', '{% if lot_group.grouper %}{{ lot_group.grouper.lot_name|escapejs }}{% else %}Unassigned Products{% endif %}')"
-                                                x-show="editingLotId !== '{{ lot_group.grouper.id|default:'unassigned' }}'"
-                                                class="text-cyan-600 hover:text-cyan-800 transition-colors p-1" title="Rename Lot">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                        </button>
-                                        <button type="button" @click.stop="saveLotName('{{ lot_group.grouper.id|default:'unassigned' }}')"
-                                                x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
-                                                class="text-emerald-600 hover:text-emerald-800 transition-colors p-1" title="Save Name">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        </button>
-                                        <button type="button" @click.stop="editingLotId = null"
-                                                x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
-                                                class="text-red-500 hover:text-red-700 transition-colors p-1" title="Cancel">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
-                                    </span>
-                                    <svg class="h-5 w-5 text-cyan-500 transition-transform duration-200"
+                                        <span class="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                                            <span x-show="editingLotId !== '{{ lot_group.grouper.id|default:'unassigned' }}'">
+                                                {% if lot_group.grouper %}{{ lot_group.grouper.lot_name }}{% else %}Unassigned Products{% endif %}
+                                            </span>
+                                            <input x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
+                                                   type="text"
+                                                   x-model="editLotName"
+                                                   @click.stop
+                                                   @keydown.enter.stop="saveLotName('{{ lot_group.grouper.id|default:'unassigned' }}')"
+                                                   @keydown.escape.stop="editingLotId = null"
+                                                   class="border-slate-300 rounded-lg text-xs px-2.5 py-1 text-slate-900 focus:ring-indigo-500 focus:border-indigo-500 w-48 shadow-sm">
+                                            
+                                            <button type="button" @click.stop="startEditLot('{{ lot_group.grouper.id|default:'unassigned' }}', '{% if lot_group.grouper %}{{ lot_group.grouper.lot_name|escapejs }}{% else %}Unassigned Products{% endif %}')"
+                                                    x-show="editingLotId !== '{{ lot_group.grouper.id|default:'unassigned' }}'"
+                                                    class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Rename Lot">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            </button>
+                                            <button type="button" @click.stop="saveLotName('{{ lot_group.grouper.id|default:'unassigned' }}')"
+                                                    x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
+                                                    class="text-emerald-600 hover:text-emerald-800 transition-colors p-1" title="Save Name">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                            <button type="button" @click.stop="editingLotId = null"
+                                                    x-show="editingLotId === '{{ lot_group.grouper.id|default:'unassigned' }}'"
+                                                    class="text-rose-500 hover:text-rose-700 transition-colors p-1" title="Cancel">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </span>
+                                        <span class="text-xs text-slate-500 font-semibold bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-xs">
+                                            {{ lot_group.list|length }} item{{ lot_group.list|length|pluralize }}
+                                        </span>
+                                    </div>
+                                    <svg class="h-4 w-4 text-slate-500 transition-transform duration-200"
                                         :class="(collapsedLots['{{ lot_group.grouper.id|default:'unassigned' }}'] && !isSearching) ? '-rotate-90' : 'rotate-0'"
                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
@@ -928,11 +934,13 @@
                                     {% endif %}
                                     <div class="transition-all duration-200">
                                         <a href="javascript:void(0)" @click.stop="openProductModal('{{ product.id }}')"
-                                            class="text-sm font-medium text-indigo-600 hover:text-indigo-900 block truncate max-w-[200px] group-hover/cell:whitespace-normal group-hover/cell:max-w-[400px]">{{ product.item_name }}</a>
+                                            class="text-sm font-semibold text-indigo-600 hover:text-indigo-900 block leading-snug whitespace-normal line-clamp-2 min-w-[220px]">{{ product.item_name }}</a>
                                         {% if product.make_or_model %}
-                                        <div class="text-xs font-semibold text-gray-700 truncate max-w-[200px] group-hover/cell:whitespace-normal group-hover/cell:max-w-[400px]">M/M: {{ product.make_or_model }}</div>
+                                        <div class="text-xs font-semibold text-slate-700 leading-snug whitespace-normal mt-0.5">M/M: {{ product.make_or_model }}</div>
                                         {% endif %}
-                                        <div class="text-xs text-gray-500 truncate max-w-[200px] group-hover/cell:whitespace-normal group-hover/cell:max-w-[400px]">{{ product.description|default:"" }}</div>
+                                        {% if product.description %}
+                                        <div class="text-xs text-slate-500 leading-snug whitespace-normal line-clamp-2 mt-0.5">{{ product.description }}</div>
+                                        {% endif %}
                                         
                                         {% if product.user_bookmark and product.user_bookmark.description %}
                                         <div
@@ -1072,117 +1080,102 @@
                                 </select>
                             </td>
 
-                            <!-- Dual Stage Cell (compact) -->
-                            <td class="px-1.5 py-1.5 text-center w-[170px]" @click.stop
+                            <!-- Dual Stage Cell (clear & accessible) -->
+                            <td class="px-2 py-2 text-center w-[180px]" @click.stop
                                 x-data="productStageCell('{{ product.id }}', '{{ product.customer_stage|default:'' }}', '{{ product.supplier_stage|default:'' }}')">
 
                                 <!-- Customer row -->
-                                <div class="flex items-center gap-0.5 mb-0.5">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0"></span>
-                                    <span
-                                        class="text-[9px] font-bold text-indigo-400 uppercase tracking-wider leading-none">Customer</span>
-                                    <span x-show="customerSaving" class="ml-auto">
-                                        <svg class="animate-spin h-2.5 w-2.5 text-indigo-400" fill="none"
-                                            viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                stroke-width="4" />
-                                            <path class="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <div class="flex items-center gap-1 mb-1">
+                                    <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1 py-0.5 rounded shrink-0">Cust</span>
+                                    <select @change="setStage('customer', $event.target.value)"
+                                        aria-label="Customer Stage for {{ product.item_name|escape }}"
+                                        class="w-full text-xs border border-slate-300 rounded-md py-1 px-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 font-medium cursor-pointer"
+                                        :disabled="customerSaving">
+                                        <option value="">— Clear Stage —</option>
+                                        <option value="REQ_RECEIVED"
+                                            {% if product.customer_stage == 'REQ_RECEIVED' %}selected{% endif %}>
+                                            Requirement Received
+                                        </option>
+                                        <option value="QUOT_GIVEN"
+                                            {% if product.customer_stage == 'QUOT_GIVEN' %}selected{% endif %}>
+                                            Quotation Given
+                                        </option>
+                                        <option value="PO_RECEIVED"
+                                            {% if product.customer_stage == 'PO_RECEIVED' %}selected{% endif %}>
+                                            PO Received
+                                        </option>
+                                        <option value="PI_GIVEN"
+                                            {% if product.customer_stage == 'PI_GIVEN' %}selected{% endif %}>
+                                            PI Given
+                                        </option>
+                                        <option value="PROD_GIVEN"
+                                            {% if product.customer_stage == 'PROD_GIVEN' %}selected{% endif %}>
+                                            Product Given
+                                        </option>
+                                        <option value="INV_GIVEN"
+                                            {% if product.customer_stage == 'INV_GIVEN' %}selected{% endif %}>
+                                            Invoice Given
+                                        </option>
+                                    </select>
+                                    <span x-show="customerSaving" class="ml-0.5">
+                                        <svg class="animate-spin h-3 w-3 text-indigo-500" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
                                     </span>
                                 </div>
-
-                                <!-- Customer select -->
-                                <select @change="setStage('customer', $event.target.value)"
-                                    class="w-full text-[10px] border border-indigo-200 rounded py-px px-1 bg-indigo-50 text-indigo-700 focus:ring-1 focus:ring-indigo-300 cursor-pointer leading-tight mb-1"
-                                    :disabled="customerSaving">
-                                    <option value="">— clear —</option>
-                                    <option value="REQ_RECEIVED"
-                                        {% if product.customer_stage == 'REQ_RECEIVED' %}selected{% endif %}>
-                                        Requirement Received
-                                    </option>
-                                    <option value="QUOT_GIVEN"
-                                        {% if product.customer_stage == 'QUOT_GIVEN' %}selected{% endif %}>
-                                        Quotation Given
-                                    </option>
-                                    <option value="PO_RECEIVED"
-                                        {% if product.customer_stage == 'PO_RECEIVED' %}selected{% endif %}>
-                                        PO Received
-                                    </option>
-                                    <option value="PI_GIVEN"
-                                        {% if product.customer_stage == 'PI_GIVEN' %}selected{% endif %}>
-                                        PI Given
-                                    </option>
-                                    <option value="PROD_GIVEN"
-                                        {% if product.customer_stage == 'PROD_GIVEN' %}selected{% endif %}>
-                                        Product Given
-                                    </option>
-                                    <option value="INV_GIVEN"
-                                        {% if product.customer_stage == 'INV_GIVEN' %}selected{% endif %}>
-                                        Invoice Given
-                                    </option>
-                                </select>
-
-                                <!-- Divider -->
-                                <div class="border-t border-gray-100 mb-1"></div>
 
                                 <!-- Supplier row -->
-                                <div class="flex items-center gap-0.5 mb-0.5">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
-                                    <span
-                                        class="text-[9px] font-bold text-amber-500 uppercase tracking-wider leading-none">Supplier</span>
-                                    <span x-show="supplierSaving" class="ml-auto">
-                                        <svg class="animate-spin h-2.5 w-2.5 text-amber-400" fill="none"
-                                            viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                stroke-width="4" />
-                                            <path class="opacity-75" fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <div class="flex items-center gap-1">
+                                    <span class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded shrink-0">Supp</span>
+                                    <select @change="setStage('supplier', $event.target.value)"
+                                        aria-label="Supplier Stage for {{ product.item_name|escape }}"
+                                        class="w-full text-xs border border-slate-300 rounded-md py-1 px-1.5 bg-white text-slate-800 focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer"
+                                        :disabled="supplierSaving">
+                                        <option value="">— Clear Stage —</option>
+                                        <option value="REQ_SEARCHING"
+                                            {% if product.supplier_stage == 'REQ_SEARCHING' %}selected{% endif %}>
+                                            Requirement Searching
+                                        </option>
+                                        <option value="QUOT_RECEIVED"
+                                            {% if product.supplier_stage == 'QUOT_RECEIVED' %}selected{% endif %}>
+                                            Quotation Received
+                                        </option>
+                                        <option value="PO_GIVEN"
+                                            {% if product.supplier_stage == 'PO_GIVEN' %}selected{% endif %}>
+                                            PO Given
+                                        </option>
+                                        <option value="PI_RECEIVED"
+                                            {% if product.supplier_stage == 'PI_RECEIVED' %}selected{% endif %}>
+                                            PI Received
+                                        </option>
+                                        <option value="PROD_RECEIVED"
+                                            {% if product.supplier_stage == 'PROD_RECEIVED' %}selected{% endif %}>
+                                            Product Received
+                                        </option>
+                                        <option value="INV_RECEIVED"
+                                            {% if product.supplier_stage == 'INV_RECEIVED' %}selected{% endif %}>
+                                            Invoice Received
+                                        </option>
+                                    </select>
+                                    <span x-show="supplierSaving" class="ml-0.5">
+                                        <svg class="animate-spin h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
                                     </span>
                                 </div>
-
-                                <!-- Supplier select -->
-                                <select @change="setStage('supplier', $event.target.value)"
-                                    class="w-full text-[10px] border border-amber-200 rounded py-px px-1 bg-amber-50 text-amber-700 focus:ring-1 focus:ring-amber-300 cursor-pointer leading-tight"
-                                    :disabled="supplierSaving">
-                                    <option value="">— clear —</option>
-                                    <option value="REQ_SEARCHING"
-                                        {% if product.supplier_stage == 'REQ_SEARCHING' %}selected{% endif %}>
-                                        Requirement Searching
-                                    </option>
-                                    <option value="QUOT_RECEIVED"
-                                        {% if product.supplier_stage == 'QUOT_RECEIVED' %}selected{% endif %}>
-                                        Quotation Received
-                                    </option>
-                                    <option value="PO_GIVEN"
-                                        {% if product.supplier_stage == 'PO_GIVEN' %}selected{% endif %}>
-                                        PO Given
-                                    </option>
-                                    <option value="PI_RECEIVED"
-                                        {% if product.supplier_stage == 'PI_RECEIVED' %}selected{% endif %}>
-                                        PI Received
-                                    </option>
-                                    <option value="PROD_RECEIVED"
-                                        {% if product.supplier_stage == 'PROD_RECEIVED' %}selected{% endif %}>
-                                        Product Received
-                                    </option>
-                                    <option value="INV_RECEIVED"
-                                        {% if product.supplier_stage == 'INV_RECEIVED' %}selected{% endif %}>
-                                        Invoice Received
-                                    </option>
-                                </select>
                             </td>
 
                             <!-- Actions -->
-                            <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium" @click.stop>
-                                <div class="flex justify-end space-x-3 items-center"
+                            <td class="px-3 py-3 whitespace-nowrap text-right text-xs" @click.stop>
+                                <div class="flex justify-end items-center gap-1.5"
                                     x-show="editingRowId !== '{{ product.id }}'">
                                     {% if product.id in bookmarked_ids %}
                                     <button type="button"
                                         @click="bookmarkProductId = '{{ product.id }}'; bookmarkAction = 'remove'; $nextTick(() => { if ($refs.bookmarkForm) { $refs.bookmarkForm.action = '/tracker/product/{{ product.id }}/bookmark/'; $refs.bookmarkForm.submit(); } });"
-                                        class="text-yellow-600 hover:text-yellow-900" title="Remove Bookmark">
-                                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                        class="p-1 rounded-md text-amber-600 hover:text-amber-800 hover:bg-amber-50 transition" title="Remove Bookmark">
+                                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd"
                                                 d="M3 5a2 2 0 012-2h10a2 2 0 012 2v14l-7-3.5L3 19V5z"
                                                 clip-rule="evenodd" />
@@ -1191,17 +1184,17 @@
                                     {% else %}
                                     <button type="button"
                                         @click="bookmarkProductId = '{{ product.id }}'; bookmarkDescription = ''; bookmarkAction = 'add'; bookmarkModalOpen = true;"
-                                        class="text-gray-400 hover:text-yellow-500" title="Bookmark Product">
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        class="p-1 rounded-md text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition" title="Bookmark Product">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                         </svg>
                                     </button>
                                     {% endif %}
                                     <a href="{% url 'tracker:product_update' product.id %}"
-                                        class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                        class="px-2.5 py-1 rounded-md text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition shadow-2xs">Edit</a>
                                     <a href="{% url 'tracker:product_delete' product.id %}"
-                                        class="text-red-500 hover:text-red-700">Delete</a>
+                                        class="px-2.5 py-1 rounded-md text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 transition shadow-2xs">Delete</a>
                                 </div>
                                 <div class="flex justify-end space-x-2 items-center"
                                     x-show="editingRowId === '{{ product.id }}'">
@@ -1298,7 +1291,7 @@
                 </div>
                 <p class="text-xs font-bold text-violet-600 uppercase tracking-wider mb-2 relative z-10">Est. Profit</p>
                 <p class="text-2xl font-black text-violet-900 relative z-10">₹<span x-text="visibleProfitEx.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></p>
-                <p class="text-[11px] font-medium text-violet-500 mt-2 relative z-10">Sales - (Purchase + Expenses) Ex. GST</p>
+                <p class="text-xs font-medium text-violet-700 mt-2 relative z-10">Sales − (Purchase + Expenses) Ex. GST</p>
             </div>
         </div>
     </div>
@@ -1312,39 +1305,39 @@
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Project</span>
-            <span class="text-lg font-bold text-gray-900 relative z-10 truncate" title="{{ order.customer_name }}">{{ order.customer_name }}</span>
+            <span class="text-xs font-semibold text-slate-500 mb-1 relative z-10">Project</span>
+            <span class="text-lg font-bold text-slate-900 relative z-10 truncate" title="{{ order.customer_name }}">{{ order.customer_name }}</span>
         </div>
         <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group">
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Date</span>
-            <span class="text-lg font-bold text-gray-900 relative z-10">{{ order.order_date }}</span>
+            <span class="text-xs font-semibold text-slate-500 mb-1 relative z-10">Date</span>
+            <span class="text-lg font-bold text-slate-900 relative z-10">{{ order.order_date }}</span>
         </div>
         <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group">
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Filtered Count</span>
-            <span class="text-lg font-bold text-gray-900 relative z-10" x-text="visibleCount"></span>
+            <span class="text-xs font-semibold text-slate-500 mb-1 relative z-10">Filtered Count</span>
+            <span class="text-lg font-bold text-slate-900 relative z-10" x-text="visibleCount"></span>
         </div>
         <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group">
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 relative z-10">Purchase (Inc GST)</span>
-            <span class="text-lg font-bold text-gray-900 relative z-10" x-text="'₹' + visibleTotalIncGst.toFixed(2)"></span>
+            <span class="text-xs font-semibold text-slate-500 mb-1 relative z-10">Purchase (Inc. GST)</span>
+            <span class="text-lg font-bold text-slate-900 relative z-10" x-text="'₹' + visibleTotalIncGst.toFixed(2)"></span>
         </div>
         <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center relative overflow-hidden group bg-emerald-50 border-emerald-100">
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-100 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1 relative z-10">Profit (Ex. GST)</span>
+            <span class="text-xs font-semibold text-emerald-700 mb-1 relative z-10">Profit (Ex. GST)</span>
             <span class="text-2xl font-bold text-emerald-700 relative z-10"
                 x-text="'₹' + visibleProfitEx.toFixed(2)"></span>
         </div>
@@ -1353,7 +1346,7 @@
             <div
                 class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-100 rounded-full transition-transform group-hover:scale-150">
             </div>
-            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1 relative z-10">Profit (Inc. GST)</span>
+            <span class="text-xs font-semibold text-emerald-700 mb-1 relative z-10">Profit (Inc. GST)</span>
             <span class="text-2xl font-bold text-emerald-700 relative z-10"
                 x-text="'₹' + visibleProfitInc.toFixed(2)"></span>
         </div>
@@ -1485,25 +1478,25 @@
                         </span>
                     </div>
 
-                    <div class="space-y-1 text-xs text-gray-600 mb-3">
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-gray-400">Type:</span>
-                            <span class="font-medium text-gray-800">{{ doc.type_display }}</span>
+                    <div class="space-y-1.5 text-xs text-slate-600 mb-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Type:</span>
+                            <span class="font-semibold text-slate-800">{{ doc.type_display }}</span>
                         </div>
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-gray-400">Date:</span>
-                            <span class="font-medium text-gray-700">{{ doc.date_display }}</span>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Date:</span>
+                            <span class="font-medium text-slate-700">{{ doc.date_display }}</span>
                         </div>
                         {% if doc.customer_name %}
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-gray-400">Party:</span>
-                            <span class="font-semibold text-gray-900 truncate max-w-[150px]" title="{{ doc.customer_name }}">{{ doc.customer_name }}</span>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Party:</span>
+                            <span class="font-semibold text-slate-900 truncate max-w-[180px]" title="{{ doc.customer_name }}">{{ doc.customer_name }}</span>
                         </div>
                         {% endif %}
                         {% if doc.po_reference_number %}
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-gray-400">PO / Ref:</span>
-                            <span class="font-mono text-gray-700 truncate max-w-[150px]">{{ doc.po_reference_number }}</span>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">PO / Ref:</span>
+                            <span class="font-mono font-medium text-slate-700 truncate max-w-[180px]">{{ doc.po_reference_number }}</span>
                         </div>
                         {% endif %}
                     </div>
