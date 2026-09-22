@@ -464,10 +464,11 @@ def financial_dashboard(request):
         ).select_related('contact').order_by('-date')
 
         for inv in invoices_with_dues:
-            paid = all_doc_payments.get(inv.number, Decimal('0'))
-            due = inv.grand_total - paid
-            if due > Decimal('0.01'):
-                total_receivables_due += due
+            total_inr = inv.grand_total_inr
+            paid_inr = all_doc_payments.get(inv.number, Decimal('0'))
+            due_inr = total_inr - paid_inr
+            if due_inr > Decimal('0.01'):
+                total_receivables_due += due_inr
                 order_ref = (inv.po_reference_number or inv.project_name or '').strip()
                 matched_order_id = order_map.get(order_ref.lower()) if order_ref else None
                 receivables_list.append({
@@ -478,9 +479,11 @@ def financial_dashboard(request):
                     'order_url': f"/tracker/order/{matched_order_id}/" if matched_order_id else None,
                     'contact_name': inv.contact.name if inv.contact else '—',
                     'date': inv.date,
-                    'total': inv.grand_total,
-                    'paid': paid,
-                    'due': due,
+                    'total': total_inr,
+                    'paid': paid_inr,
+                    'due': due_inr,
+                    'currency': inv.currency or 'INR',
+                    'orig_total': inv.grand_total,
                     'link': f"/documents/{inv.id}/preview/",
                     'is_period': True,
                 })
@@ -493,10 +496,11 @@ def financial_dashboard(request):
         ).select_related('contact').order_by('-date')
 
         for po in pos_with_dues:
-            paid = all_doc_payments.get(po.number, Decimal('0'))
-            due = po.grand_total - paid
-            if due > Decimal('0.01'):
-                total_payables_due += due
+            total_inr = po.grand_total_inr
+            paid_inr = all_doc_payments.get(po.number, Decimal('0'))
+            due_inr = total_inr - paid_inr
+            if due_inr > Decimal('0.01'):
+                total_payables_due += due_inr
                 order_ref = (po.project_name or po.po_reference_number or '').strip()
                 matched_order_id = order_map.get(order_ref.lower()) if order_ref else None
                 payables_list.append({
@@ -508,20 +512,26 @@ def financial_dashboard(request):
                     'type': 'Purchase Order',
                     'contact_name': po.contact.name if po.contact else '—',
                     'date': po.date,
-                    'total': po.grand_total,
-                    'paid': paid,
-                    'due': due,
+                    'total': total_inr,
+                    'paid': paid_inr,
+                    'due': due_inr,
+                    'currency': po.currency or 'INR',
+                    'orig_total': po.grand_total,
                     'link': f"/documents/{po.id}/preview/",
                     'is_period': True,
                 })
 
         # B) EDMS Purchase Invoices / Bills in the selected period that are unpaid or partial
+        # Note: Exclude auto-synced commercial documents or EDMS bills matching already listed POs to avoid double-counting
+        po_numbers_listed = set(pos_with_dues.values_list('number', flat=True))
         edms_date_q = (
             Q(invoice_date__gte=start_date, invoice_date__lte=end_date) |
             Q(invoice_date__isnull=True, issue_date__gte=start_date, issue_date__lte=end_date)
         )
         unpaid_edms_bills = EDMSDocument.objects.filter(
-            is_deleted=False
+            is_deleted=False,
+            commercial_doc__isnull=True,
+            source_type=EDMSDocument.SOURCE_MANUAL,
         ).filter(
             Q(payment_status__in=['unpaid', 'partial']) |
             Q(payment_status='', amount__gt=0)
@@ -531,15 +541,27 @@ def financial_dashboard(request):
             Q(category__name__icontains='vendor')
         ).exclude(
             category__name__icontains='proforma'
+        ).exclude(
+            po_number__in=po_numbers_listed
+        ).exclude(
+            reference_number__in=po_numbers_listed
         ).filter(edms_date_q).select_related('vendor', 'category').order_by('-invoice_date')[:100]
 
+        from documents.forex import get_live_exchange_rate
         for b in unpaid_edms_bills:
             b_amount = b.amount or Decimal('0')
             if b_amount > Decimal('0'):
-                total_payables_due += b_amount
+                b_curr = getattr(b, 'currency', 'INR') or 'INR'
+                b_date = b.invoice_date or b.issue_date
+                if b_curr != 'INR':
+                    rate = get_live_exchange_rate(b_curr, 'INR', for_date=b_date)
+                    b_inr = b_amount * rate
+                else:
+                    b_inr = b_amount
+
+                total_payables_due += b_inr
                 order_ref = (b.po_number or b.reference_number or '').strip()
                 matched_order_id = order_map.get(order_ref.lower()) if order_ref else None
-                b_date = b.invoice_date or b.issue_date
                 payables_list.append({
                     'id': str(b.id),
                     'number': b.invoice_number or b.bill_number or b.title,
@@ -549,9 +571,11 @@ def financial_dashboard(request):
                     'type': 'EDMS Bill',
                     'contact_name': b.vendor.name if b.vendor else (b.party_name or '—'),
                     'date': b_date,
-                    'total': b_amount,
+                    'total': b_inr,
                     'paid': Decimal('0'),
-                    'due': b_amount,
+                    'due': b_inr,
+                    'currency': b_curr,
+                    'orig_total': b_amount,
                     'link': f"/edms/document/{b.id}/",
                     'is_period': True,
                 })
@@ -575,6 +599,8 @@ def financial_dashboard(request):
                 'total': exp.amount,
                 'paid': Decimal('0'),
                 'due': exp.amount,
+                'currency': 'INR',
+                'orig_total': exp.amount,
                 'link': "/payments/expenses/",
                 'is_period': True,
             })
