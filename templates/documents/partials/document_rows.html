@@ -17,7 +17,7 @@
         </span>
     </td>
     <td class="px-5 py-4">
-        {% if doc.linked_docs_list or doc.unmatched_po_ref %}
+        {% if doc.linked_docs_list or doc.linked_edms_list or doc.unmatched_po_ref %}
         <div class="flex flex-wrap items-center gap-1.5 max-w-[280px]">
             {% for ldoc in doc.linked_docs_list %}
             <a href="{% url 'document_preview' ldoc.id %}"
@@ -34,6 +34,14 @@
                     {% if ldoc.type == 'CHL' %}DC{% elif ldoc.type == 'PRO' %}PI{% else %}{{ ldoc.type }}{% endif %}
                 </span>
                 <span class="font-mono text-[11px] group-hover/pill:underline">{{ ldoc.number }}</span>
+            </a>
+            {% endfor %}
+            {% for edoc in doc.linked_edms_list %}
+            <a href="{% url 'edms:document_detail' edoc.id %}"
+               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border transition-all hover:scale-105 shadow-sm group/pill bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25"
+               title="EDMS File: {{ edoc.title|default:edoc.document_id }} - Click to open">
+                <span class="font-extrabold text-[10px] tracking-wider uppercase opacity-95">EDMS</span>
+                <span class="font-mono text-[11px] group-hover/pill:underline truncate max-w-[90px]">{{ edoc.document_id|default:edoc.title }}</span>
             </a>
             {% endfor %}
             {% if doc.unmatched_po_ref %}

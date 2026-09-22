@@ -216,6 +216,54 @@ def attach_linked_documents(documents):
     else:
         linked_docs_by_id = {}
 
+    # 7. Fetch all EDMS documents linked across the entire connected component
+    edms_ct = ContentType.objects.filter(app_label='edms', model='edmsdocument').first()
+    all_all_known_strs = [str(did) for did in (all_known_ids | all_needed_ids)]
+    doc_to_edms_objs = defaultdict(list)
+
+    if edms_ct and all_all_known_strs:
+        from edms.models import EDMSDocument
+        edms_links = DocumentLink.objects.filter(
+            (Q(source_type=doc_ct, source_id__in=all_all_known_strs, target_type=edms_ct) |
+             Q(target_type=doc_ct, target_id__in=all_all_known_strs, source_type=edms_ct))
+        ).exclude(link_type='excluded').values_list('source_id', 'target_id', 'source_type_id')
+
+        edms_uuid_to_doc_id = defaultdict(set)
+        edms_needed_uuids = set()
+
+        for s_id, t_id, s_type_id in edms_links:
+            if s_type_id == edms_ct.id:
+                edms_uuid = s_id
+                try:
+                    d_id_int = int(t_id)
+                    edms_uuid_to_doc_id[edms_uuid].add(d_id_int)
+                    edms_needed_uuids.add(edms_uuid)
+                except (ValueError, TypeError):
+                    pass
+            else:
+                edms_uuid = t_id
+                try:
+                    d_id_int = int(s_id)
+                    edms_uuid_to_doc_id[edms_uuid].add(d_id_int)
+                    edms_needed_uuids.add(edms_uuid)
+                except (ValueError, TypeError):
+                    pass
+
+        if edms_needed_uuids:
+            edms_docs = EDMSDocument.objects.filter(id__in=edms_needed_uuids).only('id', 'title', 'document_id')
+            edms_by_uuid = {str(ed.id): ed for ed in edms_docs}
+
+            # Map EDMS docs to all documents in their connected component
+            for edms_uuid, connected_dids in edms_uuid_to_doc_id.items():
+                ed_obj = edms_by_uuid.get(edms_uuid)
+                if not ed_obj:
+                    continue
+                for d in documents:
+                    doc_component = doc_to_linked_ids.get(d.id, set()) | {d.id}
+                    if doc_component & connected_dids:
+                        if ed_obj not in doc_to_edms_objs[d.id]:
+                            doc_to_edms_objs[d.id].append(ed_obj)
+
     type_order = {'QTN': 1, 'PRO': 2, 'PO': 3, 'CHL': 4, 'INV': 5, 'DBN': 6, 'CRN': 7}
 
     for d in documents:
@@ -224,6 +272,7 @@ def attach_linked_documents(documents):
         # Sort by business lifecycle order, then date, then ID
         linked_objs.sort(key=lambda x: (type_order.get(x.type, 99), x.date or timezone.now().date(), x.id))
         d.linked_docs_list = linked_objs
+        d.linked_edms_list = doc_to_edms_objs.get(d.id, [])
 
         # Check if PO reference is already represented in linked_objs
         po_ref = (getattr(d, 'po_reference_number', '') or '').strip()
