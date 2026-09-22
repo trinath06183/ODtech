@@ -102,23 +102,7 @@ def attach_linked_documents(documents):
     doc_id_strs = [str(did) for did in doc_ids]
     doc_ct = ContentType.objects.get_for_model(Document)
 
-    adj = defaultdict(set)
-
-    # 1. DocumentLink records involving these documents
-    links = DocumentLink.objects.filter(
-        (Q(source_type=doc_ct, source_id__in=doc_id_strs) | Q(target_type=doc_ct, target_id__in=doc_id_strs))
-    ).exclude(link_type='excluded').values_list('source_id', 'target_id')
-
-    for s_id, t_id in links:
-        try:
-            s_int = int(s_id)
-            t_int = int(t_id)
-            adj[s_int].add(t_int)
-            adj[t_int].add(s_int)
-        except (ValueError, TypeError):
-            continue
-
-    # 2. Direct source_document and converted_documents relationships
+    # 1. Direct source_document and converted_documents relationships
     source_pairs = Document.objects.filter(
         Q(id__in=doc_ids, source_document__isnull=False) |
         Q(source_document_id__in=doc_ids)
@@ -129,45 +113,81 @@ def attach_linked_documents(documents):
             adj[d_id].add(src_id)
             adj[src_id].add(d_id)
 
-    # 3. Matching PO reference numbers
-    po_refs = {d.po_reference_number.strip() for d in documents if getattr(d, 'po_reference_number', None) and d.po_reference_number.strip()}
-    if po_refs:
-        po_docs = Document.objects.filter(number__in=po_refs).values_list('id', 'number')
-        po_map = {num: pid for pid, num in po_docs}
-        for d in documents:
-            ref = (getattr(d, 'po_reference_number', '') or '').strip()
-            if ref and ref in po_map:
-                p_id = po_map[ref]
-                adj[d.id].add(p_id)
-                adj[p_id].add(d.id)
+    # 2. Multi-hop full graph expansion (BFS loop up to 4 hops across DocumentLink, source_document, and PO refs)
+    all_known_ids = set(doc_ids)
+    current_frontier = set(doc_ids)
 
-    # 4. Multi-hop 1-level expansion for full lifecycle chain (e.g. QTN -> PI -> INV -> DC)
-    neighbor_ids = set()
-    for did in doc_ids:
-        neighbor_ids.update(adj[did])
-    new_neighbors = [str(nid) for nid in neighbor_ids if nid not in doc_ids]
+    for _ in range(4):
+        if not current_frontier:
+            break
+        frontier_strs = [str(fid) for fid in current_frontier]
+        frontier_ints = [fid for fid in current_frontier]
 
-    if new_neighbors:
-        extra_links = DocumentLink.objects.filter(
-            (Q(source_type=doc_ct, source_id__in=new_neighbors) | Q(target_type=doc_ct, target_id__in=new_neighbors))
+        new_found_ids = set()
+
+        # A. Expand DocumentLink
+        links = DocumentLink.objects.filter(
+            (Q(source_type=doc_ct, source_id__in=frontier_strs) | Q(target_type=doc_ct, target_id__in=frontier_strs))
         ).exclude(link_type='excluded').values_list('source_id', 'target_id')
-        for s_id, t_id in extra_links:
+
+        for s_id, t_id in links:
             try:
                 s_int = int(s_id)
                 t_int = int(t_id)
                 adj[s_int].add(t_int)
                 adj[t_int].add(s_int)
+                if s_int not in all_known_ids:
+                    new_found_ids.add(s_int)
+                if t_int not in all_known_ids:
+                    new_found_ids.add(t_int)
             except (ValueError, TypeError):
                 continue
 
-        extra_src = Document.objects.filter(
-            Q(id__in=[int(x) for x in new_neighbors if x.isdigit()], source_document__isnull=False) |
-            Q(source_document_id__in=[int(x) for x in new_neighbors if x.isdigit()])
+        # B. Expand source_document relationships
+        src_pairs = Document.objects.filter(
+            Q(id__in=frontier_ints, source_document__isnull=False) |
+            Q(source_document_id__in=frontier_ints)
         ).values_list('id', 'source_document_id')
-        for d_id, src_id in extra_src:
+
+        for d_id, src_id in src_pairs:
             if src_id:
                 adj[d_id].add(src_id)
                 adj[src_id].add(d_id)
+                if d_id not in all_known_ids:
+                    new_found_ids.add(d_id)
+                if src_id not in all_known_ids:
+                    new_found_ids.add(src_id)
+
+        # C. Expand matching PO reference numbers across frontier
+        frontier_docs = Document.objects.filter(id__in=frontier_ints).values_list('id', 'number', 'po_reference_number')
+        f_numbers = [num.strip() for _, num, _ in frontier_docs if num and num.strip()]
+        f_po_refs = [ref.strip() for _, _, ref in frontier_docs if ref and ref.strip()]
+
+        if f_po_refs:
+            po_matches = Document.objects.filter(number__in=f_po_refs).values_list('id', 'number')
+            po_dict = {p_num.strip(): p_id for p_id, p_num in po_matches}
+            for doc_id_val, _, ref_val in frontier_docs:
+                clean_ref = (ref_val or '').strip()
+                if clean_ref in po_dict:
+                    p_id = po_dict[clean_ref]
+                    adj[doc_id_val].add(p_id)
+                    adj[p_id].add(doc_id_val)
+                    if p_id not in all_known_ids:
+                        new_found_ids.add(p_id)
+
+        if f_numbers:
+            matching_ref_docs = Document.objects.filter(po_reference_number__in=f_numbers).values_list('id', 'po_reference_number')
+            for mrd_id, mrd_ref in matching_ref_docs:
+                clean_ref = (mrd_ref or '').strip()
+                for doc_id_val, num_val, _ in frontier_docs:
+                    if (num_val or '').strip() == clean_ref:
+                        adj[doc_id_val].add(mrd_id)
+                        adj[mrd_id].add(doc_id_val)
+                        if mrd_id not in all_known_ids:
+                            new_found_ids.add(mrd_id)
+
+        all_known_ids.update(new_found_ids)
+        current_frontier = new_found_ids
 
     # 5. Connected components traversal for each doc
     all_needed_ids = set()
