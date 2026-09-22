@@ -4,7 +4,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, F, DecimalField
 from .models import Document, DocumentItem
 from .services import DocumentService, PDFService, NumberingService
 from core.decorators import login_required, require_permission
@@ -82,11 +82,144 @@ def import_document_bundle_view(request):
     except Exception as e:
         messages.error(request, f'Failed to read bundle: {e}')
 
-    return redirect('document_list')
+
+def attach_linked_documents(documents):
+    """
+    Batch fetches and attaches linked documents (INV, QTN, DC, PO, PI, etc.)
+    to each Document instance in the provided list/page to prevent N+1 queries.
+    """
+    if not documents:
+        return
+
+    from collections import defaultdict
+    from django.contrib.contenttypes.models import ContentType
+    from core.models import DocumentLink
+
+    doc_ids = [d.id for d in documents if getattr(d, 'id', None)]
+    if not doc_ids:
+        return
+
+    doc_id_strs = [str(did) for did in doc_ids]
+    doc_ct = ContentType.objects.get_for_model(Document)
+
+    adj = defaultdict(set)
+
+    # 1. DocumentLink records involving these documents
+    links = DocumentLink.objects.filter(
+        (Q(source_type=doc_ct, source_id__in=doc_id_strs) | Q(target_type=doc_ct, target_id__in=doc_id_strs))
+    ).exclude(link_type='excluded').values_list('source_id', 'target_id')
+
+    for s_id, t_id in links:
+        try:
+            s_int = int(s_id)
+            t_int = int(t_id)
+            adj[s_int].add(t_int)
+            adj[t_int].add(s_int)
+        except (ValueError, TypeError):
+            continue
+
+    # 2. Direct source_document and converted_documents relationships
+    source_pairs = Document.objects.filter(
+        Q(id__in=doc_ids, source_document__isnull=False) |
+        Q(source_document_id__in=doc_ids)
+    ).values_list('id', 'source_document_id')
+
+    for d_id, src_id in source_pairs:
+        if src_id:
+            adj[d_id].add(src_id)
+            adj[src_id].add(d_id)
+
+    # 3. Matching PO reference numbers
+    po_refs = {d.po_reference_number.strip() for d in documents if getattr(d, 'po_reference_number', None) and d.po_reference_number.strip()}
+    if po_refs:
+        po_docs = Document.objects.filter(number__in=po_refs).values_list('id', 'number')
+        po_map = {num: pid for pid, num in po_docs}
+        for d in documents:
+            ref = (getattr(d, 'po_reference_number', '') or '').strip()
+            if ref and ref in po_map:
+                p_id = po_map[ref]
+                adj[d.id].add(p_id)
+                adj[p_id].add(d.id)
+
+    # 4. Multi-hop 1-level expansion for full lifecycle chain (e.g. QTN -> PI -> INV -> DC)
+    neighbor_ids = set()
+    for did in doc_ids:
+        neighbor_ids.update(adj[did])
+    new_neighbors = [str(nid) for nid in neighbor_ids if nid not in doc_ids]
+
+    if new_neighbors:
+        extra_links = DocumentLink.objects.filter(
+            (Q(source_type=doc_ct, source_id__in=new_neighbors) | Q(target_type=doc_ct, target_id__in=new_neighbors))
+        ).exclude(link_type='excluded').values_list('source_id', 'target_id')
+        for s_id, t_id in extra_links:
+            try:
+                s_int = int(s_id)
+                t_int = int(t_id)
+                adj[s_int].add(t_int)
+                adj[t_int].add(s_int)
+            except (ValueError, TypeError):
+                continue
+
+        extra_src = Document.objects.filter(
+            Q(id__in=[int(x) for x in new_neighbors if x.isdigit()], source_document__isnull=False) |
+            Q(source_document_id__in=[int(x) for x in new_neighbors if x.isdigit()])
+        ).values_list('id', 'source_document_id')
+        for d_id, src_id in extra_src:
+            if src_id:
+                adj[d_id].add(src_id)
+                adj[src_id].add(d_id)
+
+    # 5. Connected components traversal for each doc
+    all_needed_ids = set()
+    doc_to_linked_ids = {}
+    for d in documents:
+        visited = set()
+        queue = [d.id]
+        while queue:
+            curr = queue.pop(0)
+            if curr not in visited:
+                visited.add(curr)
+                for neighbor in adj.get(curr, []):
+                    if neighbor not in visited:
+                        queue.append(neighbor)
+        linked_for_d = visited - {d.id}
+        doc_to_linked_ids[d.id] = linked_for_d
+        all_needed_ids.update(linked_for_d)
+
+    # 6. Fetch all linked documents in one efficient query
+    if all_needed_ids:
+        linked_docs_qs = Document.objects.filter(id__in=all_needed_ids).only(
+            'id', 'number', 'type', 'status', 'grand_total', 'date'
+        )
+        linked_docs_by_id = {ld.id: ld for ld in linked_docs_qs}
+    else:
+        linked_docs_by_id = {}
+
+    type_order = {'QTN': 1, 'PRO': 2, 'PO': 3, 'CHL': 4, 'INV': 5, 'DBN': 6, 'CRN': 7}
+
+    for d in documents:
+        linked_ids = doc_to_linked_ids.get(d.id, set())
+        linked_objs = [linked_docs_by_id[lid] for lid in linked_ids if lid in linked_docs_by_id]
+        # Sort by business lifecycle order, then date, then ID
+        linked_objs.sort(key=lambda x: (type_order.get(x.type, 99), x.date or timezone.now().date(), x.id))
+        d.linked_docs_list = linked_objs
+
+        # Check if PO reference is already represented in linked_objs
+        po_ref = (getattr(d, 'po_reference_number', '') or '').strip()
+        if po_ref:
+            has_matching_po = any(
+                (lo.number.strip() == po_ref) or (lo.type == 'PO' and lo.number.strip() == po_ref)
+                for lo in linked_objs
+            )
+            d.unmatched_po_ref = None if has_matching_po else po_ref
+        else:
+            d.unmatched_po_ref = None
+
 
 # ─── Document List ────────────────────────────────────────────────────────────
 @require_permission('DOCUMENTS', 'read')
 def document_list(request):
+
     doc_types = request.GET.getlist('type')
     doc_types = [t for t in doc_types if t]
     query = request.GET.get('q', '').strip()
@@ -107,6 +240,9 @@ def document_list(request):
         qs = qs.filter(
             Q(number__icontains=query) |
             Q(contact__name__icontains=query) |
+            Q(po_reference_number__icontains=query) |
+            Q(source_document__number__icontains=query) |
+            Q(converted_documents__number__icontains=query) |
             Q(items__product__name__icontains=query) |
             Q(items__product__sku__icontains=query) |
             Q(items__product__description__icontains=query) |
@@ -158,7 +294,7 @@ def document_list(request):
     page_num = request.GET.get('page', 1)
     total_count = qs.count()
     try:
-        total_sum = qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+        total_sum = qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
     except Exception:
         total_sum = Decimal('0')
 
@@ -185,6 +321,9 @@ def document_list(request):
         for d in page_obj:
             if d.number in payment_map:
                 d._cached_amount_paid = payment_map[d.number]
+
+    # Batch attach linked documents data for the current page
+    attach_linked_documents(page_obj)
 
     # AJAX request — return only rows HTML + pagination metadata
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -322,6 +461,92 @@ def document_preview(request, document_id):
             'target_obj': target_obj,
         })
 
+    # ── Full Document Trail Resolution (Full Chain: Quotation -> PI -> PO -> DC -> Invoice) ──
+    from django.contrib.contenttypes.models import ContentType
+    from core.models import DocumentLink
+    from edms.models import EDMSDocument as _EDMS
+
+    doc_ct = ContentType.objects.get_for_model(Document)
+    edms_ct = ContentType.objects.filter(app_label='edms', model='edmsdocument').first()
+
+    visited_doc_ids = {doc.id}
+    queue = [doc.id]
+    direct_link_map = {}
+    external_links = []
+
+    while queue:
+        curr_id = queue.pop(0)
+        curr_id_str = str(curr_id)
+
+        # 1. DocumentLink records involving curr_id
+        q_links = (
+            Q(source_type=doc_ct, source_id=curr_id_str) |
+            Q(target_type=doc_ct, target_id=curr_id_str)
+        )
+        if edms_ct:
+            q_links |= (Q(source_type=edms_ct, source_id=curr_id_str) | Q(target_type=edms_ct, target_id=curr_id_str))
+
+        links = DocumentLink.objects.filter(q_links).exclude(link_type='excluded')
+        for lk in links:
+            s_obj = _safe_resolve(lk, 'source')
+            t_obj = _safe_resolve(lk, 'target')
+
+            for obj, other in [(s_obj, t_obj), (t_obj, s_obj)]:
+                if isinstance(obj, Document) and obj.id == curr_id:
+                    if isinstance(other, Document):
+                        direct_link_map[(min(obj.id, other.id), max(obj.id, other.id))] = lk.id
+                        if other.id not in visited_doc_ids:
+                            visited_doc_ids.add(other.id)
+                            queue.append(other.id)
+                    elif other is not None:
+                        if not any(el['link'].id == lk.id for el in external_links):
+                            external_links.append({
+                                'link': lk,
+                                'obj': other,
+                                'is_edms': isinstance(other, _EDMS),
+                            })
+
+        # 2. source_document & converted_documents relationships
+        related = Document.objects.filter(
+            Q(id=curr_id, source_document__isnull=False) | Q(source_document_id=curr_id)
+        ).values_list('id', 'source_document_id')
+
+        for did, sid in related:
+            if did and did not in visited_doc_ids:
+                visited_doc_ids.add(did)
+                queue.append(did)
+            if sid and sid not in visited_doc_ids:
+                visited_doc_ids.add(sid)
+                queue.append(sid)
+
+        # 3. PO reference number matching
+        curr_doc_obj = Document.objects.filter(id=curr_id).only('po_reference_number', 'number').first()
+        if curr_doc_obj:
+            if curr_doc_obj.po_reference_number:
+                po_matched = Document.objects.filter(number=curr_doc_obj.po_reference_number.strip()).values_list('id', flat=True)
+                for pmid in po_matched:
+                    if pmid not in visited_doc_ids:
+                        visited_doc_ids.add(pmid)
+                        queue.append(pmid)
+            if curr_doc_obj.number:
+                matching_ref_docs = Document.objects.filter(po_reference_number=curr_doc_obj.number.strip()).values_list('id', flat=True)
+                for mrd in matching_ref_docs:
+                    if mrd not in visited_doc_ids:
+                        visited_doc_ids.add(mrd)
+                        queue.append(mrd)
+
+    trail_documents = list(
+        Document.objects.filter(id__in=visited_doc_ids).select_related('contact')
+    )
+
+    type_priority = {'QTN': 1, 'PRO': 2, 'PO': 3, 'CHL': 4, 'INV': 5, 'CRN': 6, 'DBN': 7}
+    trail_documents.sort(key=lambda d: (type_priority.get(d.type, 99), d.date or timezone.now().date(), d.id))
+
+    for td in trail_documents:
+        td.is_current = (td.id == doc.id)
+        pair_key = (min(doc.id, td.id), max(doc.id, td.id))
+        td.direct_link_id = direct_link_map.get(pair_key)
+
     from .services import TrackingService
     tracking_url = TrackingService.get_tracking_url(doc.courier_partner, doc.transport_doc_no, getattr(doc, 'custom_tracking_url', None))
 
@@ -354,6 +579,8 @@ def document_preview(request, document_id):
         'next_doc': next_doc,
         'linked_documents': linked_documents_raw,
         'resolved_links': resolved_links,
+        'trail_documents': trail_documents,
+        'external_links': external_links,
         'all_linked_payments': all_linked_payments,
         'total_paid_all': total_paid_all,
         'tracking_url': tracking_url,
@@ -846,6 +1073,7 @@ def document_form(request, doc=None, default_type='QTN'):
         elif doc_type == 'DC':
             doc_type = 'CHL'
         currency = request.POST.get('currency', 'INR').strip()
+        exchange_rate = request.POST.get('exchange_rate', '').strip()
         terms_and_conditions = request.POST.get('terms_and_conditions')
         show_gst = request.POST.get('show_gst') in ('on', 'true', True)
         split_gst = request.POST.get('split_gst') in ('on', 'true', True)
@@ -996,6 +1224,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 contact_id,
                 items,
                 currency=currency,
+                exchange_rate=exchange_rate,
                 terms_and_conditions=terms_and_conditions,
                 show_gst=show_gst,
                 split_gst=split_gst,
@@ -1051,6 +1280,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 contact_id,
                 items,
                 currency=currency,
+                exchange_rate=exchange_rate,
                 terms_and_conditions=terms_and_conditions,
                 show_gst=show_gst,
                 split_gst=split_gst,
@@ -1800,6 +2030,34 @@ def update_tracking_api(request, document_id):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+def get_exchange_rate_api(request):
+    """
+    Returns live exchange rate for a given currency to INR.
+    GET params:
+        currency: (e.g. 'USD', 'EUR', 'GBP')
+        date: (optional, 'YYYY-MM-DD')
+    """
+    currency = request.GET.get('currency', 'USD').strip().upper()
+    date_str = request.GET.get('date', '').strip()
+    doc_date = None
+    if date_str:
+        try:
+            from datetime import date
+            doc_date = date.fromisoformat(date_str)
+        except Exception:
+            pass
+
+    from .forex import get_live_exchange_rate
+    rate = get_live_exchange_rate(currency, 'INR', for_date=doc_date)
+    return JsonResponse({
+        'success': True,
+        'currency': currency,
+        'target_currency': 'INR',
+        'rate': float(rate),
+        'formatted_rate': f"1 {currency} = ₹{rate:.2f} INR",
+    })
 
 
 

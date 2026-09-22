@@ -68,6 +68,7 @@ class Document(TimeStampedModel):
     
     type = models.CharField(max_length=10, choices=DOCUMENT_TYPES)
     currency = models.CharField(max_length=10, default='INR', choices=CURRENCY_CHOICES, verbose_name="Currency")
+    exchange_rate = models.DecimalField(max_digits=12, decimal_places=4, default=Decimal('1.0000'), verbose_name="Exchange Rate to INR")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
     number = models.CharField(max_length=50, unique=True)
     date = models.DateField(default=timezone.now)
@@ -203,6 +204,42 @@ class Document(TimeStampedModel):
     @property
     def currency_symbol(self):
         return CURRENCY_SYMBOLS.get(self.currency, '₹')
+
+    @property
+    def effective_exchange_rate(self):
+        """Returns the conversion rate from this document's currency to INR (e.g. 83.90 for USD)."""
+        if not self.currency or self.currency == 'INR':
+            return Decimal('1.0000')
+        if self.exchange_rate and self.exchange_rate > 0:
+            return Decimal(str(self.exchange_rate))
+        # If not set, try to get live rate
+        from documents.forex import get_live_exchange_rate
+        return get_live_exchange_rate(self.currency, 'INR', for_date=self.date)
+
+    @property
+    def grand_total_inr(self):
+        """Returns grand_total converted to INR based on effective_exchange_rate."""
+        return (self.grand_total or Decimal('0.00')) * self.effective_exchange_rate
+
+    @property
+    def subtotal_inr(self):
+        """Returns subtotal converted to INR based on effective_exchange_rate."""
+        return (self.subtotal or Decimal('0.00')) * self.effective_exchange_rate
+
+    @property
+    def tax_total_inr(self):
+        """Returns tax_total converted to INR based on effective_exchange_rate."""
+        return (self.tax_total or Decimal('0.00')) * self.effective_exchange_rate
+
+    @property
+    def amount_paid_inr(self):
+        """Returns amount_paid converted to INR based on effective_exchange_rate."""
+        return Decimal(str(self.amount_paid or 0)) * self.effective_exchange_rate
+
+    @property
+    def balance_due_inr(self):
+        """Returns balance_due converted to INR based on effective_exchange_rate."""
+        return Decimal(str(self.balance_due or 0)) * self.effective_exchange_rate
 
     def to_words(self, amount):
         main_unit, sub_unit = CURRENCY_WORDS.get(self.currency, ('Rupees', 'Paise'))

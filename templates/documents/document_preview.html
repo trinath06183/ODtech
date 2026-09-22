@@ -568,45 +568,133 @@
             </div>
             
             <div class="flex flex-col gap-3 relative border-l-2 border-slate-200 ml-2 pl-4">
-                {% if resolved_links %}
-                    {% for item in resolved_links %}
-                    {% with link=item.link other=item.other_obj %}
+                {% if trail_documents and trail_documents|length > 1 or external_links %}
+                    {% for td in trail_documents %}
                     <div class="relative group">
                         <!-- Timeline Dot -->
-                        <div class="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-blue-500 ring-4 ring-white"></div>
+                        <div class="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full {% if td.is_current %}bg-blue-600 ring-4 ring-blue-100{% else %}bg-slate-400 ring-4 ring-white{% endif %}"></div>
                         
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors">
-                            <div class="flex justify-between items-start mb-1">
-                                <div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                                    {{ link.get_link_type_display }}
+                        <div class="rounded-xl border p-3 transition-all {% if td.is_current %}bg-blue-50/80 border-blue-300 shadow-sm ring-1 ring-blue-200{% else %}bg-slate-50 border-slate-200 hover:border-blue-300 hover:bg-slate-50/90{% endif %}">
+                            <!-- Header: Type Badge, Date, Current Indicator, Delete Link -->
+                            <div class="flex items-center justify-between gap-1.5 mb-1.5">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider
+                                        {% if td.type == 'QTN' %}bg-purple-100 text-purple-700 border border-purple-200
+                                        {% elif td.type == 'PRO' %}bg-blue-100 text-blue-700 border border-blue-200
+                                        {% elif td.type == 'PO' %}bg-amber-100 text-amber-700 border border-amber-200
+                                        {% elif td.type == 'CHL' %}bg-cyan-100 text-cyan-700 border border-cyan-200
+                                        {% elif td.type == 'INV' %}bg-emerald-100 text-emerald-700 border border-emerald-200
+                                        {% elif td.type == 'CRN' %}bg-rose-100 text-rose-700 border border-rose-200
+                                        {% elif td.type == 'DBN' %}bg-slate-200 text-slate-700 border border-slate-300
+                                        {% else %}bg-gray-100 text-gray-700 border border-gray-200{% endif %}">
+                                        {% if td.type == 'CHL' %}Delivery Challan
+                                        {% elif td.type == 'PRO' %}Proforma Invoice
+                                        {% else %}{{ td.get_type_display }}{% endif %}
+                                    </span>
+                                    {% if td.is_current %}
+                                    <span class="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full shadow-xs">
+                                        This Document
+                                    </span>
+                                    {% endif %}
                                 </div>
-                                <button onclick="deleteLink({{ link.id }})" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                
+                                <div class="flex items-center gap-1">
+                                    <span class="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                                        {{ td.date|date:"d M Y" }}
+                                    </span>
+                                    {% if td.direct_link_id and not td.is_current %}
+                                    <button onclick="deleteLink({{ td.direct_link_id }})" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity ml-1" title="Remove Link">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Document Number Link -->
+                            <div class="mb-1.5">
+                                {% if td.is_current %}
+                                <span class="font-mono font-bold text-slate-900 text-sm flex items-center gap-1">
+                                    {{ td.number }}
+                                </span>
+                                {% else %}
+                                <a href="{% url 'document_preview' td.id %}" class="font-mono font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm transition-colors group-hover:underline" title="View {{ td.number }}">
+                                    <span>{{ td.number }}</span>
+                                    <svg class="w-3.5 h-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                                {% endif %}
+                            </div>
+
+                            <!-- Details Grid: Status, Amount, Payments -->
+                            <div class="pt-1.5 border-t border-slate-200/80 grid grid-cols-2 gap-1.5 text-xs">
+                                <div>
+                                    <span class="text-[10px] text-slate-500 uppercase tracking-wider block font-medium">Status</span>
+                                    <span class="inline-flex items-center text-[11px] font-semibold
+                                        {% if td.status == 'Approved' %}text-emerald-700
+                                        {% elif td.status == 'Cancelled' %}text-rose-600
+                                        {% else %}text-amber-700{% endif %}">
+                                        ● {{ td.get_status_display|default:td.status }}
+                                    </span>
+                                </div>
+                                
+                                <div class="text-right">
+                                    <span class="text-[10px] text-slate-500 uppercase tracking-wider block font-medium">Total</span>
+                                    <span class="font-bold text-slate-900 text-xs font-mono">&#8377;{{ td.grand_total|floatformat:2 }}</span>
+                                </div>
+
+                                {% if td.type == 'INV' or td.type == 'PRO' %}
+                                <div class="col-span-2 flex items-center justify-between pt-1 border-t border-dashed border-slate-200 text-[11px]">
+                                    <span class="text-slate-500 font-medium">Paid: <span class="font-bold text-emerald-600 font-mono">&#8377;{{ td.amount_paid|floatformat:2 }}</span></span>
+                                    <span class="font-medium">
+                                        {% if td.balance_due <= 0 and td.grand_total > 0 %}
+                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 text-[10px]">Settled</span>
+                                        {% elif td.balance_due > 0 %}
+                                        <span class="text-rose-600 font-mono text-[10px]">Due: &#8377;{{ td.balance_due|floatformat:2 }}</span>
+                                        {% else %}
+                                        <span class="text-slate-500 text-[10px]">—</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if external_links %}
+                    <div class="pt-2 border-t border-slate-200 mt-2">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                            <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                            Attached Files
+                        </div>
+                        {% for item in external_links %}
+                        {% with link=item.link other=item.obj %}
+                        <div class="relative group bg-slate-50 p-2.5 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors mb-2">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold uppercase">
+                                    {{ link.get_link_type_display }}
+                                </span>
+                                <button onclick="deleteLink({{ link.id }})" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Remove Link">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                 </button>
                             </div>
-                            
                             {% if other %}
-                                <a href="{% if other.number %}{% url 'document_preview' other.id %}{% else %}{% url 'edms:document_detail' other.id %}{% endif %}" class="font-bold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-sm transition-colors">
-                                    {% if other.number %}{{ other.get_type_display }} - {{ other.number }}{% else %}EDMS: {{ other.title }}{% endif %}
-                                </a>
-                                {% if other.number %}
-                                <div class="mt-1 flex gap-2 items-center">
-                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">{% if other.type == 'INV' %}{{ other.lifecycle_payment_status }}{% else %}{{ other.get_status_display|default:other.status }}{% endif %}</span>
-                                    {% if other.grand_total %}<span class="text-[10px] text-emerald-600 font-bold">&#8377;{{ other.grand_total }}</span>{% endif %}
-                                </div>
-                                {% endif %}
+                            <a href="{% url 'edms:document_detail' other.id %}" class="font-semibold text-slate-700 hover:text-blue-600 flex items-center gap-1 text-xs transition-colors">
+                                <span>EDMS: {{ other.title|default:other.file_name|default:other.id }}</span>
+                            </a>
                             {% else %}
-                                <span class="text-xs text-slate-400 italic">Linked object unavailable</span>
+                            <span class="text-xs text-slate-400 italic">File unavailable</span>
                             {% endif %}
                         </div>
+                        {% endwith %}
+                        {% endfor %}
                     </div>
-                    {% endwith %}
-                    {% endfor %}
+                    {% endif %}
 
                 {% else %}
-                    <div class="text-xs text-slate-400 italic py-2">No linked documents found.</div>
+                    <div class="text-xs text-slate-400 italic py-2">No linked documents in trail. Click "+ Link" to connect one.</div>
                 {% endif %}
             </div>
+
         </div>
 
     </div>

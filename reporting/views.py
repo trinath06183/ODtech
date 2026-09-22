@@ -3,7 +3,7 @@ import json
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Sum, Q, Count, Value, DecimalField
+from django.db.models import Sum, Q, Count, Value, DecimalField, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import date, timedelta
@@ -121,30 +121,30 @@ def financial_dashboard(request):
         date__lte=end_date,
     )
 
-    # Sales = Invoices only (INV type)
+    # Sales = Invoices only (INV type) - calculated in INR
     sales_qs = docs_qs.filter(type='INV').order_by('-date').select_related('contact')
-    total_sales = sales_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    total_sales_tax = sales_qs.aggregate(t=Sum('tax_total'))['t'] or Decimal('0')
-    total_sales_subtotal = sales_qs.aggregate(t=Sum('subtotal'))['t'] or Decimal('0')
+    total_sales = sales_qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+    total_sales_tax = sales_qs.aggregate(t=Sum(F('tax_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+    total_sales_subtotal = sales_qs.aggregate(t=Sum(F('subtotal') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
     sales_count = sales_qs.count()
 
-    # PIs (Proforma Invoices) count & amount for the period
+    # PIs (Proforma Invoices) count & amount for the period in INR
     pi_qs = Document.objects.filter(type='PRO', date__gte=start_date, date__lte=end_date)
     pi_count = pi_qs.count()
-    pi_amount = pi_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    pi_amount = pi_qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
     # Invoice detail list for collapsible
     sales_invoice_list = list(sales_qs.values(
-        'id', 'number', 'grand_total', 'date', 'contact__name'
+        'id', 'number', 'grand_total', 'date', 'contact__name', 'currency', 'exchange_rate'
     )[:100])
 
-    # Quotations (separate — not part of sales)
+    # Quotations (separate — not part of sales) in INR
     qtn_qs = docs_qs.filter(type='QTN')
-    total_quotations = qtn_qs.aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    total_quotations = qtn_qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
     quotations_count = qtn_qs.count()
 
-    # Credit Notes / Debit Notes
-    credit_notes = docs_qs.filter(type='CRN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    debit_notes = docs_qs.filter(type='DBN').aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    # Credit Notes / Debit Notes in INR
+    credit_notes = docs_qs.filter(type='CRN').aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+    debit_notes = docs_qs.filter(type='DBN').aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
     # ── 2. PURCHASES: Invoices entered in EDMS ───────────────────────────────
     total_purchases = Decimal('0')
@@ -385,12 +385,12 @@ def financial_dashboard(request):
             m_sales = Document.objects.filter(
                 type__in=['INV', 'PRO'], status='Approved',
                 date__gte=m_start, date__lte=m_end
-            ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+            ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
             m_purchases = Document.objects.filter(
                 type='PO', status='Approved',
                 date__gte=m_start, date__lte=m_end
-            ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+            ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
             try:
                 m_exp = Expense.objects.filter(
@@ -1042,34 +1042,34 @@ def _compute_pl(start_date, end_date):
     # ── Revenue (Invoices approved in period) ────────────────────────────────
     inv_qs = Document.objects.filter(type='INV', status='Approved',
                                      date__gte=start_date, date__lte=end_date)
-    revenue_gross = inv_qs.aggregate(t=Sum('grand_total'))['t'] or Z
-    revenue_subtotal = inv_qs.aggregate(t=Sum('subtotal'))['t'] or Z
-    revenue_tax = inv_qs.aggregate(t=Sum('tax_total'))['t'] or Z
+    revenue_gross = inv_qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
+    revenue_subtotal = inv_qs.aggregate(t=Sum(F('subtotal') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
+    revenue_tax = inv_qs.aggregate(t=Sum(F('tax_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
     invoice_count = inv_qs.count()
 
     # Credit / Debit Note adjustments
     crn = Document.objects.filter(type='CRN', status='Approved',
                                   date__gte=start_date, date__lte=end_date
-                                  ).aggregate(t=Sum('grand_total'))['t'] or Z
+                                  ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
     dbn = Document.objects.filter(type='DBN', status='Approved',
                                   date__gte=start_date, date__lte=end_date
-                                  ).aggregate(t=Sum('grand_total'))['t'] or Z
+                                  ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
     net_revenue = revenue_gross - crn + dbn
 
     # Proforma Invoices
     pi_qs = Document.objects.filter(type='PRO', status='Approved',
                                     date__gte=start_date, date__lte=end_date)
-    pi_amount = pi_qs.aggregate(t=Sum('grand_total'))['t'] or Z
+    pi_amount = pi_qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
 
     # Quotations
     qtn_qs = Document.objects.filter(type='QTN', status='Approved',
                                      date__gte=start_date, date__lte=end_date)
-    qtn_amount = qtn_qs.aggregate(t=Sum('grand_total'))['t'] or Z
+    qtn_amount = qtn_qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
 
     # ── COGS: Purchase Orders approved in period ─────────────────────────────
     cogs = Document.objects.filter(type='PO', status='Approved',
                                    date__gte=start_date, date__lte=end_date
-                                   ).aggregate(t=Sum('grand_total'))['t'] or Z
+                                   ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
 
     # EDMS vendor invoices
     edms_purchases = Z
@@ -1132,10 +1132,10 @@ def _compute_pl(start_date, end_date):
 
         m_rev = Document.objects.filter(type='INV', status='Approved',
                                         date__gte=ms, date__lte=me
-                                        ).aggregate(t=Sum('grand_total'))['t'] or Z
+                                        ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
         m_cogs = Document.objects.filter(type='PO', status='Approved',
                                          date__gte=ms, date__lte=me
-                                         ).aggregate(t=Sum('grand_total'))['t'] or Z
+                                         ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
         m_exp = Expense.objects.filter(status='Approved', date__gte=ms, date__lte=me
                                        ).aggregate(t=Sum('amount'))['t'] or Z
         monthly_trend.append({

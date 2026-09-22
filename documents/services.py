@@ -367,6 +367,13 @@ class DocumentService:
             transport_reason=kwargs.get("transport_reason", "Refilling only, No Commercial involvement."),
             terms_and_conditions=terms,
             currency=kwargs.get("currency", "INR"),
+            exchange_rate=(
+                Decimal("1.0000") if kwargs.get("currency", "INR") == "INR"
+                else (
+                    Decimal(str(kwargs.get("exchange_rate"))) if (kwargs.get("exchange_rate") and float(kwargs.get("exchange_rate") or 0) > 0)
+                    else __import__("documents.forex", fromlist=["get_live_exchange_rate"]).get_live_exchange_rate(kwargs.get("currency", "USD"), "INR", for_date=kwargs.get("invoice_date") or None)
+                )
+            ),
             show_gst=kwargs.get("show_gst", False),
             split_gst=kwargs.get("split_gst", False),
             force_igst=kwargs.get("force_igst", False),
@@ -465,6 +472,15 @@ class DocumentService:
             document.quotation_asked_by = kwargs.get("quotation_asked_by") or None
         if "currency" in kwargs:
             document.currency = kwargs.get("currency") or "INR"
+        if "exchange_rate" in kwargs or "currency" in kwargs:
+            ex_rate_input = kwargs.get("exchange_rate")
+            if document.currency == "INR":
+                document.exchange_rate = Decimal("1.0000")
+            elif ex_rate_input and float(ex_rate_input or 0) > 0:
+                document.exchange_rate = Decimal(str(ex_rate_input))
+            elif not document.exchange_rate or document.exchange_rate <= Decimal("1.0000"):
+                from .forex import get_live_exchange_rate
+                document.exchange_rate = get_live_exchange_rate(document.currency, "INR", for_date=document.date)
         if "terms_and_conditions" in kwargs:
             document.terms_and_conditions = kwargs.get("terms_and_conditions")
         if "show_gst" in kwargs:

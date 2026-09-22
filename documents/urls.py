@@ -78,4 +78,7 @@ urlpatterns = [
     # E-Way Bill & Shipment Tracking APIs
     path('<int:document_id>/export-eway-json/', views.export_eway_bill_json, name='export_eway_bill_json'),
     path('api/<int:document_id>/update-tracking/', views.update_tracking_api, name='update_tracking_api'),
+
+    # Forex Live Exchange Rate API
+    path('api/exchange-rate/', views.get_exchange_rate_api, name='get_exchange_rate_api'),
 ]

@@ -356,6 +356,7 @@
                 <input type="hidden" name="items_json" :value="JSON.stringify(items)">
                 <input type="hidden" name="action" :value="formAction">
                 <input type="hidden" name="currency" :value="currency">
+                <input type="hidden" name="exchange_rate" :value="exchangeRate">
                 <input type="hidden" name="terms_and_conditions" :value="sections.terms ? terms : ''">
                 <input type="hidden" name="show_gst" :value="(sections.tax_details || columns.gst_percent || columns.gst_amt) ? 'true' : 'false'">
                 <input type="hidden" name="split_gst" :value="splitGST ? 'true' : 'false'">
@@ -559,14 +560,45 @@
                                 placeholder="e.g. Mr. Rajesh Sharma / Contact Person">
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Currency</label>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-300">Currency</label>
                             <select name="currency" form="document-main-form" x-model="currency"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
                                 {% for val, label in currency_choices %}
                                 <option value="{{ val }}">{{ label }}</option>
                                 {% endfor %}
                             </select>
+                            
+                            <!-- Live Exchange Rate Box (shown when currency is foreign) -->
+                            <div x-show="currency !== 'INR'" x-cloak
+                                class="p-3 bg-slate-800/80 border border-amber-500/30 rounded-xl space-y-2 transition-all">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                                        <span>🌐</span> Exchange Rate (1 <span x-text="currency"></span> = ₹ INR)
+                                    </span>
+                                    <button type="button" @click="fetchLiveExchangeRate(true)"
+                                        :disabled="isFetchingForex"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition disabled:opacity-50">
+                                        <svg x-show="isFetchingForex" class="animate-spin h-3 w-3 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                        </svg>
+                                        <span x-text="isFetchingForex ? 'Fetching...' : '↻ Live Rate'"></span>
+                                    </button>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-mono text-sm">
+                                        ₹
+                                    </div>
+                                    <input type="number" step="0.0001" min="0.0001" x-model="exchangeRate"
+                                        class="w-full bg-slate-900 border border-slate-700 pl-7 pr-3 py-1.5 rounded-lg text-white font-mono text-sm font-semibold focus:ring-amber-500 focus:border-amber-500"
+                                        placeholder="e.g. 83.5000">
+                                </div>
+                                <div class="flex items-center justify-between text-[10px] text-gray-400">
+                                    <span x-text="forexRateMsg || 'Auto-fetched for calculations & P&L'"></span>
+                                    <span class="font-mono text-amber-300/80" x-show="exchangeRate && exchangeRate > 0" x-text="'1 ' + currency + ' = ₹' + Number(exchangeRate).toFixed(2)"></span>
+                                </div>
+                            </div>
                             <p class="text-[11px] text-gray-400 mt-1 font-normal">Applies to this document only (does not change global settings).</p>
                         </div>
 
@@ -1124,6 +1156,10 @@
                             <div class="tot-row tot-grand">
                                 <span>TOTAL</span>
                                 <span class="font-mono"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(sections.tax_details ? grandTotal : subtotal)"></span></span>
+                            </div>
+                            <div class="tot-row" x-show="currency !== 'INR' && exchangeRate && exchangeRate > 0" x-cloak>
+                                <span class="tot-label text-amber-300 font-semibold">≈ Value in INR</span>
+                                <span class="tot-val text-amber-300 font-mono font-bold">₹ <span x-text="fmtNum((sections.tax_details ? grandTotal : subtotal) * (parseFloat(exchangeRate) || 1))"></span></span>
                             </div>
                         </div>
                         {# Milestones in totals #}
@@ -1783,6 +1819,34 @@ function documentForm() {
         currency: {% if doc %}'{{ doc.currency|default:"INR" }}'{% else %}(lastSettings && lastSettings.currency ? lastSettings.currency : '{{ company.default_currency|default:"INR" }}'){% endif %},
         currencySymbols: { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED', SAR: 'SAR', CAD: 'CA$', AUD: 'A$', SGD: 'S$', JPY: '¥' },
         currencySymbol() { return this.currencySymbols[this.currency] || '₹'; },
+        exchangeRate: {% if doc and doc.exchange_rate %}'{{ doc.exchange_rate }}'{% else %}'1.0000'{% endif %},
+        isFetchingForex: false,
+        forexRateMsg: '',
+        fetchLiveExchangeRate(force = false) {
+            if (this.currency === 'INR') {
+                this.exchangeRate = '1.0000';
+                this.forexRateMsg = '';
+                return;
+            }
+            this.isFetchingForex = true;
+            this.forexRateMsg = 'Fetching live rate...';
+            const dateParam = this.invoiceDate || '';
+            fetch(`/documents/api/exchange-rate/?currency=${encodeURIComponent(this.currency)}&date=${encodeURIComponent(dateParam)}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(r => r.json())
+                .then(data => {
+                    this.isFetchingForex = false;
+                    if (data.rate) {
+                        this.exchangeRate = data.rate.toFixed(4);
+                        this.forexRateMsg = `Live rate: 1 ${this.currency} = ₹${data.rate.toFixed(4)} (${data.source || 'live'})`;
+                    }
+                })
+                .catch(err => {
+                    this.isFetchingForex = false;
+                    this.forexRateMsg = 'Rate fetch error, using default';
+                });
+        },
 
         subtotal: 0, taxTotal: 0, grandTotal: 0,
         grossSubtotal: 0, totalDiscount: 0,
@@ -2121,6 +2185,22 @@ function documentForm() {
             this.$watch('discountValue', () => this.calculateTotals());
             this.$watch('enableDiscount', () => this.calculateTotals());
             this.$watch('enableWarranty', () => this.autoUpdateTerms());
+            this.$watch('currency', (newVal) => {
+                if (newVal !== 'INR') {
+                    this.fetchLiveExchangeRate();
+                } else {
+                    this.exchangeRate = '1.0000';
+                    this.forexRateMsg = '';
+                }
+            });
+            this.$watch('invoiceDate', (newVal) => {
+                if (this.currency !== 'INR') {
+                    this.fetchLiveExchangeRate();
+                }
+            });
+            if (this.currency !== 'INR' && (!this.exchangeRate || this.exchangeRate === '1.0000' || this.exchangeRate === '1')) {
+                this.fetchLiveExchangeRate();
+            }
             this.$watch('numberingMode', (newVal) => {
                 if (newVal === 'auto') {
                     const docId = '{% if doc and not is_conversion %}{{ doc.id }}{% endif %}';

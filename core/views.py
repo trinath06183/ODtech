@@ -1,6 +1,6 @@
 import logging
 from decimal import Decimal
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, F, DecimalField
 from django.shortcuts import render
 from django.utils import timezone
 import datetime
@@ -23,11 +23,11 @@ def _get_period_boundaries():
 
 
 def _sales_kpis(month_start, fy_start):
-    """Total Sales = Approved Invoices grand_total."""
+    """Total Sales = Approved Invoices grand_total in INR."""
     from documents.models import Document
     base_qs = Document.objects.filter(type='INV', status='Approved')
-    month_val = base_qs.filter(date__gte=month_start).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    fy_val    = base_qs.filter(date__gte=fy_start).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    month_val = base_qs.filter(date__gte=month_start).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+    fy_val    = base_qs.filter(date__gte=fy_start).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
     return month_val, fy_val
 
 
@@ -48,11 +48,16 @@ def _orders_completed_kpis(month_start, fy_start):
     return month_count, fy_count
 
 
+def _commercial_kpis(month_start, fy_start):
+    """Pipeline and commercial overview."""
+    return None
+
+
 def _doc_kpis(month_start, fy_start):
-    """Commercial document count and total grand_total value."""
+    """Commercial document count and total grand_total value in INR."""
     from documents.models import Document
     def _agg(qs):
-        r = qs.aggregate(cnt=Count('id'), val=Sum('grand_total'))
+        r = qs.aggregate(cnt=Count('id'), val=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))
         return r['cnt'] or 0, r['val'] or Decimal('0')
 
     base_qs = Document.objects.all()
@@ -62,7 +67,7 @@ def _doc_kpis(month_start, fy_start):
 
 
 def _legacy_kpis(precomputed_sales_fy=None):
-    """Existing Total Sales / Purchases / Net P&L / Receivables for the lower cards."""
+    """Existing Total Sales / Purchases / Net P&L / Receivables for the lower cards in INR."""
     from documents.models import Document
     from payments.models import Payment
 
@@ -72,18 +77,18 @@ def _legacy_kpis(precomputed_sales_fy=None):
     else:
         total_sales = Document.objects.filter(
             type='INV', status='Approved'
-        ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+        ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
     total_purchases = Document.objects.filter(
         type='PO', status='Approved'
-    ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
     net_pl = total_sales - total_purchases
 
     # Receivables: approved invoices minus payments received
     total_invoiced = Document.objects.filter(
         type='INV', status='Approved'
-    ).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
     total_paid = Payment.objects.aggregate(t=Sum('amount'))['t'] or Decimal('0')
     receivable_total = max(total_invoiced - total_paid, Decimal('0'))
 
@@ -92,9 +97,9 @@ def _legacy_kpis(precomputed_sales_fy=None):
     d60 = today - datetime.timedelta(days=60)
     d90 = today - datetime.timedelta(days=90)
 
-    overdue_30 = Document.objects.filter(type='INV', status='Approved', date__range=(d60, d30)).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    overdue_60 = Document.objects.filter(type='INV', status='Approved', date__range=(d90, d60)).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
-    overdue_90 = Document.objects.filter(type='INV', status='Approved', date__lt=d90).aggregate(t=Sum('grand_total'))['t'] or Decimal('0')
+    overdue_30 = Document.objects.filter(type='INV', status='Approved', date__range=(d60, d30)).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+    overdue_60 = Document.objects.filter(type='INV', status='Approved', date__range=(d90, d60)).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+    overdue_90 = Document.objects.filter(type='INV', status='Approved', date__lt=d90).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
     receivables = {
         'total':      receivable_total,

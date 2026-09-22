@@ -66,7 +66,14 @@
         </form>
         {% endif %}
     </td>
-    <td class="px-6 py-4 text-right font-bold text-green-400">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</td>
+    <td class="px-6 py-4 text-right">
+        <div class="font-bold text-green-400">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
+        {% if doc.currency != 'INR' %}
+        <div class="text-[10px] font-mono text-amber-300/80 font-medium" title="Converted to INR @ ₹{{ doc.effective_exchange_rate|floatformat:2 }}">
+            ≈ ₹{{ doc.grand_total_inr|floatformat:2 }}
+        </div>
+        {% endif %}
+    </td>
     <td class="px-6 py-4 text-right">
         <div class="font-semibold text-emerald-400">{{ doc.currency_symbol }} {{ doc.amount_paid|floatformat:2 }}</div>
         <div class="text-[11px] font-medium mt-0.5 {% if doc.payment_percentage >= 100 %}text-emerald-400{% elif doc.payment_percentage > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">
