@@ -18,10 +18,10 @@
     </td>
     <td class="px-5 py-4">
         {% if doc.linked_docs_list or doc.linked_edms_list or doc.unmatched_po_ref %}
-        <div class="flex flex-wrap items-center gap-1.5 max-w-[280px]">
+        <div class="flex flex-col items-start gap-1.5 max-w-[280px]">
             {% for ldoc in doc.linked_docs_list %}
             <a href="{% url 'document_preview' ldoc.id %}"
-               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border transition-all hover:scale-105 shadow-sm group/pill
+               class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all hover:scale-102 shadow-2xs group/pill
                {% if ldoc.type == 'INV' %}bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25
                {% elif ldoc.type == 'QTN' %}bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25
                {% elif ldoc.type == 'PO' %}bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25
@@ -33,21 +33,21 @@
                 <span class="font-extrabold text-[10px] tracking-wider uppercase opacity-95">
                     {% if ldoc.type == 'CHL' %}DC{% elif ldoc.type == 'PRO' %}PI{% else %}{{ ldoc.type }}{% endif %}
                 </span>
-                <span class="font-mono text-[11px] group-hover/pill:underline">{{ ldoc.number }}</span>
+                <span class="font-mono text-xs group-hover/pill:underline">{{ ldoc.number }}</span>
             </a>
             {% endfor %}
             {% for edoc in doc.linked_edms_list %}
             <a href="{% url 'edms:document_detail' edoc.id %}"
-               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border transition-all hover:scale-105 shadow-sm group/pill bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25"
+               class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all hover:scale-102 shadow-2xs group/pill bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25"
                title="EDMS File: {{ edoc.title|default:edoc.document_id }} - Click to open">
                 <span class="font-extrabold text-[10px] tracking-wider uppercase opacity-95">EDMS</span>
-                <span class="font-mono text-[11px] group-hover/pill:underline truncate max-w-[90px]">{{ edoc.document_id|default:edoc.title }}</span>
+                <span class="font-mono text-xs group-hover/pill:underline truncate max-w-[120px]">{{ edoc.document_id|default:edoc.title }}</span>
             </a>
             {% endfor %}
             {% if doc.unmatched_po_ref %}
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-300/90 border border-amber-500/20" title="Customer PO Reference: {{ doc.unmatched_po_ref }}">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-300/90 border border-amber-500/20" title="Customer PO Reference: {{ doc.unmatched_po_ref }}">
                 <span class="font-extrabold text-[10px] tracking-wider uppercase opacity-95">PO Ref</span>
-                <span class="font-mono text-[11px]">{{ doc.unmatched_po_ref }}</span>
+                <span class="font-mono text-xs">{{ doc.unmatched_po_ref }}</span>
             </span>
             {% endif %}
         </div>
@@ -61,7 +61,7 @@
     <td class="px-6 py-4 text-gray-400 text-sm">{{ doc.date|date:"d M Y" }}</td>
     <td class="px-6 py-4">
         {% if doc.status == 'Approved' %}
-        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             ✓ Approved
         </span>
         {% else %}
@@ -77,7 +77,7 @@
     <td class="px-6 py-4 text-right">
         <div class="font-bold text-emerald-400 text-sm tracking-tight">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
         {% if doc.currency != 'INR' %}
-        <div class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-[11px] font-mono font-semibold text-amber-300" title="1 {{ doc.currency }} = ₹{{ doc.effective_exchange_rate|floatformat:2 }} INR">
+        <div class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-xs font-mono font-semibold text-amber-300" title="1 {{ doc.currency }} = ₹{{ doc.effective_exchange_rate|floatformat:2 }} INR">
             <span>≈ ₹{{ doc.grand_total_inr|floatformat:2 }}</span>
         </div>
         {% endif %}
@@ -85,18 +85,18 @@
     <td class="px-6 py-4 text-right">
         <div class="font-semibold text-emerald-400 text-sm">{{ doc.currency_symbol }} {{ doc.amount_paid|floatformat:2 }}</div>
         {% if doc.currency != 'INR' and doc.amount_paid > 0 %}
-        <div class="text-[10px] font-mono text-emerald-300/70">≈ ₹{{ doc.amount_paid_inr|floatformat:2 }}</div>
+        <div class="text-xs font-mono text-emerald-300/70">≈ ₹{{ doc.amount_paid_inr|floatformat:2 }}</div>
         {% endif %}
-        <div class="text-[11px] font-medium mt-0.5 {% if doc.payment_percentage >= 100 %}text-emerald-400{% elif doc.payment_percentage > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">
+        <div class="text-xs font-medium mt-0.5 {% if doc.payment_percentage >= 100 %}text-emerald-400{% elif doc.payment_percentage > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">
             {{ doc.payment_percentage|floatformat:1 }}% paid
         </div>
     </td>
     <td class="px-6 py-4 text-right">
         <div class="font-semibold text-sm {% if doc.balance_due > 0 %}text-rose-400{% else %}text-emerald-400/80{% endif %}">{{ doc.currency_symbol }} {{ doc.balance_due|floatformat:2 }}</div>
         {% if doc.currency != 'INR' and doc.balance_due > 0 %}
-        <div class="text-[10px] font-mono text-rose-300/70">≈ ₹{{ doc.balance_due_inr|floatformat:2 }}</div>
+        <div class="text-xs font-mono text-rose-300/70">≈ ₹{{ doc.balance_due_inr|floatformat:2 }}</div>
         {% endif %}
-        <div class="text-[11px] mt-0.5">
+        <div class="text-xs mt-0.5">
             {% if doc.balance_due <= 0 and doc.grand_total > 0 %}
             <span class="text-emerald-400 font-medium">Settled</span>
             {% elif doc.payment_percentage > 0 %}
@@ -107,35 +107,35 @@
         </div>
     </td>
     <td class="px-6 py-4">
-        <div class="flex items-center justify-center space-x-2">
+        <div class="flex items-center justify-center space-x-1.5">
             <a href="{% url 'document_preview' doc.id %}"
-               class="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg transition-colors" title="Preview">
+               class="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-700/60 rounded-lg transition-colors" title="Preview">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </a>
             {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
             {% if doc.is_in_tracker %}
-            <span class="p-2 bg-slate-700/40 text-slate-500 rounded-lg cursor-not-allowed inline-flex items-center" title="Already in Tracker ({{ doc.tracker_order.order_number }})">
-                <svg class="w-4 h-4 text-emerald-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span class="p-2 text-emerald-500/60 rounded-lg cursor-not-allowed inline-flex items-center" title="Already in Tracker ({{ doc.tracker_order.order_number }})">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             </span>
             {% else %}
             <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
-               class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 rounded-lg transition-colors" title="Send to Tracking Dashboard">
+               class="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/60 rounded-lg transition-colors cursor-pointer" title="Send to Tracking Dashboard">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </button>
             {% endif %}
             {% endif %}
             {% if doc.type == 'PO' %}
             <button type="button" onclick="openReceiveGoodsModal('{{ doc.id }}', '{{ doc.number|escapejs }}')"
-               class="p-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 rounded-lg transition-colors" title="Mark Goods Received (Increase Stock)">
+               class="p-2 text-slate-400 hover:text-purple-400 hover:bg-slate-700/60 rounded-lg transition-colors cursor-pointer" title="Mark Goods Received (Increase Stock)">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
             </button>
             {% endif %}
             <a href="{% url 'edit_document' doc.id %}"
-               class="p-2 bg-slate-600/30 hover:bg-slate-600/60 text-gray-300 rounded-lg transition-colors" title="Edit Document">
+               class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700/60 rounded-lg transition-colors" title="Edit Document">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             </a>
             <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
-               class="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors" title="Download PDF">
+               class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 rounded-lg transition-colors" title="Download PDF">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </a>
             {% if company.allow_document_deletion %}
@@ -143,7 +143,7 @@
             <form method="post" action="{% url 'delete_document' doc.id %}" class="m-0 p-0 flex items-center"
                   onsubmit="return confirm('Delete document {{ doc.number }}? This cannot be undone.');">
                 {% csrf_token %}
-                <button type="submit" class="p-2 bg-red-900/30 hover:bg-red-600/40 text-red-500 hover:text-red-300 rounded-lg transition-colors" title="Delete Document">
+                <button type="submit" class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer" title="Delete Document">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
             </form>

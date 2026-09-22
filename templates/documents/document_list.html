@@ -26,27 +26,42 @@
 </div>
 {% endif %}
 
+<!-- Page Header Banner with H1 -->
+<div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-blue-200 shrink-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Commercial Documents</h1>
+            <p class="text-xs text-slate-500 mt-1">Invoices, Quotations, Purchase Orders &amp; Delivery Challans</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+        <a href="{% url 'create_document' %}"
+           class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs shadow-sm transition-all duration-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Create Document
+        </a>
+    </div>
+</div>
+
 <!-- Stats Row -->
 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
     {% for stat in stats %}
     <label for="filter-type-{{ stat.type }}" id="tile-{{ stat.type }}"
-        class="glass p-3 rounded-xl flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer border {% if stat.type in current_types %}border-blue-500{% else %}border-white/5{% endif %}">
-        <div class="text-xl">{{ stat.icon }}</div>
+        class="bg-white p-4 rounded-xl flex items-center space-x-3 hover:scale-102 hover:shadow-md transition-all cursor-pointer border {% if stat.type in current_types %}border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/20{% else %}border-slate-200 shadow-2xs{% endif %}">
+        <div class="text-2xl">{{ stat.icon }}</div>
         <div class="min-w-0">
-            <div class="text-lg font-bold text-white leading-none mb-0.5">{{ stat.count }}</div>
-            <div class="text-[10px] text-gray-400 truncate">{{ stat.label }}</div>
+            <div class="text-xl font-bold text-slate-800 leading-none mb-1">{{ stat.count }}</div>
+            <div class="text-xs text-slate-500 font-medium truncate">{{ stat.label }}</div>
         </div>
     </label>
     {% endfor %}
-    <a href="{% url 'create_document' %}"
-        class="glass p-3 rounded-xl flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer border border-blue-500/30 hover:border-blue-500 bg-blue-600/10 hover:bg-blue-600/20 group">
-        <svg class="w-5 h-5 text-blue-400 group-hover:text-blue-300 mb-1" fill="none" stroke="currentColor"
-            viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        <div class="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 text-center leading-tight">New Doc
-        </div>
-    </a>
 </div>
 
 <!-- Grid Container for Split Screen Dashboard -->
@@ -123,23 +138,30 @@
                     <!-- Buttons -->
                     <div class="flex items-center space-x-2">
                         <button type="submit"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-blue-500/20">
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-xs transition-colors shadow-sm cursor-pointer">
                             Apply
                         </button>
                         {% if query or date_from or date_to or sort_by != '-id' %}
                         <a href="?{% for t in current_types %}type={{ t }}&{% endfor %}"
-                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-xs font-medium transition-colors">
                             Reset
                         </a>
                         {% endif %}
                         <a href="{% url 'document_export_csv' %}?{{ request.GET.urlencode }}"
-                            class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl text-sm transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2">
-                            ⬇ Export
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5"
+                            title="Export filtered records to CSV">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export
                         </a>
                         <button type="button" onclick="document.getElementById('importOddocModal').classList.remove('hidden')"
-                            class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-sm transition-colors shadow-lg shadow-cyan-500/20 flex items-center gap-1.5"
+                            class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
                             title="Import document package transferred from local machine">
-                            📥 Import Document
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            Import Document
                         </button>
                     </div>
                 </div>
