@@ -10,38 +10,7 @@ from .middleware import get_current_user
 
 @receiver(post_save, sender=Order)
 def order_status_changed(sender, instance, created, **kwargs):
-    if created:
-        # Generate initial task for new orders
-        Task.objects.create(
-            order=instance,
-            title=f"Initiate sourcing for Order {instance.order_number}",
-            description="New order created. Start gathering quotes from suppliers.",
-            priority='HIGH',
-            due_date=timezone.now() + timedelta(hours=24)
-        )
-    else:
-        # Check if status has changed to PROCURED
-        if instance.order_status == 'PROCURED':
-            task_exists = Task.objects.filter(order=instance, title__icontains="Generate PO").exists()
-            if not task_exists:
-                Task.objects.create(
-                    order=instance,
-                    title=f"Generate PO for Suppliers - Order {instance.order_number}",
-                    description="Order is fully procured. Issue Purchase Orders to selected suppliers.",
-                    priority='CRITICAL',
-                    due_date=timezone.now() + timedelta(hours=24)
-                )
-        
-        elif instance.order_status == 'SHIPPED':
-            task_exists = Task.objects.filter(order=instance, title__icontains="Follow up with client").exists()
-            if not task_exists:
-                Task.objects.create(
-                    order=instance,
-                    title=f"Follow up with client for delivery - Order {instance.order_number}",
-                    description="Ensure the shipped order is received successfully.",
-                    priority='MEDIUM',
-                    due_date=timezone.now() + timedelta(days=5)
-                )
+    pass
 
 # --- Audit Log Signals ---
 
