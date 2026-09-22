@@ -101,6 +101,7 @@ def attach_linked_documents(documents):
 
     doc_id_strs = [str(did) for did in doc_ids]
     doc_ct = ContentType.objects.get_for_model(Document)
+    adj = defaultdict(set)
 
     # 1. Direct source_document and converted_documents relationships
     source_pairs = Document.objects.filter(
