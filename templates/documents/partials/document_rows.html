@@ -9,9 +9,43 @@
             {% elif doc.type == 'INV' %}bg-green-500/20 text-green-300
             {% elif doc.type == 'PO' %}bg-orange-500/20 text-orange-300
             {% elif doc.type == 'CHL' %}bg-cyan-500/20 text-cyan-300
+            {% elif doc.type == 'PRO' %}bg-blue-500/20 text-blue-300
+            {% elif doc.type == 'CRN' %}bg-rose-500/20 text-rose-300
+            {% elif doc.type == 'DBN' %}bg-amber-500/20 text-amber-300
             {% else %}bg-gray-500/20 text-gray-300{% endif %}">
             {{ doc.get_type_display }}
         </span>
+    </td>
+    <td class="px-5 py-4">
+        {% if doc.linked_docs_list or doc.unmatched_po_ref %}
+        <div class="flex flex-wrap items-center gap-1.5 max-w-[280px]">
+            {% for ldoc in doc.linked_docs_list %}
+            <a href="{% url 'document_preview' ldoc.id %}"
+               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border transition-all hover:scale-105 shadow-sm group/pill
+               {% if ldoc.type == 'INV' %}bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25
+               {% elif ldoc.type == 'QTN' %}bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25
+               {% elif ldoc.type == 'PO' %}bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25
+               {% elif ldoc.type == 'CHL' %}bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25
+               {% elif ldoc.type == 'PRO' %}bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25
+               {% elif ldoc.type == 'CRN' %}bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25
+               {% else %}bg-slate-700/60 text-slate-300 border-slate-600 hover:bg-slate-700{% endif %}"
+               title="{{ ldoc.get_type_display }}: {{ ldoc.number }} ({{ ldoc.currency_symbol }}{{ ldoc.grand_total|floatformat:2 }}) - Click to preview">
+                <span class="font-extrabold text-[10px] tracking-wider uppercase opacity-95">
+                    {% if ldoc.type == 'CHL' %}DC{% elif ldoc.type == 'PRO' %}PI{% else %}{{ ldoc.type }}{% endif %}
+                </span>
+                <span class="font-mono text-[11px] group-hover/pill:underline">{{ ldoc.number }}</span>
+            </a>
+            {% endfor %}
+            {% if doc.unmatched_po_ref %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-300/90 border border-amber-500/20" title="Customer PO Reference: {{ doc.unmatched_po_ref }}">
+                <span class="font-extrabold text-[10px] tracking-wider uppercase opacity-95">PO Ref</span>
+                <span class="font-mono text-[11px]">{{ doc.unmatched_po_ref }}</span>
+            </span>
+            {% endif %}
+        </div>
+        {% else %}
+        <span class="text-slate-600 text-xs font-mono select-none">—</span>
+        {% endif %}
     </td>
     <td class="px-6 py-4">
         <a href="{% url 'document_preview' doc.id %}" class="text-white hover:text-blue-400 text-sm font-medium transition-colors">{{ doc.contact.name }}</a>
@@ -32,15 +66,15 @@
         </form>
         {% endif %}
     </td>
-    <td class="px-6 py-4 text-right font-bold text-green-400">&#8377; {{ doc.grand_total|floatformat:2 }}</td>
+    <td class="px-6 py-4 text-right font-bold text-green-400">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</td>
     <td class="px-6 py-4 text-right">
-        <div class="font-semibold text-emerald-400">&#8377; {{ doc.amount_paid|floatformat:2 }}</div>
+        <div class="font-semibold text-emerald-400">{{ doc.currency_symbol }} {{ doc.amount_paid|floatformat:2 }}</div>
         <div class="text-[11px] font-medium mt-0.5 {% if doc.payment_percentage >= 100 %}text-emerald-400{% elif doc.payment_percentage > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">
             {{ doc.payment_percentage|floatformat:1 }}% paid
         </div>
     </td>
     <td class="px-6 py-4 text-right">
-        <div class="font-semibold {% if doc.balance_due > 0 %}text-rose-400{% else %}text-emerald-400/80{% endif %}">&#8377; {{ doc.balance_due|floatformat:2 }}</div>
+        <div class="font-semibold {% if doc.balance_due > 0 %}text-rose-400{% else %}text-emerald-400/80{% endif %}">{{ doc.currency_symbol }} {{ doc.balance_due|floatformat:2 }}</div>
         <div class="text-[11px] mt-0.5">
             {% if doc.balance_due <= 0 and doc.grand_total > 0 %}
             <span class="text-emerald-400 font-medium">Settled</span>
@@ -99,7 +133,7 @@
 </tr>
 {% empty %}
 <tr>
-    <td colspan="9" class="px-6 py-16 text-center">
+    <td colspan="10" class="px-6 py-16 text-center">
         <div class="text-gray-500 text-lg mb-2">No documents found</div>
         <div class="text-gray-600 text-sm mb-4">Create your first quotation to get started</div>
         <a href="{% url 'create_quotation' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm inline-block">New Quotation</a>

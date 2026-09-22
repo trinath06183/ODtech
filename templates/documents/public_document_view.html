@@ -8,7 +8,7 @@
     
     <!-- OpenGraph & Rich Link Preview Metadata -->
     <meta property="og:title" content="{{ doc.get_type_display }}: {{ doc.number }}">
-    <meta property="og:description" content="{{ doc.get_type_display }} for {{ doc.contact.name }} &bull; Total: {{ doc.get_currency_display_symbol|default:'₹' }}{{ doc.grand_total|floatformat:2|intcomma }} &bull; {{ company.name|default:'ODtech Solutions' }}">
+    <meta property="og:description" content="{{ doc.get_type_display }} for {{ doc.contact.name }} &bull; Total: {{ doc.currency_symbol }}{{ doc.grand_total|floatformat:2|intcomma }} &bull; {{ company.name|default:'ODtech Solutions' }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ company.name|default:'ODtech Solutions' }}">
     <meta name="description" content="{{ doc.get_type_display }} for {{ doc.contact.name }} &bull; {{ company.name|default:'ODtech Solutions' }}">
@@ -134,7 +134,7 @@
             <div class="sm:text-right bg-slate-800/40 border border-slate-700/40 rounded-xl px-5 py-3">
                 <div class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Total Amount</div>
                 <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono tracking-tight">
-                    {{ doc.get_currency_display_symbol|default:'₹' }}{{ doc.grand_total|floatformat:2|intcomma }}
+                    {{ doc.currency_symbol }}{{ doc.grand_total|floatformat:2|intcomma }}
                 </div>
                 <div class="text-[11px] text-slate-400 mt-0.5 flex items-center sm:justify-end gap-1 font-medium">
                     <svg class="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
