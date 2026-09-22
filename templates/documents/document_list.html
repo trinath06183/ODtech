@@ -189,21 +189,21 @@
         </datalist>
         <!-- Filtered Results Summary -->
         <div
-            class="flex flex-wrap items-center justify-between gap-4 bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
-            <div class="text-sm text-slate-600">
-                Showing <span class="font-bold text-slate-900">{{ total_count }}</span> Document{% if total_count != 1 %}s{% endif %}
+            class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/80 border border-slate-700/80 backdrop-blur-md rounded-xl px-5 py-3 mt-4 mb-2 shadow-sm">
+            <div class="text-sm text-gray-300">
+                Showing <span class="font-bold text-white">{{ total_count }}</span> Document{% if total_count != 1 %}s{% endif %}
             </div>
             <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
-                <div class="text-slate-600">
-                    Total Amount: <span class="font-bold text-slate-900">₹{{ total_sum|floatformat:2 }}</span>
+                <div class="text-gray-300">
+                    Total (in INR): <span class="font-bold text-white font-mono">₹{{ total_sum|floatformat:2 }}</span>
                 </div>
-                <div class="text-slate-600 flex items-center gap-1.5">
+                <div class="text-gray-300 flex items-center gap-1.5">
                     <span>Total Paid:</span>
-                    <span class="font-bold text-emerald-600">₹{{ total_paid|floatformat:2 }}</span>
-                    <span class="text-xs text-emerald-700 font-bold bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-full">({{ total_paid_percentage }}%)</span>
+                    <span class="font-bold text-emerald-400 font-mono">₹{{ total_paid|floatformat:2 }}</span>
+                    <span class="text-xs text-emerald-300 font-bold bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">({{ total_paid_percentage }}%)</span>
                 </div>
-                <div class="text-slate-600">
-                    Total Remaining: <span class="font-bold text-rose-600">₹{{ total_remaining|floatformat:2 }}</span>
+                <div class="text-gray-300">
+                    Total Remaining: <span class="font-bold text-rose-400 font-mono">₹{{ total_remaining|floatformat:2 }}</span>
                 </div>
             </div>
         </div>

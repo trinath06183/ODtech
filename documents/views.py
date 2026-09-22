@@ -294,7 +294,8 @@ def document_list(request):
     page_num = request.GET.get('page', 1)
     total_count = qs.count()
     try:
-        total_sum = qs.aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
+        # Compute exact INR converted sum across all documents in filtered queryset
+        total_sum = sum((d.grand_total_inr for d in qs), Decimal('0'))
     except Exception:
         total_sum = Decimal('0')
 

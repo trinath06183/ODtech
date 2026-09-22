@@ -322,6 +322,11 @@
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Grand Total</div>
                 <div class="text-blue-600 font-bold text-xl">{{ doc.currency_symbol }} {{ doc.grand_total|floatformat:2 }}</div>
+                {% if doc.currency != 'INR' %}
+                <div class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-xs font-mono font-bold text-amber-800" title="Exchange rate: 1 {{ doc.currency }} = ₹{{ doc.effective_exchange_rate|floatformat:2 }}">
+                    <span>≈ ₹{{ doc.grand_total_inr|floatformat:2 }} INR</span>
+                </div>
+                {% endif %}
             </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="flex justify-between items-center mb-1">
@@ -329,6 +334,9 @@
                     <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {% if paid_percentage >= 100 %}bg-emerald-100 text-emerald-800 border border-emerald-300{% elif paid_percentage > 0 %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">{{ paid_percentage }}%</span>
                 </div>
                 <div class="text-emerald-600 font-bold text-xl">{{ doc.currency_symbol }} {{ total_paid|default:doc.amount_paid|floatformat:2 }}</div>
+                {% if doc.currency != 'INR' and total_paid > 0 %}
+                <div class="text-xs font-mono text-emerald-700 mt-1">≈ ₹{{ doc.amount_paid_inr|floatformat:2 }} INR</div>
+                {% endif %}
             </div>
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl relative">
                 <div class="flex justify-between items-center mb-1">
@@ -336,6 +344,9 @@
                     <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 transition font-bold uppercase tracking-wide">Record Pay</a>
                 </div>
                 <div class="{% if balance_due > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-bold text-xl">{{ doc.currency_symbol }} {{ balance_due|floatformat:2 }}</div>
+                {% if doc.currency != 'INR' and balance_due > 0 %}
+                <div class="text-xs font-mono text-rose-700 mt-1">≈ ₹{{ doc.balance_due_inr|floatformat:2 }} INR</div>
+                {% endif %}
             </div>
         </div>
 

@@ -210,9 +210,10 @@ class Document(TimeStampedModel):
         """Returns the conversion rate from this document's currency to INR (e.g. 83.90 for USD)."""
         if not self.currency or self.currency == 'INR':
             return Decimal('1.0000')
-        if self.exchange_rate and self.exchange_rate > 0:
+        # If exchange_rate is explicitly set to a converted rate (> 1.0001 or != 1.0000)
+        if self.exchange_rate and self.exchange_rate > 0 and self.exchange_rate != Decimal('1.0000'):
             return Decimal(str(self.exchange_rate))
-        # If not set, try to get live rate
+        # If default 1.0000 exists on a foreign currency, dynamically fetch the live rate
         from documents.forex import get_live_exchange_rate
         return get_live_exchange_rate(self.currency, 'INR', for_date=self.date)
 
