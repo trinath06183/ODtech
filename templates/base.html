@@ -518,7 +518,7 @@
                 </div>
                 {% endif %}
 
-                {% if request.user|has_read_perm:'INVENTORY' %}
+                {% if request.user|has_read_perm:'INVENTORY' and show_inventory %}
                 <div x-show="sidebarOpen" style="display: none;"
                     class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Inventory &
                     Warranty</div>
@@ -538,6 +538,23 @@
                         class="whitespace-nowrap ml-3 font-medium">Inventory</span>
                 </a>
 
+                <a href="{% url 'warranty_tracker' %}"
+                    class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Warranty Tracker">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-medium">Warranty Tracker</span>
+                </a>
+                {% elif request.user|has_read_perm:'INVENTORY' %}
+                <!-- Only Warranty Tracker if Inventory is hidden -->
+                <div x-show="sidebarOpen" style="display: none;"
+                    class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Warranty</div>
+                <div x-show="!sidebarOpen" style="display: none;" class="pt-6 pb-2 flex justify-center">
+                    <div class="h-px w-8 bg-gray-200"></div>
+                </div>
                 <a href="{% url 'warranty_tracker' %}"
                     class="nav-link rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors mb-1"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Warranty Tracker">

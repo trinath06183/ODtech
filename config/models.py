@@ -71,6 +71,11 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="Show Terms & Conditions on Print",
         help_text="When disabled, Terms & Conditions section will not appear on printed documents."
     )
+    show_inventory = models.BooleanField(
+        default=True,
+        verbose_name="Show Inventory Module",
+        help_text="When disabled, the Inventory module will be hidden from navigation and dashboard."
+    )
     default_currency = models.CharField(
         max_length=10,
         default='INR',

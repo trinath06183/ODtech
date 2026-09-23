@@ -15,6 +15,12 @@ from .models import Product, StockTransaction
 # ─── Product List ─────────────────────────────────────────────────────────────
 @require_permission('INVENTORY', 'read')
 def inventory_list(request):
+    from config.models import CompanyProfile
+    company = CompanyProfile.objects.first()
+    if company and not company.show_inventory and getattr(request.user, 'role', '') != 'Admin':
+        messages.warning(request, "The Inventory module is currently disabled by the administrator.")
+        return redirect('dashboard')
+
     query = request.GET.get('q', '').strip()
     page_num = request.GET.get('page', 1)
     stock_status = request.GET.get('stock_status', 'all').strip()

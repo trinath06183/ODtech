@@ -95,6 +95,27 @@
                     <p class="mt-1 text-xs text-gray-500">When disabled, the Terms &amp; Conditions section will be hidden on all printed PDFs and printouts.</p>
                 </div>
 
+                <!-- Module Visibility (Inventory Toggle) -->
+                <div class="sm:col-span-2 pt-2 border-t border-gray-100">
+                    <label class="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                        Module Visibility
+                    </label>
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                        <div class="pr-4">
+                            <span class="block text-sm font-bold text-slate-800">Show Inventory Module</span>
+                            <span class="block text-xs text-slate-500 mt-0.5">Controls whether the Inventory & Stock tracking module appears in the sidebar navigation, dashboard, and quick actions.</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                            <input type="checkbox" name="show_inventory" value="on" {% if company.show_inventory %}checked{% endif %}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Document Header Address Panel -->
                 <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">

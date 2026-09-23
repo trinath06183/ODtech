@@ -77,6 +77,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "tracker.context_processors.user_notifications",
                 "tracker.context_processors.field_visibility",
+                "config.context_processors.company_context",
             ],
         },
     },

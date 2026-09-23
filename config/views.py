@@ -26,6 +26,7 @@ def settings_view(request):
         default_currency  = request.POST.get('default_currency', 'INR').strip()
         gst_enabled       = request.POST.get('gst_enabled') == 'on'
         show_terms        = request.POST.get('show_terms') == 'on'
+        show_inventory    = request.POST.get('show_inventory') == 'on'
 
         seq_qtn = request.POST.get('seq_qtn')
         seq_inv = request.POST.get('seq_inv')
@@ -62,6 +63,7 @@ def settings_view(request):
                 company.gst_api_key = None
             company.gst_enabled = gst_enabled
             company.show_terms = show_terms
+            company.show_inventory = show_inventory
             company.default_currency = default_currency
             # Validate format value against allowed choices
             valid_formats = [c[0] for c in CompanyProfile.DOC_NUMBER_FORMAT_CHOICES]

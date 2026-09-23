@@ -44,6 +44,7 @@
         <p class="text-sm text-gray-500">View and generate Quotations, Invoices, and Purchase Orders.</p>
     </a>
 
+    {% if show_inventory %}
     <!-- Inventory -->
     <a href="{% url 'inventory_list' %}" class="bg-white border border-gray-100 shadow-sm p-6 rounded-2xl cursor-pointer hover:-translate-y-1 hover:shadow-md hover:border-blue-100 transition-all duration-200 group relative overflow-hidden flex flex-col items-center text-center">
         <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4 transition-colors group-hover:bg-blue-100">
@@ -54,6 +55,7 @@
         <h3 class="text-lg font-bold text-gray-800 mb-2">Inventory Hub</h3>
         <p class="text-sm text-gray-500">Monitor current stock, movements, and product catalog.</p>
     </a>
+    {% endif %}
 
     <!-- Expenses -->
     <a href="{% url 'expense_list' %}" class="bg-white border border-gray-100 shadow-sm p-6 rounded-2xl cursor-pointer hover:-translate-y-1 hover:shadow-md hover:border-amber-100 transition-all duration-200 group relative overflow-hidden flex flex-col items-center text-center">
