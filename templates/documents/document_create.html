@@ -77,7 +77,7 @@
     }
     .totals-box .tot-row:last-child { border-bottom: none; }
     .totals-box .tot-grand {
-        background: linear-gradient(135deg, #e31837, #b91c3a);
+        background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
         color: white;
         font-weight: 700;
         font-size: 14px;
@@ -193,9 +193,9 @@
         color: #334155;
     }
     .tab-btn.active {
-        background: linear-gradient(135deg, #e31837, #b91c3a);
+        background: linear-gradient(135deg, #4f46e5, #3730a3);
         color: #fff;
-        box-shadow: 0 2px 12px rgba(227,24,55,0.35);
+        box-shadow: 0 2px 12px rgba(79,70,229,0.35);
     }
     .tab-pane { display: none; }
     .tab-pane.active { display: block; animation: fadeTab 0.2s ease; }
@@ -296,6 +296,9 @@
 {# ═════════════════════════════════════════════════════════════════════════ #}
 <div x-data="documentForm()" class="w-full space-y-5">
 
+    {# ── Semantic Page H1 (visually hidden but present for accessibility & SEO) ── #}
+    <h1 class="sr-only">{% if doc and not is_conversion %}Edit {{ doc.get_type_display }} — {{ doc.number }}{% else %}New Document{% endif %}</h1>
+
     {# ── Flash Messages ──────────────────────────────────────────────────── #}
     {% if messages %}
     <div class="space-y-2">
@@ -332,10 +335,10 @@
     {# ── Keyboard Shortcuts Legend Pill ────────────────────────────────────── #}
     <div class="hidden sm:flex items-center justify-between text-xs text-gray-500 bg-white/70 border border-slate-200 px-4 py-2 rounded-xl shadow-xs">
         <div class="flex items-center gap-4">
-            <span class="font-bold text-slate-700 uppercase tracking-wider text-[10px]">⌨️ Keyboard Shortcuts:</span>
-            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono font-bold text-slate-700">Ctrl + S</kbd> Save Document</span>
-            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono font-bold text-slate-700">Alt + N</kbd> Add Custom Item</span>
-            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-mono font-bold text-slate-700">Esc</kbd> Close Modals</span>
+            <span class="font-bold text-slate-700 uppercase tracking-wider text-xs">⌨️ Keyboard Shortcuts:</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono font-bold text-slate-700">Ctrl + S</kbd> Save Document</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono font-bold text-slate-700">Alt + N</kbd> Add Custom Item</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono font-bold text-slate-700">Esc</kbd> Close Modals</span>
         </div>
         <div class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
@@ -417,7 +420,7 @@
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-sm font-medium text-gray-300">Customer *</label>
                                 <button type="button" @click="showCustomerModal = true"
-                                    class="text-xs text-blue-400 hover:text-blue-300 font-semibold">+ Add New</button>
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-bold transition">+ Add New</button>
                             </div>
                             <div class="relative" @click.away="showCustomerDropdown = false">
                                 <input type="hidden" name="contact" form="document-main-form" x-model="selectedCustomer">
@@ -497,7 +500,7 @@
                             <div class="flex items-center justify-between mb-1">
                                 <label class="block text-sm font-medium text-gray-300">Place of Supply</label>
                                 <button type="button" @click="detectPlaceOfSupply()"
-                                    class="text-[11px] text-red-400 hover:text-red-300 font-semibold transition flex items-center gap-1"
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition"
                                     title="Auto-detect from selected customer GSTIN or address">
                                     <span>⚡ Auto-detect</span>
                                 </button>
@@ -594,12 +597,12 @@
                                         class="w-full bg-slate-900 border border-slate-700 pl-7 pr-3 py-1.5 rounded-lg text-white font-mono text-sm font-semibold focus:ring-amber-500 focus:border-amber-500"
                                         placeholder="e.g. 83.5000">
                                 </div>
-                                <div class="flex items-center justify-between text-[10px] text-gray-400">
+                                <div class="flex items-center justify-between text-xs text-gray-400">
                                     <span x-text="forexRateMsg || 'Auto-fetched for calculations & P&L'"></span>
                                     <span class="font-mono text-amber-300/80" x-show="exchangeRate && exchangeRate > 0" x-text="'1 ' + currency + ' = ₹' + Number(exchangeRate).toFixed(2)"></span>
                                 </div>
                             </div>
-                            <p class="text-[11px] text-gray-400 mt-1 font-normal">Applies to this document only (does not change global settings).</p>
+                            <p class="text-xs text-gray-400 mt-1 font-normal">Applies to this document only (does not change global settings).</p>
                         </div>
 
                         <!-- Transporter Details Section (for Delivery Challan & Dispatch) -->
@@ -943,7 +946,7 @@
                 </button>
                 {% endif %}
                 <button type="button" @click="submitForm('save_as_new')"
-                    class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-900/30 hover:shadow-red-800/40 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
+                    class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-900/30 hover:shadow-blue-800/40 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
                     🚀 {% if doc %}Duplicate &amp; New{% else %}Generate Document{% endif %}
                 </button>
             </div>
