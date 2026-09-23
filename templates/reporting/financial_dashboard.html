@@ -297,52 +297,67 @@
     <div id="payment-reminders-panel" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {# Payment Reminders Widget #}
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">🔔</span>
-                    <div>
-                        <h2 class="font-bold text-slate-800 text-base">Payment Reminders</h2>
-                        <p class="text-xs text-slate-400">Pending &amp; overdue payments</p>
-                    </div>
-                </div>
-                <span class="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-800">
-                    {{ reminder_count }} Action{{ reminder_count|pluralize }}
-                </span>
-            </div>
-
-            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1" id="reminders-list-container">
-                {% for r in reminders %}
-                <div id="reminder-item-{{ r.doc_type }}-{{ r.doc_id }}" class="group relative p-3 rounded-xl border transition hover:shadow-sm {% if r.is_urgent %}bg-red-50/60 border-red-200 hover:border-red-400{% else %}bg-amber-50/60 border-amber-200 hover:border-amber-400{% endif %}">
-                    <div class="flex items-center justify-between">
-                        <a href="{{ r.link }}" class="text-xs font-bold {% if r.is_urgent %}text-red-700 hover:text-red-800{% else %}text-amber-800 hover:text-amber-900{% endif %} truncate hover:underline flex-1 mr-2">
-                            {{ r.title }}
-                        </a>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-black text-slate-800 whitespace-nowrap">₹{{ r.amount|floatformat:0 }}</span>
-                            {% if r.can_skip %}
-                            <button type="button" 
-                                    onclick="skipReminder('{{ r.doc_id }}', '{{ r.title|escapejs }}', this)" 
-                                    class="text-slate-400 hover:text-rose-600 hover:bg-rose-100 p-1 rounded-lg transition text-xs flex items-center justify-center" 
-                                    title="Skip / Dismiss this reminder">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                            {% endif %}
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🔔</span>
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-base">Payment Reminders</h2>
+                            <p class="text-xs text-slate-400">User tracked &amp; custom reminders</p>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between text-xs text-slate-600 mt-1">
-                        <span class="flex-1 font-medium text-slate-700 break-words line-clamp-1 pr-2" title="{{ r.party }}">{{ r.party }}</span>
-                        <span class="text-slate-500 whitespace-nowrap">Due: {{ r.date|date:"d M Y" }}</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" 
+                                onclick="openAddReminderModal()" 
+                                class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                                title="Add custom reminder or track document">
+                            <span>➕</span> Add
+                        </button>
+                        <span id="reminders-count-badge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-800">
+                            {{ reminder_count }} Action{{ reminder_count|pluralize }}
+                        </span>
                     </div>
                 </div>
-                {% empty %}
-                <div class="text-center py-8 text-slate-400 text-xs">
-                    <span class="text-2xl block mb-1">🎉</span>
-                    No pending payment reminders!
+
+                <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1" id="reminders-list-container">
+                    {% for r in reminders %}
+                    <div id="reminder-item-{{ r.id }}" class="group relative p-3 rounded-xl border transition hover:shadow-sm {% if r.is_urgent %}bg-red-50/60 border-red-200 hover:border-red-400{% else %}bg-amber-50/60 border-amber-200 hover:border-amber-400{% endif %}">
+                        <div class="flex items-center justify-between">
+                            {% if r.link != '#' %}
+                            <a href="{{ r.link }}" class="text-xs font-bold {% if r.is_urgent %}text-red-700 hover:text-red-800{% else %}text-amber-800 hover:text-amber-900{% endif %} truncate hover:underline flex-1 mr-2">
+                                {{ r.title }}
+                            </a>
+                            {% else %}
+                            <span class="text-xs font-bold {% if r.is_urgent %}text-red-700{% else %}text-amber-800{% endif %} truncate flex-1 mr-2">
+                                {{ r.title }}
+                            </span>
+                            {% endif %}
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-black text-slate-800 whitespace-nowrap">₹{{ r.amount|floatformat:0 }}</span>
+                                <button type="button" 
+                                        onclick="deleteReminder('{{ r.id }}', '{{ r.title|escapejs }}', this)" 
+                                        class="text-slate-400 hover:text-rose-600 hover:bg-rose-100 p-1 rounded-lg transition text-xs flex items-center justify-center cursor-pointer" 
+                                        title="Dismiss / Remove this reminder">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-slate-600 mt-1">
+                            <span class="flex-1 font-medium text-slate-700 break-words line-clamp-1 pr-2" title="{{ r.party }}">{{ r.party }}</span>
+                            <span class="text-slate-500 whitespace-nowrap">{% if r.date %}Due: {{ r.date|date:"d M Y" }}{% else %}No date{% endif %}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div id="reminders-empty-state" class="text-center py-8 text-slate-400 text-xs">
+                        <span class="text-2xl block mb-1">📋</span>
+                        <p class="font-medium text-slate-600">No payment reminders added yet.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Click "➕ Add" above or add reminders directly from document preview.</p>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
 
@@ -840,8 +855,29 @@ function showDuesToast(msg) {
     }, 4500);
 }
 
-async function skipReminder(docId, docTitle, btn) {
-    if (!confirm(`Do you want to skip payment reminders for ${docTitle}?`)) {
+function updateRemindersCount() {
+    const container = document.getElementById('reminders-list-container');
+    const items = container ? container.querySelectorAll('[id^="reminder-item-"]') : [];
+    const count = items.length;
+
+    const countBadge = document.getElementById('reminders-count-badge');
+    if (countBadge) {
+        countBadge.textContent = `${count} Action${count === 1 ? '' : 's'}`;
+    }
+
+    if (count === 0 && container) {
+        container.innerHTML = `
+            <div id="reminders-empty-state" class="text-center py-8 text-slate-400 text-xs">
+                <span class="text-2xl block mb-1">📋</span>
+                <p class="font-medium text-slate-600">No payment reminders added yet.</p>
+                <p class="text-[11px] text-slate-400 mt-1">Click "➕ Add" above or add reminders directly from document preview.</p>
+            </div>
+        `;
+    }
+}
+
+async function deleteReminder(reminderId, reminderTitle, btn) {
+    if (!confirm(`Do you want to remove payment reminder for ${reminderTitle}?`)) {
         return;
     }
     
@@ -849,7 +885,7 @@ async function skipReminder(docId, docTitle, btn) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
     try {
-        const resp = await fetch(`/documents/${docId}/toggle-skip-reminder/?format=json`, {
+        const resp = await fetch(`/reporting/api/reminders/${reminderId}/delete/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -860,34 +896,283 @@ async function skipReminder(docId, docTitle, btn) {
 
         const data = await resp.json();
         if (data.success) {
-            const item = document.getElementById(`reminder-item-INV-${docId}`);
+            const item = document.getElementById(`reminder-item-${reminderId}`);
             if (item) {
                 item.style.transition = 'all 0.3s ease';
                 item.style.opacity = '0';
                 item.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     item.remove();
-                    const container = document.getElementById('reminders-list-container');
-                    if (container && container.children.length === 0) {
-                        container.innerHTML = `
-                            <div class="text-center py-8 text-slate-400 text-xs">
-                                <span class="text-2xl block mb-1">🎉</span>
-                                No pending payment reminders!
-                            </div>
-                        `;
-                    }
+                    updateRemindersCount();
                 }, 300);
             }
-            showDuesToast(data.message || 'Reminder skipped successfully.');
+            showDuesToast(data.message || 'Reminder removed successfully.');
         } else {
-            alert(data.message || 'Could not skip reminder.');
+            alert(data.message || 'Could not remove reminder.');
             if (btn) btn.disabled = false;
         }
     } catch (e) {
         console.error(e);
-        alert('Network error while skipping reminder.');
+        alert('Network error while removing reminder.');
         if (btn) btn.disabled = false;
     }
+}
+
+// Backward compatibility alias
+function skipReminder(docId, docTitle, btn) {
+    deleteReminder(docId, docTitle, btn);
+}
+
+function openAddReminderModal() {
+    const modal = document.getElementById('add-reminder-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        switchReminderModalTab('select-doc');
+        const input = document.getElementById('reminder-doc-search-input');
+        if (input) input.value = '';
+        searchDocsForReminder('');
+    }
+}
+
+function closeAddReminderModal() {
+    const modal = document.getElementById('add-reminder-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+document.getElementById('add-reminder-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAddReminderModal();
+    }
+});
+
+function switchReminderModalTab(tab) {
+    const tabDocBtn = document.getElementById('reminder-tab-doc-btn');
+    const tabCustomBtn = document.getElementById('reminder-tab-custom-btn');
+    const panelDoc = document.getElementById('reminder-panel-doc');
+    const panelCustom = document.getElementById('reminder-panel-custom');
+
+    if (tab === 'select-doc') {
+        tabDocBtn?.classList.add('bg-white', 'text-indigo-700', 'shadow-sm', 'border-indigo-200');
+        tabDocBtn?.classList.remove('text-slate-600');
+        tabCustomBtn?.classList.remove('bg-white', 'text-indigo-700', 'shadow-sm', 'border-indigo-200');
+        tabCustomBtn?.classList.add('text-slate-600');
+
+        panelDoc?.classList.remove('hidden');
+        panelCustom?.classList.add('hidden');
+    } else {
+        tabCustomBtn?.classList.add('bg-white', 'text-indigo-700', 'shadow-sm', 'border-indigo-200');
+        tabCustomBtn?.classList.remove('text-slate-600');
+        tabDocBtn?.classList.remove('bg-white', 'text-indigo-700', 'shadow-sm', 'border-indigo-200');
+        tabDocBtn?.classList.add('text-slate-600');
+
+        panelCustom?.classList.remove('hidden');
+        panelDoc?.classList.add('hidden');
+    }
+}
+
+let docReminderSearchTimer = null;
+function onDocSearchInput(val) {
+    clearTimeout(docReminderSearchTimer);
+    docReminderSearchTimer = setTimeout(() => {
+        searchDocsForReminder(val);
+    }, 250);
+}
+
+async function searchDocsForReminder(query) {
+    const container = document.getElementById('reminder-doc-search-results');
+    if (!container) return;
+
+    container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Loading approved documents...</div>';
+
+    try {
+        const resp = await fetch(`/reporting/api/reminders/search-docs/?q=${encodeURIComponent(query)}`);
+        const data = await resp.json();
+        if (!data.success || !data.results || data.results.length === 0) {
+            container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">No approved documents found matching search.</div>';
+            return;
+        }
+
+        let html = '';
+        data.results.forEach(d => {
+            const isAdded = d.is_already_added;
+            const safeNumber = (d.number || '').replace(/'/g, "\\'");
+            html += `
+                <div class="p-3 bg-white hover:bg-indigo-50/40 rounded-xl border border-slate-200 flex items-center justify-between gap-3 transition">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs text-slate-900">${d.number}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${d.type === 'INV' ? 'bg-indigo-100 text-indigo-800' : 'bg-purple-100 text-purple-800'}">${d.type_display}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-600 truncate mt-0.5">${d.party}</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">${d.date ? 'Date: ' + d.date : ''} · Total: ₹${Math.round(d.total).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div class="text-right shrink-0 flex flex-col items-end gap-1.5">
+                        <div class="text-xs font-black text-rose-600">₹${Math.round(d.due).toLocaleString('en-IN')}</div>
+                        ${isAdded ? `
+                            <span class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                ✓ Tracked
+                            </span>
+                        ` : `
+                            <button type="button" onclick="addDocAsReminder(${d.id}, '${safeNumber}', this)" 
+                                    class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm cursor-pointer flex items-center gap-1">
+                                ➕ Track
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = '<div class="text-center py-6 text-rose-500 text-xs">Error loading documents.</div>';
+    }
+}
+
+async function addDocAsReminder(docId, docTitle, btn) {
+    if (btn) btn.disabled = true;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    try {
+        const resp = await fetch('/reporting/api/reminders/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ doc_id: docId })
+        });
+        const data = await resp.json();
+        if (data.success && data.reminder) {
+            insertReminderIntoWidget(data.reminder);
+            showDuesToast(data.message || 'Reminder added successfully!');
+            closeAddReminderModal();
+        } else {
+            alert(data.message || 'Could not add reminder.');
+            if (btn) btn.disabled = false;
+        }
+    } catch (e) {
+        alert('Network error adding reminder.');
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function submitCustomReminder(event) {
+    event.preventDefault();
+    const form = event.target;
+    const btn = document.getElementById('custom-reminder-submit-btn');
+    if (btn) btn.disabled = true;
+
+    const title = form.title.value.trim();
+    const party = form.party.value.trim();
+    const amount = form.amount.value.trim();
+    const dueDate = form.due_date.value;
+    const reminderType = form.reminder_type.value;
+    const isUrgent = form.is_urgent.checked;
+    const notes = form.notes.value.trim();
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    try {
+        const resp = await fetch('/reporting/api/reminders/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                title: title,
+                party: party,
+                amount: amount,
+                due_date: dueDate,
+                reminder_type: reminderType,
+                is_urgent: isUrgent,
+                notes: notes
+            })
+        });
+        const data = await resp.json();
+        if (data.success && data.reminder) {
+            insertReminderIntoWidget(data.reminder);
+            showDuesToast(data.message || 'Custom reminder created!');
+            form.reset();
+            closeAddReminderModal();
+        } else {
+            alert(data.message || 'Could not create reminder.');
+        }
+    } catch (e) {
+        alert('Network error saving reminder.');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function escapeReminderHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function insertReminderIntoWidget(r) {
+    const container = document.getElementById('reminders-list-container');
+    if (!container) return;
+
+    const empty = document.getElementById('reminders-empty-state');
+    if (empty) empty.remove();
+
+    // Check if already in list
+    const existing = document.getElementById(`reminder-item-${r.id}`);
+    if (existing) existing.remove();
+
+    const div = document.createElement('div');
+    div.id = `reminder-item-${r.id}`;
+    div.className = `group relative p-3 rounded-xl border transition hover:shadow-sm ${r.is_urgent ? 'bg-red-50/60 border-red-200 hover:border-red-400' : 'bg-amber-50/60 border-amber-200 hover:border-amber-400'}`;
+    
+    const safeTitle = escapeReminderHtml(r.title);
+    const safeParty = escapeReminderHtml(r.party);
+    const safeJsTitle = (r.title || '').replace(/'/g, "\\'");
+    const amtFormatted = Math.round(r.amount || 0).toLocaleString('en-IN');
+    const hasLink = r.link && r.link !== '#';
+
+    div.innerHTML = `
+        <div class="flex items-center justify-between">
+            ${hasLink ? `
+                <a href="${r.link}" class="text-xs font-bold ${r.is_urgent ? 'text-red-700 hover:text-red-800' : 'text-amber-800 hover:text-amber-900'} truncate hover:underline flex-1 mr-2">
+                    ${safeTitle}
+                </a>
+            ` : `
+                <span class="text-xs font-bold ${r.is_urgent ? 'text-red-700' : 'text-amber-800'} truncate flex-1 mr-2">
+                    ${safeTitle}
+                </span>
+            `}
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-800 whitespace-nowrap">₹${amtFormatted}</span>
+                <button type="button" 
+                        onclick="deleteReminder('${r.id}', '${safeJsTitle}', this)" 
+                        class="text-slate-400 hover:text-rose-600 hover:bg-rose-100 p-1 rounded-lg transition text-xs flex items-center justify-center cursor-pointer" 
+                        title="Dismiss / Remove this reminder">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-600 mt-1">
+            <span class="flex-1 font-medium text-slate-700 break-words line-clamp-1 pr-2" title="${safeParty}">${safeParty}</span>
+            <span class="text-slate-500 whitespace-nowrap">${r.date ? 'Due: ' + r.date : 'No date'}</span>
+        </div>
+    `;
+
+    container.prepend(div);
+    updateRemindersCount();
 }
 </script>
 
@@ -1701,6 +1986,115 @@ async function skipReminder(docId, docTitle, btn) {
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ── Add Payment Reminder Modal ── -->
+<div id="add-reminder-modal" class="fixed inset-0 z-[65] hidden bg-slate-900/80 backdrop-blur-sm items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 flex flex-col">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shadow-inner">
+                    🔔
+                </div>
+                <div>
+                    <h2 class="font-black text-base !text-white tracking-wide">Add Payment Reminder</h2>
+                    <p class="text-xs font-medium" style="color: #cbd5e1 !important;">Select a document or create a custom reminder</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeAddReminderModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-all hover:scale-105" title="Close">
+                ✕
+            </button>
+        </div>
+
+        <!-- Tab Selector -->
+        <div class="px-6 pt-4 pb-2 bg-slate-50 border-b border-slate-200 flex gap-2">
+            <button type="button" id="reminder-tab-doc-btn" onclick="switchReminderModalTab('select-doc')" 
+                    class="px-4 py-2 text-xs font-bold rounded-xl transition-all bg-white text-indigo-700 shadow-sm border border-indigo-200 flex items-center gap-1.5 cursor-pointer">
+                <span>📄 Select Document</span>
+            </button>
+            <button type="button" id="reminder-tab-custom-btn" onclick="switchReminderModalTab('custom')" 
+                    class="px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer">
+                <span>✏️ Custom Reminder</span>
+            </button>
+        </div>
+
+        <!-- Panel 1: Select Existing Document -->
+        <div id="reminder-panel-doc" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Search Approved Invoice or PO</label>
+                <div class="relative">
+                    <input type="text" id="reminder-doc-search-input" oninput="onDocSearchInput(this.value)" placeholder="Type invoice #, PO #, or customer name..." 
+                           class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800">
+                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+                </div>
+            </div>
+
+            <!-- Search Results Scrollable List -->
+            <div id="reminder-doc-search-results" class="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                <!-- Dynamically populated via searchDocsForReminder -->
+            </div>
+        </div>
+
+        <!-- Panel 2: Custom Reminder Form -->
+        <div id="reminder-panel-custom" class="p-6 hidden">
+            <form onsubmit="submitCustomReminder(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Reminder Title <span class="text-rose-500">*</span></label>
+                    <input type="text" name="title" required placeholder="e.g. Follow up on Project Balance / AMC Due"
+                           class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Party / Client / Vendor Name</label>
+                        <input type="text" name="party" placeholder="e.g. Acme Industries"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Amount (₹) <span class="text-rose-500">*</span></label>
+                        <input type="number" step="0.01" name="amount" required placeholder="0.00"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800 font-mono font-bold">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Due Date</label>
+                        <input type="date" name="due_date"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Reminder Type</label>
+                        <select name="reminder_type" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800 font-medium">
+                            <option value="receivable">📥 Receivable (To Collect)</option>
+                            <option value="payable">📤 Payable (To Pay)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Notes / Remarks (Optional)</label>
+                    <textarea name="notes" rows="2" placeholder="Additional notes or contact person..."
+                              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs text-slate-800"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="custom-is-urgent" name="is_urgent" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
+                    <label for="custom-is-urgent" class="text-xs font-medium text-slate-700 cursor-pointer">Mark as High Priority / Urgent</label>
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+                    <button type="button" onclick="closeAddReminderModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="custom-reminder-submit-btn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer">
+                        <span>💾 Save Reminder</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

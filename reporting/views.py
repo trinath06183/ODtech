@@ -337,69 +337,57 @@ def financial_dashboard(request):
 
     outstanding_receivables = max(Decimal('0'), total_sales - total_payments_received)
 
-    # ── Payment Reminders & Urgent Alerts ──────────────────────────────────────
+    # ── Payment Reminders & Urgent Alerts (User Added & Custom) ───────────────
     reminders = []
     try:
-        # Pre-fetch all payments by document_ref for quick balance calculation
-        all_doc_payments = dict(
-            Payment.objects.filter(document_ref__isnull=False)
-            .values('document_ref')
-            .annotate(total_paid=Sum('amount'))
-            .values_list('document_ref', 'total_paid')
-        )
+        from reporting.models import PaymentReminder
+        active_reminders = PaymentReminder.objects.filter(
+            is_completed=False
+        ).select_related('document', 'document__contact', 'created_by').order_by('due_date', '-created_at')
 
-        overdue_docs = Document.objects.filter(
-            type='INV', status='Approved',
-            skip_reminder=False,
-            date__lt=today - timedelta(days=30)
-        ).select_related('contact').order_by('date')[:50]
-
-        count_added = 0
-        for doc in overdue_docs:
-            total_inr = doc.grand_total_inr
-            due_inr = doc.balance_due_inr
-            paid_inr = doc.amount_paid_inr
-            # Skip if 100% paid or settled
-            if due_inr <= Decimal('0.01'):
-                continue
-
-            reminders.append({
-                'id': doc.id,
-                'doc_id': doc.id,
-                'doc_type': 'INV',
-                'title': f"Overdue Invoice #{doc.number or doc.id}",
-                'party': doc.contact.name if doc.contact else "Customer",
-                'amount': due_inr,
-                'date': doc.date,
-                'type': 'receivable',
-                'is_urgent': True,
-                'link': f"/documents/{doc.id}/preview/",
-                'skip_url': f"/documents/{doc.id}/toggle-skip-reminder/",
-                'can_skip': True,
-            })
-            count_added += 1
-            if count_added >= 5:
-                break
-
-        pending_exp_list = Expense.objects.filter(
-            status='Pending'
-        ).order_by('-date')[:5]
-        for exp in pending_exp_list:
-            reminders.append({
-                'id': exp.id,
-                'doc_id': exp.id,
-                'doc_type': 'EXPENSE',
-                'title': f"Pending Expense: {exp.expense_type}",
-                'party': exp.paid_to or "Vendor",
-                'amount': exp.amount,
-                'date': exp.date,
-                'type': 'payable',
-                'is_urgent': False,
-                'link': "/payments/expenses/",
-                'can_skip': False,
-            })
+        for r in active_reminders:
+            if r.document:
+                due_inr = r.document.balance_due_inr
+                total_inr = r.document.grand_total_inr
+                party = r.document.contact.name if r.document.contact else (r.party or "Customer")
+                is_settled = (due_inr <= Decimal('0.01'))
+                reminders.append({
+                    'id': r.id,
+                    'doc_id': r.document.id,
+                    'doc_type': r.document.type,
+                    'title': r.title or f"{r.document.type} #{r.document.number or r.document.id}",
+                    'party': party,
+                    'amount': due_inr if not is_settled else Decimal('0.00'),
+                    'total_amount': total_inr,
+                    'date': r.due_date or r.document.date,
+                    'type': r.reminder_type,
+                    'is_urgent': r.is_urgent,
+                    'link': f"/documents/{r.document.id}/preview/",
+                    'can_skip': True,
+                    'is_settled': is_settled,
+                    'is_custom': False,
+                    'notes': r.notes,
+                })
+            else:
+                reminders.append({
+                    'id': r.id,
+                    'doc_id': None,
+                    'doc_type': 'CUSTOM',
+                    'title': r.title,
+                    'party': r.party or "—",
+                    'amount': r.amount,
+                    'total_amount': r.amount,
+                    'date': r.due_date,
+                    'type': r.reminder_type,
+                    'is_urgent': r.is_urgent,
+                    'link': "#",
+                    'can_skip': True,
+                    'is_settled': False,
+                    'is_custom': True,
+                    'notes': r.notes,
+                })
     except Exception:
-        pass
+        reminders = []
 
     # ── Monthly / Yearly trend data (last 6 intervals) ─────────────────────────
     monthly_trend = []
@@ -1787,4 +1775,215 @@ def settle_due_transaction(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('REPORTING', 'read')
+def add_payment_reminder_api(request):
+    """API endpoint to create a user-added or custom payment reminder."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
+    
+    try:
+        import json
+        from decimal import Decimal
+        from datetime import datetime
+        from reporting.models import PaymentReminder
+        from documents.models import Document
+
+        data = {}
+        if request.content_type == 'application/json':
+            data = json.loads(request.body.decode('utf-8') if request.body else '{}')
+        else:
+            data = request.POST.dict()
+
+        doc_id = data.get('doc_id')
+        if doc_id:
+            doc = Document.objects.filter(id=doc_id).select_related('contact').first()
+            if not doc:
+                return JsonResponse({'success': False, 'message': 'Document not found.'}, status=404)
+            
+            existing = PaymentReminder.objects.filter(document=doc, is_completed=False).first()
+            if existing:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'{doc.number or doc.id} is already in payment reminders.',
+                    'already_exists': True,
+                    'reminder': {
+                        'id': existing.id,
+                        'doc_id': doc.id,
+                        'title': existing.title,
+                        'party': existing.party,
+                        'amount': float(doc.balance_due_inr),
+                        'date': existing.due_date.strftime('%d %b %Y') if existing.due_date else '',
+                        'link': f"/documents/{doc.id}/preview/",
+                        'is_urgent': existing.is_urgent,
+                        'type': existing.reminder_type,
+                    }
+                })
+            
+            doc_type_name = doc.get_type_display() if hasattr(doc, 'get_type_display') else doc.type
+            title = data.get('title') or f"{doc_type_name} #{doc.number or doc.id}"
+            party = doc.contact.name if doc.contact else "Customer"
+            amount = doc.balance_due_inr
+            due_date = doc.date
+            reminder_type = 'receivable' if doc.type in ['INV', 'PRO'] else 'payable'
+            is_urgent = bool(data.get('is_urgent', True))
+
+            reminder = PaymentReminder.objects.create(
+                created_by=request.user if request.user.is_authenticated else None,
+                document=doc,
+                title=title,
+                party=party,
+                amount=amount,
+                due_date=due_date,
+                reminder_type=reminder_type,
+                is_urgent=is_urgent,
+                notes=data.get('notes', ''),
+            )
+            doc.skip_reminder = False
+            doc.save(update_fields=['skip_reminder', 'updated_at'])
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Reminder for {doc.number or doc.id} added successfully.',
+                'reminder': {
+                    'id': reminder.id,
+                    'doc_id': doc.id,
+                    'title': reminder.title,
+                    'party': reminder.party,
+                    'amount': float(amount),
+                    'date': due_date.strftime('%d %b %Y') if due_date else '',
+                    'link': f"/documents/{doc.id}/preview/",
+                    'is_urgent': reminder.is_urgent,
+                    'type': reminder.reminder_type,
+                }
+            })
+        else:
+            # Custom reminder
+            title = (data.get('title') or '').strip()
+            if not title:
+                return JsonResponse({'success': False, 'message': 'Title is required for custom reminder.'}, status=400)
+            
+            party = (data.get('party') or '').strip()
+            amount_raw = data.get('amount') or '0'
+            try:
+                amount = Decimal(str(amount_raw))
+            except Exception:
+                amount = Decimal('0.00')
+
+            due_date = None
+            date_str = data.get('due_date')
+            if date_str:
+                try:
+                    due_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                except Exception:
+                    due_date = None
+
+            reminder_type = data.get('reminder_type') or 'receivable'
+            is_urgent = bool(data.get('is_urgent', False))
+            notes = data.get('notes', '')
+
+            reminder = PaymentReminder.objects.create(
+                created_by=request.user if request.user.is_authenticated else None,
+                title=title,
+                party=party,
+                amount=amount,
+                due_date=due_date,
+                reminder_type=reminder_type,
+                is_urgent=is_urgent,
+                notes=notes,
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Custom payment reminder created successfully.',
+                'reminder': {
+                    'id': reminder.id,
+                    'doc_id': None,
+                    'title': reminder.title,
+                    'party': reminder.party,
+                    'amount': float(amount),
+                    'date': due_date.strftime('%d %b %Y') if due_date else '',
+                    'link': '#',
+                    'is_urgent': reminder.is_urgent,
+                    'type': reminder.reminder_type,
+                }
+            })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@require_permission('REPORTING', 'read')
+def delete_payment_reminder_api(request, reminder_id):
+    """API endpoint to delete/dismiss a user payment reminder."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
+    try:
+        from reporting.models import PaymentReminder
+        reminder = PaymentReminder.objects.filter(id=reminder_id).first()
+        if not reminder:
+            return JsonResponse({'success': False, 'message': 'Reminder not found.'}, status=404)
+        
+        doc = reminder.document
+        title = reminder.title
+        reminder.delete()
+        if doc:
+            has_other = PaymentReminder.objects.filter(document=doc, is_completed=False).exists()
+            if not has_other:
+                doc.skip_reminder = True
+                doc.save(update_fields=['skip_reminder', 'updated_at'])
+        
+        return JsonResponse({'success': True, 'message': f'Reminder for {title} removed.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@require_permission('REPORTING', 'read')
+def search_docs_for_reminder_api(request):
+    """API endpoint to search approved documents to add to payment reminders."""
+    q = (request.GET.get('q') or '').strip()
+    try:
+        from decimal import Decimal
+        from django.db.models import Q
+        from documents.models import Document
+        from reporting.models import PaymentReminder
+
+        active_reminder_doc_ids = set(
+            PaymentReminder.objects.filter(is_completed=False, document__isnull=False)
+            .values_list('document_id', flat=True)
+        )
+
+        docs_qs = Document.objects.filter(
+            type__in=['INV', 'PO', 'PRO'],
+            status='Approved'
+        ).select_related('contact').order_by('-date')
+
+        if q:
+            docs_qs = docs_qs.filter(
+                Q(number__icontains=q) |
+                Q(contact__name__icontains=q) |
+                Q(po_reference_number__icontains=q)
+            )
+
+        results = []
+        for d in docs_qs[:25]:
+            due_inr = d.balance_due_inr
+            # Show if has pending due or if user searched specifically
+            if due_inr > Decimal('0.01') or q:
+                results.append({
+                    'id': d.id,
+                    'number': d.number or f"{d.type}-{d.id}",
+                    'type': d.type,
+                    'type_display': d.get_type_display() if hasattr(d, 'get_type_display') else d.type,
+                    'party': d.contact.name if d.contact else '—',
+                    'date': d.date.strftime('%d %b %Y') if d.date else '',
+                    'total': float(d.grand_total_inr),
+                    'due': float(due_inr),
+                    'is_already_added': d.id in active_reminder_doc_ids,
+                })
+
+        return JsonResponse({'success': True, 'results': results})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e), 'results': []}, status=500)
+
 

@@ -1008,15 +1008,45 @@ def change_document_status(request, document_id):
 def toggle_skip_reminder(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     if request.method == 'POST':
-        doc.skip_reminder = not doc.skip_reminder
-        doc.save(update_fields=['skip_reminder', 'updated_at'])
-        action = "skipped from" if doc.skip_reminder else "restored to"
-        messages.success(request, f"Document {doc.number} reminder {action} payment reminders.")
+        try:
+            from reporting.models import PaymentReminder
+            existing = PaymentReminder.objects.filter(document=doc, is_completed=False).first()
+            if existing:
+                existing.delete()
+                in_reminders = False
+                action = "removed from"
+            else:
+                doc_type_name = doc.get_type_display() if hasattr(doc, 'get_type_display') else doc.type
+                party_name = doc.contact.name if doc.contact else "Customer"
+                PaymentReminder.objects.create(
+                    created_by=request.user if request.user.is_authenticated else None,
+                    document=doc,
+                    title=f"{doc_type_name} #{doc.number or doc.id}",
+                    party=party_name,
+                    amount=doc.balance_due_inr,
+                    due_date=doc.date,
+                    reminder_type='receivable' if doc.type in ['INV', 'PRO'] else 'payable',
+                    is_urgent=True,
+                )
+                in_reminders = True
+                action = "added to"
+            
+            doc.skip_reminder = not in_reminders
+            doc.save(update_fields=['skip_reminder', 'updated_at'])
+        except Exception:
+            doc.skip_reminder = not doc.skip_reminder
+            doc.save(update_fields=['skip_reminder', 'updated_at'])
+            in_reminders = not doc.skip_reminder
+            action = "restored to" if in_reminders else "skipped from"
+
+        msg = f"Document {doc.number or doc.id} {action} payment reminders."
+        messages.success(request, msg)
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
             return JsonResponse({
                 'success': True,
+                'in_reminders': in_reminders,
                 'skip_reminder': doc.skip_reminder,
-                'message': f"Document {doc.number} reminder {action} payment reminders."
+                'message': msg
             })
         next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or f"/documents/{doc.id}/preview/"
         return redirect(next_url)

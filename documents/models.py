@@ -369,6 +369,13 @@ class Document(TimeStampedModel):
         return round(float(pct), 1)
 
     @property
+    def has_payment_reminder(self):
+        try:
+            return self.payment_reminders.filter(is_completed=False).exists()
+        except Exception:
+            return False
+
+    @property
     def lifecycle_payment_status(self):
         """
         Calculates payment status by checking if this document is an invoice

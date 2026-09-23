@@ -226,11 +226,11 @@
             {% if doc.type == 'INV' or doc.type == 'PO' %}
             <form method="post" action="{% url 'toggle_skip_reminder' doc.id %}">
                 {% csrf_token %}
-                <button type="submit" class="w-full h-11 px-4 rounded-xl transition text-xs flex items-center justify-center gap-2 border font-semibold shadow-sm {% if doc.skip_reminder %}bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300{% else %}bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200{% endif %}" title="{% if doc.skip_reminder %}Click to enable payment reminders for this document{% else %}Click to mute/skip payment reminders for this document{% endif %}">
-                    {% if doc.skip_reminder %}
-                    <span>🔕 Reminders: <strong>Skipped</strong> (Click to Enable)</span>
+                <button type="submit" class="w-full h-11 px-4 rounded-xl transition text-xs flex items-center justify-center gap-2 border font-semibold shadow-sm {% if doc.has_payment_reminder %}bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300{% else %}bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200{% endif %}" title="{% if doc.has_payment_reminder %}Click to remove from payment reminders{% else %}Click to add this document to payment reminders{% endif %}">
+                    {% if doc.has_payment_reminder %}
+                    <span>🔔 In Reminders: <strong>Active</strong> (Click to Remove)</span>
                     {% else %}
-                    <span>🔔 Reminders: <strong>Active</strong> (Click to Skip)</span>
+                    <span>➕ Add to Payment Reminders</span>
                     {% endif %}
                 </button>
             </form>

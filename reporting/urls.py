@@ -11,4 +11,8 @@ urlpatterns = [
     path('api/settle-due/', views.settle_due_transaction, name='settle_due_transaction'),
     path('statement/', views.statement_of_account_view, name='statement_of_account'),
     path('statement/v/<str:token>/', views.public_statement_view, name='public_statement_view'),
+    path('api/reminders/add/', views.add_payment_reminder_api, name='add_payment_reminder_api'),
+    path('api/reminders/<int:reminder_id>/delete/', views.delete_payment_reminder_api, name='delete_payment_reminder_api'),
+    path('api/reminders/search-docs/', views.search_docs_for_reminder_api, name='search_docs_for_reminder_api'),
 ]
+
