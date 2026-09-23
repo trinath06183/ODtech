@@ -357,8 +357,8 @@ def financial_dashboard(request):
         count_added = 0
         for doc in overdue_docs:
             total_inr = doc.grand_total_inr
-            paid_inr = all_doc_payments.get(doc.number, Decimal('0'))
-            due_inr = total_inr - paid_inr
+            due_inr = doc.balance_due_inr
+            paid_inr = doc.amount_paid_inr
             # Skip if 100% paid or settled
             if due_inr <= Decimal('0.01'):
                 continue
@@ -500,8 +500,8 @@ def financial_dashboard(request):
 
         for inv in invoices_with_dues:
             total_inr = inv.grand_total_inr
-            paid_inr = all_doc_payments.get(inv.number, Decimal('0'))
-            due_inr = total_inr - paid_inr
+            due_inr = inv.balance_due_inr
+            paid_inr = inv.amount_paid_inr
             if due_inr > Decimal('0.01'):
                 total_receivables_due += due_inr
                 order_ref = (inv.po_reference_number or inv.project_name or '').strip()
@@ -532,8 +532,8 @@ def financial_dashboard(request):
 
         for po in pos_with_dues:
             total_inr = po.grand_total_inr
-            paid_inr = all_doc_payments.get(po.number, Decimal('0'))
-            due_inr = total_inr - paid_inr
+            due_inr = po.balance_due_inr
+            paid_inr = po.amount_paid_inr
             if due_inr > Decimal('0.01'):
                 total_payables_due += due_inr
                 order_ref = (po.project_name or po.po_reference_number or '').strip()

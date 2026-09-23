@@ -902,7 +902,7 @@ async function skipReminder(docId, docTitle, btn) {
                 </div>
                 <div>
                     <h2 class="font-black text-lg !text-white tracking-wide">Profit &amp; Loss (P&amp;L) Statement</h2>
-                    <p class="text-xs text-indigo-200 font-medium">Period: <span class="font-bold text-white">{{ label }}</span> ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</p>
+                    <p class="text-xs font-medium" style="color: #cbd5e1 !important;">Period: <span class="font-bold inline-block px-2 py-0.5 rounded-md border" style="color: #fde047 !important; background-color: rgba(253, 224, 71, 0.15) !important; border-color: rgba(253, 224, 71, 0.3) !important;">{{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span></p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -1112,9 +1112,9 @@ async function skipReminder(docId, docTitle, btn) {
                 <div>
                     <h2 class="font-black text-lg !text-white tracking-wide flex items-center gap-2">
                         Payments Given &amp; Outflow Breakdown
-                        <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-orange-500/30 text-orange-200 border border-orange-400/20">Audit Trail</span>
+                        <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-orange-500/30 border border-orange-400/20" style="color: #fdba74 !important;">Audit Trail</span>
                     </h2>
-                    <p class="text-xs text-orange-200 font-medium">All Purchase Invoices &amp; Operating Expense Bills for <span class="text-white font-bold">{{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span></p>
+                    <p class="text-xs font-medium" style="color: #fed7aa !important;">All Purchase Invoices &amp; Operating Expense Bills for <span class="font-bold inline-block px-2 py-0.5 rounded-md border" style="color: #fde047 !important; background-color: rgba(253, 224, 71, 0.15) !important; border-color: rgba(253, 224, 71, 0.3) !important;">{{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span></p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -1328,9 +1328,15 @@ async function skipReminder(docId, docTitle, btn) {
                 <div>
                     <h2 class="font-black text-lg !text-white tracking-wide flex items-center gap-2">
                         Outstanding Receivables &amp; Payables
-                        <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/20">Live Audit</span>
+                        <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-indigo-500/30 border border-indigo-400/20" style="color: #a5b4fc !important;">Live Audit</span>
                     </h2>
-                    <p class="text-xs text-indigo-200 font-medium">Customer Invoices to Collect &amp; Vendor Bills to Pay for <span class="text-white font-bold">{{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})</span> with Order References</p>
+                    <p class="text-xs font-medium mt-0.5" style="color: #cbd5e1 !important;">
+                        Customer Invoices to Collect &amp; Vendor Bills to Pay for 
+                        <span class="font-bold inline-block px-2 py-0.5 rounded-md border" style="color: #fde047 !important; background-color: rgba(253, 224, 71, 0.15) !important; border-color: rgba(253, 224, 71, 0.3) !important;">
+                            {{ label }} ({{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }})
+                        </span> 
+                        with Order References
+                    </p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
