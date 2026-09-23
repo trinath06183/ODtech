@@ -11,8 +11,8 @@
         <!-- Header / Action Bar with Semantic H1 -->
         <div class="bg-white p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm border border-slate-200">
             <div class="flex items-center gap-4 flex-wrap">
-                <a href="{% url 'document_list' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors text-xs font-semibold">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                <a href="{% url 'document_list' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition-all border border-slate-300 text-xs shadow-xs cursor-pointer">
+                    <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                     Back to Documents
                 </a>
                 
@@ -37,16 +37,16 @@
                     {% if prev_doc %}
                     <a href="{% url 'document_preview' prev_doc.id %}"
                        title="Previous: {{ prev_doc.number }}"
-                       class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all border border-slate-200">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all border border-slate-300 shadow-xs cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                         </svg>
                         <span class="hidden sm:inline font-mono">{{ prev_doc.number }}</span>
                     </a>
                     {% else %}
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-400 text-xs font-medium cursor-not-allowed border border-slate-200" title="No previous {{ doc.get_type_display }}">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 text-slate-400 text-xs font-medium cursor-not-allowed border border-slate-200" title="No previous {{ doc.get_type_display }}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                         </svg>
                         <span class="hidden sm:inline">Prev</span>
                     </span>
@@ -55,17 +55,17 @@
                     {% if next_doc %}
                     <a href="{% url 'document_preview' next_doc.id %}"
                        title="Next: {{ next_doc.number }}"
-                       class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all border border-slate-200">
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all border border-slate-300 shadow-xs cursor-pointer">
                         <span class="hidden sm:inline font-mono">{{ next_doc.number }}</span>
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
                     </a>
                     {% else %}
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-400 text-xs font-medium cursor-not-allowed border border-slate-200" title="No next {{ doc.get_type_display }}">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 text-slate-400 text-xs font-medium cursor-not-allowed border border-slate-200" title="No next {{ doc.get_type_display }}">
                         <span class="hidden sm:inline">Next</span>
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
                     </span>
                     {% endif %}
@@ -78,43 +78,42 @@
                 <div class="inline-flex items-center gap-2 flex-wrap">
                     <!-- Primary Action: Download PDF -->
                     <a href="{% url 'generate_pdf' doc.id %}?download=1"
-                       class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs" title="Download directly to your device">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                       class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer" title="Download directly to your device">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         Download PDF
                     </a>
 
                     <!-- View PDF -->
                     <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
-                       class="h-10 px-3.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs" title="Open PDF in a new tab">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                       class="h-10 px-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer" title="Open PDF in a new tab">
+                        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         View PDF
                     </a>
 
                     <!-- Print -->
                     <a href="{% url 'print_pdf' doc.id %}" target="_blank"
-                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs shadow-sm" title="Print Document">
-                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                       class="h-10 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl inline-flex items-center gap-2 transition-all border border-slate-300 text-xs shadow-sm hover:shadow cursor-pointer" title="Print Document">
+                        <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         Print
                     </a>
                 </div>
 
                 <!-- Cluster Divider -->
-                <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                <div class="h-6 w-px bg-slate-300 hidden sm:block"></div>
 
                 <!-- Cluster 2: Share & Operations -->
                 <div class="inline-flex items-center gap-2 flex-wrap">
                     {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
                     {% if doc.is_in_tracker %}
-                    <button type="button" disabled
-                       class="h-10 px-3.5 bg-slate-100 text-slate-400 font-semibold rounded-xl inline-flex items-center gap-1.5 cursor-not-allowed text-xs border border-slate-200 shadow-none"
+                    <span class="h-10 px-3.5 bg-emerald-50 text-emerald-800 font-bold rounded-xl inline-flex items-center gap-2 text-xs border border-emerald-300 shadow-sm"
                        title="Order already present in Tracking Dashboard (Order: {{ doc.tracker_order.order_number }})">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                         In Tracker
-                    </button>
+                    </span>
                     {% else %}
                     <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
-                       class="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs cursor-pointer" title="Send to Tracking Dashboard">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                       class="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer" title="Send to Tracking Dashboard">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                         Send to Tracker
                     </button>
                     {% endif %}
@@ -123,9 +122,9 @@
                     {% if doc.type == 'QTN' or doc.type == 'INV' or doc.type == 'PRO' %}
                     <button type="button"
                        onclick="shareOnWhatsApp('{{ doc.contact.phone|default:''|escapejs }}', '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{{ doc.contact.name|escapejs }}', {{ doc.grand_total }}, '{{ doc.get_access_token|escapejs }}')"
-                       class="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs cursor-pointer"
+                       class="h-10 px-3.5 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer"
                        title="Share document link via WhatsApp">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                         </svg>
                         WhatsApp
@@ -133,9 +132,9 @@
                     <button type="button"
                        onclick="sendDocumentEmail('{{ doc.contact.email|default:''|escapejs }}')"
                        id="emailDocBtn"
-                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs cursor-pointer shadow-sm"
+                       class="h-10 px-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl inline-flex items-center gap-2 transition-all border border-indigo-200 text-xs cursor-pointer shadow-sm"
                        title="Email document with PDF attachment">
-                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                         Email PDF
                     </button>
                     {% endif %}
@@ -143,18 +142,18 @@
                     {% if doc.type == 'INV' or doc.type == 'CHL' %}
                     <button type="button"
                        onclick="openEWayBillModal()"
-                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs cursor-pointer shadow-sm"
+                       class="h-10 px-3.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl inline-flex items-center gap-2 transition-all border border-amber-300 text-xs cursor-pointer shadow-sm"
                        title="Export Government NIC E-Way Bill JSON (v1.0.0421)">
-                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                         E-Way Bill
                     </button>
                     {% endif %}
                     <a href="{% url 'export_document_bundle' doc.id %}"
-                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs shadow-sm"
+                       class="h-10 px-3.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 font-bold rounded-xl inline-flex items-center gap-2 transition-all border border-cyan-300 text-xs shadow-sm"
                        title="Export full document package for instant transfer to live server">
-                        <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                         Export
                     </a>
                 </div>
