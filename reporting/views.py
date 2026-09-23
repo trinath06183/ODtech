@@ -1899,6 +1899,45 @@ def add_payment_reminder_api(request):
                 })
             except Exception as e:
                 return JsonResponse({'success': False, 'message': f'Error adding EDMS reminder: {e}'}, status=500)
+        elif data.get('order_id'):
+            try:
+                from tracker.models import Order
+                o = Order.objects.filter(id=data.get('order_id')).first()
+                if not o:
+                    return JsonResponse({'success': False, 'message': 'Order not found.'}, status=404)
+                
+                amount = o.total_amount or Decimal('0.00')
+                party = o.customer_name or 'Customer'
+                title = f"Order #{o.order_number}"
+                due_date = o.order_date
+
+                reminder = PaymentReminder.objects.create(
+                    created_by=request.user if request.user.is_authenticated else None,
+                    title=title,
+                    party=party,
+                    amount=amount,
+                    due_date=due_date,
+                    reminder_type='receivable',
+                    is_urgent=True,
+                    notes=f"Linked to Order Tracker #{o.order_number}",
+                )
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Reminder for {title} added successfully.',
+                    'reminder': {
+                        'id': reminder.id,
+                        'doc_id': None,
+                        'title': reminder.title,
+                        'party': reminder.party,
+                        'amount': float(amount),
+                        'date': due_date.strftime('%d %b %Y') if due_date else '',
+                        'link': f"/tracker/order/{o.id}/",
+                        'is_urgent': reminder.is_urgent,
+                        'type': reminder.reminder_type,
+                    }
+                })
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': f'Error adding Order reminder: {e}'}, status=500)
         else:
             # Custom reminder
             title = (data.get('title') or '').strip()
@@ -1981,7 +2020,7 @@ def delete_payment_reminder_api(request, reminder_id):
 
 @require_permission('REPORTING', 'read')
 def search_docs_for_reminder_api(request):
-    """API endpoint to search documents (Commercial & EDMS) to add to payment reminders."""
+    """API endpoint to search documents (Commercial, EDMS, Orders, Expenses) to add to payment reminders."""
     q = (request.GET.get('q') or '').strip()
     try:
         from decimal import Decimal
@@ -2057,6 +2096,31 @@ def search_docs_for_reminder_api(request):
                         'date': b_date.strftime('%d %b %Y') if b_date else '',
                         'total': b_amount,
                         'due': b_amount,
+                        'is_already_added': False,
+                    })
+            except Exception:
+                pass
+
+            # 3. Orders from Order Tracker
+            try:
+                from tracker.models import Order
+                order_matches = Order.objects.filter(
+                    Q(order_number__icontains=q) |
+                    Q(customer_name__icontains=q)
+                )[:10]
+                for o in order_matches:
+                    o_amount = float(o.total_amount or 0)
+                    results.append({
+                        'id': str(o.id),
+                        'source': 'order',
+                        'number': f"Order #{o.order_number}",
+                        'type': 'ORDER',
+                        'type_display': 'Order Tracker',
+                        'status': o.order_status or 'Active',
+                        'party': o.customer_name or '—',
+                        'date': o.order_date.strftime('%d %b %Y') if o.order_date else '',
+                        'total': o_amount,
+                        'due': o_amount,
                         'is_already_added': False,
                     })
             except Exception:

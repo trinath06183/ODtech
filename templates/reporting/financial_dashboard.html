@@ -1063,7 +1063,12 @@ async function searchDocsForReminder(query) {
 async function addDocAsReminder(docId, docTitle, btn, source = 'document') {
     if (btn) btn.disabled = true;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-    const payload = (source === 'edms') ? { edms_id: docId } : { doc_id: docId };
+    let payload = { doc_id: docId };
+    if (source === 'edms') {
+        payload = { edms_id: docId };
+    } else if (source === 'order') {
+        payload = { order_id: docId };
+    }
 
     try {
         const resp = await fetch('/reporting/api/reminders/add/', {
