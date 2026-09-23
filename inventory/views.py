@@ -18,23 +18,44 @@ from .models import Product, StockTransaction
 def inventory_list(request):
     query = request.GET.get('q', '').strip()
     page_num = request.GET.get('page', 1)
+    stock_status = request.GET.get('stock_status', 'all').strip()
 
-    # Annotate stock in one query (avoids N+1)
-    products_qs = Product.objects.annotate(
+    # Base QuerySet with annotated stock in one query (avoids N+1)
+    base_qs = Product.objects.annotate(
         annotated_stock=Coalesce(
             Sum('stock_transactions__quantity'),
             Value(0),
             output_field=DecimalField()
         )
-    ).order_by('name')
+    )
 
     if query:
-        products_qs = products_qs.filter(
+        base_qs = base_qs.filter(
             Q(name__icontains=query) |
             Q(sku__icontains=query) |
             Q(brand__icontains=query) |
             Q(category__icontains=query)
         ).distinct()
+
+    # Calculate status counts on the filtered search
+    from django.db.models import F
+    total_all_count = base_qs.count()
+    in_stock_count = base_qs.filter(annotated_stock__gt=0).count()
+    low_stock_count = base_qs.filter(reorder_level__gt=0, annotated_stock__lt=F('reorder_level')).count()
+    out_of_stock_count = base_qs.filter(annotated_stock__lte=0).count()
+
+    # Filter based on selected stock_status
+    if stock_status == 'in_stock':
+        products_qs = base_qs.filter(annotated_stock__gt=0).order_by('name')
+    elif stock_status == 'low_stock':
+        products_qs = base_qs.filter(reorder_level__gt=0, annotated_stock__lt=F('reorder_level')).order_by('name')
+    elif stock_status == 'out_of_stock':
+        products_qs = base_qs.filter(annotated_stock__lte=0).order_by('name')
+    else:
+        stock_status = 'all'
+        products_qs = base_qs.order_by('name')
+
+    total_count = products_qs.count()
 
     # Suggestions for autocomplete
     product_names = list(Product.objects.values_list('name', flat=True).order_by('name')[:10])
@@ -42,14 +63,6 @@ def inventory_list(request):
     product_brands = list(Product.objects.exclude(brand__isnull=True).exclude(brand='').values_list('brand', flat=True).order_by('brand')[:10])
     product_categories = list(Product.objects.exclude(category__isnull=True).exclude(category='').values_list('category', flat=True).order_by('category')[:10])
     suggestions = sorted(list(set(product_names + product_skus + product_brands + product_categories)))
-
-    # Low stock count: items where stock < reorder_level (single query using F)
-    from django.db.models import F
-    low_stock_count = Product.objects.annotate(
-        s=Coalesce(Sum('stock_transactions__quantity'), Value(0), output_field=DecimalField())
-    ).filter(reorder_level__gt=0, s__lt=F('reorder_level')).count()
-
-    total_count = products_qs.count()
 
     paginator = Paginator(products_qs, 30)
     page_obj = paginator.get_page(page_num)
@@ -70,9 +83,13 @@ def inventory_list(request):
     return render(request, 'inventory/inventory_list.html', {
         'products': page_obj,
         'total_count': total_count,
+        'total_all_count': total_all_count,
+        'in_stock_count': in_stock_count,
+        'low_stock_count': low_stock_count,
+        'out_of_stock_count': out_of_stock_count,
+        'stock_status': stock_status,
         'query': query,
         'suggestions': suggestions[:15],
-        'low_stock_count': low_stock_count,
         'has_next': page_obj.has_next(),
         'next_page': 2 if page_obj.has_next() else None,
     })
@@ -239,43 +256,114 @@ def product_delete(request, product_id):
 @require_permission('INVENTORY', 'write')
 def adjust_stock(request, product_id):
     product = get_object_or_404(Product, id=product_id)
+    is_ajax = (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+        request.content_type == 'application/json' or
+        request.POST.get('is_ajax') == '1' or
+        request.GET.get('format') == 'json'
+    )
+
+    from inventory.services import StockService
+
+    # AJAX GET: Fetch live stock and product info for quick modal
+    if request.method == 'GET' and is_ajax:
+        curr_stock = float(StockService.get_available_stock(product.id))
+        return JsonResponse({
+            'success': True,
+            'product_id': product.id,
+            'name': product.name,
+            'sku': product.sku,
+            'unit': product.unit,
+            'current_stock': curr_stock,
+            'reorder_level': float(product.reorder_level or 0),
+        })
+
     if request.method == 'POST':
-        transaction_type     = request.POST.get('transaction_type')
-        qty_str              = request.POST.get('quantity', '0').strip()
-        batch_number         = request.POST.get('batch_number', '').strip() or None
-        serial_number        = request.POST.get('serial_number', '').strip() or None
-        reason               = request.POST.get('reason', '').strip() or None
-        remarks              = request.POST.get('remarks', '').strip() or None
-        adjustment_direction = request.POST.get('adjustment_direction', 'add')
+        import json
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+            except Exception:
+                data = {}
+        else:
+            data = request.POST
+
+        transaction_type     = data.get('transaction_type', 'IN')
+        qty_str              = str(data.get('quantity', '0')).strip()
+        batch_number         = (data.get('batch_number') or '').strip() or None
+        serial_number        = (data.get('serial_number') or '').strip() or None
+        reason               = (data.get('reason') or '').strip() or None
+        remarks              = (data.get('remarks') or '').strip() or None
+        adjustment_direction = data.get('adjustment_direction', 'add')
+        reference_document   = (data.get('reference_document') or '').strip() or None
 
         try:
             from decimal import Decimal
             quantity = Decimal(qty_str)
         except (ValueError, TypeError):
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': "Invalid quantity value."}, status=400)
             messages.error(request, "Invalid quantity value.")
             return redirect('adjust_stock', product_id=product.id)
 
-        if quantity <= 0:
-            messages.error(request, "Quantity must be greater than zero.")
-            return redirect('adjust_stock', product_id=product.id)
+        current_stock = Decimal(str(StockService.get_available_stock(product.id)))
 
-        # Map direction for ADJUSTMENT/OUT/IN
-        if transaction_type == 'ADJUSTMENT' and adjustment_direction == 'reduce':
-            quantity = -quantity
-        elif transaction_type == 'OUT':
-            quantity = -quantity
+        # Handle 'SET' mode (Physical Count Audit Correction)
+        if transaction_type == 'SET':
+            diff = quantity - current_stock
+            if diff == 0:
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': f"Stock is already {quantity:g} {product.unit}.",
+                        'product_id': product.id,
+                        'new_stock': float(current_stock),
+                        'unit': product.unit,
+                        'is_low_stock': product.reorder_level > 0 and current_stock < product.reorder_level,
+                        'reorder_level': float(product.reorder_level or 0),
+                    })
+                return redirect('inventory_list')
+            transaction_type = 'ADJUSTMENT'
+            quantity = diff
+        else:
+            if quantity <= 0:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': "Quantity must be greater than zero."}, status=400)
+                messages.error(request, "Quantity must be greater than zero.")
+                return redirect('adjust_stock', product_id=product.id)
+
+            # Map direction for ADJUSTMENT/OUT/IN
+            if transaction_type == 'ADJUSTMENT' and adjustment_direction == 'reduce':
+                quantity = -quantity
+            elif transaction_type == 'OUT':
+                quantity = -quantity
 
         # Save transaction
-        from inventory.services import StockService
         StockService.create_transaction(
             product_id=product.id,
             transaction_type=transaction_type,
             quantity=quantity,
+            reference_document=reference_document,
             batch_number=batch_number,
             serial_number=serial_number,
             reason=reason,
             remarks=remarks
         )
+
+        new_stock = float(StockService.get_available_stock(product.id))
+        is_low = product.reorder_level > 0 and new_stock < float(product.reorder_level)
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': f"Stock updated to {new_stock:g} {product.unit} for {product.name}.",
+                'product_id': product.id,
+                'new_stock': new_stock,
+                'unit': product.unit,
+                'is_low_stock': is_low,
+                'reorder_level': float(product.reorder_level or 0),
+            })
+
         messages.success(request, f"Manual stock transaction ({transaction_type}) created for {product.name}.")
         return redirect('inventory_list')
 

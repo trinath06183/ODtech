@@ -37,6 +37,9 @@
 <!-- Search Controls -->
 <div class="glass p-4 rounded-2xl mb-6">
     <form method="get" class="flex flex-wrap items-center justify-between gap-4">
+        {% if stock_status and stock_status != 'all' %}
+        <input type="hidden" name="stock_status" value="{{ stock_status }}">
+        {% endif %}
         <!-- Left: Search Box with Autocomplete Datalist -->
         <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">
             <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search Product Name, SKU, Brand, Category..." list="product-suggestions"
@@ -47,7 +50,7 @@
                 </svg>
             </div>
             {% if query %}
-            <a href="?" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
+            <a href="?{% if stock_status and stock_status != 'all' %}stock_status={{ stock_status }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -60,7 +63,7 @@
             <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm transition-colors shadow-lg shadow-cyan-500/20">
                 Search
             </button>
-            {% if query %}
+            {% if query or stock_status != 'all' %}
             <a href="?" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
                 Reset
             </a>
@@ -76,16 +79,32 @@
     {% endfor %}
 </datalist>
 
-
-
-{% if low_stock_count > 0 %}
-<div class="mb-5 px-5 py-3 rounded-xl text-sm font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 flex items-center gap-3">
-    ⚠️ <strong>{{ low_stock_count }} product{{ low_stock_count|pluralize }}</strong> below reorder level — check stock!
+<!-- ─── Stock Status Filter Pills ────────────────────────────────────────── -->
+<div class="flex items-center gap-2.5 overflow-x-auto pb-2 mb-5 scrollbar-none">
+    <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=all"
+       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'all' %}bg-cyan-600 text-white shadow-md shadow-cyan-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
+       <span>📦 All Products</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'all' %}bg-white/20 text-white{% else %}bg-slate-800 text-slate-400{% endif %}">{{ total_all_count }}</span>
+    </a>
+    <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=in_stock"
+       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'in_stock' %}bg-emerald-600 text-white shadow-md shadow-emerald-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
+       <span>✅ In Stock</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'in_stock' %}bg-white/20 text-white{% else %}bg-emerald-500/15 text-emerald-400{% endif %}">{{ in_stock_count }}</span>
+    </a>
+    <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=low_stock"
+       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'low_stock' %}bg-amber-600 text-white shadow-md shadow-amber-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
+       <span>⚠️ Low Stock</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'low_stock' %}bg-white/20 text-white{% else %}bg-amber-500/15 text-amber-400{% endif %}">{{ low_stock_count }}</span>
+    </a>
+    <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=out_of_stock"
+       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'out_of_stock' %}bg-rose-600 text-white shadow-md shadow-rose-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
+       <span>⭕ Out of Stock</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'out_of_stock' %}bg-white/20 text-white{% else %}bg-rose-500/15 text-rose-400{% endif %}">{{ out_of_stock_count }}</span>
+    </a>
 </div>
-{% endif %}
 
 <!-- Products Table -->
-<div class="glass rounded-2xl overflow-hidden overflow-x-auto">
+<div class="glass rounded-2xl overflow-hidden overflow-x-auto shadow-2xl border border-white/5">
     <table class="w-full text-left whitespace-nowrap">
         <thead class="bg-slate-800/80 border-b border-white/10">
             <tr class="text-gray-400 text-xs uppercase tracking-wider">
@@ -103,8 +122,9 @@
         </tbody>
     </table>
 </div>
+
 <!-- Sentinel + Spinner for Infinite Scroll -->
-<div id="scroll-sentinel" class="flex justify-center items-center py-6" data-next-page="{{ next_page }}" data-query="{{ query|urlencode }}">
+<div id="scroll-sentinel" class="flex justify-center items-center py-6" data-next-page="{{ next_page }}" data-query="{{ query|urlencode }}" data-stock-status="{{ stock_status }}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
         <svg class="animate-spin w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -235,6 +255,408 @@ function renderLinkedBillsTable(bills) {
 }
 </script>
 
+<!-- Quick Stock Adjustment Modal -->
+<div id="quickAdjustModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 shadow-2xl text-white animate-in fade-in zoom-in duration-200">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xl shadow-inner">
+                    ⚡
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        Quick Stock Adjustment
+                    </h3>
+                    <p class="text-xs text-slate-400 truncate max-w-[280px] sm:max-w-xs" id="quickAdjustProductName">Product Name</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeQuickAdjustModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold text-sm transition">
+                ✕
+            </button>
+        </div>
+
+        <!-- Product Stock Snapshot Card -->
+        <div class="p-3.5 rounded-2xl bg-slate-800/60 border border-white/5 mb-5 flex items-center justify-between">
+            <div>
+                <span class="text-[11px] font-medium text-slate-400 block">Current Available Stock</span>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                    <span id="quickAdjustCurrentStock" class="text-xl font-black font-mono text-cyan-400">0</span>
+                    <span id="quickAdjustUnit" class="text-xs font-bold text-slate-300">Nos</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="text-[11px] font-medium text-slate-400 block">SKU Code</span>
+                <span id="quickAdjustSku" class="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/20">SKU</span>
+            </div>
+        </div>
+
+        <form id="quickAdjustForm" onsubmit="submitQuickStockAdjustment(event)" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" id="quickAdjustProductId" name="product_id" value="">
+            <input type="hidden" id="quickAdjustSelectedType" name="transaction_type" value="IN">
+
+            <!-- Transaction Type Selector -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">Adjustment Action</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setAdjustType('IN')" id="typeBtn-IN"
+                            class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 cursor-pointer">
+                        <span class="text-base">📥</span>
+                        <span>Stock IN (+)</span>
+                    </button>
+                    <button type="button" onclick="setAdjustType('OUT')" id="typeBtn-OUT"
+                            class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-slate-800 text-slate-400 border-white/5 hover:text-white cursor-pointer">
+                        <span class="text-base">📤</span>
+                        <span>Stock OUT (-)</span>
+                    </button>
+                    <button type="button" onclick="setAdjustType('SET')" id="typeBtn-SET"
+                            class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-slate-800 text-slate-400 border-white/5 hover:text-white cursor-pointer">
+                        <span class="text-base">🎯</span>
+                        <span>Set Exact Count</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quantity & Calculated Result Preview -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div>
+                    <label id="quickAdjustQtyLabel" class="block text-xs font-bold text-slate-300 mb-1">
+                        Quantity to Add <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" step="any" min="0.01" id="quickAdjustQty" name="quantity" required placeholder="0"
+                               oninput="recalculateNewStockPreview()"
+                               class="w-full pl-3.5 pr-14 py-2.5 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-white font-mono font-bold text-sm">
+                        <span id="quickAdjustQtyUnit" class="absolute right-3 top-2.5 text-xs font-medium text-slate-400 pointer-events-none">Nos</span>
+                    </div>
+                </div>
+
+                <!-- Resulting Stock Preview Box -->
+                <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-400">Resulting Stock:</span>
+                    <div class="text-right font-mono font-bold text-sm" id="quickAdjustPreviewStock">
+                        <span class="text-emerald-400">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason Presets -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Reason for Adjustment</label>
+                <select id="quickAdjustReasonSelect" onchange="onReasonPresetChange(this.value)"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 text-xs text-slate-200 font-medium">
+                    <option value="Physical Stock Audit / Count Correction">Physical Stock Audit / Count Correction</option>
+                    <option value="Direct Purchase / Inflow">Direct Purchase / Stock Inflow</option>
+                    <option value="Customer Dispatch / Delivery">Customer Dispatch / Delivery</option>
+                    <option value="Damaged / Scrapped / Defective">Damaged / Scrapped / Defective</option>
+                    <option value="Sample / Internal Testing / Demo">Sample / Internal Testing / Demo</option>
+                    <option value="Customer Return / Restock">Customer Return / Restock</option>
+                    <option value="Other">Other (Enter custom reason below)</option>
+                </select>
+                <input type="text" id="quickAdjustCustomReason" placeholder="Enter custom reason..."
+                       class="hidden mt-2 w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 text-xs text-slate-200">
+            </div>
+
+            <!-- Reference Document / Notes (Optional) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Reference Document / Note (Optional)</label>
+                <input type="text" id="quickAdjustRef" placeholder="e.g. PO-2425-01, Delivery Challan #, or Batch note"
+                       class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 text-xs text-slate-200">
+            </div>
+
+            <!-- Error message container -->
+            <div id="quickAdjustError" class="hidden p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-medium"></div>
+
+            <!-- Modal Footer Actions -->
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeQuickAdjustModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="submit" id="quickAdjustSubmitBtn"
+                        class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                    <span>⚡ Save Adjustment</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Floating Toast Container -->
+<div id="inventoryToast" class="fixed bottom-6 right-6 z-[60] hidden bg-slate-900 border border-emerald-500/50 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transition-all animate-in slide-in-from-bottom duration-200">
+    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">✓</div>
+    <div>
+        <p class="text-xs font-bold text-white" id="inventoryToastTitle">Success</p>
+        <p class="text-[11px] text-slate-300" id="inventoryToastMsg">Stock updated successfully</p>
+    </div>
+</div>
+
+<script>
+// ─── Dropdown Actions Menu ───────────────────────────────────────────────
+function toggleActionMenu(event, menuId) {
+    event.stopPropagation();
+    const targetMenu = document.getElementById(menuId);
+    if (!targetMenu) return;
+    const isHidden = targetMenu.classList.contains('hidden');
+    closeAllActionMenus();
+    if (isHidden) {
+        targetMenu.classList.remove('hidden');
+    }
+}
+
+function closeAllActionMenus() {
+    document.querySelectorAll('.action-dropdown-menu').forEach(m => m.classList.add('hidden'));
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.action-dropdown-menu') && !e.target.closest('button[title="More options"]')) {
+        closeAllActionMenus();
+    }
+});
+
+// ─── Quick Stock Adjustment Modal ────────────────────────────────────────
+let currentAdjustProduct = {
+    id: null,
+    name: '',
+    sku: '',
+    unit: 'Nos',
+    currentStock: 0,
+    reorderLevel: 0,
+    selectedType: 'IN'
+};
+
+function openQuickAdjustModal(id, name, sku, unit, stock, reorderLevel) {
+    closeAllActionMenus();
+    currentAdjustProduct.id = id;
+    currentAdjustProduct.name = name;
+    currentAdjustProduct.sku = sku;
+    currentAdjustProduct.unit = unit || 'Nos';
+    currentAdjustProduct.currentStock = parseFloat(stock) || 0;
+    currentAdjustProduct.reorderLevel = parseFloat(reorderLevel) || 0;
+    currentAdjustProduct.selectedType = 'IN';
+
+    document.getElementById('quickAdjustProductId').value = id;
+    document.getElementById('quickAdjustProductName').innerText = name;
+    document.getElementById('quickAdjustSku').innerText = sku;
+    document.getElementById('quickAdjustCurrentStock').innerText = currentAdjustProduct.currentStock.toLocaleString();
+    document.getElementById('quickAdjustUnit').innerText = currentAdjustProduct.unit;
+    document.getElementById('quickAdjustQtyUnit').innerText = currentAdjustProduct.unit;
+    
+    // Reset form inputs
+    const qtyInput = document.getElementById('quickAdjustQty');
+    qtyInput.value = '';
+    document.getElementById('quickAdjustRef').value = '';
+    document.getElementById('quickAdjustReasonSelect').value = 'Physical Stock Audit / Count Correction';
+    document.getElementById('quickAdjustCustomReason').value = '';
+    document.getElementById('quickAdjustCustomReason').classList.add('hidden');
+    document.getElementById('quickAdjustError').classList.add('hidden');
+    document.getElementById('quickAdjustError').innerText = '';
+
+    setAdjustType('IN');
+
+    document.getElementById('quickAdjustModal').classList.remove('hidden');
+    document.getElementById('quickAdjustModal').classList.add('flex');
+    qtyInput.focus();
+
+    // Fetch fresh live stock from server in background
+    fetch(`/inventory/product/${id}/adjust-stock/?format=json`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.product_id == currentAdjustProduct.id) {
+            currentAdjustProduct.currentStock = parseFloat(data.current_stock) || 0;
+            currentAdjustProduct.reorderLevel = parseFloat(data.reorder_level) || 0;
+            document.getElementById('quickAdjustCurrentStock').innerText = currentAdjustProduct.currentStock.toLocaleString();
+            recalculateNewStockPreview();
+        }
+    })
+    .catch(() => {});
+}
+
+function closeQuickAdjustModal() {
+    const modal = document.getElementById('quickAdjustModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+document.getElementById('quickAdjustModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeQuickAdjustModal();
+});
+
+function setAdjustType(type) {
+    currentAdjustProduct.selectedType = type;
+    document.getElementById('quickAdjustSelectedType').value = type;
+
+    const btnIn = document.getElementById('typeBtn-IN');
+    const btnOut = document.getElementById('typeBtn-OUT');
+    const btnSet = document.getElementById('typeBtn-SET');
+    const label = document.getElementById('quickAdjustQtyLabel');
+
+    [btnIn, btnOut, btnSet].forEach(b => {
+        b.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-slate-800 text-slate-400 border-white/5 hover:text-white cursor-pointer';
+    });
+
+    if (type === 'IN') {
+        btnIn.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 cursor-pointer';
+        label.innerHTML = 'Quantity to Add (+) <span class="text-rose-500">*</span>';
+    } else if (type === 'OUT') {
+        btnOut.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30 cursor-pointer';
+        label.innerHTML = 'Quantity to Deduct (-) <span class="text-rose-500">*</span>';
+    } else if (type === 'SET') {
+        btnSet.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-600/30 cursor-pointer';
+        label.innerHTML = 'New Exact Count <span class="text-rose-500">*</span>';
+    }
+
+    recalculateNewStockPreview();
+}
+
+function recalculateNewStockPreview() {
+    const qtyVal = parseFloat(document.getElementById('quickAdjustQty').value);
+    const previewEl = document.getElementById('quickAdjustPreviewStock');
+    const current = currentAdjustProduct.currentStock;
+    const unit = currentAdjustProduct.unit;
+
+    if (isNaN(qtyVal)) {
+        previewEl.innerHTML = `<span class="text-slate-400">${current.toLocaleString()} ${unit}</span>`;
+        return;
+    }
+
+    let calculated = current;
+    if (currentAdjustProduct.selectedType === 'IN') {
+        calculated = current + qtyVal;
+    } else if (currentAdjustProduct.selectedType === 'OUT') {
+        calculated = current - qtyVal;
+    } else if (currentAdjustProduct.selectedType === 'SET') {
+        calculated = qtyVal;
+    }
+
+    let colorClass = 'text-emerald-400';
+    if (calculated < 0) {
+        colorClass = 'text-rose-400';
+    } else if (currentAdjustProduct.reorderLevel > 0 && calculated < currentAdjustProduct.reorderLevel) {
+        colorClass = 'text-amber-400';
+    } else if (calculated === 0) {
+        colorClass = 'text-slate-400';
+    }
+
+    previewEl.innerHTML = `<span class="${colorClass}">${calculated.toLocaleString()} ${unit}</span>`;
+}
+
+function onReasonPresetChange(val) {
+    const customInput = document.getElementById('quickAdjustCustomReason');
+    if (val === 'Other') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+    } else {
+        customInput.classList.add('hidden');
+    }
+}
+
+async function submitQuickStockAdjustment(event) {
+    event.preventDefault();
+    const btn = document.getElementById('quickAdjustSubmitBtn');
+    const errBox = document.getElementById('quickAdjustError');
+    errBox.classList.add('hidden');
+    errBox.innerText = '';
+
+    const qty = parseFloat(document.getElementById('quickAdjustQty').value);
+    if (isNaN(qty) || (currentAdjustProduct.selectedType !== 'SET' && qty <= 0)) {
+        errBox.innerText = 'Please enter a valid positive quantity.';
+        errBox.classList.remove('hidden');
+        return;
+    }
+
+    let reason = document.getElementById('quickAdjustReasonSelect').value;
+    if (reason === 'Other') {
+        reason = document.getElementById('quickAdjustCustomReason').value.trim() || 'Manual adjustment';
+    }
+
+    const payload = {
+        transaction_type: currentAdjustProduct.selectedType,
+        quantity: qty,
+        reason: reason,
+        reference_document: document.getElementById('quickAdjustRef').value.trim(),
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>Saving...</span>';
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    try {
+        const resp = await fetch(`/inventory/product/${currentAdjustProduct.id}/adjust-stock/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+
+        if (data.success) {
+            // Update table row stock badge in place
+            updateTableRowStock(data.product_id, data.new_stock, data.unit, data.is_low_stock);
+            closeQuickAdjustModal();
+            showInventoryToast('Stock Updated', data.message || `Stock updated to ${data.new_stock} ${data.unit}`);
+        } else {
+            errBox.innerText = data.message || 'Failed to adjust stock.';
+            errBox.classList.remove('hidden');
+        }
+    } catch (e) {
+        errBox.innerText = 'Network error while adjusting stock.';
+        errBox.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Save Adjustment</span>';
+    }
+}
+
+function updateTableRowStock(productId, newStock, unit, isLowStock) {
+    const badge = document.getElementById(`stock-badge-${productId}`);
+    if (!badge) return;
+
+    const qtySpan = badge.querySelector('.stock-qty-text');
+    const unitSpan = badge.querySelector('.stock-unit-text');
+    const iconSpan = badge.querySelector('.stock-icon');
+
+    if (qtySpan) qtySpan.textContent = Math.round(newStock).toLocaleString();
+    if (unitSpan) unitSpan.textContent = unit;
+
+    // Reset and apply fresh classes
+    badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 shadow-sm ';
+
+    if (isLowStock) {
+        badge.className += 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30';
+        if (iconSpan) iconSpan.textContent = '⚠️';
+    } else if (newStock > 0) {
+        badge.className += 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30';
+        if (iconSpan) iconSpan.textContent = '✓';
+    } else {
+        badge.className += 'bg-slate-800 text-slate-400 border border-slate-700/80 hover:bg-slate-700 hover:text-slate-200';
+        if (iconSpan) iconSpan.textContent = '⭕';
+    }
+}
+
+function showInventoryToast(title, msg) {
+    const toast = document.getElementById('inventoryToast');
+    if (!toast) return;
+    document.getElementById('inventoryToastTitle').innerText = title;
+    document.getElementById('inventoryToastMsg').innerText = msg;
+
+    toast.classList.remove('hidden');
+    clearTimeout(window._invToastTimer);
+    window._invToastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3500);
+}
+</script>
+
 <script>
 (function() {
     const sentinel = document.getElementById('scroll-sentinel');
@@ -246,8 +668,9 @@ function renderLinkedBillsTable(bills) {
 
     if (!sentinel) return;
 
-    function getNextPage() { return sentinel.dataset.nextPage || null; }
-    function getQuery()    { return sentinel.dataset.query || ''; }
+    function getNextPage()    { return sentinel.dataset.nextPage || null; }
+    function getQuery()       { return sentinel.dataset.query || ''; }
+    function getStockStatus() { return sentinel.dataset.stockStatus || 'all'; }
 
     async function loadMore() {
         const nextPage = getNextPage();
@@ -257,7 +680,8 @@ function renderLinkedBillsTable(bills) {
 
         try {
             const qParam = getQuery() ? `&q=${getQuery()}` : '';
-            const url = `?page=${nextPage}${qParam}`;
+            const statusParam = getStockStatus() && getStockStatus() !== 'all' ? `&stock_status=${getStockStatus()}` : '';
+            const url = `?page=${nextPage}${qParam}${statusParam}`;
             const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!res.ok) throw new Error('Network error');
             const data = await res.json();
