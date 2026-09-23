@@ -17,15 +17,18 @@
                 </a>
                 
                 <div class="flex items-center gap-2">
-                    {# Issue 5: Document number — monospace codes are industry-standard uppercase; add aria-label to provide semantic context #}
-                <h1 class="text-xl sm:text-2xl font-black text-slate-900 font-mono tracking-tight" aria-label="Document number {{ doc.number }}">{{ doc.number }}</h1>
+                    {# Issue 5: Add mixed-case label and semantic code tag to resolve all-caps heuristic #}
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2" aria-label="{{ doc.get_type_display }} {{ doc.number }}">
+                        <span class="text-slate-500 font-medium text-base sm:text-lg">{{ doc.get_type_display }}:</span>
+                        <code class="font-mono font-black text-slate-900 tracking-tight">{{ doc.number }}</code>
+                    </h1>
                     <span class="px-2.5 py-1 rounded-full text-xs font-bold
                         {% if doc.type == 'QTN' %}bg-purple-100 text-purple-700 border border-purple-200
                         {% elif doc.type == 'INV' %}bg-emerald-100 text-emerald-700 border border-emerald-200
                         {% elif doc.type == 'PO' %}bg-amber-100 text-amber-700 border border-amber-200
                         {% elif doc.type == 'CHL' %}bg-cyan-100 text-cyan-700 border border-cyan-200
                         {% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
-                        {{ doc.get_type_display }}
+                        {{ doc.status }}
                     </span>
                 </div>
 
@@ -69,82 +72,92 @@
                 </div>
             </div>
 
-            <!-- Standardized Action Button Bar (Equal 38px baseline height & cohesive colors) -->
-            <div class="flex items-center gap-2 flex-wrap">
-                {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
-                {% if doc.is_in_tracker %}
-                <button type="button" disabled
-                   class="h-9.5 px-3.5 bg-slate-100 text-slate-400 font-semibold rounded-xl inline-flex items-center cursor-not-allowed text-xs border border-slate-200 shadow-none"
-                   title="Order already present in Tracking Dashboard (Order: {{ doc.tracker_order.order_number }})">
-                    <svg class="w-4 h-4 mr-1.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    In Tracker
-                </button>
-                {% else %}
-                <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
-                   class="h-9.5 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl inline-flex items-center transition-colors shadow-2xs text-xs cursor-pointer" title="Send to Tracking Dashboard">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Send to Tracker
-                </button>
-                {% endif %}
-                {% endif %}
+            <!-- Standardized Action Button Bar (Clustered & Cohesive Touch Targets) -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Cluster 1: Document View & Print Output -->
+                <div class="inline-flex items-center gap-2 flex-wrap">
+                    <!-- Primary Action: Download PDF -->
+                    <a href="{% url 'generate_pdf' doc.id %}?download=1"
+                       class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs" title="Download directly to your device">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Download PDF
+                    </a>
 
-                <!-- Primary Action: Download PDF -->
-                <a href="{% url 'generate_pdf' doc.id %}?download=1"
-                   class="h-9.5 px-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl inline-flex items-center transition-colors shadow-2xs text-xs" title="Download directly to your device">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Download PDF
-                </a>
+                    <!-- View PDF -->
+                    <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
+                       class="h-10 px-3.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs" title="Open PDF in a new tab">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        View PDF
+                    </a>
 
-                <!-- Secondary Actions -->
-                <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
-                   class="h-9.5 px-3.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl inline-flex items-center transition-colors shadow-2xs text-xs" title="Open PDF in a new tab">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    View PDF
-                </a>
+                    <!-- Print -->
+                    <a href="{% url 'print_pdf' doc.id %}" target="_blank"
+                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs shadow-sm" title="Print Document">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Print
+                    </a>
+                </div>
 
-                <a href="{% url 'print_pdf' doc.id %}" target="_blank"
-                   class="h-9.5 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center transition-colors border border-slate-200 text-xs" title="Print Document">
-                    <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Print
-                </a>
+                <!-- Cluster Divider -->
+                <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
 
-                {% if doc.type == 'QTN' or doc.type == 'INV' or doc.type == 'PRO' %}
-                <button type="button"
-                   onclick="shareOnWhatsApp('{{ doc.contact.phone|default:''|escapejs }}', '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{{ doc.contact.name|escapejs }}', {{ doc.grand_total }}, '{{ doc.get_access_token|escapejs }}')"
-                   class="h-9.5 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl inline-flex items-center transition-colors shadow-2xs text-xs cursor-pointer"
-                   title="Share document link via WhatsApp">
-                    <svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    WhatsApp
-                </button>
-                <button type="button"
-                   onclick="sendDocumentEmail('{{ doc.contact.email|default:''|escapejs }}')"
-                   id="emailDocBtn"
-                   class="h-9.5 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center transition-colors border border-slate-200 text-xs cursor-pointer"
-                   title="Email document with PDF attachment">
-                    <svg class="w-4 h-4 mr-1.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    Email PDF
-                </button>
-                {% endif %}
+                <!-- Cluster 2: Share & Operations -->
+                <div class="inline-flex items-center gap-2 flex-wrap">
+                    {% if doc.type == 'QTN' or doc.type == 'PRO' or doc.type == 'INV' %}
+                    {% if doc.is_in_tracker %}
+                    <button type="button" disabled
+                       class="h-10 px-3.5 bg-slate-100 text-slate-400 font-semibold rounded-xl inline-flex items-center gap-1.5 cursor-not-allowed text-xs border border-slate-200 shadow-none"
+                       title="Order already present in Tracking Dashboard (Order: {{ doc.tracker_order.order_number }})">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        In Tracker
+                    </button>
+                    {% else %}
+                    <button type="button" onclick="openTrackerModal('{{ doc.id }}', '{{ doc.po_reference_number|default:doc.number|escapejs }}', '{{ doc.contact.phone|default:''|escapejs }}')"
+                       class="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs cursor-pointer" title="Send to Tracking Dashboard">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Send to Tracker
+                    </button>
+                    {% endif %}
+                    {% endif %}
 
-                {% if doc.type == 'INV' or doc.type == 'CHL' %}
-                <button type="button"
-                   onclick="openEWayBillModal()"
-                   class="h-9.5 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center transition-colors border border-slate-200 text-xs cursor-pointer"
-                   title="Export Government NIC E-Way Bill JSON (v1.0.0421)">
-                    <svg class="w-4 h-4 mr-1.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    E-Way Bill
-                </button>
-                {% endif %}
-                <a href="{% url 'export_document_bundle' doc.id %}"
-                   class="h-9.5 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center transition-colors border border-slate-200 text-xs"
-                   title="Export full document package for instant transfer to live server">
-                    <svg class="w-4 h-4 mr-1.5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    Export
-                </a>
+                    {% if doc.type == 'QTN' or doc.type == 'INV' or doc.type == 'PRO' %}
+                    <button type="button"
+                       onclick="shareOnWhatsApp('{{ doc.contact.phone|default:''|escapejs }}', '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{{ doc.contact.name|escapejs }}', {{ doc.grand_total }}, '{{ doc.get_access_token|escapejs }}')"
+                       class="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors shadow-sm text-xs cursor-pointer"
+                       title="Share document link via WhatsApp">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        WhatsApp
+                    </button>
+                    <button type="button"
+                       onclick="sendDocumentEmail('{{ doc.contact.email|default:''|escapejs }}')"
+                       id="emailDocBtn"
+                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs cursor-pointer shadow-sm"
+                       title="Email document with PDF attachment">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Email PDF
+                    </button>
+                    {% endif %}
+
+                    {% if doc.type == 'INV' or doc.type == 'CHL' %}
+                    <button type="button"
+                       onclick="openEWayBillModal()"
+                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs cursor-pointer shadow-sm"
+                       title="Export Government NIC E-Way Bill JSON (v1.0.0421)">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        E-Way Bill
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'export_document_bundle' doc.id %}"
+                       class="h-10 px-3.5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors border border-slate-200 text-xs shadow-sm"
+                       title="Export full document package for instant transfer to live server">
+                        <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        Export
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -179,12 +192,21 @@
                 </span>
             </div>
 
+            {# Issue 11: Edit Document promoted to top of the stack as primary user intent #}
+            <a href="{% url 'edit_document' doc.id %}"
+               class="w-full text-center h-11 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 text-xs"
+               style="color: #ffffff !important;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Document
+            </a>
+
+            {# Issue 10: Standardized workflow and utility buttons with uniform h-11 height, icons and shadows #}
             {% if doc.status != 'Approved' %}
             <form method="post" action="{% url 'change_document_status' doc.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="status" value="Approved">
-                <button type="submit" class="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm" style="color: #ffffff !important;">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <button type="submit" class="w-full h-11 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 text-xs" style="color: #ffffff !important;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     Approve Document
                 </button>
             </form>
@@ -192,7 +214,8 @@
             <form method="post" action="{% url 'change_document_status' doc.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="status" value="Draft">
-                <button type="submit" class="w-full px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition text-xs flex items-center justify-center gap-1 border border-slate-200">
+                <button type="submit" class="w-full h-11 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition text-xs flex items-center justify-center gap-2 border border-slate-200 shadow-sm">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                     Revert Status to Draft
                 </button>
             </form>
@@ -201,7 +224,7 @@
             {% if doc.type == 'INV' or doc.type == 'PO' %}
             <form method="post" action="{% url 'toggle_skip_reminder' doc.id %}">
                 {% csrf_token %}
-                <button type="submit" class="w-full px-3 py-2 rounded-xl transition text-xs flex items-center justify-center gap-1.5 border font-semibold {% if doc.skip_reminder %}bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300{% else %}bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200{% endif %}" title="{% if doc.skip_reminder %}Click to enable payment reminders for this document{% else %}Click to mute/skip payment reminders for this document{% endif %}">
+                <button type="submit" class="w-full h-11 px-4 rounded-xl transition text-xs flex items-center justify-center gap-2 border font-semibold shadow-sm {% if doc.skip_reminder %}bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300{% else %}bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200{% endif %}" title="{% if doc.skip_reminder %}Click to enable payment reminders for this document{% else %}Click to mute/skip payment reminders for this document{% endif %}">
                     {% if doc.skip_reminder %}
                     <span>🔕 Reminders: <strong>Skipped</strong> (Click to Enable)</span>
                     {% else %}
@@ -213,21 +236,14 @@
 
             {% if doc.type == 'PO' %}
             <button type="button" onclick="openReceiveGoodsModal('{{ doc.id }}', '{{ doc.number|escapejs }}')"
-               class="w-full px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 text-sm"
+               class="w-full h-11 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 text-xs"
                style="color: #ffffff !important;">
-                📦 Mark Goods Received
+                <span>📦</span> Mark Goods Received
             </button>
             {% endif %}
-
-            <a href="{% url 'edit_document' doc.id %}"
-               class="w-full text-center px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
-               style="color: #ffffff !important;">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                Edit Document
-            </a>
             
             <div class="relative" x-data="{ openConvert: false }">
-                <button @click="openConvert = !openConvert" class="w-full px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm">
+                <button @click="openConvert = !openConvert" class="w-full h-11 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm text-xs">
                     Convert To...
                     <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': openConvert}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
@@ -257,7 +273,7 @@
                         Edit
                     </button>
                 </div>
-                <div class="text-slate-800 font-bold leading-tight" id="preview-customer-name">{{ doc.contact.name }}</div>
+                <div class="text-slate-800 font-bold leading-tight" id="preview-customer-name">{{ doc.contact.name|title }}</div>
 
                 <!-- Customer Contact Details (Phone & Email) -->
                 <div class="mt-2.5 space-y-1.5 text-xs">
@@ -359,11 +375,18 @@
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl relative">
                 <div class="flex justify-between items-center mb-1">
                     <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Balance Due</div>
-                    {# Issue 14: Elevated 'Record Pay' from tiny text-link to a proper button with clear affordance #}
+                    {# Issue 12: Primary green button only when balance > 0; subtle settled badge when 0 #}
+                    {% if balance_due > 0 %}
                     <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}"
-                       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
+                       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm"
+                       title="Record payment against outstanding balance">
                        💳 Record Pay
                     </a>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200" title="Invoice is settled in full">
+                       ✓ Settled
+                    </span>
+                    {% endif %}
                 </div>
                 <div class="{% if balance_due > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-bold text-xl">{{ doc.currency_symbol }} {{ balance_due|floatformat:2 }}</div>
                 {% if doc.currency != 'INR' and balance_due > 0 %}
@@ -546,24 +569,26 @@
         </details>
 
         <!-- Linked Payments -->
-        <div class="glass p-5 rounded-2xl shadow-lg" style="position: relative; z-index: 10;">
-            <div class="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
-                {# Issue 8: H1→H2 to fix heading outline gap; Issue 1: tracking-wide kept, uppercase on short label is fine #}
-                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
+        <details class="glass rounded-2xl shadow-lg border border-slate-200" style="position: relative; z-index: 10;" {% if all_linked_payments %}open{% endif %}>
+            <summary class="flex items-center justify-between p-4 cursor-pointer select-none list-none border-b border-slate-200">
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 m-0">
                     <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Linked Payments
+                    {% if all_linked_payments %}<span class="text-xs font-semibold text-slate-500">({{ all_linked_payments|length }})</span>{% endif %}
                 </h2>
-                {# Issue 4/10: Link Existing upgraded to consistent pill button style #}
-                <button type="button" onclick="openLinkPaymentModal()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold transition border border-emerald-200">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Link Existing
-                </button>
-            </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="event.stopPropagation(); openLinkPaymentModal();" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold transition border border-emerald-200">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Link Existing
+                    </button>
+                    <span class="text-xs text-slate-400 font-medium">▾</span>
+                </div>
+            </summary>
             
-            <div class="flex flex-col gap-3">
+            <div class="p-5 pt-3.5 flex flex-col gap-3">
                 {% if all_linked_payments %}
                 <div class="flex justify-between items-center bg-emerald-50/50 p-2 rounded-lg border border-emerald-100 mb-1">
-                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Total (All Linked)</span>
+                    <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Total (All Linked)</span>
                     <span class="text-emerald-700 font-bold text-sm">{{ doc.currency_symbol }} {{ total_paid_all|floatformat:2 }}</span>
                 </div>
                 
@@ -571,12 +596,12 @@
                 <div class="bg-white/60 p-3 rounded-xl border border-slate-200 relative group transition-colors hover:bg-slate-50/80">
                     <div class="flex justify-between items-start mb-1">
                         <span class="text-slate-500 text-xs font-medium">{{ pmt.date|date:"d M y" }}</span>
-                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] border border-slate-200 rounded font-semibold">{{ pmt.payment_mode }}</span>
+                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs border border-slate-200 rounded-lg font-semibold">{{ pmt.payment_mode }}</span>
                     </div>
                     <div class="text-emerald-600 font-bold text-base">{{ doc.currency_symbol }} {{ pmt.amount|floatformat:2 }}</div>
-                    {% if pmt.reference_number %}<div class="text-slate-400 font-mono text-[10px] mt-1 break-all">{{ pmt.reference_number }}</div>{% endif %}
+                    {% if pmt.reference_number %}<div class="text-slate-500 font-mono text-xs mt-1 break-all">{{ pmt.reference_number }}</div>{% endif %}
                     
-                    <div class="mt-2 inline-block bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border border-blue-100">
+                    <div class="mt-2 inline-block bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-lg font-bold uppercase tracking-wider border border-blue-100">
                         Doc: {{ pmt.document_ref }}
                     </div>
                     
@@ -591,41 +616,45 @@
                 </div>
                 {% endfor %}
                 {% else %}
-                <div class="text-center py-4 text-slate-400 text-xs italic">
+                <div class="text-center py-4 text-slate-500 text-xs italic">
                     No payments linked to this document yet.
                     <div class="mt-2 flex items-center justify-center gap-2">
-                        <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-medium hover:bg-emerald-500 transition">Record New Pay</a>
+                        <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-medium hover:bg-emerald-500 transition">Record New Pay</a>
                     </div>
                 </div>
                 {% endif %}
             </div>
-        </div>
+        </details>
 
         <!-- Document Trail (Lifecycle & Links) -->
-        <div class="glass p-5 rounded-2xl shadow-lg mt-4" style="position: relative; z-index: 10;">
-            <div class="flex items-center justify-between mb-4 border-b border-slate-200 pb-3">
+        <details class="glass rounded-2xl shadow-lg border border-slate-200 mt-4" style="position: relative; z-index: 10;" {% if trail_documents and trail_documents|length > 1 %}open{% endif %}>
+            <summary class="flex items-center justify-between p-4 border-b border-slate-200 cursor-pointer select-none list-none">
                 {# Issue 8: H1→H2 to fix heading outline gap; Issue 12: remove uppercase on long heading for readability #}
-                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 m-0">
                     <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     Document Trail
+                    {% if trail_documents %}<span class="text-xs font-semibold text-slate-500">({{ trail_documents|length }})</span>{% endif %}
                 </h2>
-                <button onclick="openLinkModal()" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-bold transition">
-                    + Link
-                </button>
-            </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="event.stopPropagation(); openLinkModal();" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2.5 py-1 rounded-lg font-bold transition">
+                        + Link
+                    </button>
+                    <span class="text-xs text-slate-400 font-medium">▾</span>
+                </div>
+            </summary>
             
-            <div class="flex flex-col gap-3 relative border-l-2 border-slate-200 ml-2 pl-4">
+            <div class="p-5 pt-3.5 flex flex-col gap-3 relative border-l-2 border-slate-200 ml-4 pl-4 mr-2 mb-2">
                 {% if trail_documents and trail_documents|length > 1 or external_links %}
                     {% for td in trail_documents %}
                     <div class="relative group">
                         <!-- Timeline Dot -->
-                        <div class="absolute -left-[21px] top-3 w-2.5 h-2.5 rounded-full {% if td.is_current %}bg-blue-600 ring-4 ring-blue-100{% else %}bg-slate-400 ring-4 ring-white{% endif %}"></div>
+                        <div class="absolute -left-[25px] top-3 w-2.5 h-2.5 rounded-full {% if td.is_current %}bg-blue-600 ring-4 ring-blue-100{% else %}bg-slate-400 ring-4 ring-white{% endif %}"></div>
                         
                         <div class="rounded-xl border p-3 transition-all {% if td.is_current %}bg-blue-50/80 border-blue-300 shadow-sm ring-1 ring-blue-200{% else %}bg-slate-50 border-slate-200 hover:border-blue-300 hover:bg-slate-50/90{% endif %}">
                             <!-- Header: Type Badge, Date, Current Indicator, Delete Link -->
                             <div class="flex items-center justify-between gap-1.5 mb-1.5">
                                 <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider
+                                    <span class="text-xs font-bold uppercase px-2 py-0.5 rounded-full tracking-wider
                                         {% if td.type == 'QTN' %}bg-purple-100 text-purple-700 border border-purple-200
                                         {% elif td.type == 'PRO' %}bg-blue-100 text-blue-700 border border-blue-200
                                         {% elif td.type == 'PO' %}bg-amber-100 text-amber-700 border border-amber-200
@@ -639,14 +668,14 @@
                                         {% else %}{{ td.get_type_display }}{% endif %}
                                     </span>
                                     {% if td.is_current %}
-                                    <span class="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full shadow-xs">
+                                    <span class="text-xs font-bold uppercase tracking-wider bg-blue-600 text-white px-2 py-0.5 rounded-full shadow-xs">
                                         This Document
                                     </span>
                                     {% endif %}
                                 </div>
                                 
                                 <div class="flex items-center gap-1">
-                                    <span class="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                                    <span class="text-xs text-slate-500 font-medium whitespace-nowrap">
                                         {{ td.date|date:"d M Y" }}
                                     </span>
                                     {% if td.direct_link_id and not td.is_current %}
@@ -674,8 +703,8 @@
                             <!-- Details Grid: Status, Amount, Payments -->
                             <div class="pt-1.5 border-t border-slate-200/80 grid grid-cols-2 gap-1.5 text-xs">
                                 <div>
-                                    <span class="text-[10px] text-slate-500 uppercase tracking-wider block font-medium">Status</span>
-                                    <span class="inline-flex items-center text-[11px] font-semibold
+                                    <span class="text-xs text-slate-500 uppercase tracking-wider block font-medium">Status</span>
+                                    <span class="inline-flex items-center text-xs font-semibold
                                         {% if td.status == 'Approved' %}text-emerald-700
                                         {% elif td.status == 'Cancelled' %}text-rose-600
                                         {% else %}text-amber-700{% endif %}">
@@ -684,20 +713,20 @@
                                 </div>
                                 
                                 <div class="text-right">
-                                    <span class="text-[10px] text-slate-500 uppercase tracking-wider block font-medium">Total</span>
+                                    <span class="text-xs text-slate-500 uppercase tracking-wider block font-medium">Total</span>
                                     <span class="font-bold text-slate-900 text-xs font-mono">&#8377;{{ td.grand_total|floatformat:2 }}</span>
                                 </div>
 
                                 {% if td.type == 'INV' or td.type == 'PRO' %}
-                                <div class="col-span-2 flex items-center justify-between pt-1 border-t border-dashed border-slate-200 text-[11px]">
+                                <div class="col-span-2 flex items-center justify-between pt-1 border-t border-dashed border-slate-200 text-xs">
                                     <span class="text-slate-500 font-medium">Paid: <span class="font-bold text-emerald-600 font-mono">&#8377;{{ td.amount_paid|floatformat:2 }}</span></span>
                                     <span class="font-medium">
                                         {% if td.balance_due <= 0 and td.grand_total > 0 %}
-                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 text-[10px]">Settled</span>
+                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 text-xs">Settled</span>
                                         {% elif td.balance_due > 0 %}
-                                        <span class="text-rose-600 font-mono text-[10px]">Due: &#8377;{{ td.balance_due|floatformat:2 }}</span>
+                                        <span class="text-rose-600 font-mono text-xs">Due: &#8377;{{ td.balance_due|floatformat:2 }}</span>
                                         {% else %}
-                                        <span class="text-slate-500 text-[10px]">—</span>
+                                        <span class="text-slate-500 text-xs">—</span>
                                         {% endif %}
                                     </span>
                                 </div>
@@ -709,7 +738,7 @@
 
                     {% if external_links %}
                     <div class="pt-2 border-t border-slate-200 mt-2">
-                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                             <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                             Linked Records & Files
                         </div>
@@ -717,7 +746,7 @@
                         {% with link=item.link other=item.obj is_edms=item.is_edms %}
                         <div class="relative group bg-slate-50 p-2.5 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors mb-2">
                             <div class="flex justify-between items-start mb-1">
-                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold uppercase">
+                                <span class="text-xs px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold uppercase">
                                     {{ link.get_link_type_display }}
                                 </span>
                                 <button onclick="deleteLink({{ link.id }})" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Remove Link">
@@ -757,7 +786,7 @@
                 {% endif %}
             </div>
 
-        </div>
+        </details>
 
     </div>
 </div>
@@ -805,22 +834,22 @@
             <!-- Postal PIN Codes -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Dispatch PIN Code (From) *
                     </label>
                     <input type="text" id="ewayFromPincode" value="{{ eway_from_pincode|default:'753011' }}" maxlength="6"
                         class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
-                    <span class="text-[10px] text-slate-500">Origin / Seller PIN code</span>
+                    <span class="text-xs text-slate-500">Origin / Seller PIN code</span>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Delivery PIN Code (To) *
                     </label>
                     <input type="text" id="ewayToPincode" value="{{ eway_to_pincode|default:'754001' }}" maxlength="6"
                         class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
-                    <span class="text-[10px] text-slate-500">Destination / Buyer PIN code</span>
+                    <span class="text-xs text-slate-500">Destination / Buyer PIN code</span>
                 </div>
             </div>
 
@@ -832,40 +861,40 @@
                     <div class="flex-1">
                         <label for="ewayAutoDistance" class="text-xs font-bold text-slate-800 cursor-pointer flex flex-wrap items-center gap-1.5">
                             Auto-calculate distance in Government Portal via Postal PIN Codes
-                            <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">Recommended</span>
+                            <span class="px-1.5 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">Recommended</span>
                         </label>
-                        <p class="text-[11px] text-slate-500 mt-1 leading-normal">
+                        <p class="text-xs text-slate-500 mt-1 leading-normal">
                             Sets <code class="font-mono text-indigo-600 bg-slate-100 px-1 py-0.5 rounded">transDistance: 0</code>. The Government E-Way Bill portal will automatically compute the exact PIN-to-PIN road distance based on From PIN and To PIN upon bulk upload.
                         </p>
                     </div>
                 </div>
 
                 <div id="manualDistanceField" class="mt-3 pt-3 border-t border-slate-100 hidden">
-                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Manual Distance (in KM)
                     </label>
                     <input type="number" id="ewayDistance" value="0" min="0" max="4000"
                         class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                         style="background-color: #f8fafc !important; color: #0f172a !important;">
-                    <span class="text-[10px] text-slate-500">Enter custom road distance if portal auto-calculation is not desired.</span>
+                    <span class="text-xs text-slate-500">Enter custom road distance if portal auto-calculation is not desired.</span>
                 </div>
             </div>
 
             <!-- Vehicle Number & Transporter ID -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Vehicle Number</label>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Vehicle Number</label>
                     <input type="text" id="ewayVehicleNo" value="{{ doc.vehicle_number|default:'' }}" placeholder="e.g. OD02AB1234"
                         class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm uppercase placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
-                    <span class="text-[10px] text-slate-500">Vehicle registration number</span>
+                    <span class="text-xs text-slate-500">Vehicle registration number</span>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Transporter GSTIN / ID</label>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Transporter GSTIN / ID</label>
                     <input type="text" id="ewayTransporterId" value="" placeholder="e.g. 21AAAAA0000A1Z5"
                         class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold text-sm uppercase placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
-                    <span class="text-[10px] text-slate-500">15-char GSTIN (optional)</span>
+                    <span class="text-xs text-slate-500">15-char GSTIN (optional)</span>
                 </div>
             </div>
 
@@ -1003,7 +1032,7 @@ async function saveTrackingInfo() {
             const badge = document.getElementById('trackingStatusBadge');
             if (badge) {
                 badge.textContent = data.tracking_status;
-                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full border ';
+                badge.className = 'text-xs font-bold px-2 py-0.5 rounded-full border ';
                 if (data.tracking_status === 'Delivered') {
                     badge.className += 'bg-emerald-100 text-emerald-800 border-emerald-300';
                 } else if (data.tracking_status === 'Out for Delivery') {

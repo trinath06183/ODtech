@@ -483,9 +483,9 @@
 
                 <!-- Generated Documents (Invoices/POs/QTNs) -->
                 {% if request.user|has_read_perm:'DOCUMENTS' %}
-                <div x-data="{ open: false }" class="mb-1">
+                <div x-data="{ open: {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}true{% else %}false{% endif %} }" class="mb-1">
                     <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors focus:outline-none"
+                        class="nav-link w-full rounded-xl px-3 py-2.5 flex items-center {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60{% else %}text-gray-600 hover:bg-emerald-50 hover:text-emerald-700{% endif %} transition-colors focus:outline-none"
                         :class="!sidebarOpen ? 'md:justify-center' : ''" title="Generated Documents">
                         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -503,7 +503,8 @@
                     </button>
                     <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
                         <a href="{% url 'document_list' %}"
-                            class="block text-sm text-gray-500 hover:text-emerald-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">All
+                            class="block text-sm px-3 py-2 rounded-lg transition-colors {% if 'documents' in request.path %}bg-emerald-100/70 text-emerald-800 font-semibold border-l-2 border-emerald-600{% else %}text-gray-500 hover:text-emerald-600 hover:bg-gray-50{% endif %}"
+                            {% if 'documents' in request.path %}aria-current="page"{% endif %}>All
                             Documents</a>
                         {% if request.user|has_write_perm:'DOCUMENTS' %}
                         <a href="{% url 'create_invoice' %}"
