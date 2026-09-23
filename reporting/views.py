@@ -2028,10 +2028,14 @@ def search_docs_for_reminder_api(request):
         from documents.models import Document
         from reporting.models import PaymentReminder
 
-        active_reminder_doc_ids = set(
-            PaymentReminder.objects.filter(is_completed=False, document__isnull=False)
-            .values_list('document_id', flat=True)
-        )
+        active_reminder_doc_ids = set()
+        try:
+            active_reminder_doc_ids = set(
+                PaymentReminder.objects.filter(is_completed=False, document__isnull=False)
+                .values_list('document_id', flat=True)
+            )
+        except Exception:
+            pass
 
         results = []
 
@@ -2053,7 +2057,26 @@ def search_docs_for_reminder_api(request):
             docs_qs = docs_qs.filter(type__in=['INV', 'PO', 'PRO'])
 
         for d in docs_qs[:25]:
-            due_inr = d.balance_due_inr
+            try:
+                due_val = float(d.balance_due_inr or 0)
+            except Exception:
+                try:
+                    due_val = float(d.grand_total or 0)
+                except Exception:
+                    due_val = 0.0
+
+            try:
+                total_val = float(d.grand_total_inr or 0)
+            except Exception:
+                try:
+                    total_val = float(d.grand_total or 0)
+                except Exception:
+                    total_val = 0.0
+
+            contact_name = '—'
+            if d.contact:
+                contact_name = d.contact.name
+
             results.append({
                 'id': d.id,
                 'source': 'document',
@@ -2061,10 +2084,10 @@ def search_docs_for_reminder_api(request):
                 'type': d.type,
                 'type_display': d.get_type_display() if hasattr(d, 'get_type_display') else d.type,
                 'status': d.status,
-                'party': d.contact.name if d.contact else '—',
+                'party': contact_name,
                 'date': d.date.strftime('%d %b %Y') if d.date else '',
-                'total': float(d.grand_total_inr),
-                'due': float(due_inr),
+                'total': total_val,
+                'due': due_val,
                 'is_already_added': d.id in active_reminder_doc_ids,
             })
 
@@ -2074,24 +2097,22 @@ def search_docs_for_reminder_api(request):
                 from edms.models import EDMSDocument
                 edms_q = (
                     Q(invoice_number__icontains=q) |
-                    Q(bill_number__icontains=q) |
                     Q(po_number__icontains=q) |
                     Q(reference_number__icontains=q) |
                     Q(title__icontains=q) |
-                    Q(party_name__icontains=q) |
-                    Q(vendor__name__icontains=q)
+                    Q(party_name__icontains=q)
                 )
-                edms_docs = EDMSDocument.objects.filter(is_deleted=False).filter(edms_q).select_related('vendor')[:10]
+                edms_docs = EDMSDocument.objects.filter(edms_q).select_related('vendor')[:10]
                 for b in edms_docs:
-                    b_amount = float(b.amount or 0)
-                    b_date = b.invoice_date or b.issue_date
+                    b_amount = 0.0
+                    b_date = b.issue_date
                     results.append({
                         'id': str(b.id),
                         'source': 'edms',
-                        'number': b.invoice_number or b.bill_number or b.title or b.reference_number or 'Bill',
+                        'number': b.invoice_number or b.po_number or b.title or b.reference_number or 'Bill',
                         'type': 'BILL',
                         'type_display': 'EDMS Bill',
-                        'status': b.payment_status or 'Unpaid',
+                        'status': b.approval_status or 'Active',
                         'party': b.party_name or (b.vendor.name if b.vendor else 'Vendor'),
                         'date': b_date.strftime('%d %b %Y') if b_date else '',
                         'total': b_amount,
