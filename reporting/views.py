@@ -1797,6 +1797,8 @@ def add_payment_reminder_api(request):
             data = request.POST.dict()
 
         doc_id = data.get('doc_id')
+        edms_id = data.get('edms_id')
+
         if doc_id:
             doc = Document.objects.filter(id=doc_id).select_related('contact').first()
             if not doc:
@@ -1858,6 +1860,45 @@ def add_payment_reminder_api(request):
                     'type': reminder.reminder_type,
                 }
             })
+        elif edms_id:
+            try:
+                from edms.models import EDMSDocument
+                b = EDMSDocument.objects.filter(id=edms_id).select_related('vendor').first()
+                if not b:
+                    return JsonResponse({'success': False, 'message': 'EDMS bill not found.'}, status=404)
+                
+                amount = b.amount or Decimal('0.00')
+                party = b.party_name or (b.vendor.name if b.vendor else 'Vendor')
+                title = f"Bill #{b.invoice_number or b.bill_number or b.title or 'EDMS'}"
+                due_date = b.invoice_date or b.issue_date
+
+                reminder = PaymentReminder.objects.create(
+                    created_by=request.user if request.user.is_authenticated else None,
+                    title=title,
+                    party=party,
+                    amount=amount,
+                    due_date=due_date,
+                    reminder_type='payable',
+                    is_urgent=True,
+                    notes=f"Linked to EDMS document {b.id}",
+                )
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Reminder for {title} added successfully.',
+                    'reminder': {
+                        'id': reminder.id,
+                        'doc_id': None,
+                        'title': reminder.title,
+                        'party': reminder.party,
+                        'amount': float(amount),
+                        'date': due_date.strftime('%d %b %Y') if due_date else '',
+                        'link': f"/edms/document/{b.id}/",
+                        'is_urgent': reminder.is_urgent,
+                        'type': reminder.reminder_type,
+                    }
+                })
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': f'Error adding EDMS reminder: {e}'}, status=500)
         else:
             # Custom reminder
             title = (data.get('title') or '').strip()
@@ -1940,7 +1981,7 @@ def delete_payment_reminder_api(request, reminder_id):
 
 @require_permission('REPORTING', 'read')
 def search_docs_for_reminder_api(request):
-    """API endpoint to search approved documents to add to payment reminders."""
+    """API endpoint to search documents (Commercial & EDMS) to add to payment reminders."""
     q = (request.GET.get('q') or '').strip()
     try:
         from decimal import Decimal
@@ -1953,37 +1994,77 @@ def search_docs_for_reminder_api(request):
             .values_list('document_id', flat=True)
         )
 
-        docs_qs = Document.objects.filter(
-            type__in=['INV', 'PO', 'PRO'],
-            status='Approved'
-        ).select_related('contact').order_by('-date')
+        results = []
+
+        # 1. Commercial Documents (Invoices, POs, Proformas, Quotations)
+        docs_qs = Document.objects.exclude(status='Cancelled').select_related('contact').order_by('-date')
 
         if q:
-            docs_qs = docs_qs.filter(
+            q_filter = (
                 Q(number__icontains=q) |
                 Q(contact__name__icontains=q) |
-                Q(po_reference_number__icontains=q)
+                Q(po_reference_number__icontains=q) |
+                Q(project_name__icontains=q) |
+                Q(shipping_name__icontains=q)
             )
+            if q.isdigit():
+                q_filter |= Q(id=int(q))
+            docs_qs = docs_qs.filter(q_filter)
+        else:
+            docs_qs = docs_qs.filter(type__in=['INV', 'PO', 'PRO'])
 
-        results = []
         for d in docs_qs[:25]:
             due_inr = d.balance_due_inr
-            # Show if has pending due or if user searched specifically
-            if due_inr > Decimal('0.01') or q:
-                results.append({
-                    'id': d.id,
-                    'number': d.number or f"{d.type}-{d.id}",
-                    'type': d.type,
-                    'type_display': d.get_type_display() if hasattr(d, 'get_type_display') else d.type,
-                    'party': d.contact.name if d.contact else '—',
-                    'date': d.date.strftime('%d %b %Y') if d.date else '',
-                    'total': float(d.grand_total_inr),
-                    'due': float(due_inr),
-                    'is_already_added': d.id in active_reminder_doc_ids,
-                })
+            results.append({
+                'id': d.id,
+                'source': 'document',
+                'number': d.number or f"{d.type}-{d.id}",
+                'type': d.type,
+                'type_display': d.get_type_display() if hasattr(d, 'get_type_display') else d.type,
+                'status': d.status,
+                'party': d.contact.name if d.contact else '—',
+                'date': d.date.strftime('%d %b %Y') if d.date else '',
+                'total': float(d.grand_total_inr),
+                'due': float(due_inr),
+                'is_already_added': d.id in active_reminder_doc_ids,
+            })
 
-        return JsonResponse({'success': True, 'results': results})
+        # 2. EDMS Documents (Purchase Invoices, Bills, Vendor Docs) if searched
+        if q:
+            try:
+                from edms.models import EDMSDocument
+                edms_q = (
+                    Q(invoice_number__icontains=q) |
+                    Q(bill_number__icontains=q) |
+                    Q(po_number__icontains=q) |
+                    Q(reference_number__icontains=q) |
+                    Q(title__icontains=q) |
+                    Q(party_name__icontains=q) |
+                    Q(vendor__name__icontains=q)
+                )
+                edms_docs = EDMSDocument.objects.filter(is_deleted=False).filter(edms_q).select_related('vendor')[:10]
+                for b in edms_docs:
+                    b_amount = float(b.amount or 0)
+                    b_date = b.invoice_date or b.issue_date
+                    results.append({
+                        'id': str(b.id),
+                        'source': 'edms',
+                        'number': b.invoice_number or b.bill_number or b.title or b.reference_number or 'Bill',
+                        'type': 'BILL',
+                        'type_display': 'EDMS Bill',
+                        'status': b.payment_status or 'Unpaid',
+                        'party': b.party_name or (b.vendor.name if b.vendor else 'Vendor'),
+                        'date': b_date.strftime('%d %b %Y') if b_date else '',
+                        'total': b_amount,
+                        'due': b_amount,
+                        'is_already_added': False,
+                    })
+            except Exception:
+                pass
+
+        return JsonResponse({'success': True, 'results': results, 'query': q})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e), 'results': []}, status=500)
+
 
 
