@@ -43,14 +43,14 @@
         <!-- Left: Search Box with Autocomplete Datalist -->
         <div class="flex-grow md:max-w-xl lg:max-w-2xl relative min-w-[280px]">
             <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search Product Name, SKU, Brand, Category..." list="product-suggestions"
-                   class="w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition">
+                   class="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 transition shadow-sm">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
             </div>
             {% if query %}
-            <a href="?{% if stock_status and stock_status != 'all' %}stock_status={{ stock_status }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white" title="Clear search">
+            <a href="?{% if stock_status and stock_status != 'all' %}stock_status={{ stock_status }}{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700" title="Clear search">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -60,11 +60,11 @@
 
         <!-- Buttons -->
         <div class="flex items-center space-x-2">
-            <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm transition-colors shadow-lg shadow-cyan-500/20">
+            <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-sm transition-colors shadow-sm shadow-cyan-600/20 cursor-pointer">
                 Search
             </button>
             {% if query or stock_status != 'all' %}
-            <a href="?" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-sm font-medium transition-colors">
+            <a href="?" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-sm font-bold transition-colors">
                 Reset
             </a>
             {% endif %}
@@ -82,49 +82,57 @@
 <!-- ─── Stock Status Filter Pills ────────────────────────────────────────── -->
 <div class="flex items-center gap-2.5 overflow-x-auto pb-2 mb-5 scrollbar-none">
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=all"
-       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'all' %}bg-cyan-600 text-white shadow-md shadow-cyan-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
-       <span>📦 All Products</span>
-       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'all' %}bg-white/20 text-white{% else %}bg-slate-800 text-slate-400{% endif %}">{{ total_all_count }}</span>
+       class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'all' %}bg-cyan-600 text-white shadow-cyan-600/20 border border-cyan-600{% else %}bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300{% endif %}"
+       {% if stock_status == 'all' %}style="background-color: #0891b2 !important; color: #ffffff !important;"{% endif %}>
+       <span {% if stock_status == 'all' %}style="color: #ffffff !important;"{% endif %}>📦 All Products</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'all' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}"
+             {% if stock_status == 'all' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ total_all_count }}</span>
     </a>
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=in_stock"
-       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'in_stock' %}bg-emerald-600 text-white shadow-md shadow-emerald-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
-       <span>✅ In Stock</span>
-       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'in_stock' %}bg-white/20 text-white{% else %}bg-emerald-500/15 text-emerald-400{% endif %}">{{ in_stock_count }}</span>
+       class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'in_stock' %}bg-emerald-600 text-white shadow-emerald-600/20 border border-emerald-600{% else %}bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300{% endif %}"
+       {% if stock_status == 'in_stock' %}style="background-color: #059669 !important; color: #ffffff !important;"{% endif %}>
+       <span {% if stock_status == 'in_stock' %}style="color: #ffffff !important;"{% endif %}>✅ In Stock</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'in_stock' %}bg-white/20 text-white{% else %}bg-emerald-100 text-emerald-800 border border-emerald-200{% endif %}"
+             {% if stock_status == 'in_stock' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ in_stock_count }}</span>
     </a>
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=low_stock"
-       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'low_stock' %}bg-amber-600 text-white shadow-md shadow-amber-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
-       <span>⚠️ Low Stock</span>
-       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'low_stock' %}bg-white/20 text-white{% else %}bg-amber-500/15 text-amber-400{% endif %}">{{ low_stock_count }}</span>
+       class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'low_stock' %}bg-amber-500 text-white shadow-amber-500/20 border border-amber-500{% else %}bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-700 border border-slate-200 hover:border-amber-300{% endif %}"
+       {% if stock_status == 'low_stock' %}style="background-color: #d97706 !important; color: #ffffff !important;"{% endif %}>
+       <span {% if stock_status == 'low_stock' %}style="color: #ffffff !important;"{% endif %}>⚠️ Low Stock</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'low_stock' %}bg-white/20 text-white{% else %}bg-amber-100 text-amber-900 border border-amber-200{% endif %}"
+             {% if stock_status == 'low_stock' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ low_stock_count }}</span>
     </a>
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=out_of_stock"
-       class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer {% if stock_status == 'out_of_stock' %}bg-rose-600 text-white shadow-md shadow-rose-500/20{% else %}bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/5{% endif %}">
-       <span>⭕ Out of Stock</span>
-       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono {% if stock_status == 'out_of_stock' %}bg-white/20 text-white{% else %}bg-rose-500/15 text-rose-400{% endif %}">{{ out_of_stock_count }}</span>
+       class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'out_of_stock' %}bg-rose-600 text-white shadow-rose-600/20 border border-rose-600{% else %}bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-300{% endif %}"
+       {% if stock_status == 'out_of_stock' %}style="background-color: #e11d48 !important; color: #ffffff !important;"{% endif %}>
+       <span {% if stock_status == 'out_of_stock' %}style="color: #ffffff !important;"{% endif %}>⭕ Out of Stock</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'out_of_stock' %}bg-white/20 text-white{% else %}bg-rose-100 text-rose-800 border border-rose-200{% endif %}"
+             {% if stock_status == 'out_of_stock' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ out_of_stock_count }}</span>
     </a>
 </div>
 
 <!-- Products Table -->
-<div class="glass rounded-2xl overflow-hidden overflow-x-auto shadow-2xl border border-white/5">
+<div class="bg-white rounded-2xl overflow-hidden overflow-x-auto shadow-sm border border-slate-200">
     <table class="w-full text-left whitespace-nowrap">
-        <thead class="bg-slate-800/80 border-b border-white/10">
-            <tr class="text-gray-400 text-xs uppercase tracking-wider">
-                <th class="px-6 py-4 font-medium min-w-[250px] w-1/3">Product</th>
-                <th class="px-6 py-4 font-medium">SKU / HSN</th>
-                <th class="px-6 py-4 font-medium text-center">Unit</th>
-                <th class="px-6 py-4 font-medium text-right">Price</th>
-                <th class="px-6 py-4 font-medium text-center">GST %</th>
-                <th class="px-6 py-4 font-medium text-center">Stock</th>
-                <th class="px-6 py-4 font-medium text-center">Actions</th>
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr class="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                <th class="px-6 py-4 font-semibold min-w-[250px] w-1/3">Product</th>
+                <th class="px-6 py-4 font-semibold">SKU / HSN</th>
+                <th class="px-6 py-4 font-semibold text-center">Unit</th>
+                <th class="px-6 py-4 font-semibold text-right">Price</th>
+                <th class="px-6 py-4 font-semibold text-center">GST %</th>
+                <th class="px-6 py-4 font-semibold text-center">Stock</th>
+                <th class="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-white/5">
+        <tbody class="divide-y divide-slate-100 bg-white">
             {% include 'inventory/partials/product_rows.html' %}
         </tbody>
     </table>
 </div>
 
 <!-- Sentinel + Spinner for Infinite Scroll -->
-<div id="scroll-sentinel" class="flex justify-center items-center py-6" data-next-page="{{ next_page }}" data-query="{{ query|urlencode }}" data-stock-status="{{ stock_status }}">
+<div id="scroll-sentinel" class="flex justify-center items-center py-6" data-next-page="{% if has_next and next_page %}{{ next_page }}{% endif %}" data-query="{{ query|urlencode }}" data-stock-status="{{ stock_status }}">
     <div id="scroll-spinner" class="hidden flex items-center gap-3 text-gray-400 text-sm">
         <svg class="animate-spin w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -136,48 +144,55 @@
 </div>
 
 <!-- Linked Bills Modal -->
-<div id="linkedBillsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl p-6 shadow-2xl text-white">
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+<div id="linkedBillsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 flex flex-col text-slate-800">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-lg">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-400 flex items-center justify-center text-xl shadow-inner">
                     🧾
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">Linked Bills & Invoices — <span id="linkedProductName" class="text-cyan-400"></span></h3>
-                    <p class="text-xs text-slate-400">SKU: <span id="linkedProductSku" class="font-mono text-slate-300"></span> • Current Stock: <span id="linkedProductStock" class="font-bold text-emerald-400"></span></p>
+                    <h3 class="text-base font-black !text-white tracking-wide">
+                        Linked Bills & Invoices — <span id="linkedProductName" class="text-cyan-300"></span>
+                    </h3>
+                    <p class="text-xs font-medium text-slate-300">SKU: <span id="linkedProductSku" class="font-mono text-cyan-200"></span> • Current Stock: <span id="linkedProductStock" class="font-bold text-emerald-300"></span></p>
                 </div>
             </div>
-            <button type="button" onclick="closeLinkedBillsModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+            <button type="button" onclick="closeLinkedBillsModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-sm transition">
+                ✕
+            </button>
         </div>
 
-        <div id="linkedBillsLoading" class="py-12 text-center text-slate-400">
-            Loading linked bills...
-        </div>
+        <div class="p-6 bg-white space-y-4">
+            <div id="linkedBillsLoading" class="py-12 text-center text-slate-500 font-medium">
+                Loading linked bills...
+            </div>
 
-        <div id="linkedBillsContent" class="hidden space-y-4">
-            <div class="max-h-[400px] overflow-y-auto rounded-xl border border-slate-800">
-                <table class="w-full text-left text-sm whitespace-nowrap">
-                    <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
-                        <tr>
-                            <th class="p-3">Doc Number</th>
-                            <th class="p-3">Type</th>
-                            <th class="p-3">Customer / Party</th>
-                            <th class="p-3">Date</th>
-                            <th class="p-3 text-center">Qty</th>
-                            <th class="p-3 text-center">Status</th>
-                            <th class="p-3 text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="linkedBillsTbody" class="divide-y divide-slate-800 bg-slate-900/50">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
+            <div id="linkedBillsContent" class="hidden space-y-4">
+                <div class="max-h-[420px] overflow-y-auto rounded-2xl border border-slate-200 shadow-sm">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider sticky top-0 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">Doc Number</th>
+                                <th class="p-3.5">Type</th>
+                                <th class="p-3.5">Customer / Party</th>
+                                <th class="p-3.5">Date</th>
+                                <th class="p-3.5 text-center">Qty</th>
+                                <th class="p-3.5 text-center">Status</th>
+                                <th class="p-3.5 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linkedBillsTbody" class="divide-y divide-slate-100 bg-white">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-end">
-            <button type="button" onclick="closeLinkedBillsModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition">
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
+            <button type="button" onclick="closeLinkedBillsModal()" class="px-5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-sm rounded-xl transition shadow-sm">
                 Close
             </button>
         </div>
@@ -224,29 +239,29 @@ function renderLinkedBillsTable(bills) {
     }
 
     tbody.innerHTML = bills.map(b => `
-        <tr class="hover:bg-slate-800/50 transition">
-            <td class="p-3 font-mono font-bold text-blue-400">
+        <tr class="hover:bg-slate-50 transition">
+            <td class="p-3.5 font-mono font-bold text-blue-600">
                 <a href="${b.url}" class="hover:underline">${b.number}</a>
             </td>
-            <td class="p-3">
-                <span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+            <td class="p-3.5">
+                <span class="px-2 py-0.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
                     ${b.type_display}
                 </span>
             </td>
-            <td class="p-3 font-medium text-white">${b.contact_name}</td>
-            <td class="p-3 text-slate-400 text-xs">${b.date}</td>
-            <td class="p-3 text-center font-bold">
+            <td class="p-3.5 font-semibold text-slate-800">${b.contact_name}</td>
+            <td class="p-3.5 text-slate-500 text-xs">${b.date}</td>
+            <td class="p-3.5 text-center font-bold">
                 ${b.is_addition 
-                    ? `<span class="text-emerald-400 font-bold">+${b.quantity}</span>` 
-                    : `<span class="text-red-400 font-bold">-${b.quantity}</span>`}
+                    ? `<span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 font-mono">+${b.quantity}</span>` 
+                    : `<span class="text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200 font-mono">-${b.quantity}</span>`}
             </td>
-            <td class="p-3 text-center">
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${b.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
+            <td class="p-3.5 text-center">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${b.status === 'Approved' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
                     ${b.status}
                 </span>
             </td>
-            <td class="p-3 text-center">
-                <a href="${b.url}" class="px-2.5 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded-lg text-xs font-semibold transition">
+            <td class="p-3.5 text-center">
+                <a href="${b.url}" class="px-3 py-1 bg-cyan-50 hover:bg-cyan-600 text-cyan-700 hover:text-white rounded-lg text-xs font-bold border border-cyan-200 hover:border-cyan-600 transition">
                     Open Bill →
                 </a>
             </td>
@@ -256,138 +271,146 @@ function renderLinkedBillsTable(bills) {
 </script>
 
 <!-- Quick Stock Adjustment Modal -->
-<div id="quickAdjustModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-lg p-6 shadow-2xl text-white animate-in fade-in zoom-in duration-200">
+<div id="quickAdjustModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 flex flex-col text-slate-800">
         <!-- Header -->
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xl shadow-inner">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-100 text-cyan-700 border border-cyan-200 flex items-center justify-center text-xl shadow-sm">
                     ⚡
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <h3 class="text-base font-black text-slate-900 tracking-wide">
                         Quick Stock Adjustment
                     </h3>
-                    <p class="text-xs text-slate-400 truncate max-w-[280px] sm:max-w-xs" id="quickAdjustProductName">Product Name</p>
+                    <p class="text-xs font-semibold text-slate-500 truncate max-w-[280px] sm:max-w-xs" id="quickAdjustProductName">Product Name</p>
                 </div>
             </div>
-            <button type="button" onclick="closeQuickAdjustModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold text-sm transition">
+            <button type="button" onclick="closeQuickAdjustModal()" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-200 text-slate-500 hover:text-slate-800 border border-slate-200 flex items-center justify-center font-bold text-sm transition">
                 ✕
             </button>
         </div>
 
-        <!-- Product Stock Snapshot Card -->
-        <div class="p-3.5 rounded-2xl bg-slate-800/60 border border-white/5 mb-5 flex items-center justify-between">
-            <div>
-                <span class="text-[11px] font-medium text-slate-400 block">Current Available Stock</span>
-                <div class="flex items-baseline gap-1.5 mt-0.5">
-                    <span id="quickAdjustCurrentStock" class="text-xl font-black font-mono text-cyan-400">0</span>
-                    <span id="quickAdjustUnit" class="text-xs font-bold text-slate-300">Nos</span>
-                </div>
-            </div>
-            <div class="text-right">
-                <span class="text-[11px] font-medium text-slate-400 block">SKU Code</span>
-                <span id="quickAdjustSku" class="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/20">SKU</span>
-            </div>
-        </div>
-
-        <form id="quickAdjustForm" onsubmit="submitQuickStockAdjustment(event)" class="space-y-4">
-            {% csrf_token %}
-            <input type="hidden" id="quickAdjustProductId" name="product_id" value="">
-            <input type="hidden" id="quickAdjustSelectedType" name="transaction_type" value="IN">
-
-            <!-- Transaction Type Selector -->
-            <div>
-                <label class="block text-xs font-bold text-slate-300 mb-2">Adjustment Action</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="setAdjustType('IN')" id="typeBtn-IN"
-                            class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 cursor-pointer">
-                        <span class="text-base">📥</span>
-                        <span>Stock IN (+)</span>
-                    </button>
-                    <button type="button" onclick="setAdjustType('OUT')" id="typeBtn-OUT"
-                            class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-slate-800 text-slate-400 border-white/5 hover:text-white cursor-pointer">
-                        <span class="text-base">📤</span>
-                        <span>Stock OUT (-)</span>
-                    </button>
-                    <button type="button" onclick="setAdjustType('SET')" id="typeBtn-SET"
-                            class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-slate-800 text-slate-400 border-white/5 hover:text-white cursor-pointer">
-                        <span class="text-base">🎯</span>
-                        <span>Set Exact Count</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Quantity & Calculated Result Preview -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+        <div class="p-6 space-y-4 bg-white">
+            <!-- Product Stock Snapshot Card -->
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
-                    <label id="quickAdjustQtyLabel" class="block text-xs font-bold text-slate-300 mb-1">
-                        Quantity to Add <span class="text-rose-500">*</span>
-                    </label>
-                    <div class="relative">
-                        <input type="number" step="any" min="0.01" id="quickAdjustQty" name="quantity" required placeholder="0"
-                               oninput="recalculateNewStockPreview()"
-                               class="w-full pl-3.5 pr-14 py-2.5 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-white font-mono font-bold text-sm">
-                        <span id="quickAdjustQtyUnit" class="absolute right-3 top-2.5 text-xs font-medium text-slate-400 pointer-events-none">Nos</span>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Current Available Stock</span>
+                    <div class="flex items-baseline gap-1.5 mt-1">
+                        <span id="quickAdjustCurrentStock" class="text-2xl font-black font-mono text-slate-900">0</span>
+                        <span id="quickAdjustUnit" class="text-xs font-bold text-slate-600">Nos</span>
                     </div>
                 </div>
-
-                <!-- Resulting Stock Preview Box -->
-                <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
-                    <span class="text-xs text-slate-400">Resulting Stock:</span>
-                    <div class="text-right font-mono font-bold text-sm" id="quickAdjustPreviewStock">
-                        <span class="text-emerald-400">0</span>
-                    </div>
+                <div class="text-right">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">SKU Code</span>
+                    <span id="quickAdjustSku" class="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 inline-block mt-1">SKU</span>
                 </div>
             </div>
 
-            <!-- Reason Presets -->
-            <div>
-                <label class="block text-xs font-bold text-slate-300 mb-1">Reason for Adjustment</label>
-                <select id="quickAdjustReasonSelect" onchange="onReasonPresetChange(this.value)"
-                        class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 text-xs text-slate-200 font-medium">
-                    <option value="Physical Stock Audit / Count Correction">Physical Stock Audit / Count Correction</option>
-                    <option value="Direct Purchase / Inflow">Direct Purchase / Stock Inflow</option>
-                    <option value="Customer Dispatch / Delivery">Customer Dispatch / Delivery</option>
-                    <option value="Damaged / Scrapped / Defective">Damaged / Scrapped / Defective</option>
-                    <option value="Sample / Internal Testing / Demo">Sample / Internal Testing / Demo</option>
-                    <option value="Customer Return / Restock">Customer Return / Restock</option>
-                    <option value="Other">Other (Enter custom reason below)</option>
-                </select>
-                <input type="text" id="quickAdjustCustomReason" placeholder="Enter custom reason..."
-                       class="hidden mt-2 w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 text-xs text-slate-200">
-            </div>
+            <form id="quickAdjustForm" onsubmit="submitQuickStockAdjustment(event)" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" id="quickAdjustProductId" name="product_id" value="">
+                <input type="hidden" id="quickAdjustSelectedType" name="transaction_type" value="IN">
 
-            <!-- Reference Document / Notes (Optional) -->
-            <div>
-                <label class="block text-xs font-bold text-slate-300 mb-1">Reference Document / Note (Optional)</label>
-                <input type="text" id="quickAdjustRef" placeholder="e.g. PO-2425-01, Delivery Challan #, or Batch note"
-                       class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl focus:outline-none focus:border-cyan-500 text-xs text-slate-200">
-            </div>
+                <!-- Transaction Type Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Adjustment Action</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setAdjustType('IN')" id="typeBtn-IN"
+                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 cursor-pointer"
+                                style="background-color: #059669 !important; color: #ffffff !important;">
+                            <span class="text-base">📥</span>
+                            <span style="color: #ffffff !important;">Stock IN (+)</span>
+                        </button>
+                        <button type="button" onclick="setAdjustType('OUT')" id="typeBtn-OUT"
+                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer">
+                            <span class="text-base">📤</span>
+                            <span>Stock OUT (-)</span>
+                        </button>
+                        <button type="button" onclick="setAdjustType('SET')" id="typeBtn-SET"
+                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer">
+                            <span class="text-base">🎯</span>
+                            <span>Set Exact Count</span>
+                        </button>
+                    </div>
+                </div>
 
-            <!-- Error message container -->
-            <div id="quickAdjustError" class="hidden p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-medium"></div>
+                <!-- Quantity & Calculated Result Preview -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                    <div>
+                        <label id="quickAdjustQtyLabel" class="block text-xs font-bold text-slate-700 mb-1">
+                            Quantity to Add (+) <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" step="any" min="0.01" id="quickAdjustQty" name="quantity" required placeholder="0"
+                                   oninput="recalculateNewStockPreview()"
+                                   class="w-full pl-3.5 pr-16 py-2.5 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 text-slate-900 font-mono font-bold text-base shadow-sm"
+                                   style="background-color: #ffffff !important; color: #0f172a !important;">
+                            <span id="quickAdjustQtyUnit" class="absolute right-2.5 top-2.5 px-2 py-0.5 rounded-lg bg-slate-100 text-xs font-bold text-slate-600 pointer-events-none border border-slate-200">Nos</span>
+                        </div>
+                    </div>
 
-            <!-- Modal Footer Actions -->
-            <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
-                <button type="button" onclick="closeQuickAdjustModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer">
-                    Cancel
-                </button>
-                <button type="submit" id="quickAdjustSubmitBtn"
-                        class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer">
-                    <span>⚡ Save Adjustment</span>
-                </button>
-            </div>
-        </form>
+                    <!-- Resulting Stock Preview Box -->
+                    <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between min-h-[46px]">
+                        <span class="text-xs font-bold text-slate-600">Resulting Stock:</span>
+                        <div class="text-right font-mono font-black text-sm" id="quickAdjustPreviewStock">
+                            <span class="text-emerald-700">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reason Presets -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Reason for Adjustment</label>
+                    <select id="quickAdjustReasonSelect" onchange="onReasonPresetChange(this.value)"
+                            class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 text-xs text-slate-900 font-semibold shadow-sm"
+                            style="background-color: #ffffff !important; color: #0f172a !important;">
+                        <option value="Physical Stock Audit / Count Correction">Physical Stock Audit / Count Correction</option>
+                        <option value="Direct Purchase / Inflow">Direct Purchase / Stock Inflow</option>
+                        <option value="Customer Dispatch / Delivery">Customer Dispatch / Delivery</option>
+                        <option value="Damaged / Scrapped / Defective">Damaged / Scrapped / Defective</option>
+                        <option value="Sample / Internal Testing / Demo">Sample / Internal Testing / Demo</option>
+                        <option value="Customer Return / Restock">Customer Return / Restock</option>
+                        <option value="Other">Other (Enter custom reason below)</option>
+                    </select>
+                    <input type="text" id="quickAdjustCustomReason" placeholder="Enter custom reason..."
+                           class="hidden mt-2 w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 text-xs text-slate-900 shadow-sm"
+                           style="background-color: #ffffff !important; color: #0f172a !important;">
+                </div>
+
+                <!-- Reference Document / Notes (Optional) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Reference Document / Note (Optional)</label>
+                    <input type="text" id="quickAdjustRef" placeholder="e.g. PO-2425-01, Delivery Challan #, or Batch note"
+                           class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/20 text-xs text-slate-900 placeholder-slate-400 font-medium shadow-sm"
+                           style="background-color: #ffffff !important; color: #0f172a !important;">
+                </div>
+
+                <!-- Error message container -->
+                <div id="quickAdjustError" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium"></div>
+
+                <!-- Modal Footer Actions -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeQuickAdjustModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200 transition cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" id="quickAdjustSubmitBtn"
+                            class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                            style="background-color: #0891b2 !important; color: #ffffff !important;">
+                        <span style="color: #ffffff !important;">⚡ Save Adjustment</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- Floating Toast Container -->
-<div id="inventoryToast" class="fixed bottom-6 right-6 z-[60] hidden bg-slate-900 border border-emerald-500/50 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transition-all animate-in slide-in-from-bottom duration-200">
-    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">✓</div>
+<div id="inventoryToast" class="fixed bottom-6 right-6 z-[60] hidden bg-white border border-emerald-500 text-slate-800 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 transition-all animate-in slide-in-from-bottom duration-200">
+    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-base shadow-sm">✓</div>
     <div>
-        <p class="text-xs font-bold text-white" id="inventoryToastTitle">Success</p>
-        <p class="text-[11px] text-slate-300" id="inventoryToastMsg">Stock updated successfully</p>
+        <p class="text-xs font-black text-slate-900" id="inventoryToastTitle">Success</p>
+        <p class="text-xs font-semibold text-slate-600" id="inventoryToastMsg">Stock updated successfully</p>
     </div>
 </div>
 
@@ -496,17 +519,25 @@ function setAdjustType(type) {
     const label = document.getElementById('quickAdjustQtyLabel');
 
     [btnIn, btnOut, btnSet].forEach(b => {
-        b.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-slate-800 text-slate-400 border-white/5 hover:text-white cursor-pointer';
+        b.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer';
+        b.style.backgroundColor = '#ffffff';
+        b.style.color = '#334155';
     });
 
     if (type === 'IN') {
-        btnIn.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 cursor-pointer';
+        btnIn.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 cursor-pointer';
+        btnIn.style.backgroundColor = '#059669';
+        btnIn.style.color = '#ffffff';
         label.innerHTML = 'Quantity to Add (+) <span class="text-rose-500">*</span>';
     } else if (type === 'OUT') {
-        btnOut.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/30 cursor-pointer';
+        btnOut.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/30 cursor-pointer';
+        btnOut.style.backgroundColor = '#e11d48';
+        btnOut.style.color = '#ffffff';
         label.innerHTML = 'Quantity to Deduct (-) <span class="text-rose-500">*</span>';
     } else if (type === 'SET') {
-        btnSet.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-600/30 cursor-pointer';
+        btnSet.className = 'adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-cyan-600 text-white border-cyan-600 shadow-md shadow-cyan-600/30 cursor-pointer';
+        btnSet.style.backgroundColor = '#0891b2';
+        btnSet.style.color = '#ffffff';
         label.innerHTML = 'New Exact Count <span class="text-rose-500">*</span>';
     }
 
@@ -520,7 +551,7 @@ function recalculateNewStockPreview() {
     const unit = currentAdjustProduct.unit;
 
     if (isNaN(qtyVal)) {
-        previewEl.innerHTML = `<span class="text-slate-400">${current.toLocaleString()} ${unit}</span>`;
+        previewEl.innerHTML = `<span class="text-slate-500 font-bold">${current.toLocaleString()} ${unit}</span>`;
         return;
     }
 
@@ -533,13 +564,13 @@ function recalculateNewStockPreview() {
         calculated = qtyVal;
     }
 
-    let colorClass = 'text-emerald-400';
+    let colorClass = 'text-emerald-700';
     if (calculated < 0) {
-        colorClass = 'text-rose-400';
+        colorClass = 'text-rose-600';
     } else if (currentAdjustProduct.reorderLevel > 0 && calculated < currentAdjustProduct.reorderLevel) {
-        colorClass = 'text-amber-400';
+        colorClass = 'text-amber-700';
     } else if (calculated === 0) {
-        colorClass = 'text-slate-400';
+        colorClass = 'text-slate-700';
     }
 
     previewEl.innerHTML = `<span class="${colorClass}">${calculated.toLocaleString()} ${unit}</span>`;
@@ -628,17 +659,17 @@ function updateTableRowStock(productId, newStock, unit, isLowStock) {
     if (qtySpan) qtySpan.textContent = Math.round(newStock).toLocaleString();
     if (unitSpan) unitSpan.textContent = unit;
 
-    // Reset and apply fresh classes
+    // Reset and apply fresh light-theme classes
     badge.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 shadow-sm ';
 
     if (isLowStock) {
-        badge.className += 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30';
+        badge.className += 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100';
         if (iconSpan) iconSpan.textContent = '⚠️';
     } else if (newStock > 0) {
-        badge.className += 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30';
+        badge.className += 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100';
         if (iconSpan) iconSpan.textContent = '✓';
     } else {
-        badge.className += 'bg-slate-800 text-slate-400 border border-slate-700/80 hover:bg-slate-700 hover:text-slate-200';
+        badge.className += 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100';
         if (iconSpan) iconSpan.textContent = '⭕';
     }
 }
@@ -668,7 +699,11 @@ function showInventoryToast(title, msg) {
 
     if (!sentinel) return;
 
-    function getNextPage()    { return sentinel.dataset.nextPage || null; }
+    function getNextPage() {
+        const val = sentinel.dataset.nextPage;
+        if (!val || val === 'null' || val === 'None' || val === 'undefined') return null;
+        return val;
+    }
     function getQuery()       { return sentinel.dataset.query || ''; }
     function getStockStatus() { return sentinel.dataset.stockStatus || 'all'; }
 
@@ -686,21 +721,29 @@ function showInventoryToast(title, msg) {
             if (!res.ok) throw new Error('Network error');
             const data = await res.json();
 
-            // Append new rows
+            // Append only unique rows (prevent duplicate views)
             const tmp = document.createElement('tbody');
             tmp.innerHTML = data.html;
-            while (tmp.firstChild) { tbody.appendChild(tmp.firstChild); }
-
-            // Update count
-            if (countEl) {
-                countEl.textContent = parseInt(countEl.textContent) + tmp.childElementCount || document.querySelectorAll('tbody tr').length;
+            while (tmp.firstElementChild) {
+                const row = tmp.firstElementChild;
+                if (!row.id || !document.getElementById(row.id)) {
+                    tbody.appendChild(row);
+                } else {
+                    row.remove();
+                }
             }
 
-            if (data.has_next) {
+            // Update loaded count
+            if (countEl) {
+                countEl.textContent = document.querySelectorAll('tbody tr[id^="product-row-"]').length;
+            }
+
+            if (data.has_next && data.next_page) {
                 sentinel.dataset.nextPage = data.next_page;
             } else {
                 // All loaded
-                observer.unobserve(sentinel);
+                sentinel.dataset.nextPage = '';
+                observer.disconnect();
                 spinner.classList.add('hidden');
                 endMsg.classList.remove('hidden');
                 loading = false;

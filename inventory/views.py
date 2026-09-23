@@ -6,9 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
-from django.db.models import Q, Value, DecimalField
+from django.db.models import Q, Value, DecimalField, OuterRef, Subquery, Sum, F
 from django.db.models.functions import Coalesce
-from django.db.models import Sum
 from core.decorators import login_required, role_required, require_permission
 from .models import Product, StockTransaction
 
@@ -20,12 +19,18 @@ def inventory_list(request):
     page_num = request.GET.get('page', 1)
     stock_status = request.GET.get('stock_status', 'all').strip()
 
-    # Base QuerySet with annotated stock in one query (avoids N+1)
+    # Subquery for net available stock per product (prevents join inflation / duplicate rows)
+    stock_subquery = StockTransaction.objects.filter(
+        product=OuterRef('pk')
+    ).values('product').annotate(
+        total_qty=Sum('quantity')
+    ).values('total_qty')
+
     base_qs = Product.objects.annotate(
         annotated_stock=Coalesce(
-            Sum('stock_transactions__quantity'),
-            Value(0),
-            output_field=DecimalField()
+            Subquery(stock_subquery, output_field=DecimalField(max_digits=15, decimal_places=2)),
+            Value(Decimal('0.00')),
+            output_field=DecimalField(max_digits=15, decimal_places=2)
         )
     )
 
@@ -35,7 +40,7 @@ def inventory_list(request):
             Q(sku__icontains=query) |
             Q(brand__icontains=query) |
             Q(category__icontains=query)
-        ).distinct()
+        )
 
     # Calculate status counts on the filtered search
     from django.db.models import F
