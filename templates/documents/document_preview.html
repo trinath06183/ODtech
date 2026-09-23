@@ -17,7 +17,8 @@
                 </a>
                 
                 <div class="flex items-center gap-2">
-                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 font-mono tracking-tight">{{ doc.number }}</h1>
+                    {# Issue 5: Document number — monospace codes are industry-standard uppercase; add aria-label to provide semantic context #}
+                <h1 class="text-xl sm:text-2xl font-black text-slate-900 font-mono tracking-tight" aria-label="Document number {{ doc.number }}">{{ doc.number }}</h1>
                     <span class="px-2.5 py-1 rounded-full text-xs font-bold
                         {% if doc.type == 'QTN' %}bg-purple-100 text-purple-700 border border-purple-200
                         {% elif doc.type == 'INV' %}bg-emerald-100 text-emerald-700 border border-emerald-200
@@ -149,7 +150,7 @@
 
         <!-- HTML Preview Iframe -->
         <div class="bg-gray-200 rounded-2xl p-4 shadow-2xl flex-1 flex flex-col min-h-[85vh]">
-            <div class="text-center text-gray-500 text-xs mb-3 uppercase tracking-wider font-medium">— Live HTML Preview — click "Download PDF" above for the print-ready version —</div>
+            <div class="text-center text-gray-500 text-xs mb-3 tracking-wide font-medium">— Live HTML Preview — click "Download PDF" above for the print-ready version —</div>
             <div class="flex-1 relative" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
                 <iframe
                     id="doc-preview-frame"
@@ -347,7 +348,8 @@
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="flex justify-between items-center mb-1">
                     <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Paid Amount</div>
-                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {% if paid_percentage >= 100 %}bg-emerald-100 text-emerald-800 border border-emerald-300{% elif paid_percentage > 0 %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">{{ paid_percentage }}%</span>
+                    {# Issue 1: badge text bumped to text-xs (12px min) #}
+                    <span class="text-xs font-bold px-1.5 py-0.5 rounded {% if paid_percentage >= 100 %}bg-emerald-100 text-emerald-800 border border-emerald-300{% elif paid_percentage > 0 %}bg-amber-100 text-amber-800 border border-amber-300{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">{{ paid_percentage }}%</span>
                 </div>
                 <div class="text-emerald-600 font-bold text-xl">{{ doc.currency_symbol }} {{ total_paid|default:doc.amount_paid|floatformat:2 }}</div>
                 {% if doc.currency != 'INR' and total_paid > 0 %}
@@ -357,7 +359,11 @@
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl relative">
                 <div class="flex justify-between items-center mb-1">
                     <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Balance Due</div>
-                    <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 transition font-bold uppercase tracking-wide">Record Pay</a>
+                    {# Issue 14: Elevated 'Record Pay' from tiny text-link to a proper button with clear affordance #}
+                    <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}"
+                       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm">
+                       💳 Record Pay
+                    </a>
                 </div>
                 <div class="{% if balance_due > 0 %}text-rose-600{% else %}text-emerald-600{% endif %} font-bold text-xl">{{ doc.currency_symbol }} {{ balance_due|floatformat:2 }}</div>
                 {% if doc.currency != 'INR' and balance_due > 0 %}
@@ -369,33 +375,35 @@
         <!-- Transporter Details (For Delivery Challans) -->
         {% if doc.type == 'CHL' %}
         <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-cyan-500/30" style="position: relative; z-index: 10;">
-            <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
+            {# Issue 8: fix heading level skip — H1 → H2 (was H3) #}
+            <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
                 Transporter &amp; Dispatch Details
-            </h3>
+            </h2>
             <div class="text-xs space-y-2">
                 <div>
-                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Transporter Details</span>
+                    {# Issue 1/7: sub-labels upgraded from text-[10px] to text-xs #}
+                    <span class="text-slate-500 block text-xs uppercase font-semibold">Transporter Details</span>
                     <span class="text-slate-800 font-bold">{{ doc.transporter_details|default:"Local Transportation" }}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <span class="text-slate-500 block text-[10px] uppercase font-semibold">Vehicle No.</span>
+                        <span class="text-slate-500 block text-xs uppercase font-semibold">Vehicle No.</span>
                         <span class="text-slate-800 font-mono font-bold">{{ doc.vehicle_number|default:"N/A" }}</span>
                     </div>
                     <div>
-                        <span class="text-slate-500 block text-[10px] uppercase font-semibold">E-Way Bill No.</span>
+                        <span class="text-slate-500 block text-xs uppercase font-semibold">E-Way Bill No.</span>
                         <span class="text-slate-800 font-mono font-bold">{{ doc.eway_bill|default:"N/A" }}</span>
                     </div>
                 </div>
                 {% if doc.eway_bill_date %}
                 <div>
-                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">E-Way Bill Date</span>
+                    <span class="text-slate-500 block text-xs uppercase font-semibold">E-Way Bill Date</span>
                     <span class="text-slate-700 font-medium">{{ doc.eway_bill_date|date:"d M Y" }}</span>
                 </div>
                 {% endif %}
                 <div>
-                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Transport Reason</span>
-                    <span class="text-amber-700 font-medium italic text-[11px]">{{ doc.transport_reason|default:"Refilling only, No Commercial involvement." }}</span>
+                    <span class="text-slate-500 block text-xs uppercase font-semibold">Transport Reason</span>
+                    <span class="text-amber-700 font-medium italic text-xs">{{ doc.transport_reason|default:"Refilling only, No Commercial involvement." }}</span>
                 </div>
             </div>
         </div>
@@ -404,39 +412,44 @@
         <!-- Bill From & Ship From Details (If configured) -->
         {% if doc.bill_from_name or doc.bill_from_address or doc.ship_from_name or doc.ship_from_address %}
         <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-red-500/20" style="position: relative; z-index: 10;">
-            <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
+            {# Issue 8: fix heading level skip — H1 → H2 (was H3) #}
+            <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
                 🏢 Dispatch &amp; Billing Location
-            </h3>
+            </h2>
             <div class="text-xs space-y-2.5">
                 {% if doc.bill_from_name or doc.bill_from_address %}
                 <div>
                     <span class="text-red-600 block text-xs font-semibold">Bill From (Seller Unit)</span>
                     <span class="text-slate-800 font-bold">{{ doc.bill_from_name|default:'ODtech Solutions' }}</span>
-                    {% if doc.bill_from_address %}<div class="text-slate-600 text-[11px] mt-0.5">{{ doc.bill_from_address|linebreaksbr }}</div>{% endif %}
-                    {% if doc.bill_from_gstin %}<div class="text-slate-500 font-mono text-[10px] mt-0.5">GSTIN: {{ doc.bill_from_gstin }}</div>{% endif %}
+                    {% if doc.bill_from_address %}<div class="text-slate-600 text-xs mt-0.5">{{ doc.bill_from_address|linebreaksbr }}</div>{% endif %}
+                    {# Issue 1: GSTIN text bumped from 10px to text-xs #}
+                    {% if doc.bill_from_gstin %}<div class="text-slate-500 font-mono text-xs mt-0.5">GSTIN: {{ doc.bill_from_gstin }}</div>{% endif %}
                 </div>
                 {% endif %}
                 {% if doc.ship_from_name or doc.ship_from_address %}
                 <div class="pt-2 border-t border-slate-200">
                     <span class="text-cyan-600 block text-xs font-semibold">Ship From (Warehouse / Dispatch)</span>
                     <span class="text-slate-800 font-bold">{{ doc.ship_from_name|default:'Central Warehouse' }}</span>
-                    {% if doc.ship_from_address %}<div class="text-slate-600 text-[11px] mt-0.5">{{ doc.ship_from_address|linebreaksbr }}</div>{% endif %}
-                    {% if doc.ship_from_gstin %}<div class="text-slate-500 font-mono text-[10px] mt-0.5">GSTIN: {{ doc.ship_from_gstin }}</div>{% endif %}
+                    {% if doc.ship_from_address %}<div class="text-slate-600 text-xs mt-0.5">{{ doc.ship_from_address|linebreaksbr }}</div>{% endif %}
+                    {% if doc.ship_from_gstin %}<div class="text-slate-500 font-mono text-xs mt-0.5">GSTIN: {{ doc.ship_from_gstin }}</div>{% endif %}
                 </div>
                 {% endif %}
             </div>
         </div>
         {% endif %}
         <!-- Live Shipment & Courier Tracking Card -->
-        <div class="glass p-5 rounded-2xl flex flex-col gap-3.5 shadow-lg border border-indigo-500/20" style="position: relative; z-index: 10;">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2">
+        {# Issue 9: wrapped in <details> accordion to reduce sidebar density #}
+        <details class="glass rounded-2xl shadow-lg border border-indigo-500/20" style="position: relative; z-index: 10;" {% if doc.transport_doc_no or doc.custom_tracking_url %}open{% endif %}>
+            <summary class="flex items-center justify-between p-5 pb-4 border-b border-slate-200 cursor-pointer select-none list-none">
+                {# Issue 8: H1→H2 (was H3) to fix heading outline gap #}
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 m-0">
                     <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
                     </svg>
                     Shipment &amp; Tracking
-                </h3>
-                <span id="trackingStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full border
+                </h2>
+                {# Issue 1: badge text bumped from text-[10px] to text-xs #}
+                <span id="trackingStatusBadge" class="text-xs font-bold px-2 py-0.5 rounded-full border
                     {% if doc.tracking_status == 'Delivered' %}bg-emerald-100 text-emerald-800 border-emerald-300
                     {% elif doc.tracking_status == 'Out for Delivery' %}bg-cyan-100 text-cyan-800 border-cyan-300
                     {% elif doc.tracking_status == 'In Transit' %}bg-blue-100 text-blue-800 border-blue-300
@@ -444,12 +457,14 @@
                     {% else %}bg-slate-100 text-slate-700 border-slate-200{% endif %}">
                     {{ doc.tracking_status|default:"Booked" }}
                 </span>
-            </div>
+            </summary>
+            <div class="p-5 pt-3.5 flex flex-col gap-3.5">
 
             <div class="space-y-2.5 text-xs">
                 <!-- Carrier Selector -->
                 <div>
-                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Courier / Freight Partner</label>
+                    {# Issue 1/7: labels upgraded from text-[10px] to text-xs #}
+                    <label class="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">Courier / Freight Partner</label>
                     <select id="courierPartnerSelect" class="w-full bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                         {% for code, info in courier_carriers.items %}
                             <option value="{{ code }}" {% if doc.courier_partner == code %}selected{% endif %}>
@@ -461,7 +476,7 @@
 
                 <!-- AWB / Tracking / Docket Number -->
                 <div>
-                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-1">AWB / Docket / LR No.</label>
+                    <label class="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">AWB / Docket / LR No.</label>
                     <input type="text" id="courierAwbInput" value="{{ doc.transport_doc_no|default:'' }}" placeholder="e.g. 1294829104"
                         class="w-full bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-mono text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
@@ -470,10 +485,10 @@
                 <!-- Custom / Manual Direct Tracking Link -->
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                        <label class="text-xs text-slate-500 uppercase font-bold tracking-wider">
                             Custom / Manual Tracking Link
                         </label>
-                        <span class="text-[9px] text-indigo-600 font-bold cursor-pointer hover:underline" onclick="document.getElementById('courierCustomUrlInput').focus()">
+                        <span class="text-xs text-indigo-600 font-bold cursor-pointer hover:underline" onclick="document.getElementById('courierCustomUrlInput').focus()">
                             Direct URL
                         </span>
                     </div>
@@ -481,12 +496,13 @@
                         placeholder="https://www.delhivery.com/track-v2/lr/314773331"
                         class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-mono text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
-                    <span class="text-[10px] text-slate-500 block mt-0.5">Paste direct tracking URL if not using standard carrier AWB format.</span>
+                    {# Issue 7: body hint text bumped from 10px to text-xs (12px) #}
+                    <span class="text-xs text-slate-500 block mt-0.5">Paste direct tracking URL if not using standard carrier AWB format.</span>
                 </div>
 
                 <!-- Status Selector -->
                 <div>
-                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Shipment Status</label>
+                    <label class="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">Shipment Status</label>
                     <select id="courierStatusSelect" class="w-full bg-white/80 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         style="background-color: #ffffff !important; color: #0f172a !important;">
                         <option value="Booked" {% if doc.tracking_status == 'Booked' %}selected{% endif %}>Booked / Docket Generated</option>
@@ -526,16 +542,19 @@
                     </div>
                 </div>
             </div>
-        </div>
+            </div>{# end accordion inner #}
+        </details>
 
         <!-- Linked Payments -->
         <div class="glass p-5 rounded-2xl shadow-lg" style="position: relative; z-index: 10;">
             <div class="flex items-center justify-between mb-3 border-b border-slate-200 pb-3">
-                <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2 uppercase tracking-wide">
+                {# Issue 8: H1→H2 to fix heading outline gap; Issue 1: tracking-wide kept, uppercase on short label is fine #}
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
                     <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Linked Payments
-                </h3>
-                <button type="button" onclick="openLinkPaymentModal()" class="text-[11px] bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-2 py-1 rounded font-bold transition flex items-center gap-1">
+                </h2>
+                {# Issue 4/10: Link Existing upgraded to consistent pill button style #}
+                <button type="button" onclick="openLinkPaymentModal()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold transition border border-emerald-200">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Link Existing
                 </button>
@@ -585,10 +604,11 @@
         <!-- Document Trail (Lifecycle & Links) -->
         <div class="glass p-5 rounded-2xl shadow-lg mt-4" style="position: relative; z-index: 10;">
             <div class="flex items-center justify-between mb-4 border-b border-slate-200 pb-3">
-                <h3 class="text-slate-800 font-bold text-sm flex items-center gap-2 uppercase tracking-wide">
+                {# Issue 8: H1→H2 to fix heading outline gap; Issue 12: remove uppercase on long heading for readability #}
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
                     <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     Document Trail
-                </h3>
+                </h2>
                 <button onclick="openLinkModal()" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-bold transition">
                     + Link
                 </button>
