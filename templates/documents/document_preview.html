@@ -3,7 +3,7 @@
 {% block content %}
 
 <!-- Main Container -->
-<div class="max-w-[1760px] mx-auto mb-6 flex flex-col xl:flex-row gap-6">
+<div class="max-w-[1760px] mx-auto mb-6 flex flex-col xl:flex-row items-start gap-6">
     
     <!-- LEFT COLUMN: Action Bar & HTML Preview -->
     <div class="flex-1 min-w-0 flex flex-col gap-4">
@@ -162,14 +162,15 @@
         </div>
 
         <!-- HTML Preview Iframe -->
-        <div class="bg-gray-200 rounded-2xl p-4 shadow-2xl flex-1 flex flex-col min-h-[85vh]">
+        <div class="bg-gray-200 rounded-2xl p-4 shadow-2xl flex flex-col w-full">
             <div class="text-center text-gray-500 text-xs mb-3 tracking-wide font-medium">— Live HTML Preview — click "Download PDF" above for the print-ready version —</div>
-            <div class="flex-1 relative" style="border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <div class="relative w-full bg-white rounded-lg shadow-md" style="overflow: hidden;">
                 <iframe
                     id="doc-preview-frame"
                     src="{% url 'document_html_preview' doc.id %}"
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: white;"
+                    style="width: 100%; min-height: 480px; border: none; background: white; display: block;"
                     title="Document Preview"
+                    onload="resizePreviewIframe()"
                 ></iframe>
             </div>
         </div>
@@ -1381,6 +1382,55 @@ async function linkPaymentToDoc(paymentId, btn) {
 </div>
 
 <script>
+// Auto-resize Document Preview Iframe to snuggly fit content and eliminate empty white space
+function resizePreviewIframe() {
+    const iframe = document.getElementById('doc-preview-frame');
+    if (!iframe) return;
+    try {
+        const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+        if (!doc) return;
+
+        function updateHeight() {
+            try {
+                const body = doc.body;
+                const html = doc.documentElement;
+                if (!body || !html) return;
+
+                // Check where footer-area ends in the document flow
+                const footerArea = doc.querySelector('.footer-area');
+                let measuredHeight = 0;
+
+                if (footerArea) {
+                    const rect = footerArea.getBoundingClientRect();
+                    const scrollTop = doc.defaultView.pageYOffset || html.scrollTop || body.scrollTop || 0;
+                    measuredHeight = Math.ceil(rect.bottom + scrollTop) + 12;
+                } else {
+                    measuredHeight = Math.max(
+                        body.scrollHeight, body.offsetHeight,
+                        html.scrollHeight, html.offsetHeight
+                    );
+                }
+
+                if (measuredHeight > 150) {
+                    iframe.style.height = measuredHeight + 'px';
+                }
+            } catch(e) {}
+        }
+
+        updateHeight();
+        setTimeout(updateHeight, 150);
+        setTimeout(updateHeight, 400);
+        setTimeout(updateHeight, 1000);
+    } catch(err) {
+        console.warn('Iframe auto-resize notice:', err);
+    }
+}
+
+window.addEventListener('resize', resizePreviewIframe);
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(resizePreviewIframe, 300);
+});
+
 let currentPoDocId = null;
 let currentPoItems = [];
 
