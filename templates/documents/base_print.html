@@ -251,12 +251,14 @@
             z-index: 9998;
         }
         {% else %}
-        /* In browser: footer is at the end of document by default */
+        /* In browser HTML preview: footer is pinned to the bottom of the page */
         .footer-area {
-            position: relative;
+            position: fixed;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
             height: 30px;
             z-index: 9998;
-            margin-top: 20px;
         }
 
         @media print {
@@ -321,10 +323,10 @@
                 </td>
             </tr>
         </tbody>
-        {# 50px spacer so fixed footer doesn't overlap content #}
+        {# 60px spacer so fixed footer doesn't overlap content #}
         <tfoot style="display: table-footer-group;">
             <tr>
-                <td style="border: none; padding: 0; height: 50px;"></td>
+                <td style="border: none; padding: 0; height: 60px;"></td>
             </tr>
         </tfoot>
     </table>
