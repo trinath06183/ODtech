@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('new_values', models.JSONField(blank=True, null=True)),
                 ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_logs', to='contenttypes.contenttype')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_logs', to='users.user')),
+                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='core_audit_logs', to='users.user')),
             ],
             options={
                 'ordering': ['-timestamp'],

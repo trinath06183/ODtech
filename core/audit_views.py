@@ -82,7 +82,7 @@ class AuditLogView(ListView):
             .values_list('model', flat=True).distinct().order_by('model')
         )
         ctx['user_choices'] = (
-            User.objects.filter(audit_logs__isnull=False)
+            User.objects.filter(core_audit_logs__isnull=False)
             .distinct().order_by('username')
         )
         ctx['action_choices'] = AuditLog.ACTION_CHOICES

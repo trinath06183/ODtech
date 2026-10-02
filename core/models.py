@@ -85,7 +85,7 @@ class AuditLog(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='audit_logs'
+        related_name='core_audit_logs'
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
 
