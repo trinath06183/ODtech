@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views, search_views, document_link_views
+from .audit_views import AuditLogView
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
@@ -9,6 +10,7 @@ urlpatterns = [
     path('api/sales-tracking/', views.sales_tracking_api, name='sales_tracking_api'),
     path('system-logs/unlock/', views.LogUnlockView.as_view(), name='log_unlock'),
     path('system-logs/', views.SystemActivityLogView.as_view(), name='system_logs'),
+    path('audit-log/', AuditLogView.as_view(), name='audit_log'),
     
     # Health Check API
     path('api/health/', views.health_check, name='health_check'),

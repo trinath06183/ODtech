@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}Audit Log — Change History{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-950 px-4 py-8">
+
+  <!-- Header -->
+  <div class="max-w-7xl mx-auto mb-8">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white">🔍 Audit Log</h1>
+        <p class="text-sm text-gray-400 mt-1">Field-level change history — who changed what, old value vs new value</p>
+      </div>
+      <a href="{% url 'system_logs' %}" class="text-sm text-purple-400 hover:text-purple-300 transition-colors">
+        → View System Activity Logs
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="max-w-7xl mx-auto mb-6">
+    <form method="get" class="glass rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+
+      <!-- Search -->
+      <div class="xl:col-span-2">
+        <label class="block text-xs text-gray-400 mb-1">Search Record</label>
+        <input type="text" name="q" value="{{ filter_q }}" placeholder="e.g. John, Payment, INV-2026..."
+               class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 transition">
+      </div>
+
+      <!-- Action -->
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Action</label>
+        <select name="action" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 transition">
+          <option value="">All Actions</option>
+          {% for code, label in action_choices %}
+          <option value="{{ code }}" {% if filter_action == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Model -->
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Module</label>
+        <select name="model" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 transition">
+          <option value="">All Modules</option>
+          {% for m in model_choices %}
+          <option value="{{ m }}" {% if filter_model == m %}selected{% endif %}>{{ m|capfirst }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- User -->
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">User</label>
+        <select name="user" class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 transition">
+          <option value="">All Users</option>
+          {% for u in user_choices %}
+          <option value="{{ u.id }}" {% if filter_user == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Date Range + Submit -->
+      <div class="xl:col-span-6 grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">From Date</label>
+          <input type="date" name="start_date" value="{{ filter_start }}"
+                 class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">To Date</label>
+          <input type="date" name="end_date" value="{{ filter_end }}"
+                 class="w-full px-3 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500 transition">
+        </div>
+        <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors">
+          Apply Filters
+        </button>
+        <a href="{% url 'audit_log' %}" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-gray-300 text-sm font-medium rounded-lg transition-colors text-center">
+          Clear
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Log Table -->
+  <div class="max-w-7xl mx-auto">
+    <div class="glass rounded-2xl overflow-hidden">
+
+      <!-- Summary bar -->
+      <div class="px-6 py-3 border-b border-white/10 flex items-center justify-between">
+        <span class="text-sm text-gray-400">
+          {% if is_paginated %}
+            Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            &nbsp;·&nbsp; {{ page_obj.paginator.count }} total records
+          {% else %}
+            {{ logs|length }} record{{ logs|length|pluralize }}
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-white/10 text-xs text-gray-500 uppercase tracking-wide">
+              <th class="px-5 py-3 text-left w-36">Timestamp</th>
+              <th class="px-5 py-3 text-left w-28">User</th>
+              <th class="px-5 py-3 text-left w-20">Action</th>
+              <th class="px-5 py-3 text-left w-24">Module</th>
+              <th class="px-5 py-3 text-left">Record</th>
+              <th class="px-5 py-3 text-left">Changes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            {% for log in logs %}
+            <tr class="hover:bg-white/5 transition-colors align-top">
+
+              <!-- Timestamp -->
+              <td class="px-5 py-3 text-gray-400 text-xs whitespace-nowrap">
+                {{ log.timestamp|date:"d M Y" }}<br>
+                <span class="text-gray-600">{{ log.timestamp|date:"H:i:s" }}</span>
+              </td>
+
+              <!-- User -->
+              <td class="px-5 py-3">
+                <span class="text-white text-xs font-medium">{{ log.user|default:"System" }}</span>
+                {% if log.ip_address %}
+                <br><span class="text-gray-600 text-xs font-mono">{{ log.ip_address }}</span>
+                {% endif %}
+              </td>
+
+              <!-- Action Badge -->
+              <td class="px-5 py-3">
+                {% if log.action == 'CREATE' %}
+                <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">Created</span>
+                {% elif log.action == 'UPDATE' %}
+                <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">Updated</span>
+                {% elif log.action == 'DELETE' %}
+                <span class="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full font-medium">Deleted</span>
+                {% endif %}
+              </td>
+
+              <!-- Module -->
+              <td class="px-5 py-3 text-gray-400 text-xs">
+                {{ log.content_type.model|capfirst|default:"—" }}
+              </td>
+
+              <!-- Record -->
+              <td class="px-5 py-3 text-white text-xs max-w-xs">
+                <span class="font-medium">{{ log.object_repr|truncatechars:60 }}</span>
+                <br><span class="text-gray-600 font-mono">ID: {{ log.object_id }}</span>
+              </td>
+
+              <!-- Changes — old vs new -->
+              <td class="px-5 py-3">
+                {% if log.action == 'CREATE' and log.new_values %}
+                  <div class="space-y-1">
+                    {% for field, val in log.new_values.items %}
+                    <div class="flex gap-2 items-start text-xs">
+                      <span class="text-gray-500 w-28 shrink-0 font-mono">{{ field }}</span>
+                      <span class="text-emerald-400">{{ val|default:"—"|truncatechars:80 }}</span>
+                    </div>
+                    {% endfor %}
+                  </div>
+
+                {% elif log.action == 'UPDATE' and log.old_values %}
+                  <div class="space-y-1.5">
+                    {% for field, new_val in log.new_values.items %}
+                    {% with old_val=log.old_values|get_item:field %}
+                    <div class="text-xs">
+                      <span class="text-gray-500 font-mono">{{ field }}</span>
+                      <div class="flex gap-2 mt-0.5 flex-wrap">
+                        <span class="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded line-through">{{ old_val|default:"(empty)"|truncatechars:50 }}</span>
+                        <span class="text-gray-500">→</span>
+                        <span class="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">{{ new_val|default:"(empty)"|truncatechars:50 }}</span>
+                      </div>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                  </div>
+
+                {% elif log.action == 'DELETE' and log.old_values %}
+                  <div class="space-y-1">
+                    {% for field, val in log.old_values.items %}
+                    <div class="flex gap-2 items-start text-xs">
+                      <span class="text-gray-500 w-28 shrink-0 font-mono">{{ field }}</span>
+                      <span class="text-red-400 line-through">{{ val|default:"—"|truncatechars:80 }}</span>
+                    </div>
+                    {% endfor %}
+                  </div>
+
+                {% else %}
+                  <span class="text-gray-600 text-xs">—</span>
+                {% endif %}
+              </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-16 text-center text-gray-600 text-sm">
+                No audit records found for the selected filters.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if is_paginated %}
+      <div class="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="flex gap-2">
+          {% if page_obj.has_previous %}
+          <a href="?{% if filter_q %}q={{ filter_q }}&{% endif %}{% if filter_action %}action={{ filter_action }}&{% endif %}{% if filter_model %}model={{ filter_model }}&{% endif %}{% if filter_user %}user={{ filter_user }}&{% endif %}{% if filter_start %}start_date={{ filter_start }}&{% endif %}{% if filter_end %}end_date={{ filter_end }}&{% endif %}page={{ page_obj.previous_page_number }}"
+             class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">← Prev</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+          <a href="?{% if filter_q %}q={{ filter_q }}&{% endif %}{% if filter_action %}action={{ filter_action }}&{% endif %}{% if filter_model %}model={{ filter_model }}&{% endif %}{% if filter_user %}user={{ filter_user }}&{% endif %}{% if filter_start %}start_date={{ filter_start }}&{% endif %}{% if filter_end %}end_date={{ filter_end }}&{% endif %}page={{ page_obj.next_page_number }}"
+             class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors">Next →</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

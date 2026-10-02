@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 
 class TimeStampedModel(models.Model):
@@ -26,7 +27,6 @@ class SystemActivityLog(models.Model):
 
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 
 class DocumentLink(TimeStampedModel):
     """
@@ -64,3 +64,61 @@ class DocumentLink(TimeStampedModel):
 
     def __str__(self):
         return f"{self.source_type.name} [{self.source_id}] -> {self.target_type.name} [{self.target_id}] ({self.link_type})"
+
+
+class AuditLog(models.Model):
+    """
+    Field-level change tracking for all key models.
+    Records who changed what, when, from what value to what value.
+    """
+    ACTION_CREATE = 'CREATE'
+    ACTION_UPDATE = 'UPDATE'
+    ACTION_DELETE = 'DELETE'
+    ACTION_CHOICES = [
+        (ACTION_CREATE, 'Created'),
+        (ACTION_UPDATE, 'Updated'),
+        (ACTION_DELETE, 'Deleted'),
+    ]
+
+    # Who
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='audit_logs'
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    # What
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES, db_index=True)
+    content_type = models.ForeignKey(
+        ContentType, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='audit_logs'
+    )
+    object_id = models.CharField(max_length=64, db_index=True)
+    object_repr = models.CharField(max_length=255, blank=True)  # Human-readable label
+
+    # Changes: field -> {old, new}
+    old_values = models.JSONField(null=True, blank=True)
+    new_values = models.JSONField(null=True, blank=True)
+
+    # When
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['action', 'timestamp']),
+        ]
+
+    def __str__(self):
+        return f"[{self.action}] {self.object_repr} by {self.user} at {self.timestamp:%Y-%m-%d %H:%M}"
+
+    @property
+    def changed_fields(self):
+        """Returns list of field names that actually changed (for UPDATE)."""
+        if self.action != self.ACTION_UPDATE or not self.old_values or not self.new_values:
+            return []
+        return [k for k in self.new_values if self.old_values.get(k) != self.new_values.get(k)]
