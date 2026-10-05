@@ -161,17 +161,17 @@
             <span class="text-sm font-bold text-gray-900" id="bulk-count-label">0 selected</span>
         </div>
         <div class="h-6 w-px bg-gray-200"></div>
-        <button type="button" data-bulk-action="approve"
+        <button type="submit" form="bulk-expense-form" name="action" value="approve"
             class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-emerald-300 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
             Approve
         </button>
-        <button type="button" data-bulk-action="mark_paid"
+        <button type="submit" form="bulk-expense-form" name="action" value="mark_paid"
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-indigo-300 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             Mark Paid
         </button>
-        <button type="button" data-bulk-action="reject"
+        <button type="submit" form="bulk-expense-form" name="action" value="reject"
             class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-red-300 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
             Reject
@@ -184,72 +184,10 @@
     </div>
 </div>
 
-
-<!-- Hidden form for bulk submission — IDs injected by JS before submit -->
 <form id="bulk-expense-form" method="post" action="{% url 'bulk_expense_action' %}">
     {% csrf_token %}
-    <input type="hidden" name="action" id="bulk-action-input" value="">
-    <!-- selected_expenses hidden inputs injected here by JS -->
 </form>
 {% endif %}
-
-<!-- ════════════════════════════════════════════════════════
-     Bulk Action Confirmation Modal
-     ════════════════════════════════════════════════════════ -->
-{% if request.user.is_superuser %}
-<div id="bulkConfirmModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4"
-     style="background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);">
-
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all"
-         style="animation: modalPop 0.2s cubic-bezier(.34,1.56,.64,1)">
-
-        <!-- Header -->
-        <div id="bulkModalHeader" class="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
-            <div id="bulkModalIcon" class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xl shrink-0"></div>
-            <div>
-                <h3 id="bulkModalTitle" class="text-base font-bold text-gray-900"></h3>
-                <p id="bulkModalSubtitle" class="text-xs text-gray-500 mt-0.5"></p>
-            </div>
-        </div>
-
-        <!-- Body -->
-        <div class="px-6 py-5">
-            <div id="bulkModalSummary" class="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4">
-                <div class="flex items-center gap-3">
-                    <div id="bulkModalCount"
-                         class="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black"></div>
-                    <div>
-                        <div id="bulkModalCountLabel" class="text-sm font-bold text-gray-800"></div>
-                        <div id="bulkModalCountHint" class="text-xs text-gray-500 mt-0.5"></div>
-                    </div>
-                </div>
-            </div>
-            <p id="bulkModalWarning" class="text-xs text-gray-500 leading-relaxed"></p>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-end gap-3 px-6 pb-5">
-            <button type="button" onclick="closeBulkModal()"
-                class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors">
-                Cancel
-            </button>
-            <button id="bulkModalConfirm" type="button" onclick="submitBulkAction()"
-                class="px-5 py-2.5 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center gap-2">
-                <span id="bulkModalConfirmIcon"></span>
-                <span id="bulkModalConfirmText"></span>
-            </button>
-        </div>
-    </div>
-</div>
-
-<style>
-@keyframes modalPop {
-    from { opacity: 0; transform: scale(0.92) translateY(10px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-</style>
-{% endif %}
-
 
 <div class="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
     <div class="overflow-x-auto">
@@ -412,161 +350,53 @@
 {% if request.user.is_superuser %}
 <script>
 (function() {
-    const bar     = document.getElementById('bulk-action-bar');
-    const countLbl= document.getElementById('bulk-count-label');
-    const selAll  = document.getElementById('select-all-checkbox');
-
-    function getChecked() {
-        return [...document.querySelectorAll('.expense-checkbox:checked')];
-    }
+    const bar = document.getElementById('bulk-action-bar');
+    const countLabel = document.getElementById('bulk-count-label');
+    const selectAll = document.getElementById('select-all-checkbox');
 
     function updateBulkBar() {
-        const n = getChecked().length;
-        countLbl.textContent = n + ' selected';
-        n > 0 ? bar.classList.remove('hidden') : bar.classList.add('hidden');
+        const checked = document.querySelectorAll('.expense-checkbox:checked');
+        const n = checked.length;
+        if (n > 0) {
+            countLabel.textContent = n + ' selected';
+            bar.classList.remove('hidden');
+        } else {
+            bar.classList.add('hidden');
+        }
     }
 
-    if (selAll) {
-        selAll.addEventListener('change', function() {
-            document.querySelectorAll('.expense-checkbox').forEach(cb => cb.checked = this.checked);
+    // Select-All toggle
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.expense-checkbox').forEach(cb => {
+                cb.checked = this.checked;
+            });
             updateBulkBar();
         });
     }
 
+    // Individual checkboxes - use event delegation on tbody so it works with infinite scroll
     document.getElementById('expense-tbody').addEventListener('change', function(e) {
         if (e.target.classList.contains('expense-checkbox')) {
             updateBulkBar();
-            if (selAll) {
+            // Update select-all state
+            if (selectAll) {
                 const all = document.querySelectorAll('.expense-checkbox');
                 const allChecked = [...all].every(cb => cb.checked);
-                selAll.checked = allChecked;
-                selAll.indeterminate = !allChecked && [...all].some(cb => cb.checked);
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = !allChecked && [...all].some(cb => cb.checked);
             }
         }
     });
 
     window.clearSelection = function() {
         document.querySelectorAll('.expense-checkbox').forEach(cb => cb.checked = false);
-        if (selAll) { selAll.checked = false; selAll.indeterminate = false; }
+        if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
         bar.classList.add('hidden');
     };
-
-    // ── Intercept bulk action buttons ──────────────────────────────
-    const MODAL_CONFIG = {
-        approve: {
-            title: 'Approve Expenses',
-            icon: '✅',
-            iconBg: 'bg-emerald-500',
-            countBg: 'bg-emerald-50 text-emerald-700',
-            confirmBg: 'bg-emerald-500 hover:bg-emerald-600',
-            confirmIcon: '✅',
-            confirmText: 'Approve All',
-            hint: 'Only Pending / Clarification Provided expenses will be approved.',
-            warning: 'Approved expenses will trigger email notifications to the submitter. This action cannot be undone.',
-        },
-        mark_paid: {
-            title: 'Mark as Paid',
-            icon: '💰',
-            iconBg: 'bg-indigo-600',
-            countBg: 'bg-indigo-50 text-indigo-700',
-            confirmBg: 'bg-indigo-600 hover:bg-indigo-700',
-            confirmIcon: '💰',
-            confirmText: 'Mark Paid',
-            hint: 'Only Approved & unpaid expenses will be updated.',
-            warning: 'This will record the current date/time as the payment date. Make sure the physical payment has been processed.',
-        },
-        reject: {
-            title: 'Reject Expenses',
-            icon: '❌',
-            iconBg: 'bg-red-500',
-            countBg: 'bg-red-50 text-red-700',
-            confirmBg: 'bg-red-500 hover:bg-red-600',
-            confirmIcon: '❌',
-            confirmText: 'Reject All',
-            hint: 'Only Pending / Clarification expenses will be rejected.',
-            warning: 'Rejected expenses cannot be automatically restored. The submitter will need to resubmit if rejected by mistake.',
-        },
-    };
-
-    let pendingAction = null;
-
-    document.querySelectorAll('[data-bulk-action]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const action = this.dataset.bulkAction;
-            const checked = getChecked();
-            if (checked.length === 0) return;
-            openBulkModal(action, checked.length);
-        });
-    });
-
-    window.openBulkModal = function(action, count) {
-        const cfg = MODAL_CONFIG[action];
-        if (!cfg) return;
-        pendingAction = action;
-
-        // Populate modal
-        const icon = document.getElementById('bulkModalIcon');
-        icon.className = `w-10 h-10 rounded-xl flex items-center justify-center text-white text-xl shrink-0 ${cfg.iconBg}`;
-        icon.textContent = cfg.icon;
-        document.getElementById('bulkModalTitle').textContent = cfg.title;
-        document.getElementById('bulkModalSubtitle').textContent = `You have selected ${count} expense${count !== 1 ? 's' : ''}`;
-
-        const countEl = document.getElementById('bulkModalCount');
-        countEl.className = `w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black ${cfg.countBg}`;
-        countEl.textContent = count;
-        document.getElementById('bulkModalCountLabel').textContent = `${count} expense${count !== 1 ? 's' : ''} selected`;
-        document.getElementById('bulkModalCountHint').textContent = cfg.hint;
-        document.getElementById('bulkModalWarning').textContent = cfg.warning;
-
-        const confirmBtn = document.getElementById('bulkModalConfirm');
-        confirmBtn.className = `px-5 py-2.5 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center gap-2 ${cfg.confirmBg}`;
-        document.getElementById('bulkModalConfirmIcon').textContent = cfg.confirmIcon;
-        document.getElementById('bulkModalConfirmText').textContent = cfg.confirmText;
-
-        const modal = document.getElementById('bulkConfirmModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    };
-
-    window.closeBulkModal = function() {
-        const modal = document.getElementById('bulkConfirmModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        pendingAction = null;
-    };
-
-    window.submitBulkAction = function() {
-        if (!pendingAction) return;
-        const form = document.getElementById('bulk-expense-form');
-
-        // Set the action
-        document.getElementById('bulk-action-input').value = pendingAction;
-
-        // Remove any previously injected selected_expenses inputs
-        form.querySelectorAll('input[name="selected_expenses"]').forEach(el => el.remove());
-
-        // Inject one hidden input per checked expense
-        getChecked().forEach(cb => {
-            const inp = document.createElement('input');
-            inp.type  = 'hidden';
-            inp.name  = 'selected_expenses';
-            inp.value = cb.value;
-            form.appendChild(inp);
-        });
-
-        closeBulkModal();
-        form.submit();
-    };
-
-    // Close modal on backdrop click
-    document.getElementById('bulkConfirmModal').addEventListener('click', function(e) {
-        if (e.target === this) closeBulkModal();
-    });
 })();
 </script>
 {% endif %}
-
 
 <!-- Admin Raise Clarification Modal -->
 <div id="clarificationModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
