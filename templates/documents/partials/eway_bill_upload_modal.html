@@ -22,7 +22,7 @@
                             Invoice
                         </span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Required before downloading document</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Required before downloading, printing or sharing</p>
                 </div>
             </div>
             <button type="button" onclick="closeEWayUploadModal()"
@@ -111,6 +111,14 @@
                 </div>
             </div>
 
+            <!-- Optional Helper Link to NIC JSON -->
+            <div class="flex items-center justify-between text-xs pt-2 px-1 text-slate-500 border-t border-slate-100">
+                <span>Need to generate E-Way bill on portal first?</span>
+                <button type="button" onclick="closeEWayUploadModal(); if(typeof openEWayBillModal==='function') openEWayBillModal();" class="text-amber-600 hover:text-amber-700 font-bold hover:underline cursor-pointer inline-flex items-center gap-1">
+                    <span>⚙️</span> Export NIC JSON (v1.0.0421) &rarr;
+                </button>
+            </div>
+
         </div>
 
         <!-- Modal Footer Actions -->
@@ -133,7 +141,7 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
-                    <span id="uploadBtnText">📤 Upload &amp; Download</span>
+                    <span id="uploadBtnText">📤 Upload &amp; Continue</span>
                 </button>
             </div>
         </div>
@@ -153,7 +161,8 @@
     window.satisfiedDocs = window.satisfiedDocs || new Set();
 
     let currentDocId = null;
-    let currentDownloadUrl = null;
+    let currentActionTarget = null;
+    let currentActionType = 'download';
     let selectedFile = null;
 
     function getCookie(name) {
@@ -175,21 +184,61 @@
         return getCookie('csrftoken') || (document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '');
     }
 
-    // Trigger check before download
-    window.triggerEWayBillCheck = function(docId, docNumber, docType, downloadUrl) {
-        // If already satisfied in session, download immediately!
-        if (window.satisfiedDocs.has(docId)) {
-            triggerFileDownload(downloadUrl);
+    function executeAction(target, type) {
+        if (!target) return;
+        if (typeof target === 'function') {
+            try { target(); } catch(e) { console.error('E-Way callback error:', e); }
+            return;
+        }
+        if (type === 'open') {
+            window.open(target, '_blank');
+        } else {
+            const a = document.createElement('a');
+            a.href = target;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    }
+
+    // Trigger check before download, view, print, email, whatsapp, export
+    window.triggerEWayBillCheck = function(docId, docNumber, docType, actionTarget, actionType = 'download') {
+        // If already satisfied in session, perform action immediately!
+        if (window.isEWaySatisfied || window.satisfiedDocs.has(docId)) {
+            executeAction(actionTarget, actionType);
             return;
         }
 
         currentDocId = docId;
-        currentDownloadUrl = downloadUrl;
+        currentActionTarget = actionTarget;
+        currentActionType = actionType;
         selectedFile = null;
 
         // Populate modal fields
         document.getElementById('ewayDocBadge').textContent = docType || 'Invoice';
         document.getElementById('ewayDocNumber').textContent = (docType || 'Document') + ' #' + docNumber;
+        document.getElementById('ewayNumberInput').value = '';
+        document.getElementById('ewayDateInput').value = '';
+        clearSelectedEWayFile();
+        showError('');
+
+        const modal = document.getElementById('ewayUploadModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    };
+
+    // Direct trigger to open modal explicitly for uploading / updating E-Way Bill
+    window.openEWayUploadModalDirect = function(docId, docNumber, docType) {
+        currentDocId = docId;
+        currentActionTarget = null;
+        currentActionType = 'none';
+        selectedFile = null;
+
+        const badgeEl = document.getElementById('ewayDocBadge');
+        if (badgeEl) badgeEl.textContent = docType || 'Invoice';
+        const docNumEl = document.getElementById('ewayDocNumber');
+        if (docNumEl) docNumEl.textContent = (docType || 'Document') + ' #' + (docNumber || '');
         document.getElementById('ewayNumberInput').value = '';
         document.getElementById('ewayDateInput').value = '';
         clearSelectedEWayFile();
@@ -207,7 +256,8 @@
             modal.classList.remove('flex');
         }
         currentDocId = null;
-        currentDownloadUrl = null;
+        currentActionTarget = null;
+        currentActionType = 'download';
         selectedFile = null;
     };
 
@@ -346,12 +396,14 @@
             const data = await response.json();
             if (data.success) {
                 window.satisfiedDocs.add(currentDocId);
-                const targetUrl = data.download_url || currentDownloadUrl;
+                window.isEWaySatisfied = true;
+                const target = currentActionTarget || data.download_url;
+                const type = currentActionType;
                 closeEWayUploadModal();
-                triggerFileDownload(targetUrl);
+                executeAction(target, type);
 
-                // If preview page or list row, reload or update UI after slight delay
-                if (window.location.pathname.includes('/preview/')) {
+                // If on preview page and action is not an interactive callback (e.g. download/open URL), reload to update badges
+                if (typeof target !== 'function' && window.location.pathname.includes('/preview/')) {
                     setTimeout(() => window.location.reload(), 1500);
                 }
             } else {
@@ -362,7 +414,7 @@
         } finally {
             btn.disabled = false;
             spinner.classList.add('hidden');
-            btnText.textContent = "📤 Upload & Download";
+            btnText.textContent = "📤 Upload & Continue";
         }
     };
 
@@ -389,11 +441,14 @@
             const data = await response.json();
             if (data.success) {
                 window.satisfiedDocs.add(currentDocId);
-                const targetUrl = data.download_url || currentDownloadUrl;
+                window.isEWaySatisfied = true;
+                const target = currentActionTarget || data.download_url;
+                const type = currentActionType;
                 closeEWayUploadModal();
-                triggerFileDownload(targetUrl);
+                executeAction(target, type);
 
-                if (window.location.pathname.includes('/preview/')) {
+                // If on preview page and action is not an interactive callback (e.g. download/open URL), reload to update badges
+                if (typeof target !== 'function' && window.location.pathname.includes('/preview/')) {
                     setTimeout(() => window.location.reload(), 1500);
                 }
             } else {

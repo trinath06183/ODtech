@@ -119,9 +119,11 @@
     </div>
 
     <!-- GSTIN Confirmation & Field Selection Modal -->
-    <div x-show="showGstinModal" x-transition.opacity
+    <div x-show="showGstinModal" x-cloak x-transition.opacity
         @click.self="showGstinModal = false"
-        style="position:fixed; inset:0; z-index:1050; background:rgba(15,23,42,0.55); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:1rem; overflow-y:auto; display:none;">
+        class="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-sm overflow-y-auto"
+        style="display:none;"
+        :style="showGstinModal ? 'display:flex !important;' : 'display:none !important;'">
         <div @click.stop
             style="background:#ffffff; border:1px solid #cbd5e1; border-radius:1.25rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); position:relative; width:100%; max-width:680px; padding:1.75rem; max-height:90vh; display:flex; flex-direction:column; gap:1.25rem; text-align:left; margin:2rem 0; box-sizing:border-box;">
             
