@@ -506,38 +506,50 @@
                 </td>
                 <td class="center">
                     <strong>
-                        {% if item.warranty_period and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' %}
-                            {{ item.warranty_period }}
-                        {% elif item.product.warranty_months %}
-                            {{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}
-                        {% else %}
-                            Not applicable
-                        {% endif %}
-                    </strong>
-                </td>
-                <td class="center">
-                    {% if item.warranty_start_date %}
-                        {{ item.warranty_start_date|date:"d/m/Y" }}
-                    {% elif cert.date_of_installation %}
-                        {{ cert.date_of_installation|date:"d/m/Y" }}
-                    {% else %}
-                        Not applicable
-                    {% endif %}
-                </td>
-                <td class="center">
-                    {% with w_dur=item.warranty_period|default:item.product.warranty_months %}
-                        {% if w_dur and w_dur != '-' and w_dur != 'N/A' and w_dur != '–' and w_dur != 'Not applicable' %}
-                            {% if item.warranty_start_date %}
-                                {{ item.warranty_start_date|add_months:w_dur }}
-                            {% elif cert.date_of_installation %}
-                                {{ cert.date_of_installation|add_months:w_dur }}
+                        {% if item.has_warranty %}
+                            {% if item.warranty_period and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' %}
+                                {{ item.warranty_period }}
+                            {% elif item.product.warranty_months %}
+                                {{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}
                             {% else %}
                                 Not applicable
                             {% endif %}
                         {% else %}
                             Not applicable
                         {% endif %}
-                    {% endwith %}
+                    </strong>
+                </td>
+                <td class="center">
+                    {% if item.has_warranty %}
+                        {% if item.warranty_start_date %}
+                            {{ item.warranty_start_date|date:"d/m/Y" }}
+                        {% elif cert.date_of_installation %}
+                            {{ cert.date_of_installation|date:"d/m/Y" }}
+                        {% else %}
+                            Not applicable
+                        {% endif %}
+                    {% else %}
+                        Not applicable
+                    {% endif %}
+                </td>
+                <td class="center">
+                    {% if item.has_warranty %}
+                        {% with w_dur=item.warranty_period|default:item.product.warranty_months %}
+                            {% if w_dur and w_dur != '-' and w_dur != 'N/A' and w_dur != '–' and w_dur != 'Not applicable' %}
+                                {% if item.warranty_start_date %}
+                                    {{ item.warranty_start_date|add_months:w_dur }}
+                                {% elif cert.date_of_installation %}
+                                    {{ cert.date_of_installation|add_months:w_dur }}
+                                {% else %}
+                                    Not applicable
+                                {% endif %}
+                            {% else %}
+                                Not applicable
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        Not applicable
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
