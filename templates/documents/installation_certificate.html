@@ -497,9 +497,9 @@
                         Not applicable
                     {% endif %}
                 </td>
-                <td class="center" style="font-family: monospace; font-size: 8px; color: #0f172a;">
+                <td class="center" style="font-family: monospace; font-size: 8px; color: #0f172a; white-space: pre-line; word-break: break-word; line-height: 1.35;">
                     {% if item.serial_number and item.serial_number != 'N/A' and item.serial_number != '-' and item.serial_number != '–' %}
-                        {{ item.serial_number }}
+                        {{ item.serial_number|linebreaksbr }}
                     {% else %}
                         Not applicable
                     {% endif %}
