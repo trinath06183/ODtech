@@ -2384,6 +2384,7 @@ def print_installation_certificate(request, document_id):
             "Please fill in the certificate details first.</h2>", status=404
         )
 
+    from documents.services import PDFService
     from config.models import CompanyProfile
     company = CompanyProfile.objects.first()
 
@@ -2392,10 +2393,9 @@ def print_installation_certificate(request, document_id):
         'cert': cert,
         'company': company,
         'is_pdf': False,
-        'logo_url': '/static/img/logo.png',
-        'stamp_url': '/static/img/stamp.png',
-        'sign_url': '/static/img/sign.png',
+        'header_address': getattr(company, 'header_address', '') or '',
         'auto_print': bool(request.GET.get('print')),
+        **PDFService.asset_context(for_pdf=False),
     }
     return render(request, 'documents/installation_certificate.html', context)
 
@@ -2416,19 +2416,18 @@ def download_installation_certificate(request, document_id):
     except InstallationCertificate.DoesNotExist:
         return HttpResponse("No installation certificate found.", status=404)
 
+    from documents.services import PDFService
     from config.models import CompanyProfile
     company = CompanyProfile.objects.first()
-    static_base = settings.BASE_DIR / "static"
 
     context = {
         'doc': doc,
         'cert': cert,
         'company': company,
         'is_pdf': True,
-        'logo_url': (static_base / "img/logo.png").as_uri(),
-        'stamp_url': (static_base / "img/stamp.png").as_uri(),
-        'sign_url': (static_base / "img/sign.png").as_uri(),
+        'header_address': getattr(company, 'header_address', '') or '',
         'auto_print': False,
+        **PDFService.asset_context(for_pdf=True),
     }
     html_string = render_to_string('documents/installation_certificate.html', context, request=request)
 

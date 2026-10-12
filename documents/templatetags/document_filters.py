@@ -62,20 +62,36 @@ def add_months(date_value, months):
     """
     Add `months` months to a date and return a formatted string (d/m/Y).
     Used for computing warranty end dates on the installation certificate.
+    Supports integers, strings like '36 Months', '12', etc.
     """
     if not date_value or not months:
         return "–"
     try:
-        import datetime
-        months = int(months)
-        month = date_value.month - 1 + months
+        import datetime, re, calendar
+        # Extract numeric months from '36 Months', 36, etc.
+        m_match = re.search(r'\d+', str(months))
+        if not m_match:
+            return "–"
+        num_months = int(m_match.group())
+        month = date_value.month - 1 + num_months
         year = date_value.year + month // 12
         month = month % 12 + 1
-        # Clamp day to last valid day of the new month
-        import calendar
         last_day = calendar.monthrange(year, month)[1]
         day = min(date_value.day, last_day)
         end_date = datetime.date(year, month, day)
         return end_date.strftime('%d/%m/%Y')
     except Exception:
         return "–"
+
+
+@register.filter
+def get_installation_cert(doc):
+    """
+    Safely retrieve doc.installation_certificate without raising RelatedObjectDoesNotExist.
+    """
+    if not doc:
+        return None
+    try:
+        return doc.installation_certificate
+    except Exception:
+        return None

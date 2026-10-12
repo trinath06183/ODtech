@@ -3034,14 +3034,14 @@ const IC_PRINT_URL = "{% url 'print_installation_certificate' doc.id %}?print=1"
 const IC_PDF_URL   = "{% url 'download_installation_certificate' doc.id %}";
 
 // Pre-fill values from existing certificate (if any)
-{% with cert_exists=doc.installation_certificate %}
-{% if cert_exists %}
+{% with cert=doc|get_installation_cert %}
+{% if cert %}
 const IC_EXISTING = {
-    date:    "{{ doc.installation_certificate.date_of_installation|date:'Y-m-d' }}",
-    by:      "{{ doc.installation_certificate.installed_by|escapejs }}",
-    insp:    "{{ doc.installation_certificate.inspected_by|default:''|escapejs }}",
-    place:   "{{ doc.installation_certificate.place_of_installation|default:''|escapejs }}",
-    remarks: "{{ doc.installation_certificate.remarks|default:''|escapejs }}",
+    date:    "{{ cert.date_of_installation|date:'Y-m-d' }}",
+    by:      "{{ cert.installed_by|escapejs }}",
+    insp:    "{{ cert.inspected_by|default:''|escapejs }}",
+    place:   "{{ cert.place_of_installation|default:''|escapejs }}",
+    remarks: "{{ cert.remarks|default:''|escapejs }}",
 };
 {% else %}
 const IC_EXISTING = null;
