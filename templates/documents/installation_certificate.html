@@ -1,0 +1,605 @@
+{% load static %}
+{% load document_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Certificate – {{ doc.number }}</title>
+    <style>
+        {% if is_pdf %}
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        {% endif %}
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 10.5px;
+            color: #111;
+            line-height: 1.45;
+        }
+
+        /* ── Page border overlay ── */
+        .page-border {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 18px solid #fff;
+            border-radius: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ── Header ── */
+        .header-wrap {
+            position: relative;
+            height: 200px;
+            width: 100%;
+            overflow: hidden;
+            color: white;
+        }
+        .header-red {
+            position: absolute;
+            top: 0; right: 0;
+            width: 62%;
+            height: 170px;
+            background: #e31837;
+            border-bottom-left-radius: 90px;
+            z-index: 2;
+        }
+        .header-dark {
+            position: absolute;
+            top: 0; left: 0;
+            width: 58%;
+            height: 200px;
+            background: #272c35;
+            border-bottom-right-radius: 90px;
+            z-index: 1;
+        }
+        .header-left {
+            position: absolute;
+            top: 18px; left: 20px;
+            z-index: 3;
+            width: 32%;
+        }
+        .header-left img.logo {
+            height: 42px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+        .header-left .co-name {
+            font-size: 17px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .header-left .co-gst {
+            font-size: 9.5px;
+            color: #ddd;
+            font-weight: 600;
+        }
+        .header-right {
+            position: absolute;
+            top: 14px; right: 14px;
+            z-index: 3;
+            text-align: right;
+        }
+        .cert-title {
+            font-size: 21px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            color: #fff;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .cert-subtitle {
+            font-size: 10px;
+            color: rgba(255,255,255,0.85);
+            font-style: italic;
+            letter-spacing: 0.03em;
+        }
+        .cert-badge {
+            margin-top: 10px;
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            border: 1.5px solid rgba(255,255,255,0.5);
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.06em;
+            color: #fff;
+        }
+
+        /* ── Main content area ── */
+        .content {
+            padding: 14px 20px 0 20px;
+        }
+
+        /* ── Two-col info grid ── */
+        .info-grid {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 10px;
+            border-collapse: collapse;
+        }
+        .info-col {
+            display: table-cell;
+            vertical-align: top;
+        }
+
+        /* ── Section headings ── */
+        .section-heading {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #e31837;
+            border-bottom: 1.5px solid #e31837;
+            padding-bottom: 3px;
+            margin-bottom: 7px;
+        }
+
+        /* ── Info label / value pairs ── */
+        .kv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5px;
+        }
+        .kv-table td {
+            padding: 3px 4px;
+            border: none;
+            vertical-align: top;
+        }
+        .kv-table td.label {
+            font-weight: 700;
+            color: #444;
+            width: 42%;
+            white-space: nowrap;
+        }
+        .kv-table td.colon {
+            width: 5%;
+            color: #666;
+        }
+        .kv-table td.value {
+            color: #111;
+        }
+
+        /* ── Warranty Products Table ── */
+        .warranty-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            font-size: 9px;
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+        .warranty-table thead tr.head-title {
+            background: #272c35;
+            color: #fff;
+        }
+        .warranty-table thead tr.head-title th {
+            padding: 7px 8px;
+            font-size: 10.5px;
+            letter-spacing: 0.04em;
+            font-weight: 700;
+            text-align: left;
+            border: 1px solid #1a1e26;
+        }
+        .warranty-table thead tr.col-headers {
+            background: #e31837;
+            color: #fff;
+        }
+        .warranty-table thead tr.col-headers th {
+            padding: 5px 7px;
+            font-size: 9px;
+            font-weight: 700;
+            border: 1px solid #c0392b;
+            text-align: center;
+            letter-spacing: 0.03em;
+        }
+        .warranty-table thead tr.col-headers th:nth-child(2),
+        .warranty-table thead tr.col-headers th:nth-child(3) {
+            text-align: left;
+        }
+        .warranty-table tbody tr {
+            background: #fff;
+        }
+        .warranty-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        .warranty-table tbody td {
+            padding: 5px 7px;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            vertical-align: top;
+        }
+        .warranty-table tbody td.center { text-align: center; }
+        .warranty-table tfoot td {
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            font-size: 8.5px;
+            font-style: italic;
+            color: #777;
+            background: #f8f8f8;
+        }
+        .warranty-table .no-items td {
+            padding: 18px;
+            text-align: center;
+            color: #999;
+            font-style: italic;
+        }
+
+        .badge-ok     { background: #d1fae5; color: #065f46; border-radius: 3px; padding: 1px 5px; font-weight: 700; font-size: 8px; white-space: nowrap; }
+        .badge-fault  { background: #fee2e2; color: #991b1b; border-radius: 3px; padding: 1px 5px; font-weight: 700; font-size: 8px; white-space: nowrap; }
+        .badge-part   { background: #fef9c3; color: #78350f; border-radius: 3px; padding: 1px 5px; font-weight: 700; font-size: 8px; white-space: nowrap; }
+        .badge-pend   { background: #dbeafe; color: #1e40af; border-radius: 3px; padding: 1px 5px; font-weight: 700; font-size: 8px; white-space: nowrap; }
+
+        /* ── Remarks box ── */
+        .remarks-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 9.5px;
+            color: #333;
+            min-height: 38px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+
+        /* ── Signature strip ── */
+        .sig-strip {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            margin-top: 18px;
+            border-top: 1.5px solid #e2e8f0;
+            padding-top: 12px;
+        }
+        .sig-col {
+            display: table-cell;
+            text-align: center;
+            vertical-align: bottom;
+        }
+        .sig-line {
+            border-top: 1px solid #aaa;
+            width: 80%;
+            margin: 0 auto 4px auto;
+        }
+        .sig-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #555;
+            letter-spacing: 0.04em;
+        }
+        .sig-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 24px;
+        }
+
+        /* ── Footer ── */
+        .footer-area {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 28px;
+            z-index: 9998;
+        }
+        .footer-red {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%;
+            height: 18px;
+            background: #e31837;
+            border-bottom-left-radius: 4px;
+        }
+        .footer-dark {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 58%;
+            height: 28px;
+            background: #272c35;
+            border-top-left-radius: 40px;
+            border-bottom-right-radius: 4px;
+        }
+        .footer-text {
+            position: absolute;
+            bottom: 6px; right: 16px;
+            font-size: 8px;
+            color: rgba(255,255,255,0.8);
+            z-index: 2;
+            letter-spacing: 0.05em;
+        }
+
+        /* Table spacer before footer */
+        .footer-spacer {
+            height: 50px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            .footer-area { position: fixed; bottom: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Border Overlay -->
+<div class="page-border"></div>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<div class="header-wrap">
+    <div class="header-red"></div>
+    <div class="header-dark"></div>
+
+    <div class="header-left">
+        <img class="logo"
+             src="{{ logo_url|default:'' }}{% if not logo_url %}{% static 'img/logo.png' %}{% endif %}"
+             alt="ODtech Logo">
+        <div class="co-name">ODtech Solutions</div>
+        <div class="co-gst">GSTIN: 21AAHFO5846M1ZY &nbsp;|&nbsp; State: 21-Odisha</div>
+    </div>
+
+    <div class="header-right">
+        <div class="cert-title">Installation Certificate</div>
+        <div class="cert-subtitle">Equipment Commissioning &amp; Warranty Confirmation</div>
+        <div class="cert-badge">Cert No: {{ doc.number }}</div>
+    </div>
+</div>
+<!-- ═════════════════════════════════════════════════════════════════════════ -->
+
+<div class="content">
+
+    <!-- ── Section 1: General Information ────────────────────────────────── -->
+    <div class="info-grid" style="margin-bottom: 12px; margin-top: 6px;">
+        <!-- LEFT: Customer & Invoice info -->
+        <div class="info-col" style="width: 50%; padding-right: 16px;">
+            <div class="section-heading">Customer &amp; Invoice Details</div>
+            <table class="kv-table">
+                <tr>
+                    <td class="label">Customer Name</td>
+                    <td class="colon">:</td>
+                    <td class="value"><strong>{{ doc.contact.name }}</strong></td>
+                </tr>
+                {% if doc.po_reference_number %}
+                <tr>
+                    <td class="label">PO Number</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.po_reference_number }}</td>
+                </tr>
+                {% endif %}
+                {% if doc.po_date %}
+                <tr>
+                    <td class="label">PO Date</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.po_date|date:"d M Y" }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td class="label">Invoice / Ref. No.</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.number }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Invoice Date</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.date|date:"d M Y" }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Place of Supply</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.place_of_supply|default:"–" }}</td>
+                </tr>
+                {% if cert.place_of_installation %}
+                <tr>
+                    <td class="label">Place of Installation</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ cert.place_of_installation }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <!-- RIGHT: Installation info -->
+        <div class="info-col" style="width: 50%; padding-left: 16px; border-left: 1.5px solid #f0f0f0;">
+            <div class="section-heading">Installation Details</div>
+            <table class="kv-table">
+                <tr>
+                    <td class="label">Date of Installation</td>
+                    <td class="colon">:</td>
+                    <td class="value"><strong>{{ cert.date_of_installation|date:"d M Y" }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label">Installed By</td>
+                    <td class="colon">:</td>
+                    <td class="value"><strong>{{ cert.installed_by }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label">Inspected / Supervised By</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ cert.inspected_by|default:"–" }}</td>
+                </tr>
+                {% if doc.project_name %}
+                <tr>
+                    <td class="label">Project Name</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.project_name }}</td>
+                </tr>
+                {% endif %}
+                {% if doc.site_address %}
+                <tr>
+                    <td class="label">Site Address</td>
+                    <td class="colon">:</td>
+                    <td class="value">{{ doc.site_address|linebreaksbr }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    <!-- ── Section 2: Warranty Products Table ────────────────────────────── -->
+    <div class="section-heading" style="margin-bottom: 0;">Warranty Products</div>
+
+    <table class="warranty-table">
+        <thead>
+            <tr class="head-title">
+                <th colspan="8" style="text-align: left; font-size: 10px; letter-spacing: 0.05em;">
+                    Installed &amp; Warranted Equipment Details
+                </th>
+            </tr>
+            <tr class="col-headers">
+                <th style="width: 3%; text-align: center;">#</th>
+                <th style="width: 22%; text-align: left;">Item Name</th>
+                <th style="width: 14%; text-align: left;">Model</th>
+                <th style="width: 18%; text-align: center;">Product Serial No.</th>
+                <th style="width: 10%; text-align: center;">Machine Status</th>
+                <th style="width: 11%; text-align: center;">Warranty Period</th>
+                <th style="width: 11%; text-align: center;">Warranty Start</th>
+                <th style="width: 11%; text-align: center;">Warranty End</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% with items=doc.items.all %}
+        {% for item in items %}
+        {% if item.has_warranty %}
+        <tr>
+            <td class="center">{{ forloop.counter }}</td>
+            <td>
+                <strong>
+                    {% if item.product.sku == 'CUSTOM' %}
+                        {{ item.name|default:item.description }}
+                    {% else %}
+                        {{ item.name|default:item.product.name }}
+                    {% endif %}
+                </strong>
+                {% if item.description %}
+                <div style="font-size: 8px; color: #666; margin-top: 1px;">{{ item.description }}</div>
+                {% endif %}
+            </td>
+            <td>{{ item.model|default:"–" }}</td>
+            <td class="center" style="font-family: monospace; font-size: 8.5px;">
+                {% if item.serial_number %}{{ item.serial_number }}{% else %}<span style="color:#bbb;">—</span>{% endif %}
+            </td>
+            <td class="center">
+                <span class="badge-ok">Working / OK</span>
+            </td>
+            <td class="center">
+                <strong>
+                    {% if item.warranty_period %}{{ item.warranty_period }}
+                    {% elif item.product.warranty_months %}{{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}
+                    {% else %}–{% endif %}
+                </strong>
+            </td>
+            <td class="center">
+                {% if item.warranty_start_date %}{{ item.warranty_start_date|date:"d/m/Y" }}
+                {% else %}{{ cert.date_of_installation|date:"d/m/Y" }}{% endif %}
+            </td>
+            <td class="center">
+                {# Compute warranty end date using template filters #}
+                {% if item.warranty_start_date %}
+                    {% if item.product.warranty_months %}
+                        {{ item.warranty_start_date|add_months:item.product.warranty_months }}
+                    {% else %}–{% endif %}
+                {% else %}
+                    {% if item.product.warranty_months %}
+                        {{ cert.date_of_installation|add_months:item.product.warranty_months }}
+                    {% else %}–{% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+        {% empty %}
+        <tr class="no-items">
+            <td colspan="8">No warranty items found on this document.</td>
+        </tr>
+        {% endfor %}
+        {% endwith %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="8">
+                    ★ Warranty is valid from the date of installation. Serial numbers recorded at time of installation.
+                    Warranty excludes wear parts, consumables (torch hoses, electrodes, safety items) and accessories unless stated otherwise.
+                    Products must be operated under normal working conditions as specified in the user manual.
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- ── Remarks ────────────────────────────────────────────────────────── -->
+    {% if cert.remarks %}
+    <div class="section-heading">Remarks / Notes</div>
+    <div class="remarks-box">{{ cert.remarks|linebreaksbr }}</div>
+    {% endif %}
+
+    <!-- ── Declaration ────────────────────────────────────────────────────── -->
+    <div style="border: 1px solid #e2e8f0; border-radius: 5px; padding: 8px 12px; background: #f9fafb; font-size: 9px; color: #444; margin-bottom: 10px;">
+        <strong style="color: #e31837;">Declaration:</strong>
+        This is to certify that the above-mentioned equipment has been successfully installed, tested, and commissioned
+        at the customer's premises as per ODtech Solutions' standard installation procedures.
+        The equipment is in good working condition and the warranty period commences from the date of installation mentioned herein.
+    </div>
+
+    <!-- ── Signature Strip ────────────────────────────────────────────────── -->
+    <div class="sig-strip">
+        <div class="sig-col">
+            <div class="sig-name">{{ cert.installed_by }}</div>
+            <div class="sig-line"></div>
+            <div class="sig-label">TECHNICIAN SIGNATURE</div>
+            <div style="font-size:8px; color:#888; margin-top:2px;">Installed By</div>
+        </div>
+        <div class="sig-col">
+            <div class="sig-name">{{ cert.inspected_by|default:"" }}</div>
+            <div class="sig-line"></div>
+            <div class="sig-label">SUPERVISOR SIGNATURE</div>
+            <div style="font-size:8px; color:#888; margin-top:2px;">Inspected / Approved By</div>
+        </div>
+        <div class="sig-col">
+            <div style="position: relative; height: 72px; width: 140px; margin: 0 auto 0 auto; margin-bottom: 8px;">
+                <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
+                     alt="Stamp" style="height: 72px; opacity: 0.85; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
+                <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
+                     alt="Signature" style="height: 34px; position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 2;">
+            </div>
+            <div class="sig-line"></div>
+            <div class="sig-label">FOR ODTECH SOLUTIONS</div>
+            <div style="font-size:8px; color:#888; margin-top:2px;">Authorized Signatory</div>
+        </div>
+        <div class="sig-col">
+            <div style="height: 56px;"></div>
+            <div class="sig-line"></div>
+            <div class="sig-label">CUSTOMER SIGNATURE</div>
+            <div style="font-size:8px; color:#888; margin-top:2px;">Customer Acceptance</div>
+        </div>
+    </div>
+
+    <div class="footer-spacer"></div>
+</div>
+
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════════ -->
+<div class="footer-area">
+    <div class="footer-red"></div>
+    <div class="footer-dark"></div>
+    <div class="footer-text">ODtech Solutions &nbsp;|&nbsp; Installation Certificate &nbsp;|&nbsp; {{ doc.number }}</div>
+</div>
+
+{% if auto_print %}
+<script>
+    window.onload = function () {
+        setTimeout(function () { window.print(); }, 600);
+    };
+    window.onafterprint = function () { window.close(); };
+</script>
+{% endif %}
+
+</body>
+</html>

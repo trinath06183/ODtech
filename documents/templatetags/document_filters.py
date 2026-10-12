@@ -55,3 +55,27 @@ def gst_state(gstin):
     if state_name:
         return f"{code}-{state_name}"
     return ""
+
+
+@register.filter
+def add_months(date_value, months):
+    """
+    Add `months` months to a date and return a formatted string (d/m/Y).
+    Used for computing warranty end dates on the installation certificate.
+    """
+    if not date_value or not months:
+        return "–"
+    try:
+        import datetime
+        months = int(months)
+        month = date_value.month - 1 + months
+        year = date_value.year + month // 12
+        month = month % 12 + 1
+        # Clamp day to last valid day of the new month
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        day = min(date_value.day, last_day)
+        end_date = datetime.date(year, month, day)
+        return end_date.strftime('%d/%m/%Y')
+    except Exception:
+        return "–"

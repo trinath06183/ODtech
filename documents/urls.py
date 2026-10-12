@@ -84,4 +84,9 @@ urlpatterns = [
 
     # Forex Live Exchange Rate API
     path('api/exchange-rate/', views.get_exchange_rate_api, name='get_exchange_rate_api'),
+
+    # Installation Certificate
+    path('api/<int:document_id>/save-installation-certificate/', views.save_installation_certificate, name='save_installation_certificate'),
+    path('<int:document_id>/installation-certificate/', views.print_installation_certificate, name='print_installation_certificate'),
+    path('<int:document_id>/installation-certificate/pdf/', views.download_installation_certificate, name='download_installation_certificate'),
 ]

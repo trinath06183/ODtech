@@ -558,3 +558,40 @@ class DocumentItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.document.number}"
+
+
+class InstallationCertificate(models.Model):
+    """
+    Stores the additional header information required for an Installation Certificate.
+    The warranty product rows are derived from DocumentItem records on the linked document.
+    """
+    MACHINE_STATUS_CHOICES = (
+        ('OK', 'Working / OK'),
+        ('FAULT', 'Faulty'),
+        ('PARTIAL', 'Partially Working'),
+        ('PENDING', 'Pending Commissioning'),
+    )
+
+    document = models.OneToOneField(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='installation_certificate',
+        verbose_name='Source Document',
+    )
+
+    # General Information
+    date_of_installation = models.DateField(verbose_name='Date of Installation')
+    installed_by = models.CharField(max_length=255, verbose_name='Installed By (Technician)')
+    inspected_by = models.CharField(max_length=255, blank=True, null=True, verbose_name='Inspected / Supervised By')
+    place_of_installation = models.CharField(max_length=255, blank=True, null=True, verbose_name='Place of Installation')
+    remarks = models.TextField(blank=True, null=True, verbose_name='Remarks / Notes')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Installation Certificate'
+        verbose_name_plural = 'Installation Certificates'
+
+    def __str__(self):
+        return f"Cert – {self.document.number} ({self.date_of_installation})"

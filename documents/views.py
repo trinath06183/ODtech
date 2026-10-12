@@ -1,11 +1,12 @@
 from decimal import Decimal
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.db.models import Q, Sum, Count, F, DecimalField
-from .models import Document, DocumentItem
+from .models import Document, DocumentItem, InstallationCertificate
 from .services import DocumentService, PDFService, NumberingService
 from core.decorators import login_required, require_permission
 from inventory.models import Product
@@ -2326,7 +2327,122 @@ def skip_eway_bill_api(request, document_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
+# ─── Installation Certificate ─────────────────────────────────────────────────
+
+@require_POST
+@require_permission('DOCUMENTS', 'read')
+def save_installation_certificate(request, document_id):
+    """
+    Create or update the InstallationCertificate record for a document.
+    Returns JSON with the print URL on success.
+    """
+    doc = get_object_or_404(Document, id=document_id)
+    data = json.loads(request.body)
+
+    date_of_installation = data.get('date_of_installation', '')
+    installed_by = data.get('installed_by', '').strip()
+    inspected_by = data.get('inspected_by', '').strip()
+    place_of_installation = data.get('place_of_installation', '').strip()
+    remarks = data.get('remarks', '').strip()
+
+    if not date_of_installation or not installed_by:
+        return JsonResponse({'success': False, 'error': 'Date of installation and technician name are required.'}, status=400)
+
+    cert, _ = InstallationCertificate.objects.update_or_create(
+        document=doc,
+        defaults={
+            'date_of_installation': date_of_installation,
+            'installed_by': installed_by,
+            'inspected_by': inspected_by or None,
+            'place_of_installation': place_of_installation or None,
+            'remarks': remarks or None,
+        }
+    )
+
+    from django.urls import reverse
+    return JsonResponse({
+        'success': True,
+        'print_url': reverse('print_installation_certificate', args=[document_id]),
+        'pdf_url': reverse('download_installation_certificate', args=[document_id]),
+    })
 
 
+@require_permission('DOCUMENTS', 'read')
+def print_installation_certificate(request, document_id):
+    """
+    Render the installation certificate as an HTML page (for browser print).
+    """
+    doc = get_object_or_404(
+        Document.objects.select_related('contact').prefetch_related('items__product'),
+        id=document_id,
+    )
+    try:
+        cert = doc.installation_certificate
+    except InstallationCertificate.DoesNotExist:
+        return HttpResponse(
+            "<h2 style='font-family:sans-serif;color:#c00;padding:40px;'>No installation certificate found for this document. "
+            "Please fill in the certificate details first.</h2>", status=404
+        )
 
+    from config.models import CompanyProfile
+    company = CompanyProfile.objects.first()
+
+    context = {
+        'doc': doc,
+        'cert': cert,
+        'company': company,
+        'is_pdf': False,
+        'logo_url': '/static/img/logo.png',
+        'stamp_url': '/static/img/stamp.png',
+        'sign_url': '/static/img/sign.png',
+        'auto_print': bool(request.GET.get('print')),
+    }
+    return render(request, 'documents/installation_certificate.html', context)
+
+
+@require_permission('DOCUMENTS', 'read')
+def download_installation_certificate(request, document_id):
+    """
+    Generate and download the installation certificate as a PDF.
+    """
+    import weasyprint
+
+    doc = get_object_or_404(
+        Document.objects.select_related('contact').prefetch_related('items__product'),
+        id=document_id,
+    )
+    try:
+        cert = doc.installation_certificate
+    except InstallationCertificate.DoesNotExist:
+        return HttpResponse("No installation certificate found.", status=404)
+
+    from config.models import CompanyProfile
+    company = CompanyProfile.objects.first()
+    static_base = settings.BASE_DIR / "static"
+
+    context = {
+        'doc': doc,
+        'cert': cert,
+        'company': company,
+        'is_pdf': True,
+        'logo_url': (static_base / "img/logo.png").as_uri(),
+        'stamp_url': (static_base / "img/stamp.png").as_uri(),
+        'sign_url': (static_base / "img/sign.png").as_uri(),
+        'auto_print': False,
+    }
+    html_string = render_to_string('documents/installation_certificate.html', context, request=request)
+
+    try:
+        pdf_bytes = weasyprint.HTML(
+            string=html_string,
+            base_url=settings.BASE_DIR.as_uri() + "/",
+        ).write_pdf()
+        safe_number = doc.number.replace('-', '_').replace('/', '_')
+        safe_contact = str(doc.contact.name).replace(' ', '_')
+        filename = f"InstallationCertificate_{safe_number}_{safe_contact}.pdf"
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        return HttpResponse(f"<p>PDF generation failed: {e}</p><p>Please use the browser print option instead.</p>", status=500)
 
