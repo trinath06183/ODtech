@@ -9,7 +9,7 @@
     <style>
         @page {
             size: A4;
-            margin: 12mm 14mm 12mm 14mm;
+            margin: 10mm 12mm 10mm 12mm;
         }
 
         *, *::before, *::after {
@@ -26,11 +26,16 @@
             line-height: 1.45;
         }
 
+        /* ── Simple Certificate Frame Border ── */
         .cert-container {
             width: 100%;
             max-width: 100%;
             margin: 0 auto;
             background: #ffffff;
+            border: 2px solid #334155;
+            border-radius: 4px;
+            padding: 14px 16px;
+            box-sizing: border-box;
         }
 
         /* ── Clean Header ── */
@@ -49,7 +54,7 @@
             vertical-align: top;
         }
         .header-logo {
-            height: 42px;
+            height: 40px;
             object-fit: contain;
             margin-bottom: 3px;
         }
@@ -311,7 +316,7 @@
 
         /* ── Clean Minimal Footer ── */
         .clean-footer {
-            margin-top: 14px;
+            margin-top: 12px;
             padding-top: 6px;
             border-top: 1px solid #e2e8f0;
             text-align: center;
@@ -360,7 +365,7 @@
                 <div class="cert-sub-title">Equipment Commissioning, Testing &amp; Warranty Confirmation</div>
             </td>
             <td style="text-align: right;">
-                <div class="cert-badge">CERT NO: {{ doc.number }}</div>
+                <div class="cert-badge">CERT NO: {{ doc.number|default:"Not applicable" }}</div>
             </td>
         </tr>
     </table>
@@ -375,44 +380,38 @@
                     <tr>
                         <td class="lbl">Customer Name</td>
                         <td class="colon">:</td>
-                        <td class="val"><strong>{{ doc.contact.name }}</strong></td>
+                        <td class="val"><strong>{{ doc.contact.name|default:"Not applicable" }}</strong></td>
                     </tr>
-                    {% if doc.po_reference_number %}
                     <tr>
                         <td class="lbl">PO Number</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.po_reference_number }}</td>
+                        <td class="val">{{ doc.po_reference_number|default:"Not applicable" }}</td>
                     </tr>
-                    {% endif %}
-                    {% if doc.po_date %}
                     <tr>
                         <td class="lbl">PO Date</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.po_date|date:"d M Y" }}</td>
+                        <td class="val">{% if doc.po_date %}{{ doc.po_date|date:"d M Y" }}{% else %}Not applicable{% endif %}</td>
                     </tr>
-                    {% endif %}
                     <tr>
                         <td class="lbl">Invoice / Ref. No.</td>
                         <td class="colon">:</td>
-                        <td class="val"><strong>{{ doc.number }}</strong></td>
+                        <td class="val"><strong>{{ doc.number|default:"Not applicable" }}</strong></td>
                     </tr>
                     <tr>
                         <td class="lbl">Invoice Date</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.date|date:"d M Y" }}</td>
+                        <td class="val">{% if doc.date %}{{ doc.date|date:"d M Y" }}{% else %}Not applicable{% endif %}</td>
                     </tr>
                     <tr>
                         <td class="lbl">Place of Supply</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.place_of_supply|default:"–" }}</td>
+                        <td class="val">{{ doc.place_of_supply|default:"Not applicable" }}</td>
                     </tr>
-                    {% if cert.place_of_installation %}
                     <tr>
                         <td class="lbl">Place of Installation</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ cert.place_of_installation }}</td>
+                        <td class="val">{{ cert.place_of_installation|default:"Not applicable" }}</td>
                     </tr>
-                    {% endif %}
                 </table>
             </div>
         </div>
@@ -425,32 +424,28 @@
                     <tr>
                         <td class="lbl" style="width: 44%;">Date of Installation</td>
                         <td class="colon">:</td>
-                        <td class="val"><strong>{{ cert.date_of_installation|date:"d M Y" }}</strong></td>
+                        <td class="val"><strong>{% if cert.date_of_installation %}{{ cert.date_of_installation|date:"d M Y" }}{% else %}Not applicable{% endif %}</strong></td>
                     </tr>
                     <tr>
                         <td class="lbl">Installed By (Technician)</td>
                         <td class="colon">:</td>
-                        <td class="val"><strong>{{ cert.installed_by }}</strong></td>
+                        <td class="val"><strong>{{ cert.installed_by|default:"Not applicable" }}</strong></td>
                     </tr>
                     <tr>
                         <td class="lbl">Inspected / Supervised By</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ cert.inspected_by|default:"–" }}</td>
+                        <td class="val">{{ cert.inspected_by|default:"Not applicable" }}</td>
                     </tr>
-                    {% if doc.project_name %}
                     <tr>
                         <td class="lbl">Project Name</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.project_name }}</td>
+                        <td class="val">{{ doc.project_name|default:"Not applicable" }}</td>
                     </tr>
-                    {% endif %}
-                    {% if doc.site_address %}
                     <tr>
                         <td class="lbl">Site Address</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.site_address|linebreaksbr }}</td>
+                        <td class="val">{% if doc.site_address %}{{ doc.site_address|linebreaksbr }}{% else %}Not applicable{% endif %}</td>
                     </tr>
-                    {% endif %}
                 </table>
             </div>
         </div>
@@ -481,9 +476,9 @@
                 <td>
                     <strong>
                         {% if item.product.sku == 'CUSTOM' %}
-                            {{ item.name|default:item.description }}
+                            {{ item.name|default:item.description|default:"Not applicable" }}
                         {% else %}
-                            {{ item.name|default:item.product.name }}
+                            {{ item.name|default:item.product.name|default:"Not applicable" }}
                         {% endif %}
                     </strong>
                     {% if item.description %}
@@ -492,12 +487,18 @@
                     </div>
                     {% endif %}
                 </td>
-                <td>{{ item.model|default:"–" }}</td>
+                <td>
+                    {% if item.model and item.model != 'N/A' and item.model != '-' and item.model != '–' %}
+                        {{ item.model }}
+                    {% else %}
+                        Not applicable
+                    {% endif %}
+                </td>
                 <td class="center" style="font-family: monospace; font-size: 8px; color: #0f172a;">
-                    {% if item.serial_number %}
+                    {% if item.serial_number and item.serial_number != 'N/A' and item.serial_number != '-' and item.serial_number != '–' %}
                         {{ item.serial_number }}
                     {% else %}
-                        <span style="color: #94a3b8;">—</span>
+                        Not applicable
                     {% endif %}
                 </td>
                 <td class="center">
@@ -505,12 +506,12 @@
                 </td>
                 <td class="center">
                     <strong>
-                        {% if item.warranty_period and item.warranty_period != '-' and item.warranty_period != 'N/A' %}
+                        {% if item.warranty_period and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' %}
                             {{ item.warranty_period }}
                         {% elif item.product.warranty_months %}
                             {{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}
                         {% else %}
-                            –
+                            Not applicable
                         {% endif %}
                     </strong>
                 </td>
@@ -520,21 +521,21 @@
                     {% elif cert.date_of_installation %}
                         {{ cert.date_of_installation|date:"d/m/Y" }}
                     {% else %}
-                        {{ doc.date|date:"d/m/Y" }}
+                        Not applicable
                     {% endif %}
                 </td>
                 <td class="center">
                     {% with w_dur=item.warranty_period|default:item.product.warranty_months %}
-                        {% if w_dur and w_dur != '-' and w_dur != 'N/A' %}
+                        {% if w_dur and w_dur != '-' and w_dur != 'N/A' and w_dur != '–' and w_dur != 'Not applicable' %}
                             {% if item.warranty_start_date %}
                                 {{ item.warranty_start_date|add_months:w_dur }}
                             {% elif cert.date_of_installation %}
                                 {{ cert.date_of_installation|add_months:w_dur }}
                             {% else %}
-                                {{ doc.date|add_months:w_dur }}
+                                Not applicable
                             {% endif %}
                         {% else %}
-                            –
+                            Not applicable
                         {% endif %}
                     {% endwith %}
                 </td>
@@ -579,7 +580,7 @@
     <div class="sig-strip">
         <!-- 1: Technician -->
         <div class="sig-col">
-            <div class="sig-name">{{ cert.installed_by }}</div>
+            <div class="sig-name">{{ cert.installed_by|default:"Not applicable" }}</div>
             <div class="sig-line"></div>
             <div class="sig-label">TECHNICIAN SIGNATURE</div>
             <div class="sig-sub">Installed &amp; Tested By</div>
@@ -587,7 +588,7 @@
 
         <!-- 2: Supervisor -->
         <div class="sig-col">
-            <div class="sig-name">{{ cert.inspected_by|default:"–" }}</div>
+            <div class="sig-name">{{ cert.inspected_by|default:"Not applicable" }}</div>
             <div class="sig-line"></div>
             <div class="sig-label">SUPERVISOR SIGNATURE</div>
             <div class="sig-sub">Inspected &amp; Approved By</div>
@@ -610,7 +611,7 @@
 
         <!-- 4: Customer Acceptance -->
         <div class="sig-col">
-            <div class="sig-name" style="font-size: 8px; color: #475569;">{{ doc.contact.name|truncatechars:28 }}</div>
+            <div class="sig-name" style="font-size: 8px; color: #475569;">{{ doc.contact.name|default:"Not applicable"|truncatechars:28 }}</div>
             <div class="sig-line"></div>
             <div class="sig-label">CUSTOMER ACCEPTANCE</div>
             <div class="sig-sub">Received in Good Condition</div>
