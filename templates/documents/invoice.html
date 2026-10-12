@@ -159,68 +159,6 @@
 
 {% include 'documents/print_items_table.html' %}
 
-{# -- Warranty Information Section (Invoice only, conditional) -- #}
-{% with warranty_items=doc.items.all %}
-
-{% if doc.enable_warranty %}
-{% for item in warranty_items %}{% if item.product.warranty_months > 0 and item.has_warranty %}{% if forloop.first %}
-<table style="width:100%; border-collapse:collapse; margin-top:14px; margin-bottom:4px; font-size:10px;">
-    <thead>
-        <tr class="bg-red">
-            <th colspan="4" style="padding:6px 8px; text-align:left; font-size:11px; letter-spacing:0.04em;">
-                Warranty Information
-            </th>
-        </tr>
-        <tr style="background:#1a1a2e; color:#fff;">
-            <th style="padding:5px 8px; text-align:left;  border:1px solid #c0392b; width:4%;">#</th>
-            <th style="padding:5px 8px; text-align:left;  border:1px solid #c0392b;">Product</th>
-            <th style="padding:5px 8px; text-align:center;border:1px solid #c0392b; width:22%;">Serial Number</th>
-            <th style="padding:5px 8px; text-align:center;border:1px solid #c0392b; width:30%;">Warranty Period</th>
-        </tr>
-    </thead>
-    <tbody>
-{% endif %}{% endif %}{% endfor %}
-
-{% for item in warranty_items %}
-{% if item.product.warranty_months > 0 and item.has_warranty %}
-        <tr>
-            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; text-align:center; vertical-align:top;">{{ forloop.counter }}</td>
-            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; vertical-align:top;">
-                <strong>{% if item.product.sku == 'CUSTOM' %}{{ item.name|default:item.description }}{% else %}{{ item.name|default:item.product.name }}{% endif %}</strong>
-                {% if item.model %}
-                <div style="font-size:8.5px; color:#555; margin-top:2px;">Model: {{ item.model }}</div>
-                {% endif %}
-
-            </td>
-            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; text-align:center; vertical-align:top; font-family:monospace;">
-                {% if item.serial_number %}{{ item.serial_number }}{% else %}<span style="color:#aaa; font-family:inherit;">&#8212;</span>{% endif %}
-            </td>
-            <td style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; text-align:center; vertical-align:top;">
-                <strong>{% if item.warranty_period %}{{ item.warranty_period }}{% else %}{{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}{% endif %}</strong>
-                <div style="font-size:8.5px; color:#555; margin-top:2px;">
-                    From: {% if item.warranty_start_date %}{{ item.warranty_start_date|date:"d M Y" }}{% else %}{{ doc.date|date:"d M Y" }}{% endif %}
-                </div>
-            </td>
-        </tr>
-{% endif %}
-{% endfor %}
-
-{% for item in warranty_items %}{% if item.product.warranty_months > 0 and item.has_warranty %}{% if forloop.first %}
-    </tbody>
-    <tfoot>
-        <tr style="background:#f8f8f8; font-size:8.5px; color:#666;">
-            <td colspan="4" style="padding:4px 8px; border:1px solid #e2e8f0; border-top:none; font-style:italic;">
-                Warranty is valid from the invoice date. Serial number recorded at time of dispatch.
-                Warranty excludes wear parts, consumables, and accessories unless stated otherwise.
-            </td>
-        </tr>
-    </tfoot>
-</table>
-{% endif %}{% endif %}{% endfor %}
-{% endif %}
-
-{% endwith %}
-
 {# ── Unified Bottom: Left=BankDetails+AmtInWords+Terms | Right=Totals+Signature ── #}
 <div class="info-grid" style="margin-top: 6px; page-break-inside: avoid;">
     {# ─ LEFT COLUMN: Pay To + Amount in Words + Terms ─ #}
