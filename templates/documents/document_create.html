@@ -291,6 +291,20 @@
     }
     .modal-scrollable-body::-webkit-scrollbar { width: 4px; }
     .modal-scrollable-body::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.3); border-radius: 4px; }
+    @keyframes scanLaser {
+        0% { top: 6px; opacity: 0.9; }
+        50% { top: calc(100% - 8px); opacity: 0.9; }
+        100% { top: 6px; opacity: 0.9; }
+    }
+    /* Hide spin arrows on row sequence input */
+    input.no-spin::-webkit-outer-spin-button,
+    input.no-spin::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input.no-spin[type=number] {
+        -moz-appearance: textfield;
+    }
 </style>
 
 {# ═════════════════════════════════════════════════════════════════════════ #}
@@ -1001,7 +1015,7 @@
                     <table class="items-table" style="min-width: 800px;">
                         <thead>
                             <tr>
-                                <th style="width:34px;">#</th>
+                                <th style="width:48px;" title="Sequence number — edit to reorder rows">#</th>
                                 <th x-show="columns.item_name" style="min-width:160px;">Item Name</th>
                                 <th x-show="columns.part_number" style="min-width:100px;">Part No.</th>
                                 <th x-show="columns.hsn_code" style="min-width:80px;">HSN/SAC</th>
@@ -1022,8 +1036,15 @@
                         <template x-for="(item, index) in items" :key="item._uid || index">
                             <tbody style="border-bottom: 1px solid rgba(71,85,105,0.3);">
                                 <tr>
-                                    <td class="text-center font-bold text-gray-500 text-xs" style="vertical-align: middle; padding: 12px 6px;">
-                                        <span x-text="index + 1"></span>
+                                    <td class="text-center font-bold text-gray-500 text-xs" style="vertical-align: middle; padding: 6px 3px; width: 48px;">
+                                        <input type="number"
+                                               min="1"
+                                               :max="items.length"
+                                               :value="index + 1"
+                                               @change="moveItemToPosition(index, $el.value, $el)"
+                                               @keydown.enter.prevent="$el.blur()"
+                                               class="no-spin w-10 h-7 text-center font-bold text-xs rounded-md border border-slate-300 bg-white hover:border-blue-400 focus:border-blue-500 text-slate-700 focus:text-blue-600 transition-all outline-none cursor-pointer focus:cursor-text shadow-xs"
+                                               :title="'Click to edit sequence number (1 to ' + items.length + '). Moving this item shifts subsequent items by 1.'">
                                     </td>
                                     <td x-show="columns.item_name">
                                         <input type="text" x-model="item.name"
@@ -1098,19 +1119,27 @@
                                                         class="cell-inp" style="background: #0f172a !important; border-color: #475569 !important; color: #ffffff !important;">
                                                 </div>
                                                 <div style="flex: 1.5; min-width: 180px;">
-                                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
                                                         <label style="display: block; font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">
                                                             Serial Number(s)
                                                             <span x-show="countSerialNumbers(item.serial_number) > 0"
                                                                   class="text-emerald-400 font-bold ml-1"
                                                                   x-text="'(' + countSerialNumbers(item.serial_number) + (item.qty > 1 ? ' / ' + Math.round(item.qty) : '') + ')'"></span>
                                                         </label>
-                                                        <button type="button"
-                                                                @click="openSerialModal(item, index)"
-                                                                class="text-[9px] text-blue-400 hover:text-blue-300 font-bold underline cursor-pointer flex items-center gap-1"
-                                                                title="Batch / Multiple Serial Numbers Helper">
-                                                            <span>🔢</span> Multiple S/Nos
-                                                        </button>
+                                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                                            <button type="button"
+                                                                    @click="openBarcodeScanner(item, index)"
+                                                                    class="text-[9px] text-emerald-400 hover:text-emerald-300 font-bold underline cursor-pointer flex items-center gap-1"
+                                                                    title="Scan Barcode / QR Code with Mobile Camera">
+                                                                <span>📷</span> Scan S/No
+                                                            </button>
+                                                            <button type="button"
+                                                                    @click="openSerialModal(item, index)"
+                                                                    class="text-[9px] text-blue-400 hover:text-blue-300 font-bold underline cursor-pointer flex items-center gap-1"
+                                                                    title="Batch / Multiple Serial Numbers Helper">
+                                                                <span>🔢</span> Multiple S/Nos
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                     <textarea x-model="item.serial_number" placeholder="Enter S/Nos (comma or line separated, e.g. SN001, SN002)" rows="2"
                                                         class="cell-inp" style="background: #0f172a !important; border-color: #475569 !important; color: #ffffff !important; resize: vertical; min-height: 38px; padding-top: 4px; padding-bottom: 4px; font-family: monospace; font-size: 11px; line-height: 1.35;"></textarea>
@@ -1735,16 +1764,21 @@
             </div>
 
             <!-- Mode Switcher -->
-            <div style="display:flex; background:#0f172a; border-radius:0.5rem; padding:3px; margin-bottom:1rem; border:1px solid #334155;">
+            <div style="display:flex; background:#0f172a; border-radius:0.5rem; padding:3px; margin-bottom:1rem; border:1px solid #334155; gap:2px;">
                 <button type="button" @click="serialMode = 'list'"
                     :style="serialMode === 'list' ? 'background:#3b82f6; color:#ffffff;' : 'background:transparent; color:#94a3b8;'"
-                    style="flex:1; padding:6px 12px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s;">
-                    📝 Paste / Enter List
+                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s;">
+                    📝 Paste / List
                 </button>
                 <button type="button" @click="serialMode = 'sequence'"
                     :style="serialMode === 'sequence' ? 'background:#3b82f6; color:#ffffff;' : 'background:transparent; color:#94a3b8;'"
-                    style="flex:1; padding:6px 12px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s;">
-                    ⚡ Auto-Generate Sequence
+                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s;">
+                    ⚡ Auto-Sequence
+                </button>
+                <button type="button" @click="startScannerFromModal()"
+                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s; background:rgba(16,185,129,0.15); color:#34d399;"
+                    title="Open Camera to scan barcodes">
+                    📷 Camera Scan
                 </button>
             </div>
 
@@ -1835,6 +1869,133 @@
         </div>
     </div>
 
+    {# ── Mobile / Camera Barcode Scanner Modal ── #}
+    <div x-show="showScannerModal" x-cloak
+        class="fixed inset-0 z-[1100] flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md"
+        style="display:none;"
+        :style="showScannerModal ? 'display:flex !important;' : 'display:none !important;'">
+        <div @click.away="closeBarcodeScanner()"
+            style="background:#0f172a; border:1px solid #334155; border-radius:1.25rem; box-shadow:0 25px 60px -15px rgba(0,0,0,0.8); position:relative; width:100%; max-width:520px; max-height:94vh; overflow:hidden; display:flex; flex-direction:column; color:#f8fafc;">
+
+            <!-- Header -->
+            <div style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between; background:#1e293b;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:rgba(16,185,129,0.2); color:#34d399; font-size:1.1rem;">📷</span>
+                    <div>
+                        <div style="font-size:0.95rem; font-weight:800; color:#ffffff; line-height:1.2;">Barcode &amp; QR Scanner</div>
+                        <div style="font-size:0.7rem; color:#94a3b8;" x-text="activeScannerItem ? activeScannerItem.name + ' (Qty: ' + Math.round(activeScannerItem.qty) + ')' : ''"></div>
+                    </div>
+                </div>
+                <button type="button" @click="closeBarcodeScanner()"
+                    style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer; line-height:1; padding:2px 8px; border-radius:6px;"
+                    onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='#94a3b8'">&times;</button>
+            </div>
+
+            <!-- Camera Viewport with Aiming Overlay -->
+            <div style="position:relative; width:100%; height:260px; background:#000000; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                <video id="barcode-scanner-video" playsinline muted autoplay style="width:100%; height:100%; object-fit:cover; display:block;"></video>
+                <canvas id="barcode-scanner-canvas" style="display:none;"></canvas>
+
+                <!-- Scanner Aiming Reticle -->
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;">
+                    <div id="scanner-reticle"
+                         style="width:75%; max-width:320px; height:130px; border:2px solid rgba(52,211,153,0.8); border-radius:12px; position:relative; box-shadow:0 0 0 9999px rgba(0,0,0,0.5); transition:border-color 0.2s;">
+                        <!-- Glowing laser scan line -->
+                        <div class="scanner-laser" style="position:absolute; left:4px; right:4px; height:2px; background:linear-gradient(90deg, transparent, #10b981, transparent); box-shadow:0 0 8px #10b981;"></div>
+                        <!-- Corner brackets -->
+                        <div style="position:absolute; top:-2px; left:-2px; width:14px; height:14px; border-top:4px solid #10b981; border-left:4px solid #10b981; border-radius:4px 0 0 0;"></div>
+                        <div style="position:absolute; top:-2px; right:-2px; width:14px; height:14px; border-top:4px solid #10b981; border-right:4px solid #10b981; border-radius:0 4px 0 0;"></div>
+                        <div style="position:absolute; bottom:-2px; left:-2px; width:14px; height:14px; border-bottom:4px solid #10b981; border-left:4px solid #10b981; border-radius:0 0 0 4px;"></div>
+                        <div style="position:absolute; bottom:-2px; right:-2px; width:14px; height:14px; border-bottom:4px solid #10b981; border-right:4px solid #10b981; border-radius:0 0 4px 0;"></div>
+                    </div>
+                    <div style="font-size:0.7rem; color:rgba(255,255,255,0.8); margin-top:10px; background:rgba(0,0,0,0.6); padding:2px 10px; border-radius:999px;" x-text="scannerStatusText">
+                        Point camera at equipment barcode or QR
+                    </div>
+                </div>
+
+                <!-- Camera Controls on Viewfinder (Torch & Switch) -->
+                <div style="position:absolute; top:10px; right:10px; display:flex; gap:6px; z-index:10;">
+                    <button type="button" @click="toggleTorch()" x-show="hasTorchSupport"
+                        style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;"
+                        :style="torchEnabled ? 'background:#f59e0b; color:#000;' : ''"
+                        title="Toggle Flashlight / Torch">
+                        🔦
+                    </button>
+                    <button type="button" @click="switchCamera()" x-show="availableCameras.length > 1"
+                        style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;"
+                        title="Switch Front/Rear Camera">
+                        🔄 Switch Cam
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scanned Results Body -->
+            <div style="flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:0.75rem;">
+
+                <!-- Progress Header -->
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">
+                        Scanned Serial Numbers
+                    </div>
+                    <div style="font-size:0.75rem; font-weight:800;"
+                         :class="scannedSerials.length >= (activeScannerItem ? Math.round(activeScannerItem.qty) : 1) ? 'text-emerald-400' : 'text-amber-400'">
+                        <span x-text="scannedSerials.length"></span>
+                        <span x-show="activeScannerItem && activeScannerItem.qty > 1" x-text="' / ' + Math.round(activeScannerItem.qty)"></span>
+                        <span x-show="scannedSerials.length >= (activeScannerItem ? Math.round(activeScannerItem.qty) : 1)">✓ Target Reached</span>
+                    </div>
+                </div>
+
+                <!-- Chips of Scanned Barcodes -->
+                <div style="background:#0b1120; border:1px solid #1e293b; border-radius:0.75rem; padding:0.6rem; min-height:80px; max-height:140px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:0.4rem; align-content:flex-start;">
+                    <template x-for="(sn, sIdx) in scannedSerials" :key="sIdx">
+                        <span style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; border:1px solid #334155; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-family:monospace; color:#38bdf8;">
+                            <span style="font-size:0.7rem; color:#10b981;">✓</span>
+                            <span x-text="sn"></span>
+                            <button type="button" @click="removeScannedSerial(sIdx)"
+                                style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:0.85rem; padding:0; line-height:1; margin-left:2px;"
+                                onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#94a3b8'">&times;</button>
+                        </span>
+                    </template>
+                    <div x-show="scannedSerials.length === 0" style="width:100%; text-align:center; padding:1.25rem 0; font-size:0.75rem; color:#64748b; font-style:italic;">
+                        No barcodes scanned yet. Aim your camera at a barcode label to auto-scan.
+                    </div>
+                </div>
+
+                <!-- Manual add fallback input -->
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" x-model="manualBarcodeInput"
+                        @keydown.enter.prevent="addManualBarcode()"
+                        placeholder="Or type/paste serial number manually…"
+                        style="flex:1; background:#0b1120; border:1px solid #334155; border-radius:0.5rem; padding:0.5rem 0.75rem; color:#ffffff; font-size:0.75rem; font-family:monospace; outline:none;">
+                    <button type="button" @click="addManualBarcode()"
+                        style="padding:0.5rem 0.85rem; background:#334155; border:1px solid #475569; color:#cbd5e1; border-radius:0.5rem; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        + Add
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Footer Buttons -->
+            <div style="padding:0.875rem 1.25rem; border-top:1px solid #334155; background:#1e293b; display:flex; justify-content:space-between; align-items:center;">
+                <button type="button" @click="scannedSerials = []" x-show="scannedSerials.length > 0"
+                    style="background:none; border:none; color:#ef4444; font-size:0.75rem; font-weight:600; cursor:pointer; text-decoration:underline;">
+                    Clear All
+                </button>
+                <div style="display:flex; gap:0.6rem; margin-left:auto;">
+                    <button type="button" @click="closeBarcodeScanner()"
+                        style="padding:0.55rem 1rem; background:#334155; border:1px solid #475569; color:#cbd5e1; border-radius:0.625rem; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="button" @click="applyBarcodeScanner()"
+                        style="padding:0.55rem 1.35rem; background:linear-gradient(135deg, #10b981, #059669); border:none; color:#ffffff; border-radius:0.625rem; font-size:0.8rem; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+                        Apply Serial Numbers
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     {# Browse Products Modal #}
     <div x-show="showBrowseModal" x-cloak
         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -1920,6 +2081,7 @@
 
 </div>{# end x-data wrapper #}
 
+<script src="{% static 'vendor/js/jsQR.min.js' %}"></script>
 <script>
 function documentForm() {
     const lastSettings = {{ last_doc_settings_json|safe }};
@@ -2186,6 +2348,22 @@ function documentForm() {
         serialSeqCount: 1,
         serialSeqPad: 0,
         serialFormat: 'comma',
+
+        // ── Camera Barcode Scanner state ────────────────────────────
+        showScannerModal: false,
+        activeScannerItem: null,
+        scannerStream: null,
+        scannerInterval: null,
+        scannerDetector: null,
+        scannerStatusText: 'Initializing camera…',
+        scannedSerials: [],
+        manualBarcodeInput: '',
+        lastScannedCode: '',
+        lastScannedTime: 0,
+        hasTorchSupport: false,
+        torchEnabled: false,
+        availableCameras: [],
+        currentCameraIndex: 0,
 
         // ── per-row autocomplete state ───────────────────────────────
         itemSuggestions: {},     // uid → [product, ...]
@@ -3047,6 +3225,38 @@ function documentForm() {
             this.calculateTotals();
         },
 
+        moveItemToPosition(oldIndex, targetPosStr, eventEl) {
+            const targetPos = parseInt(targetPosStr, 10);
+            const maxPos = this.items.length;
+            if (isNaN(targetPos) || targetPos < 1) {
+                if (eventEl) eventEl.value = oldIndex + 1;
+                this.items = [...this.items];
+                return;
+            }
+            const clampedPos = Math.max(1, Math.min(targetPos, maxPos));
+            const newIndex = clampedPos - 1;
+
+            if (newIndex === oldIndex) {
+                if (eventEl) eventEl.value = oldIndex + 1;
+                this.items = [...this.items];
+                return;
+            }
+
+            // Remove item from its current position
+            const [movedItem] = this.items.splice(oldIndex, 1);
+            // Insert item at the new target position (subsequent items automatically shift by 1)
+            this.items.splice(newIndex, 0, movedItem);
+            this.calculateTotals();
+            // Trigger Alpine reactive updates across all rows
+            this.items = [...this.items];
+            this.$nextTick(() => {
+                const inputs = document.querySelectorAll('.items-table input.no-spin');
+                inputs.forEach((inp, idx) => {
+                    if (inp) inp.value = idx + 1;
+                });
+            });
+        },
+
         async openBrowseModal() {
             this.showBrowseModal = true;
             if (!this.browseLoaded) {
@@ -3312,6 +3522,249 @@ function documentForm() {
                 this.activeSerialItem.serial_number = (this.activeSerialText || '').trim();
             }
             this.showSerialModal = false;
+        },
+
+        // ── Camera Barcode Scanner helpers ──────────────────────────
+        playScanBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+            } catch (_) {}
+            if (navigator.vibrate) {
+                try { navigator.vibrate(80); } catch (_) {}
+            }
+        },
+
+        startScannerFromModal() {
+            const item = this.activeSerialItem;
+            this.showSerialModal = false;
+            this.openBarcodeScanner(item);
+        },
+
+        async openBarcodeScanner(item, index) {
+            this.activeScannerItem = item;
+            this.manualBarcodeInput = '';
+            // Parse existing serial numbers if any
+            if (item && item.serial_number) {
+                this.scannedSerials = String(item.serial_number)
+                    .split(/[\n,]+/)
+                    .map(s => s.trim())
+                    .filter(Boolean);
+            } else {
+                this.scannedSerials = [];
+            }
+            this.showScannerModal = true;
+            this.scannerStatusText = 'Starting camera…';
+            this.lastScannedCode = '';
+            this.lastScannedTime = 0;
+
+            this.$nextTick(async () => {
+                await this.initBarcodeCamera();
+            });
+        },
+
+        async initBarcodeCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                this.scannerStatusText = 'Camera not supported or requires HTTPS.';
+                alert('Camera access is not supported on this browser or requires a secure connection (HTTPS).');
+                return;
+            }
+
+            try {
+                // Enumerate cameras to find environment / back camera
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                this.availableCameras = devices.filter(d => d.kind === 'videoinput');
+                let preferredDeviceId = null;
+
+                // Pick back camera if available
+                const backCam = this.availableCameras.find(c => /back|rear|environment/i.test(c.label));
+                if (backCam) {
+                    preferredDeviceId = backCam.deviceId;
+                    this.currentCameraIndex = this.availableCameras.indexOf(backCam);
+                }
+
+                await this.startCameraWithDevice(preferredDeviceId);
+            } catch (err) {
+                console.warn('Camera error:', err);
+                this.scannerStatusText = 'Camera permission denied or unavailable.';
+            }
+        },
+
+        async startCameraWithDevice(deviceId) {
+            this.stopBarcodeCameraTracks();
+            const video = document.getElementById('barcode-scanner-video');
+            if (!video) return;
+
+            const constraints = {
+                video: deviceId
+                    ? { deviceId: { exact: deviceId } }
+                    : { facingMode: { ideal: 'environment' } }
+            };
+
+            try {
+                this.scannerStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = this.scannerStream;
+                await video.play();
+
+                // Check torch capability
+                const track = this.scannerStream.getVideoTracks()[0];
+                const caps = track.getCapabilities ? track.getCapabilities() : {};
+                this.hasTorchSupport = !!caps.torch;
+                this.torchEnabled = false;
+
+                this.scannerStatusText = 'Point at barcode or QR code';
+                this.startBarcodeDetectionLoop(video);
+            } catch (e) {
+                this.scannerStatusText = 'Failed to open camera: ' + e.message;
+            }
+        },
+
+        async switchCamera() {
+            if (this.availableCameras.length <= 1) return;
+            this.currentCameraIndex = (this.currentCameraIndex + 1) % this.availableCameras.length;
+            const nextCam = this.availableCameras[this.currentCameraIndex];
+            if (nextCam) {
+                await this.startCameraWithDevice(nextCam.deviceId);
+            }
+        },
+
+        async toggleTorch() {
+            if (!this.scannerStream) return;
+            const track = this.scannerStream.getVideoTracks()[0];
+            if (!track || !this.hasTorchSupport) return;
+            try {
+                this.torchEnabled = !this.torchEnabled;
+                await track.applyConstraints({
+                    advanced: [{ torch: this.torchEnabled }]
+                });
+            } catch (_) {}
+        },
+
+        startBarcodeDetectionLoop(video) {
+            clearInterval(this.scannerInterval);
+
+            // Native BarcodeDetector (Chrome Android, Safari 17+, desktop Chrome)
+            let nativeDetector = null;
+            if ('BarcodeDetector' in window) {
+                try {
+                    nativeDetector = new BarcodeDetector({
+                        formats: ['code_128', 'code_39', 'code_93', 'codabar', 'ean_13', 'ean_8', 'itf', 'upc_a', 'upc_e', 'qr_code', 'data_matrix']
+                    });
+                } catch (_) {}
+            }
+
+            const canvas = document.getElementById('barcode-scanner-canvas');
+            const ctx = canvas ? canvas.getContext('2d', { willReadFrequently: true }) : null;
+
+            this.scannerInterval = setInterval(async () => {
+                if (!this.showScannerModal || video.readyState < 2) return;
+
+                // 1. Try Native BarcodeDetector
+                if (nativeDetector) {
+                    try {
+                        const barcodes = await nativeDetector.detect(video);
+                        if (barcodes && barcodes.length > 0) {
+                            for (const b of barcodes) {
+                                if (b.rawValue) this.onBarcodeDetected(b.rawValue);
+                            }
+                            return;
+                        }
+                    } catch (_) {}
+                }
+
+                // 2. Fallback: jsQR (from static vendor)
+                if (typeof jsQR !== 'undefined' && canvas && ctx) {
+                    const w = video.videoWidth || 640;
+                    const h = video.videoHeight || 480;
+                    if (w > 0 && h > 0) {
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.drawImage(video, 0, 0, w, h);
+                        try {
+                            const imgData = ctx.getImageData(0, 0, w, h);
+                            const qr = jsQR(imgData.data, w, h, { inversionAttempts: 'attemptBoth' });
+                            if (qr && qr.data) {
+                                this.onBarcodeDetected(qr.data);
+                            }
+                        } catch (_) {}
+                    }
+                }
+            }, 180);
+        },
+
+        onBarcodeDetected(rawValue) {
+            const code = String(rawValue).trim();
+            if (!code) return;
+
+            // Anti-duplicate debounce within 1.5 seconds for same code
+            const now = Date.now();
+            if (code === this.lastScannedCode && (now - this.lastScannedTime) < 1500) {
+                return;
+            }
+            this.lastScannedCode = code;
+            this.lastScannedTime = now;
+
+            // Don't add if already present in scanned list
+            if (!this.scannedSerials.includes(code)) {
+                this.scannedSerials.push(code);
+                this.playScanBeep();
+                this.scannerStatusText = '✓ Scanned: ' + code;
+
+                // Visual reticle flash
+                const reticle = document.getElementById('scanner-reticle');
+                if (reticle) {
+                    reticle.style.borderColor = '#10b981';
+                    setTimeout(() => { if (reticle) reticle.style.borderColor = 'rgba(52,211,153,0.8)'; }, 400);
+                }
+            } else {
+                this.scannerStatusText = 'Already added: ' + code;
+            }
+        },
+
+        addManualBarcode() {
+            const val = (this.manualBarcodeInput || '').trim();
+            if (!val) return;
+            if (!this.scannedSerials.includes(val)) {
+                this.scannedSerials.push(val);
+                this.playScanBeep();
+            }
+            this.manualBarcodeInput = '';
+        },
+
+        removeScannedSerial(idx) {
+            this.scannedSerials.splice(idx, 1);
+        },
+
+        stopBarcodeCameraTracks() {
+            clearInterval(this.scannerInterval);
+            this.scannerInterval = null;
+            if (this.scannerStream) {
+                this.scannerStream.getTracks().forEach(t => t.stop());
+                this.scannerStream = null;
+            }
+            const video = document.getElementById('barcode-scanner-video');
+            if (video) video.srcObject = null;
+        },
+
+        closeBarcodeScanner() {
+            this.stopBarcodeCameraTracks();
+            this.showScannerModal = false;
+        },
+
+        applyBarcodeScanner() {
+            if (this.activeScannerItem) {
+                this.activeScannerItem.serial_number = this.scannedSerials.join(', ');
+            }
+            this.closeBarcodeScanner();
         },
 
         // ── form submit ──────────────────────────────────────────────
