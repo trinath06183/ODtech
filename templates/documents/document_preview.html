@@ -171,7 +171,7 @@
                     {% endif %}
 
                     {% if doc.type == 'QTN' or doc.type == 'INV' or doc.type == 'PRO' %}
-                    {% if (doc.type == 'INV' or doc.type == 'CHL') and not doc.is_eway_bill_satisfied %}
+                    {% if not doc.is_eway_bill_satisfied %}
                     <button type="button"
                        onclick="triggerEWayBillCheck({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', () => shareOnWhatsApp('{{ doc.contact.phone|default:''|escapejs }}', '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{{ doc.contact.name|escapejs }}', {{ doc.grand_total }}, '{{ doc.get_access_token|escapejs }}'))"
                        class="h-10 px-3.5 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer"
@@ -193,7 +193,7 @@
                     </button>
                     {% endif %}
 
-                    {% if (doc.type == 'INV' or doc.type == 'CHL') and not doc.is_eway_bill_satisfied %}
+                    {% if not doc.is_eway_bill_satisfied %}
                     <button type="button"
                        onclick="triggerEWayBillCheck({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', () => sendDocumentEmail('{{ doc.contact.email|default:''|escapejs }}'))"
                        id="emailDocBtn"
@@ -277,7 +277,7 @@
                     </div>
                     {% endif %}
                     {% endif %}
-                    {% if (doc.type == 'INV' or doc.type == 'CHL') and not doc.is_eway_bill_satisfied %}
+                    {% if not doc.is_eway_bill_satisfied %}
                     <button type="button"
                        onclick="triggerEWayBillCheck({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{% url 'export_document_bundle' doc.id %}', 'download')"
                        class="h-10 px-3.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 font-bold rounded-xl inline-flex items-center gap-2 transition-all border border-cyan-300 text-xs shadow-sm cursor-pointer"
@@ -2862,7 +2862,7 @@ async function saveContactChanges() {
             // Update email send button if present
             const emailBtn = document.getElementById('emailDocBtn');
             if (emailBtn && c.email) {
-                {% if (doc.type == 'INV' or doc.type == 'CHL') and not doc.is_eway_bill_satisfied %}
+                {% if not doc.is_eway_bill_satisfied %}
                 emailBtn.setAttribute('onclick', `triggerEWayBillCheck({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', () => sendDocumentEmail('${c.email.replace(/'/g, "\\'")}'))`);
                 {% else %}
                 emailBtn.setAttribute('onclick', `sendDocumentEmail('${c.email.replace(/'/g, "\\'")}')`);
