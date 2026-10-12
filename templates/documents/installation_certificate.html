@@ -509,21 +509,15 @@
                 </td>
                 <td class="center">
                     <strong>
-                        {% if item.has_warranty %}
-                            {% if item.warranty_period and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' %}
-                                {{ item.warranty_period }}
-                            {% elif item.product.warranty_months %}
-                                {{ item.product.warranty_months }} Month{{ item.product.warranty_months|pluralize }}
-                            {% else %}
-                                Not applicable
-                            {% endif %}
+                        {% if item.has_warranty and item.warranty_period and item.warranty_period.strip and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' and item.warranty_period != 'Not applicable' %}
+                            {{ item.warranty_period }}
                         {% else %}
                             Not applicable
                         {% endif %}
                     </strong>
                 </td>
                 <td class="center">
-                    {% if item.has_warranty %}
+                    {% if item.has_warranty and item.warranty_period and item.warranty_period.strip and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' and item.warranty_period != 'Not applicable' %}
                         {% if item.warranty_start_date %}
                             {{ item.warranty_start_date|date:"d/m/Y" }}
                         {% elif cert.date_of_installation %}
@@ -536,20 +530,14 @@
                     {% endif %}
                 </td>
                 <td class="center">
-                    {% if item.has_warranty %}
-                        {% with w_dur=item.warranty_period|default:item.product.warranty_months %}
-                            {% if w_dur and w_dur != '-' and w_dur != 'N/A' and w_dur != '–' and w_dur != 'Not applicable' %}
-                                {% if item.warranty_start_date %}
-                                    {{ item.warranty_start_date|add_months:w_dur }}
-                                {% elif cert.date_of_installation %}
-                                    {{ cert.date_of_installation|add_months:w_dur }}
-                                {% else %}
-                                    Not applicable
-                                {% endif %}
-                            {% else %}
-                                Not applicable
-                            {% endif %}
-                        {% endwith %}
+                    {% if item.has_warranty and item.warranty_period and item.warranty_period.strip and item.warranty_period != '-' and item.warranty_period != 'N/A' and item.warranty_period != '–' and item.warranty_period != 'Not applicable' %}
+                        {% if item.warranty_start_date %}
+                            {{ item.warranty_start_date|add_months:item.warranty_period }}
+                        {% elif cert.date_of_installation %}
+                            {{ cert.date_of_installation|add_months:item.warranty_period }}
+                        {% else %}
+                            Not applicable
+                        {% endif %}
                     {% else %}
                         Not applicable
                     {% endif %}

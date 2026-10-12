@@ -65,14 +65,16 @@ def add_months(date_value, months):
     Supports integers, strings like '36 Months', '12', etc.
     """
     if not date_value or not months:
-        return "–"
+        return "Not applicable"
     try:
         import datetime, re, calendar
         # Extract numeric months from '36 Months', 36, etc.
         m_match = re.search(r'\d+', str(months))
         if not m_match:
-            return "–"
+            return "Not applicable"
         num_months = int(m_match.group())
+        if num_months <= 0:
+            return "Not applicable"
         month = date_value.month - 1 + num_months
         year = date_value.year + month // 12
         month = month % 12 + 1
@@ -81,7 +83,7 @@ def add_months(date_value, months):
         end_date = datetime.date(year, month, day)
         return end_date.strftime('%d/%m/%Y')
     except Exception:
-        return "–"
+        return "Not applicable"
 
 
 @register.filter

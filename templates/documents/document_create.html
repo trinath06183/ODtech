@@ -2742,7 +2742,7 @@ function documentForm() {
                 qty: 1, unit: p.unit || 'EA', rate: parseFloat(p.price) || 0,
                 discount: 0, discount_pct: 0, tax: parseFloat(p.tax_rate) || 18,
                 taxAmt: 0, total: 0, hsn_code: p.hsn_code || '', part_number: p.sku || '', serial_number: '', has_warranty: false,
-                model: p.sku || '', warranty_period: p.warranty_months ? p.warranty_months + ' Months' : '12 Months',
+                model: p.sku || '', warranty_period: (p.warranty_months && parseInt(p.warranty_months) > 0) ? p.warranty_months + ' Months' : '',
                 warranty_start_date: ''
             });
             this.globalSearch = ''; this.showGlobalResults = false;
@@ -2820,7 +2820,7 @@ function documentForm() {
             item.unit        = product.unit || 'EA';
             item.part_number = product.sku || '';
             item.model       = product.sku || '';
-            item.warranty_period = product.warranty_months ? product.warranty_months + ' Months' : '12 Months';
+            item.warranty_period = (product.warranty_months && parseInt(product.warranty_months) > 0) ? product.warranty_months + ' Months' : '';
             item.warranty_start_date = '';
             this.closeDropdown();
             this.calculateTotals();
@@ -2928,7 +2928,7 @@ function documentForm() {
                 qty: 1, unit: p.unit || 'EA', rate: parseFloat(p.price) || 0,
                 discount: 0, discount_pct: 0, tax: parseFloat(p.tax_rate) || 18,
                 taxAmt: 0, total: 0, hsn_code: p.hsn_code || '', part_number: p.sku || '', serial_number: p.serial_number || '', has_warranty: p.has_warranty || false,
-                model: p.sku || '', warranty_period: p.warranty_months ? p.warranty_months + ' Months' : '12 Months',
+                model: p.sku || '', warranty_period: (p.warranty_months && parseInt(p.warranty_months) > 0) ? p.warranty_months + ' Months' : '',
                 warranty_start_date: ''
             });
             this.calculateTotals();
