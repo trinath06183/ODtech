@@ -155,25 +155,16 @@
 
                 <!-- Installation Certificate (INV & CHL only) -->
                 {% if doc.type == 'INV' or doc.type == 'CHL' %}
-                <div class="inline-flex items-center rounded-xl shadow-sm">
-                    <a href="{% url 'form_installation_certificate' doc.id %}"
-                       target="_blank"
-                       id="btnInstallCert"
-                       class="h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-l-xl inline-flex items-center gap-2 transition-all text-xs cursor-pointer shadow-xs"
-                       title="Open Installation Certificate Generator in a Dedicated Page (New Tab)">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Install. Certificate
-                        <span class="inline-flex items-center text-[10px] bg-amber-600/80 px-1.5 py-0.5 rounded font-medium">New Page ↗</span>
-                    </a>
-                    <button type="button"
-                            onclick="openInstallationCertModal()"
-                            class="h-10 px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-r-xl inline-flex items-center border-l border-amber-400 transition-colors text-xs cursor-pointer"
-                            title="Quick Popup Window">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
-                </div>
+                <a href="{% url 'form_installation_certificate' doc.id %}"
+                   target="_blank"
+                   id="btnInstallCert"
+                   class="h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all text-xs shadow-sm hover:shadow cursor-pointer"
+                   title="Generate Installation Certificate">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Install. Certificate
+                </a>
                 {% endif %}
 
                 <!-- Cluster Divider -->
