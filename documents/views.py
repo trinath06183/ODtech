@@ -2458,3 +2458,19 @@ def download_installation_certificate(request, document_id):
     except Exception as e:
         return HttpResponse(f"<p>PDF generation failed: {e}</p><p>Please use the browser print option instead.</p>", status=500)
 
+
+@require_permission('DOCUMENTS', 'read')
+def form_installation_certificate(request, document_id):
+    """
+    Dedicated full-page form to view and edit Installation Certificate details.
+    """
+    doc = get_object_or_404(
+        Document.objects.select_related('contact').prefetch_related('items__product'),
+        id=document_id,
+    )
+    cert = getattr(doc, 'installation_certificate', None)
+    return render(request, 'documents/installation_certificate_form.html', {
+        'doc': doc,
+        'cert': cert,
+    })
+

@@ -155,16 +155,25 @@
 
                 <!-- Installation Certificate (INV & CHL only) -->
                 {% if doc.type == 'INV' or doc.type == 'CHL' %}
-                <button type="button"
-                        onclick="openInstallationCertModal()"
-                        id="btnInstallCert"
-                        class="h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer"
-                        title="Generate Installation Certificate">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Install. Certificate
-                </button>
+                <div class="inline-flex items-center rounded-xl shadow-sm">
+                    <a href="{% url 'form_installation_certificate' doc.id %}"
+                       target="_blank"
+                       id="btnInstallCert"
+                       class="h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-l-xl inline-flex items-center gap-2 transition-all text-xs cursor-pointer shadow-xs"
+                       title="Open Installation Certificate Generator in a Dedicated Page (New Tab)">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Install. Certificate
+                        <span class="inline-flex items-center text-[10px] bg-amber-600/80 px-1.5 py-0.5 rounded font-medium">New Page ↗</span>
+                    </a>
+                    <button type="button"
+                            onclick="openInstallationCertModal()"
+                            class="h-10 px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-r-xl inline-flex items-center border-l border-amber-400 transition-colors text-xs cursor-pointer"
+                            title="Quick Popup Window">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                </div>
                 {% endif %}
 
                 <!-- Cluster Divider -->
@@ -2918,125 +2927,142 @@ async function saveContactChanges() {
      INSTALLATION CERTIFICATE MODAL
      ══════════════════════════════════════════════════════════════════════════ -->
 <div id="installCertModal"
-     class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm"
+     class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-2 sm:p-4 md:p-6 overflow-y-auto"
      onclick="if(event.target===this)closeInstallCertModal()">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-[96vw] max-w-6xl my-auto flex flex-col max-h-[94vh] overflow-hidden border border-slate-300 dark:border-gray-700 ring-1 ring-black/10"
          onclick="event.stopPropagation()">
 
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
                 <div>
-                    <div class="font-bold text-gray-900 dark:text-white text-sm">Installation Certificate</div>
-                    <div class="text-xs text-gray-500">{{ doc.number }} &nbsp;|&nbsp; {{ doc.contact.name }}</div>
+                    <div class="font-extrabold text-gray-900 dark:text-white text-base tracking-tight">Installation Certificate Generator</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Document: <strong class="text-gray-800 dark:text-gray-200">{{ doc.number }}</strong> &nbsp;|&nbsp; Client: <strong class="text-gray-800 dark:text-gray-200">{{ doc.contact.name }}</strong></div>
                 </div>
             </div>
-            <button onclick="closeInstallCertModal()"
-                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'form_installation_certificate' doc.id %}" target="_blank"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm"
+                   title="Open this generator on a dedicated full page in a new tab">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Open in New Page ↗
+                </a>
+                <button onclick="closeInstallCertModal()"
+                        class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-2 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <!-- Body -->
-        <div class="px-6 py-5 space-y-4">
-            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                Fill in the installation details below. This information will appear on the printed certificate.
-            </p>
-
-            <!-- Date of Installation -->
-            <div>
-                <label for="ic_date" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Date of Installation <span class="text-red-500">*</span>
-                </label>
-                <input type="date" id="ic_date"
-                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                       value="{{ doc.date|date:'Y-m-d' }}">
-            </div>
-
-            <!-- Installed By -->
-            <div>
-                <label for="ic_installed_by" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Installed By (Technician Name) <span class="text-red-500">*</span>
-                </label>
-                <input type="text" id="ic_installed_by" placeholder="e.g. Ranjit Kumar"
-                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            </div>
-
-            <!-- Inspected By -->
-            <div>
-                <label for="ic_inspected_by" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Inspected / Supervised By
-                </label>
-                <input type="text" id="ic_inspected_by" placeholder="e.g. Suresh Patel (optional)"
-                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            </div>
-
-            <!-- Place of Installation -->
-            <div>
-                <label for="ic_place" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Place of Installation
-                </label>
-                <input type="text" id="ic_place"
-                       placeholder="{{ doc.place_of_supply|default:'e.g. Plant Site, Bhubaneswar' }}"
-                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            </div>
-
-            <!-- Project Name -->
-            <div>
-                <label for="ic_project_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Project Name
-                </label>
-                <input type="text" id="ic_project_name"
-                       placeholder="e.g. Lab Commissioning Phase 1 (or leave blank for Not applicable)"
-                       value="{{ doc.project_name|default:'' }}"
-                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            </div>
-
-            <!-- Site Address -->
-            <div>
-                <label for="ic_site_address" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Site Address
-                </label>
-                <textarea id="ic_site_address" rows="2"
-                          placeholder="e.g. Site / Delivery address..."
-                          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none">{{ doc.site_address|default:'' }}</textarea>
-            </div>
-
-            <!-- Working Details / Commissioning Scope -->
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label for="ic_working_details" class="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        Working Details / Commissioning Scope
-                    </label>
-                    <button type="button" onclick="resetDefaultWorkingDetails()"
-                            class="text-[11px] text-amber-600 hover:text-amber-700 font-semibold cursor-pointer">
-                        Reset to Standard
-                    </button>
-                </div>
-                <textarea id="ic_working_details" rows="5"
-                          placeholder="Enter working details checklist..."
-                          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y"></textarea>
-                <p class="text-[10px] text-gray-400 mt-0.5">Editable checklist. Modify, add, or remove points as needed.</p>
-            </div>
-
-            <!-- Remarks -->
-            <div>
-                <label for="ic_remarks" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Remarks / Notes (optional)
-                </label>
-                <textarea id="ic_remarks" rows="2" placeholder="Any special notes or observations..."
-                          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
-            </div>
-
+        <!-- Scrollable Body with 2-Column Grid -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-4">
             <!-- Error msg -->
-            <div id="ic_error" class="hidden text-xs text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg"></div>
+            <div id="ic_error" class="hidden text-xs text-red-600 bg-red-50 dark:bg-red-900/20 px-3.5 py-2.5 rounded-xl border border-red-200 dark:border-red-800 font-semibold"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- LEFT COLUMN: Installation Details (5 cols) -->
+                <div class="lg:col-span-5 space-y-3.5">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-white border-b border-slate-200 dark:border-gray-700 pb-1.5 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        Site &amp; Technician Details
+                    </div>
+
+                    <!-- Date of Installation -->
+                    <div>
+                        <label for="ic_date" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Date of Installation <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="ic_date"
+                               class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                               value="{{ doc.date|date:'Y-m-d' }}">
+                    </div>
+
+                    <!-- Installed By -->
+                    <div>
+                        <label for="ic_installed_by" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Installed By (Technician Name) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="ic_installed_by" placeholder="e.g. Rajesh Kumar Rout"
+                               class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Inspected By -->
+                    <div>
+                        <label for="ic_inspected_by" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Inspected / Supervised By
+                        </label>
+                        <input type="text" id="ic_inspected_by" placeholder="e.g. Prashant Patra (or leave blank for Not applicable)"
+                               class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Place of Installation -->
+                    <div>
+                        <label for="ic_place" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Place of Installation
+                        </label>
+                        <input type="text" id="ic_place"
+                               placeholder="{{ doc.place_of_supply|default:'e.g. Odisha' }}"
+                               class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Project Name -->
+                    <div>
+                        <label for="ic_project_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Project Name
+                        </label>
+                        <input type="text" id="ic_project_name"
+                               placeholder="e.g. Welding Lab Commissioning (or leave blank for Not applicable)"
+                               value="{{ doc.project_name|default:'' }}"
+                               class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Site Address -->
+                    <div>
+                        <label for="ic_site_address" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Site Address
+                        </label>
+                        <textarea id="ic_site_address" rows="2"
+                                  placeholder="e.g. Customer site / plant location..."
+                                  class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none">{{ doc.site_address|default:'' }}</textarea>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div>
+                        <label for="ic_remarks" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Remarks / Notes (optional)
+                        </label>
+                        <textarea id="ic_remarks" rows="2" placeholder="Any special notes or observations..."
+                                  class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Working Details Scope (7 cols) -->
+                <div class="lg:col-span-7 flex flex-col">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-gray-700 pb-1.5 mb-2">
+                        <div class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            Working Detail : (Commissioning Scope)
+                        </div>
+                        <button type="button" onclick="resetDefaultWorkingDetails()"
+                                class="text-[11px] px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 hover:bg-amber-100 font-semibold border border-amber-200 dark:border-amber-800 cursor-pointer">
+                            Reset to Standard
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mb-2">Edit or modify any of the points below. Each line prints in the "Working Detail :" table on the certificate.</p>
+                    <textarea id="ic_working_details" rows="15"
+                              placeholder="Enter working details checklist..."
+                              class="w-full flex-1 p-3.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y min-h-[320px]"></textarea>
+                </div>
+
+            </div>
         </div>
 
         <!-- Footer -->

@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load document_filters %}
+
+{% block header %}Installation Certificate – {{ doc.number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mb-10 px-4">
+
+    <!-- ── Top Action & Navigation Bar ────────────────────────────────────────── -->
+    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm border border-slate-200 dark:border-gray-700 mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'document_preview' doc.id %}"
+               class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 text-slate-800 dark:text-gray-100 font-bold transition-all border border-slate-300 dark:border-gray-600 text-xs shadow-xs cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back to Document
+            </a>
+            <div>
+                <h1 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    Installation Certificate Generator
+                </h1>
+                <div class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                    Doc: <strong class="text-slate-700 dark:text-gray-200">{{ doc.number }}</strong> &nbsp;|&nbsp;
+                    Customer: <strong class="text-slate-700 dark:text-gray-200">{{ doc.contact.name }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="submitInstallCert('print')"
+                    id="page_btn_print"
+                    class="h-10 px-4 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm text-xs cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Save &amp; Print
+            </button>
+            <button type="button" onclick="submitInstallCert('pdf')"
+                    id="page_btn_pdf"
+                    class="h-10 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm text-xs cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Save &amp; Download PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Error alert -->
+    <div id="page_error" class="hidden mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 font-semibold"></div>
+
+    <!-- ── Main 2-Column Form ────────────────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: General & Site Details (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-5">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-white border-b border-slate-200 dark:border-gray-700 pb-3 mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    Installation &amp; Site Details
+                </h2>
+
+                <div class="space-y-4 text-xs">
+                    <!-- Date of Installation -->
+                    <div>
+                        <label for="ic_date" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Date of Installation <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="ic_date"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                               value="{% if cert.date_of_installation %}{{ cert.date_of_installation|date:'Y-m-d' }}{% else %}{{ doc.date|date:'Y-m-d' }}{% endif %}">
+                    </div>
+
+                    <!-- Installed By -->
+                    <div>
+                        <label for="ic_installed_by" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Installed By (Technician Name) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="ic_installed_by" placeholder="e.g. Rajesh Kumar Rout"
+                               value="{{ cert.installed_by|default:'' }}"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+
+                    <!-- Inspected By -->
+                    <div>
+                        <label for="ic_inspected_by" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Inspected / Supervised By
+                        </label>
+                        <input type="text" id="ic_inspected_by" placeholder="e.g. Prashant Patra (or leave blank for Not applicable)"
+                               value="{{ cert.inspected_by|default:'' }}"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+
+                    <!-- Place of Installation -->
+                    <div>
+                        <label for="ic_place" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Place of Installation
+                        </label>
+                        <input type="text" id="ic_place"
+                               placeholder="{{ doc.place_of_supply|default:'e.g. Odisha' }}"
+                               value="{{ cert.place_of_installation|default:doc.place_of_supply|default:'' }}"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+
+                    <!-- Project Name -->
+                    <div>
+                        <label for="ic_project_name" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Project Name
+                        </label>
+                        <input type="text" id="ic_project_name"
+                               placeholder="e.g. Welding Lab Commissioning (or leave blank for Not applicable)"
+                               value="{{ cert.project_name|default:doc.project_name|default:'' }}"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+
+                    <!-- Site Address -->
+                    <div>
+                        <label for="ic_site_address" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Site Address
+                        </label>
+                        <textarea id="ic_site_address" rows="3"
+                                  placeholder="e.g. Customer plant or delivery address..."
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none">{% if cert.site_address %}{{ cert.site_address }}{% elif doc.site_address %}{{ doc.site_address }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div>
+                        <label for="ic_remarks" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Remarks / Notes (optional)
+                        </label>
+                        <textarea id="ic_remarks" rows="2"
+                                  placeholder="Any special notes or observations..."
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none">{{ cert.remarks|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Working Details & Scope (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-5">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-gray-700 flex flex-col h-full">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-gray-700 pb-3 mb-4">
+                    <div>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            Working Detail : (Commissioning Scope)
+                        </h2>
+                        <p class="text-[11px] text-slate-400 dark:text-gray-400 mt-0.5">
+                            Standard commissioning checkpoints. Edit or customize each point as needed for this certificate.
+                        </p>
+                    </div>
+                    <button type="button" onclick="resetDefaultWorkingDetails()"
+                            class="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-xs border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer">
+                        Reset to Standard
+                    </button>
+                </div>
+
+                <div class="flex-1 flex flex-col">
+                    <textarea id="ic_working_details"
+                              rows="16"
+                              class="w-full flex-1 p-4 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 text-xs font-mono leading-relaxed focus:ring-2 focus:ring-amber-500 focus:outline-none resize-y min-h-[360px]"
+                              placeholder="Enter working details...">{% if cert.working_details %}{{ cert.working_details }}{% endif %}</textarea>
+                    <p class="text-[10px] text-slate-400 mt-2">
+                        Each line appears in the "Working Detail :" table on the printed certificate.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Bottom Action Bar ────────────────────────────────────────────────── -->
+    <div class="mt-6 flex items-center justify-end gap-3 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
+        <a href="{% url 'document_preview' doc.id %}"
+           class="px-5 py-2.5 rounded-xl text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 font-semibold text-xs transition-colors">
+            Cancel
+        </a>
+        <button type="button" onclick="submitInstallCert('print')"
+                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Save &amp; Print
+        </button>
+        <button type="button" onclick="submitInstallCert('pdf')"
+                class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Save &amp; Download PDF
+        </button>
+    </div>
+
+</div>
+
+<script>
+const IC_SAVE_URL  = "{% url 'save_installation_certificate' doc.id %}";
+const IC_PRINT_URL = "{% url 'print_installation_certificate' doc.id %}?print=1";
+const IC_PDF_URL   = "{% url 'download_installation_certificate' doc.id %}";
+
+const DEFAULT_WORKING_DETAILS = `1. All equipment has been unboxed and inspected for physical damage; everything has been found to be in good condition.
+2. Machine mounting and physical positioning completed as per site layout.
+3. Power supply, earthing, and electrical connections verified and connected within specified voltage limits.
+4. Gas/air/chiller pipelines and accessory connections completed and leak-tested.
+5. Control unit switched ON; all I/O signals, teach pendant, and parameter settings configured.
+6. Dry run performed and motion/positions verified.
+7. Operational trials and test runs conducted in manual and automatic modes; output quality verified and found OK.
+8. Safety interlocks, limit switches, and emergency stops tested and functioning properly.
+9. Operators/maintenance team provided with basic operational briefing and handover.
+10. Equipment successfully commissioned and approved in prime working condition.`;
+
+// Pre-populate with default if currently empty
+const wdEl = document.getElementById('ic_working_details');
+if (!wdEl.value.trim()) {
+    wdEl.value = DEFAULT_WORKING_DETAILS;
+}
+
+function resetDefaultWorkingDetails() {
+    document.getElementById('ic_working_details').value = DEFAULT_WORKING_DETAILS;
+}
+
+async function submitInstallCert(action) {
+    const date           = document.getElementById('ic_date').value.trim();
+    const installedBy    = document.getElementById('ic_installed_by').value.trim();
+    const inspectedBy    = document.getElementById('ic_inspected_by').value.trim();
+    const place          = document.getElementById('ic_place').value.trim();
+    const projectName    = document.getElementById('ic_project_name').value.trim();
+    const siteAddress    = document.getElementById('ic_site_address').value.trim();
+    const workingDetails = document.getElementById('ic_working_details').value.trim();
+    const remarks        = document.getElementById('ic_remarks').value.trim();
+    const errBox         = document.getElementById('page_error');
+
+    if (!date || !installedBy) {
+        errBox.textContent = 'Date of installation and technician name are required.';
+        errBox.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+    errBox.classList.add('hidden');
+
+    const btnPrint = document.getElementById('page_btn_print');
+    const btnPdf   = document.getElementById('page_btn_pdf');
+    btnPrint.disabled = true;
+    btnPdf.disabled   = true;
+    btnPrint.textContent = 'Saving…';
+    btnPdf.textContent   = 'Saving…';
+
+    try {
+        const resp = await fetch(IC_SAVE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+            },
+            body: JSON.stringify({
+                date_of_installation: date,
+                installed_by: installedBy,
+                inspected_by: inspectedBy,
+                place_of_installation: place,
+                project_name: projectName,
+                site_address: siteAddress,
+                working_details: workingDetails,
+                remarks: remarks,
+            }),
+        });
+        const data = await resp.json();
+        if (!data.success) {
+            errBox.textContent = data.error || 'Failed to save certificate details.';
+            errBox.classList.remove('hidden');
+            btnPrint.disabled = false; btnPdf.disabled = false;
+            btnPrint.textContent = 'Save & Print'; btnPdf.textContent = 'Save & Download PDF';
+            return;
+        }
+        if (action === 'pdf') {
+            window.location.href = IC_PDF_URL;
+        } else {
+            window.open(IC_PRINT_URL, '_blank');
+        }
+    } catch (e) {
+        errBox.textContent = 'Network error. Please try again.';
+        errBox.classList.remove('hidden');
+        btnPrint.disabled = false; btnPdf.disabled = false;
+        btnPrint.textContent = 'Save & Print'; btnPdf.textContent = 'Save & Download PDF';
+    }
+}
+</script>
+{% endblock %}
