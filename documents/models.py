@@ -79,6 +79,8 @@ class Document(TimeStampedModel):
     site_address = models.TextField(blank=True, null=True)
     eway_bill = models.CharField(max_length=100, blank=True, null=True, verbose_name="E-Way Bill No.")
     eway_bill_date = models.DateField(blank=True, null=True, verbose_name="E-Way Bill Date")
+    eway_bill_file = models.FileField(upload_to='eway_bills/', blank=True, null=True, verbose_name="E-Way Bill File")
+    eway_bill_not_required = models.BooleanField(default=False, verbose_name="E-Way Bill Not Required")
     po_reference_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="PO Reference Number")
     po_date = models.DateField(blank=True, null=True, verbose_name="PO Reference Date")
     place_of_supply = models.CharField(max_length=100, default='21-Odisha', blank=True, null=True, verbose_name="Place of Supply")
@@ -143,6 +145,28 @@ class Document(TimeStampedModel):
     @property
     def total_discount(self):
         return sum(item.discount for item in self.items.all())
+
+    @property
+    def is_eway_bill_satisfied(self):
+        """
+        Returns True if:
+        - The document is NOT an Invoice ('INV') or Delivery Challan ('CHL'), OR
+        - An E-Way bill file has been uploaded directly, OR
+        - An E-Way bill number is already entered, OR
+        - An E-Way bill is explicitly marked as not required, OR
+        - An EDMS document is already linked to this document with 'E-Way Bill' in title/category.
+        """
+        if self.type not in ('INV', 'CHL'):
+            return True
+        if bool(self.eway_bill_file or self.eway_bill or self.eway_bill_not_required):
+            return True
+        if hasattr(self, 'linked_edms_list') and self.linked_edms_list:
+            for ed in self.linked_edms_list:
+                t = (getattr(ed, 'title', '') or '').lower()
+                c = str(getattr(ed, 'category', '') or '').lower()
+                if 'eway' in t or 'e-way' in t or 'eway' in c or 'e-way' in c:
+                    return True
+        return False
 
     def get_access_token(self):
         """Generate a cryptographically signed unguessable access token for public sharing without login."""

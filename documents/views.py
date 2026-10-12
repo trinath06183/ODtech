@@ -2180,5 +2180,153 @@ def get_exchange_rate_api(request):
     })
 
 
+@login_required
+@require_permission('DOCUMENTS', 'edit')
+def upload_eway_bill_api(request, document_id):
+    """
+    Uploads an E-Way Bill file and optional number/date for a document.
+    Also automatically creates an EDMS document and links it via DocumentLink
+    so it shows in the EDMS module and the document trail.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+    doc = get_object_or_404(Document, id=document_id)
+    eway_file = request.FILES.get('eway_bill_file')
+    eway_number = (request.POST.get('eway_bill') or '').strip()
+    eway_date_str = (request.POST.get('eway_bill_date') or '').strip()
+
+    if not eway_file and not eway_number:
+        return JsonResponse({'success': False, 'error': 'Please select an E-Way Bill file or enter the E-Way Bill number.'}, status=400)
+
+    try:
+        update_fields = ['updated_at', 'eway_bill_not_required']
+        doc.eway_bill_not_required = False
+
+        if eway_number:
+            doc.eway_bill = eway_number
+            update_fields.append('eway_bill')
+
+        if eway_date_str:
+            from django.utils.dateparse import parse_date
+            parsed_d = parse_date(eway_date_str)
+            if parsed_d:
+                doc.eway_bill_date = parsed_d
+                update_fields.append('eway_bill_date')
+
+        if eway_file:
+            doc.eway_bill_file = eway_file
+            update_fields.append('eway_bill_file')
+
+        doc.save(update_fields=update_fields)
+
+        # ─── Auto-sync to EDMS & Link via DocumentLink ───────────────────
+        edms_doc_id = None
+        if eway_file:
+            try:
+                from edms.models import EDMSDocument, EDMSDocumentCategory
+                from edms.services.document_service import DocumentService
+                from core.models import DocumentLink
+                from django.contrib.contenttypes.models import ContentType
+
+                eway_category, _ = EDMSDocumentCategory.objects.get_or_create(
+                    name='E-Way Bill',
+                    defaults={'description': 'Government E-Way Bills for goods movement and transport'}
+                )
+
+                doc_type_label = doc.get_type_display() if hasattr(doc, 'get_type_display') else doc.type
+                title = f"E-Way Bill - {doc.number}"
+                if eway_number:
+                    title += f" ({eway_number})"
+
+                edms_data = {
+                    'title': title,
+                    'description': f"E-Way Bill for {doc_type_label} #{doc.number}",
+                    'category': eway_category,
+                    'document_type': EDMSDocument.DOCTYPE_FINANCIAL,
+                    'reference_number': eway_number or doc.number,
+                    'invoice_number': doc.number,
+                    'invoice_date': doc.date,
+                    'issue_date': doc.eway_bill_date or doc.date,
+                    'contact_vendor': doc.contact,
+                    'party_name': doc.contact.name if doc.contact else '',
+                    'amount': doc.grand_total,
+                    'access_level': EDMSDocument.ACCESS_INTERNAL,
+                    'approval_status': EDMSDocument.APPROVAL_APPROVED,
+                }
+
+                # Reset file cursor before passing to service
+                eway_file.seek(0)
+                edms_doc, _ = DocumentService.create_document(
+                    validated_data=edms_data,
+                    uploaded_file=eway_file,
+                    user=request.user,
+                    request=request,
+                )
+                edms_doc_id = str(edms_doc.id)
+
+                # Link EDMS document to commercial document
+                doc_ct = ContentType.objects.get_for_model(Document)
+                edms_ct = ContentType.objects.get_for_model(EDMSDocument)
+
+                DocumentLink.objects.get_or_create(
+                    source_type=doc_ct,
+                    source_id=str(doc.id),
+                    target_type=edms_ct,
+                    target_id=str(edms_doc.id),
+                    defaults={
+                        'link_type': 'supporting',
+                        'created_by': request.user,
+                    }
+                )
+            except Exception as edms_err:
+                import logging
+                logging.getLogger('documents').warning("Auto-sync to EDMS failed: %s", edms_err)
+
+        from django.urls import reverse
+        download_url = reverse('generate_pdf', args=[doc.id]) + '?download=1'
+        preview_url = reverse('generate_pdf', args=[doc.id])
+
+        return JsonResponse({
+            'success': True,
+            'message': 'E-Way Bill uploaded and linked successfully.',
+            'download_url': download_url,
+            'preview_url': preview_url,
+            'eway_bill': doc.eway_bill or '',
+            'edms_doc_id': edms_doc_id,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_permission('DOCUMENTS', 'edit')
+def skip_eway_bill_api(request, document_id):
+    """
+    Marks E-Way Bill as not required for this document and returns download URL.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+    doc = get_object_or_404(Document, id=document_id)
+    try:
+        doc.eway_bill_not_required = True
+        doc.save(update_fields=['eway_bill_not_required', 'updated_at'])
+
+        from django.urls import reverse
+        download_url = reverse('generate_pdf', args=[doc.id]) + '?download=1'
+        preview_url = reverse('generate_pdf', args=[doc.id])
+
+        return JsonResponse({
+            'success': True,
+            'message': 'E-Way Bill marked as not required.',
+            'download_url': download_url,
+            'preview_url': preview_url,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+
 
 

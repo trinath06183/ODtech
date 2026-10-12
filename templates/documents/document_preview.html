@@ -77,11 +77,28 @@
                 <!-- Cluster 1: Document View & Print Output -->
                 <div class="inline-flex items-center gap-2 flex-wrap">
                     <!-- Primary Action: Download PDF -->
+                    {% if doc.type == 'INV' or doc.type == 'CHL' %}
+                        {% if doc.is_eway_bill_satisfied %}
+                        <a href="{% url 'generate_pdf' doc.id %}?download=1"
+                           class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer" title="Download directly to your device">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Download PDF
+                        </a>
+                        {% else %}
+                        <button type="button"
+                           onclick="triggerEWayBillCheck({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{% url 'generate_pdf' doc.id %}?download=1')"
+                           class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer" title="Download directly to your device (E-Way Bill Required)">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Download PDF
+                        </button>
+                        {% endif %}
+                    {% else %}
                     <a href="{% url 'generate_pdf' doc.id %}?download=1"
                        class="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-xs cursor-pointer" title="Download directly to your device">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         Download PDF
                     </a>
+                    {% endif %}
 
                     <!-- View PDF -->
                     <a href="{% url 'generate_pdf' doc.id %}" target="_blank"
@@ -416,8 +433,25 @@
                         <span class="text-slate-800 font-mono font-bold">{{ doc.vehicle_number|default:"N/A" }}</span>
                     </div>
                     <div>
-                        <span class="text-slate-500 block text-xs uppercase font-semibold">E-Way Bill No.</span>
-                        <span class="text-slate-800 font-mono font-bold">{{ doc.eway_bill|default:"N/A" }}</span>
+                        <span class="text-slate-500 block text-xs uppercase font-semibold">E-Way Bill</span>
+                        {% if doc.eway_bill_file %}
+                        <a href="{{ doc.eway_bill_file.url }}" target="_blank"
+                           class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-bold hover:underline text-xs" title="View uploaded E-Way Bill file">
+                            <span class="truncate max-w-[120px]">📄 {{ doc.eway_bill|default:"View File" }}</span>
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                        {% elif doc.eway_bill %}
+                        <span class="text-slate-800 font-mono font-bold">{{ doc.eway_bill }}</span>
+                        {% elif doc.eway_bill_not_required %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Not Required</span>
+                        {% else %}
+                        <button type="button"
+                                onclick="triggerEWayBillCheck({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', '{% url 'generate_pdf' doc.id %}?download=1')"
+                                class="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline inline-flex items-center gap-1 cursor-pointer">
+                            <span>Pending Upload</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% if doc.eway_bill_date %}
@@ -2740,5 +2774,7 @@ async function saveContactChanges() {
     }
 }
 </script>
+
+{% include 'documents/partials/eway_bill_upload_modal.html' %}
 
 {% endblock content %}
