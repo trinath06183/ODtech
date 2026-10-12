@@ -640,6 +640,12 @@ def document_preview(request, document_id):
         if pin_m:
             eway_to_pincode = pin_m.group(0)
 
+    installation_cert = None
+    try:
+        installation_cert = doc.installation_certificate
+    except Exception:
+        pass
+
     return render(request, 'documents/document_preview.html', {
         'doc': doc,
         'preview_html': preview_html,
@@ -659,6 +665,7 @@ def document_preview(request, document_id):
         'courier_carriers': TrackingService.CARRIERS,
         'eway_from_pincode': eway_from_pincode,
         'eway_to_pincode': eway_to_pincode,
+        'installation_cert': installation_cert,
     })
 
 

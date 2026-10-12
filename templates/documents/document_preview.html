@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load document_filters %}
 {% block header %}Document Preview{% endblock %}
 {% block content %}
 
@@ -3034,19 +3035,17 @@ const IC_PRINT_URL = "{% url 'print_installation_certificate' doc.id %}?print=1"
 const IC_PDF_URL   = "{% url 'download_installation_certificate' doc.id %}";
 
 // Pre-fill values from existing certificate (if any)
-{% with cert=doc|get_installation_cert %}
-{% if cert %}
+{% if installation_cert %}
 const IC_EXISTING = {
-    date:    "{{ cert.date_of_installation|date:'Y-m-d' }}",
-    by:      "{{ cert.installed_by|escapejs }}",
-    insp:    "{{ cert.inspected_by|default:''|escapejs }}",
-    place:   "{{ cert.place_of_installation|default:''|escapejs }}",
-    remarks: "{{ cert.remarks|default:''|escapejs }}",
+    date:    "{{ installation_cert.date_of_installation|date:'Y-m-d' }}",
+    by:      "{{ installation_cert.installed_by|escapejs }}",
+    insp:    "{{ installation_cert.inspected_by|default:''|escapejs }}",
+    place:   "{{ installation_cert.place_of_installation|default:''|escapejs }}",
+    remarks: "{{ installation_cert.remarks|default:''|escapejs }}",
 };
 {% else %}
 const IC_EXISTING = null;
 {% endif %}
-{% endwith %}
 
 function openInstallationCertModal() {
     // Pre-fill fields with existing data if certificate already exists
