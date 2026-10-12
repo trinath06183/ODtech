@@ -2350,6 +2350,9 @@ def save_installation_certificate(request, document_id):
     installed_by = data.get('installed_by', '').strip()
     inspected_by = data.get('inspected_by', '').strip()
     place_of_installation = data.get('place_of_installation', '').strip()
+    project_name = data.get('project_name', '').strip()
+    site_address = data.get('site_address', '').strip()
+    working_details = data.get('working_details', '').strip()
     remarks = data.get('remarks', '').strip()
 
     if not date_of_installation or not installed_by:
@@ -2362,6 +2365,9 @@ def save_installation_certificate(request, document_id):
             'installed_by': installed_by,
             'inspected_by': inspected_by or None,
             'place_of_installation': place_of_installation or None,
+            'project_name': project_name or None,
+            'site_address': site_address or None,
+            'working_details': working_details or None,
             'remarks': remarks or None,
         }
     )

@@ -2988,6 +2988,44 @@ async function saveContactChanges() {
                        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
             </div>
 
+            <!-- Project Name -->
+            <div>
+                <label for="ic_project_name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Project Name
+                </label>
+                <input type="text" id="ic_project_name"
+                       placeholder="e.g. Lab Commissioning Phase 1 (or leave blank for Not applicable)"
+                       value="{{ doc.project_name|default:'' }}"
+                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <!-- Site Address -->
+            <div>
+                <label for="ic_site_address" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Site Address
+                </label>
+                <textarea id="ic_site_address" rows="2"
+                          placeholder="e.g. Site / Delivery address..."
+                          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none">{{ doc.site_address|default:'' }}</textarea>
+            </div>
+
+            <!-- Working Details / Commissioning Scope -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label for="ic_working_details" class="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Working Details / Commissioning Scope
+                    </label>
+                    <button type="button" onclick="resetDefaultWorkingDetails()"
+                            class="text-[11px] text-amber-600 hover:text-amber-700 font-semibold cursor-pointer">
+                        Reset to Standard
+                    </button>
+                </div>
+                <textarea id="ic_working_details" rows="5"
+                          placeholder="Enter working details checklist..."
+                          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y"></textarea>
+                <p class="text-[10px] text-gray-400 mt-0.5">Editable checklist. Modify, add, or remove points as needed.</p>
+            </div>
+
             <!-- Remarks -->
             <div>
                 <label for="ic_remarks" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -3034,6 +3072,17 @@ const IC_SAVE_URL = "{% url 'save_installation_certificate' doc.id %}";
 const IC_PRINT_URL = "{% url 'print_installation_certificate' doc.id %}?print=1";
 const IC_PDF_URL   = "{% url 'download_installation_certificate' doc.id %}";
 
+const DEFAULT_WORKING_DETAILS = `1. All equipment has been unboxed and inspected for physical damage; everything has been found to be in good condition.
+2. Machine mounting and physical positioning completed as per site layout.
+3. Power supply, earthing, and electrical connections verified and connected within specified voltage limits.
+4. Gas/air/chiller pipelines and accessory connections completed and leak-tested.
+5. Control unit switched ON; all I/O signals, teach pendant, and parameter settings configured.
+6. Dry run performed and motion/positions verified.
+7. Operational trials and test runs conducted in manual and automatic modes; output quality verified and found OK.
+8. Safety interlocks, limit switches, and emergency stops tested and functioning properly.
+9. Operators/maintenance team provided with basic operational briefing and handover.
+10. Equipment successfully commissioned and approved in prime working condition.`;
+
 // Pre-fill values from existing certificate (if any)
 {% if installation_cert %}
 const IC_EXISTING = {
@@ -3041,20 +3090,34 @@ const IC_EXISTING = {
     by:      "{{ installation_cert.installed_by|escapejs }}",
     insp:    "{{ installation_cert.inspected_by|default:''|escapejs }}",
     place:   "{{ installation_cert.place_of_installation|default:''|escapejs }}",
+    project: "{{ installation_cert.project_name|default:doc.project_name|default:''|escapejs }}",
+    site:    "{{ installation_cert.site_address|default:doc.site_address|default:''|escapejs }}",
+    working: "{{ installation_cert.working_details|default:''|escapejs }}",
     remarks: "{{ installation_cert.remarks|default:''|escapejs }}",
 };
 {% else %}
 const IC_EXISTING = null;
 {% endif %}
 
+function resetDefaultWorkingDetails() {
+    document.getElementById('ic_working_details').value = DEFAULT_WORKING_DETAILS;
+}
+
 function openInstallationCertModal() {
     // Pre-fill fields with existing data if certificate already exists
     if (typeof IC_EXISTING !== 'undefined' && IC_EXISTING && IC_EXISTING.by) {
-        document.getElementById('ic_date').value         = IC_EXISTING.date || document.getElementById('ic_date').value;
-        document.getElementById('ic_installed_by').value = IC_EXISTING.by;
-        document.getElementById('ic_inspected_by').value = IC_EXISTING.insp;
-        document.getElementById('ic_place').value        = IC_EXISTING.place;
-        document.getElementById('ic_remarks').value      = IC_EXISTING.remarks;
+        document.getElementById('ic_date').value            = IC_EXISTING.date || document.getElementById('ic_date').value;
+        document.getElementById('ic_installed_by').value    = IC_EXISTING.by;
+        document.getElementById('ic_inspected_by').value    = IC_EXISTING.insp;
+        document.getElementById('ic_place').value           = IC_EXISTING.place;
+        document.getElementById('ic_project_name').value    = IC_EXISTING.project;
+        document.getElementById('ic_site_address').value    = IC_EXISTING.site;
+        document.getElementById('ic_working_details').value = IC_EXISTING.working || DEFAULT_WORKING_DETAILS;
+        document.getElementById('ic_remarks').value         = IC_EXISTING.remarks;
+    } else {
+        if (!document.getElementById('ic_working_details').value) {
+            document.getElementById('ic_working_details').value = DEFAULT_WORKING_DETAILS;
+        }
     }
     document.getElementById('ic_error').classList.add('hidden');
     document.getElementById('installCertModal').classList.remove('hidden');
@@ -3067,12 +3130,15 @@ function closeInstallCertModal() {
 }
 
 async function submitInstallCert(action) {
-    const date         = document.getElementById('ic_date').value.trim();
-    const installedBy  = document.getElementById('ic_installed_by').value.trim();
-    const inspectedBy  = document.getElementById('ic_inspected_by').value.trim();
-    const place        = document.getElementById('ic_place').value.trim();
-    const remarks      = document.getElementById('ic_remarks').value.trim();
-    const errBox       = document.getElementById('ic_error');
+    const date           = document.getElementById('ic_date').value.trim();
+    const installedBy    = document.getElementById('ic_installed_by').value.trim();
+    const inspectedBy    = document.getElementById('ic_inspected_by').value.trim();
+    const place          = document.getElementById('ic_place').value.trim();
+    const projectName    = document.getElementById('ic_project_name').value.trim();
+    const siteAddress    = document.getElementById('ic_site_address').value.trim();
+    const workingDetails = document.getElementById('ic_working_details').value.trim();
+    const remarks        = document.getElementById('ic_remarks').value.trim();
+    const errBox         = document.getElementById('ic_error');
 
     if (!date || !installedBy) {
         errBox.textContent = 'Date of installation and technician name are required.';
@@ -3100,6 +3166,9 @@ async function submitInstallCert(action) {
                 installed_by: installedBy,
                 inspected_by: inspectedBy,
                 place_of_installation: place,
+                project_name: projectName,
+                site_address: siteAddress,
+                working_details: workingDetails,
                 remarks: remarks,
             }),
         });

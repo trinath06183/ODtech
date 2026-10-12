@@ -439,12 +439,20 @@
                     <tr>
                         <td class="lbl">Project Name</td>
                         <td class="colon">:</td>
-                        <td class="val">{{ doc.project_name|default:"Not applicable" }}</td>
+                        <td class="val">{{ cert.project_name|default:doc.project_name|default:"Not applicable" }}</td>
                     </tr>
                     <tr>
                         <td class="lbl">Site Address</td>
                         <td class="colon">:</td>
-                        <td class="val">{% if doc.site_address %}{{ doc.site_address|linebreaksbr }}{% else %}Not applicable{% endif %}</td>
+                        <td class="val">
+                            {% if cert.site_address %}
+                                {{ cert.site_address|linebreaksbr }}
+                            {% elif doc.site_address %}
+                                {{ doc.site_address|linebreaksbr }}
+                            {% else %}
+                                Not applicable
+                            {% endif %}
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -566,6 +574,34 @@
             </tr>
         </tfoot>
     </table>
+
+    <!-- ═══ WORKING DETAILS ═════════════════════════════════════════════════ -->
+    <div style="margin-top: 10px; margin-bottom: 8px; page-break-inside: avoid;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 8px; border: 1.5px solid #1e293b;">
+            <thead>
+                <tr style="background: #1e293b; color: #ffffff;">
+                    <th style="padding: 4px 8px; text-align: left; font-size: 8.5px; font-weight: 700; letter-spacing: 0.04em;">
+                        Working Detail :
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in cert.working_details_lines %}
+                <tr style="border-bottom: 1px solid #e2e8f0; background: {% cycle '#ffffff' '#fcfcfd' %};">
+                    <td style="padding: 3px 8px; color: #1e293b; line-height: 1.35;">
+                        {{ line }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td style="padding: 4px 8px; color: #64748b; font-style: italic;">
+                        Not applicable
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     <!-- ═══ REMARKS ═════════════════════════════════════════════════════════ -->
     {% if cert.remarks %}

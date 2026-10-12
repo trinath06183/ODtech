@@ -584,10 +584,35 @@ class InstallationCertificate(models.Model):
     installed_by = models.CharField(max_length=255, verbose_name='Installed By (Technician)')
     inspected_by = models.CharField(max_length=255, blank=True, null=True, verbose_name='Inspected / Supervised By')
     place_of_installation = models.CharField(max_length=255, blank=True, null=True, verbose_name='Place of Installation')
+    project_name = models.CharField(max_length=255, blank=True, null=True, verbose_name='Project Name')
+    site_address = models.TextField(blank=True, null=True, verbose_name='Site Address')
+    working_details = models.TextField(blank=True, null=True, verbose_name='Working Details / Commissioning Scope')
     remarks = models.TextField(blank=True, null=True, verbose_name='Remarks / Notes')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    DEFAULT_WORKING_DETAILS = (
+        "1. All equipment has been unboxed and inspected for physical damage; everything has been found to be in good condition.\n"
+        "2. Machine mounting and physical positioning completed as per site layout.\n"
+        "3. Power supply, earthing, and electrical connections verified and connected within specified voltage limits.\n"
+        "4. Gas/air/chiller pipelines and accessory connections completed and leak-tested.\n"
+        "5. Control unit switched ON; all I/O signals, teach pendant, and parameter settings configured.\n"
+        "6. Dry run performed and motion/positions verified.\n"
+        "7. Operational trials and test runs conducted in manual and automatic modes; output quality verified and found OK.\n"
+        "8. Safety interlocks, limit switches, and emergency stops tested and functioning properly.\n"
+        "9. Operators/maintenance team provided with basic operational briefing and handover.\n"
+        "10. Equipment successfully commissioned and approved in prime working condition."
+    )
+
+    @property
+    def effective_working_details(self):
+        return self.working_details if self.working_details else self.DEFAULT_WORKING_DETAILS
+
+    @property
+    def working_details_lines(self):
+        text = self.effective_working_details
+        return [line.strip() for line in text.splitlines() if line.strip()]
 
     class Meta:
         verbose_name = 'Installation Certificate'
