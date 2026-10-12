@@ -459,7 +459,7 @@
             </tr>
             <tr class="col-bar">
                 <th style="width: 4%;">#</th>
-                <th style="width: 25%; text-align: left;">Item Name &amp; Description</th>
+                <th style="width: 25%; text-align: left;">Item Name</th>
                 <th style="width: 13%; text-align: left;">Model</th>
                 <th style="width: 15%;">Product Serial No.</th>
                 <th style="width: 11%;">Machine Status</th>
@@ -476,16 +476,11 @@
                 <td>
                     <strong>
                         {% if item.product.sku == 'CUSTOM' %}
-                            {{ item.name|default:item.description|default:"Not applicable" }}
+                            {{ item.name|default:"Not applicable" }}
                         {% else %}
                             {{ item.name|default:item.product.name|default:"Not applicable" }}
                         {% endif %}
                     </strong>
-                    {% if item.description %}
-                    <div style="font-size: 7.5px; color: #64748b; margin-top: 1px; line-height: 1.25;">
-                        {{ item.description }}
-                    </div>
-                    {% endif %}
                 </td>
                 <td>
                     {% if item.model and item.model != 'N/A' and item.model != '-' and item.model != '–' %}
