@@ -2354,6 +2354,10 @@ def save_installation_certificate(request, document_id):
     site_address = data.get('site_address', '').strip()
     working_details = data.get('working_details', '').strip()
     remarks = data.get('remarks', '').strip()
+    custom_cert_number = data.get('custom_certificate_number', '').strip()
+    company_contact = data.get('company_contact', '').strip()
+    company_email = data.get('company_email', '').strip()
+    company_address = data.get('company_address', '').strip()
 
     if not date_of_installation or not installed_by:
         return JsonResponse({'success': False, 'error': 'Date of installation and technician name are required.'}, status=400)
@@ -2369,6 +2373,10 @@ def save_installation_certificate(request, document_id):
             'site_address': site_address or None,
             'working_details': working_details or None,
             'remarks': remarks or None,
+            'custom_certificate_number': custom_cert_number or None,
+            'company_contact': company_contact or None,
+            'company_email': company_email or None,
+            'company_address': company_address or None,
         }
     )
 
@@ -2449,7 +2457,8 @@ def download_installation_certificate(request, document_id):
             string=html_string,
             base_url=settings.BASE_DIR.as_uri() + "/",
         ).write_pdf()
-        safe_number = doc.number.replace('-', '_').replace('/', '_')
+        cert_num = getattr(cert, 'certificate_number', '') or f"OD-ICWC-{doc.number}"
+        safe_number = cert_num.replace('-', '_').replace('/', '_')
         safe_contact = str(doc.contact.name).replace(' ', '_')
         filename = f"InstallationCertificate_{safe_number}_{safe_contact}.pdf"
         response = HttpResponse(pdf_bytes, content_type='application/pdf')

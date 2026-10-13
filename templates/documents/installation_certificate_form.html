@@ -23,28 +23,10 @@
                 </h1>
                 <div class="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
                     Doc: <strong class="text-slate-700 dark:text-gray-200">{{ doc.number }}</strong> &nbsp;|&nbsp;
+                    Cert No: <strong class="text-amber-600 dark:text-amber-400 font-mono">{{ cert.certificate_number }}</strong> &nbsp;|&nbsp;
                     Customer: <strong class="text-slate-700 dark:text-gray-200">{{ doc.contact.name }}</strong>
                 </div>
             </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <button type="button" onclick="submitInstallCert('print')"
-                    id="page_btn_print"
-                    class="h-10 px-4 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm text-xs cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                </svg>
-                Save &amp; Print
-            </button>
-            <button type="button" onclick="submitInstallCert('pdf')"
-                    id="page_btn_pdf"
-                    class="h-10 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl inline-flex items-center gap-2 transition-all shadow-sm text-xs cursor-pointer">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-                Save &amp; Download PDF
-            </button>
         </div>
     </div>
 
@@ -63,6 +45,18 @@
                 </h2>
 
                 <div class="space-y-4 text-xs">
+                    <!-- Certificate Number -->
+                    <div>
+                        <label for="ic_custom_cert_number" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
+                            Certificate Number
+                        </label>
+                        <input type="text" id="ic_custom_cert_number"
+                               placeholder="e.g. OD-ICWC-26-09-381"
+                               value="{% if cert.custom_certificate_number %}{{ cert.custom_certificate_number }}{% else %}{{ cert.certificate_number }}{% endif %}"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Format: <code>OD-ICWC-(Invoice Number)</code>. Automatically generated or can be customized.</p>
+                    </div>
+
                     <!-- Date of Installation -->
                     <div>
                         <label for="ic_date" class="block font-semibold text-slate-700 dark:text-gray-300 mb-1">
@@ -134,6 +128,42 @@
                                   placeholder="Any special notes or observations..."
                                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none">{{ cert.remarks|default:'' }}</textarea>
                     </div>
+
+                    <!-- Header Company Contact Info (Editable) -->
+                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-700/60 border border-slate-200 dark:border-gray-600 space-y-3">
+                        <div class="font-bold text-slate-800 dark:text-white text-xs flex items-center justify-between border-b border-slate-200 dark:border-gray-600 pb-2">
+                            <span class="flex items-center gap-1.5">
+                                <span>🏢</span> Header Company Contact Info
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-normal">Shown in top-right header</span>
+                        </div>
+                        <div>
+                            <label for="ic_company_contact" class="block font-semibold text-slate-600 dark:text-gray-300 mb-1">
+                                Contact Number
+                            </label>
+                            <input type="text" id="ic_company_contact"
+                                   placeholder="e.g. +91 9762346016"
+                                   value="{{ cert.effective_company_contact }}"
+                                   class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label for="ic_company_email" class="block font-semibold text-slate-600 dark:text-gray-300 mb-1">
+                                Email ID
+                            </label>
+                            <input type="text" id="ic_company_email"
+                                   placeholder="e.g. sales@odtechsolutions.com"
+                                   value="{{ cert.effective_company_email }}"
+                                   class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label for="ic_company_address" class="block font-semibold text-slate-600 dark:text-gray-300 mb-1">
+                                Header Address
+                            </label>
+                            <textarea id="ic_company_address" rows="2"
+                                      placeholder="e.g. Plot No. 478, Jaripada, Urali, Bhubaneswar - 754020"
+                                      class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none">{{ cert.effective_company_address }}</textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -178,18 +208,20 @@
             Cancel
         </a>
         <button type="button" onclick="submitInstallCert('print')"
-                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2">
+                id="page_btn_print"
+                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
             </svg>
-            Save &amp; Print
+            <span id="page_btn_print_text">Save &amp; Print</span>
         </button>
         <button type="button" onclick="submitInstallCert('pdf')"
-                class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2">
+                id="page_btn_pdf"
+                class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
             </svg>
-            Save &amp; Download PDF
+            <span id="page_btn_pdf_text">Save &amp; Download PDF</span>
         </button>
     </div>
 
@@ -242,10 +274,20 @@ async function submitInstallCert(action) {
 
     const btnPrint = document.getElementById('page_btn_print');
     const btnPdf   = document.getElementById('page_btn_pdf');
-    btnPrint.disabled = true;
-    btnPdf.disabled   = true;
-    btnPrint.textContent = 'Saving…';
-    btnPdf.textContent   = 'Saving…';
+    const txtPrint = document.getElementById('page_btn_print_text');
+    const txtPdf   = document.getElementById('page_btn_pdf_text');
+
+    function resetButtonLabels() {
+        if (btnPrint) { btnPrint.disabled = false; }
+        if (btnPdf)   { btnPdf.disabled = false; }
+        if (txtPrint) { txtPrint.textContent = 'Save & Print'; }
+        if (txtPdf)   { txtPdf.textContent = 'Save & Download PDF'; }
+    }
+
+    if (btnPrint) btnPrint.disabled = true;
+    if (btnPdf)   btnPdf.disabled   = true;
+    if (txtPrint && action === 'print') txtPrint.textContent = 'Saving…';
+    if (txtPdf && action === 'pdf') txtPdf.textContent = 'Saving…';
 
     try {
         const resp = await fetch(IC_SAVE_URL, {
@@ -263,26 +305,30 @@ async function submitInstallCert(action) {
                 site_address: siteAddress,
                 working_details: workingDetails,
                 remarks: remarks,
+                custom_certificate_number: document.getElementById('ic_custom_cert_number')?.value.trim() || '',
+                company_contact: document.getElementById('ic_company_contact')?.value.trim() || '',
+                company_email: document.getElementById('ic_company_email')?.value.trim() || '',
+                company_address: document.getElementById('ic_company_address')?.value.trim() || '',
             }),
         });
         const data = await resp.json();
         if (!data.success) {
             errBox.textContent = data.error || 'Failed to save certificate details.';
             errBox.classList.remove('hidden');
-            btnPrint.disabled = false; btnPdf.disabled = false;
-            btnPrint.textContent = 'Save & Print'; btnPdf.textContent = 'Save & Download PDF';
+            resetButtonLabels();
             return;
         }
         if (action === 'pdf') {
             window.location.href = IC_PDF_URL;
+            setTimeout(resetButtonLabels, 2500);
         } else {
             window.open(IC_PRINT_URL, '_blank');
+            setTimeout(resetButtonLabels, 1000);
         }
     } catch (e) {
         errBox.textContent = 'Network error. Please try again.';
         errBox.classList.remove('hidden');
-        btnPrint.disabled = false; btnPdf.disabled = false;
-        btnPrint.textContent = 'Save & Print'; btnPdf.textContent = 'Save & Download PDF';
+        resetButtonLabels();
     }
 }
 </script>

@@ -589,8 +589,18 @@ class InstallationCertificate(models.Model):
     working_details = models.TextField(blank=True, null=True, verbose_name='Working Details / Commissioning Scope')
     remarks = models.TextField(blank=True, null=True, verbose_name='Remarks / Notes')
 
+    # Custom Certificate Number & Header Contact Info
+    custom_certificate_number = models.CharField(max_length=100, blank=True, null=True, verbose_name='Certificate Number')
+    company_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Company Contact Number')
+    company_email = models.CharField(max_length=150, blank=True, null=True, verbose_name='Company Email ID')
+    company_address = models.TextField(blank=True, null=True, verbose_name='Company Header Address')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    DEFAULT_COMPANY_CONTACT = "+91 9762346016"
+    DEFAULT_COMPANY_EMAIL = "sales@odtechsolutions.com"
+    DEFAULT_COMPANY_ADDRESS = "Plot No. 478, Jaripada, Urali, Bhubaneswar - 754020"
 
     DEFAULT_WORKING_DETAILS = (
         "1. All equipment has been unboxed and inspected for physical damage; everything has been found to be in good condition.\n"
@@ -604,6 +614,31 @@ class InstallationCertificate(models.Model):
         "9. Operators/maintenance team provided with basic operational briefing and handover.\n"
         "10. Equipment successfully commissioned and approved in prime working condition."
     )
+
+    @property
+    def certificate_number(self):
+        if self.custom_certificate_number and self.custom_certificate_number.strip():
+            return self.custom_certificate_number.strip()
+        num = self.document.number if self.document else ''
+        if not num:
+            return 'N/A'
+        import re
+        cleaned = re.sub(r'^(OD-)?(INV|CHL|QTN|PRO|PO|CRN|DBN)-', '', num, flags=re.IGNORECASE)
+        if cleaned.upper().startswith('OD-'):
+            cleaned = cleaned[3:]
+        return f"OD-ICWC-{cleaned}"
+
+    @property
+    def effective_company_contact(self):
+        return self.company_contact.strip() if self.company_contact and self.company_contact.strip() else self.DEFAULT_COMPANY_CONTACT
+
+    @property
+    def effective_company_email(self):
+        return self.company_email.strip() if self.company_email and self.company_email.strip() else self.DEFAULT_COMPANY_EMAIL
+
+    @property
+    def effective_company_address(self):
+        return self.company_address.strip() if self.company_address and self.company_address.strip() else self.DEFAULT_COMPANY_ADDRESS
 
     @property
     def effective_working_details(self):
