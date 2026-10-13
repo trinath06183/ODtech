@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Installation-cum-Warranty Certificate – {{ doc.number }}</title>
+    <title>Installation-cum-Warranty Certificate – {{ cert.certificate_number }}</title>
     <style>
         @page {
             size: A4;
@@ -310,7 +310,7 @@
             font-size: 9px;
             font-weight: 700;
             color: #0f172a;
-            margin-bottom: 20px;
+            margin-bottom: 32px;
             min-height: 14px;
         }
 
@@ -346,11 +346,9 @@
                     <div class="header-company-name">ODtech Solutions</div>
                     <div class="header-gst">GSTIN: 21AAHFO5846M1ZY &nbsp;|&nbsp; State: 21-Odisha</div>
                 </td>
-                <td style="width: 48%;" class="header-contact-block">
-                    <div><strong>Head Office &amp; Operations</strong></div>
-                    <div>sales@odtechsolutions.com &nbsp;|&nbsp; +91 9762346016</div>
-                    <div style="margin-top: 2px;">HO: Plot No. 478, Jaripada, Urali, Bhubaneswar - 754020</div>
-                    <div>Pune: G-305, GK Palacio, Boradewadi, Moshi, Pune - 412105</div>
+                <td style="width: 48%; text-align: right;" class="header-contact-block" contenteditable="true" title="Click to edit contact details directly if needed">
+                    <div>{{ cert.effective_company_email }} &nbsp;|&nbsp; {{ cert.effective_company_contact }}</div>
+                    <div style="margin-top: 3px;">{{ cert.effective_company_address|linebreaksbr }}</div>
                 </td>
             </tr>
         </table>
@@ -365,7 +363,7 @@
                 <div class="cert-sub-title">Equipment Commissioning, Testing &amp; Warranty Confirmation</div>
             </td>
             <td style="text-align: right;">
-                <div class="cert-badge">CERT NO: {{ doc.number|default:"Not applicable" }}</div>
+                <div class="cert-badge">CERT NO: {{ cert.certificate_number }}</div>
             </td>
         </tr>
     </table>
@@ -627,13 +625,13 @@
 
         <!-- 3: ODtech Solutions (Stamp & Sign) -->
         <div class="sig-col">
-            <div style="position: relative; height: 54px; width: 110px; margin: 0 auto 3px auto;">
+            <div style="position: relative; height: 88px; width: 140px; margin: 0 auto 4px auto;">
                 <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
                      alt="Stamp"
-                     style="height: 54px; opacity: 0.85; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
+                     style="height: 88px; opacity: 0.88; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
                 <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
                      alt="Signature"
-                     style="height: 26px; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                     style="height: 42px; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2;">
             </div>
             <div class="sig-line"></div>
             <div class="sig-label">FOR ODTECH SOLUTIONS</div>
@@ -651,7 +649,7 @@
 
     <!-- ═══ CLEAN MINIMAL FOOTER ════════════════════════════════════════════ -->
     <div class="clean-footer">
-        ODtech Solutions &nbsp;•&nbsp; Installation-cum-Warranty Certificate &nbsp;•&nbsp; Document Ref: {{ doc.number }}
+        ODtech Solutions &nbsp;•&nbsp; Installation-cum-Warranty Certificate &nbsp;•&nbsp; Cert No: {{ cert.certificate_number }} &nbsp;•&nbsp; Document Ref: {{ doc.number }}
     </div>
 
 </div>
