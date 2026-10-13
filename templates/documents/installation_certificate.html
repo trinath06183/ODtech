@@ -9,7 +9,14 @@
     <style>
         @page {
             size: A4;
-            margin: 10mm 12mm 10mm 12mm;
+            margin: 8mm 10mm 12mm 10mm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 8px;
+                color: #64748b;
+                font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-weight: 600;
+            }
         }
 
         *, *::before, *::after {
@@ -33,8 +40,10 @@
             margin: 0 auto;
             background: #ffffff;
             border: 2px solid #334155;
-            border-radius: 4px;
-            padding: 14px 16px;
+            border-radius: 8px;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+            padding: 12px 14px;
             box-sizing: border-box;
         }
 
@@ -118,7 +127,7 @@
             background: #dc2626;
             color: #ffffff;
             padding: 4px 10px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 9.5px;
             font-weight: 700;
             letter-spacing: 0.04em;
@@ -185,34 +194,39 @@
         }
 
         /* ── Equipment Table ── */
+        .table-frame {
+            border: 1.5px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 6px;
+            margin-bottom: 8px;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+        }
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4px;
-            margin-bottom: 8px;
+            margin: 0;
             font-size: 8.5px;
         }
-        .items-table thead tr.table-head-bar {
+        .items-table thead tr.table-head-bar th {
             background: #1e293b;
             color: #ffffff;
-        }
-        .items-table thead tr.table-head-bar th {
             padding: 5px 8px;
             font-size: 9.5px;
             font-weight: 700;
             letter-spacing: 0.04em;
             text-align: left;
-            border: 1px solid #1e293b;
-        }
-        .items-table thead tr.col-bar {
-            background: #dc2626;
-            color: #ffffff;
+            border: none;
         }
         .items-table thead tr.col-bar th {
-            padding: 4px 6px;
+            background: #dc2626;
+            color: #ffffff;
+            padding: 5.5px 6px;
             font-size: 8.5px;
             font-weight: 700;
             border: 1px solid #b91c1c;
+            border-top: none;
             letter-spacing: 0.03em;
             text-align: center;
         }
@@ -224,19 +238,19 @@
             background: #fcfcfd;
         }
         .items-table tbody td {
-            padding: 2.5px 5px;
+            padding: 5px 6px;
             border: 1px solid #e2e8f0;
             border-top: none;
             vertical-align: middle;
-            line-height: 1.25;
+            line-height: 1.35;
         }
         .items-table tbody td.center {
             text-align: center;
         }
         .items-table tfoot td {
             padding: 5px 8px;
-            border: 1px solid #e2e8f0;
-            border-top: none;
+            border: none;
+            border-top: 1px solid #cbd5e1;
             background: #f8fafc;
             font-size: 8px;
             color: #64748b;
@@ -271,6 +285,12 @@
             background: #fcfcfd;
             border-left: 3px solid #dc2626;
             color: #334155;
+        }
+
+        /* ── Bottom Section (Declaration + Signatures + Footer) ── */
+        .bottom-cert-section {
+            margin-top: 14px;
+            page-break-inside: avoid;
         }
 
         /* ── 4-Column Signature Strip ── */
@@ -326,8 +346,40 @@
             page-break-inside: avoid;
         }
 
+        .print-page-number {
+            display: none;
+        }
+
         @media print {
             .no-print { display: none !important; }
+            body {
+                background: #ffffff;
+                margin: 0;
+                padding: 0;
+            }
+            .cert-container {
+                border: 2px solid #334155 !important;
+                border-radius: 8px !important;
+                -webkit-box-decoration-break: clone !important;
+                box-decoration-break: clone !important;
+                padding: 10px 12px !important;
+            }
+            .table-frame {
+                border: 1.5px solid #1e293b !important;
+                border-radius: 8px !important;
+                -webkit-box-decoration-break: clone !important;
+                box-decoration-break: clone !important;
+            }
+            .print-page-number {
+                display: block !important;
+                position: fixed;
+                bottom: 3mm;
+                right: 10mm;
+                font-size: 8px;
+                color: #475569;
+                font-weight: 700;
+                z-index: 9999;
+            }
         }
     </style>
 </head>
@@ -458,7 +510,8 @@
     </div>
 
     <!-- ═══ EQUIPMENT & WARRANTY TABLE ═════════════════════════════════════ -->
-    <table class="items-table">
+    <div class="table-frame">
+        <table class="items-table">
         <thead>
             <tr class="table-head-bar">
                 <th colspan="8">Installed &amp; Warranted Equipment Details</th>
@@ -552,13 +605,14 @@
             </tr>
         </tfoot>
     </table>
+    </div>
 
     <!-- ═══ WORKING DETAILS ═════════════════════════════════════════════════ -->
-    <div style="margin-top: 10px; margin-bottom: 8px; page-break-inside: avoid;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 8px; border: 1.5px solid #1e293b;">
+    <div class="table-frame" style="margin-top: 10px; margin-bottom: 8px; page-break-inside: avoid;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
             <thead>
                 <tr style="background: #1e293b; color: #ffffff;">
-                    <th style="padding: 4px 8px; text-align: left; font-size: 8.5px; font-weight: 700; letter-spacing: 0.04em;">
+                    <th style="padding: 4px 8px; text-align: left; font-size: 8.5px; font-weight: 700; letter-spacing: 0.04em; border: none;">
                         Working Detail :
                     </th>
                 </tr>
@@ -566,7 +620,7 @@
             <tbody>
                 {% for line in cert.working_details_lines %}
                 <tr style="border-bottom: 1px solid #e2e8f0; background: {% cycle '#ffffff' '#fcfcfd' %};">
-                    <td style="padding: 3px 8px; color: #1e293b; line-height: 1.35;">
+                    <td style="padding: 5px 8px; color: #1e293b; line-height: 1.35;">
                         {{ line }}
                     </td>
                 </tr>
@@ -589,66 +643,143 @@
     </div>
     {% endif %}
 
-    <!-- ═══ DECLARATION ═════════════════════════════════════════════════════ -->
-    <div class="cert-box cert-declaration">
-        <strong style="color: #dc2626; text-transform: uppercase;">Commissioning Declaration:</strong>
-        This is to certify that the above-mentioned machinery/equipment has been delivered, installed, inspected, and successfully commissioned
-        at the client's premises in accordance with ODtech Solutions' quality procedures. The equipment has undergone test runs, is verified to be in
-        prime working condition, and warranty coverage is effective from the date of installation specified herein.
-    </div>
+    <!-- ═══ BOTTOM PINNED SECTION (DECLARATION, SIGNATURES & FOOTER) ═════ -->
+    <div class="bottom-cert-section">
 
-    <!-- ═══ FOUR-COLUMN SIGNATURE STRIP ═════════════════════════════════════ -->
-    <div class="sig-strip">
-        <!-- 1: Technician -->
-        <div class="sig-col">
-            <div class="sig-name">{{ cert.installed_by|default:"N/A" }}</div>
-            <div class="sig-line"></div>
-            <div class="sig-label">TECHNICIAN SIGNATURE</div>
-            <div class="sig-sub">Installed &amp; Tested By</div>
+        <!-- ═══ DECLARATION ═════════════════════════════════════════════════ -->
+        <div class="cert-box cert-declaration">
+            <strong style="color: #dc2626; text-transform: uppercase;">Commissioning Declaration:</strong>
+            This is to certify that the above-mentioned machinery/equipment has been delivered, installed, inspected, and successfully commissioned
+            at the client's premises in accordance with ODtech Solutions' quality procedures. The equipment has undergone test runs, is verified to be in
+            prime working condition, and warranty coverage is effective from the date of installation specified herein.
         </div>
 
-        <!-- 2: Supervisor -->
-        <div class="sig-col">
-            <div class="sig-name">{{ cert.inspected_by|default:"N/A" }}</div>
-            <div class="sig-line"></div>
-            <div class="sig-label">SUPERVISOR SIGNATURE</div>
-            <div class="sig-sub">Inspected &amp; Approved By</div>
-        </div>
-
-        <!-- 3: ODtech Solutions (Stamp & Sign) -->
-        <div class="sig-col">
-            <div style="position: relative; height: 88px; width: 140px; margin: 0 auto 4px auto;">
-                <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
-                     alt="Stamp"
-                     style="height: 88px; opacity: 0.88; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
-                <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
-                     alt="Signature"
-                     style="height: 42px; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2;">
+        <!-- ═══ FOUR-COLUMN SIGNATURE STRIP ═════════════════════════════════ -->
+        <div class="sig-strip">
+            <!-- 1: Technician -->
+            <div class="sig-col">
+                <div class="sig-name">{{ cert.installed_by|default:"N/A" }}</div>
+                <div class="sig-line"></div>
+                <div class="sig-label">TECHNICIAN SIGNATURE</div>
+                <div class="sig-sub">Installed &amp; Tested By</div>
             </div>
-            <div class="sig-line"></div>
-            <div class="sig-label">FOR ODTECH SOLUTIONS</div>
-            <div class="sig-sub">Authorized Signatory</div>
+
+            <!-- 2: Supervisor -->
+            <div class="sig-col">
+                <div class="sig-name">{{ cert.inspected_by|default:"N/A" }}</div>
+                <div class="sig-line"></div>
+                <div class="sig-label">SUPERVISOR SIGNATURE</div>
+                <div class="sig-sub">Inspected &amp; Approved By</div>
+            </div>
+
+            <!-- 3: ODtech Solutions (Stamp & Sign) -->
+            <div class="sig-col">
+                <div style="position: relative; height: 88px; width: 140px; margin: 0 auto 4px auto;">
+                    <img src="{{ stamp_url|default:'' }}{% if not stamp_url %}{% static 'img/stamp.png' %}{% endif %}"
+                         alt="Stamp"
+                         style="height: 88px; opacity: 0.88; position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;">
+                    <img src="{{ sign_url|default:'' }}{% if not sign_url %}{% static 'img/sign.png' %}{% endif %}"
+                         alt="Signature"
+                         style="height: 42px; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2;">
+                </div>
+                <div class="sig-line"></div>
+                <div class="sig-label">FOR ODTECH SOLUTIONS</div>
+                <div class="sig-sub">Authorized Signatory</div>
+            </div>
+
+            <!-- 4: Customer Acceptance -->
+            <div class="sig-col">
+                <div class="sig-name" style="font-size: 8px; color: #0f172a; line-height: 1.25; word-break: break-word;">{{ doc.contact.name|default:"N/A" }}</div>
+                <div class="sig-line"></div>
+                <div class="sig-label">CUSTOMER ACCEPTANCE</div>
+                <div class="sig-sub">Received in Good Condition</div>
+            </div>
         </div>
 
-        <!-- 4: Customer Acceptance -->
-        <div class="sig-col">
-            <div class="sig-name" style="font-size: 8px; color: #0f172a; line-height: 1.25; word-break: break-word;">{{ doc.contact.name|default:"N/A" }}</div>
-            <div class="sig-line"></div>
-            <div class="sig-label">CUSTOMER ACCEPTANCE</div>
-            <div class="sig-sub">Received in Good Condition</div>
+        <!-- ═══ CLEAN MINIMAL FOOTER ════════════════════════════════════════ -->
+        <div class="clean-footer">
+            <table style="width: 100%; border-collapse: collapse; border: none; margin: 0;">
+                <tr>
+                    <td style="text-align: left; border: none; padding: 0; font-size: 8px; color: #94a3b8;">
+                        ODtech Solutions &nbsp;•&nbsp; Installation-cum-Warranty Certificate &nbsp;•&nbsp; Cert No: {% if cert.certificate_number %}{{ cert.certificate_number }}{% else %}OD-ICWC-{{ doc.number|cut:"OD-INV-"|cut:"INV-"|cut:"OD-CHL-"|cut:"CHL-"|cut:"OD-" }}{% endif %} &nbsp;•&nbsp; Document Ref: {{ doc.number }}
+                    </td>
+                    <td style="text-align: right; border: none; padding: 0; font-size: 8px; color: #475569; font-weight: 700; white-space: nowrap;">
+                        Page <span class="page-current-num">1</span> of <span class="page-total-num">1</span>
+                    </td>
+                </tr>
+            </table>
         </div>
-    </div>
 
-    <!-- ═══ CLEAN MINIMAL FOOTER ════════════════════════════════════════════ -->
-    <div class="clean-footer">
-        ODtech Solutions &nbsp;•&nbsp; Installation-cum-Warranty Certificate &nbsp;•&nbsp; Cert No: {% if cert.certificate_number %}{{ cert.certificate_number }}{% else %}OD-ICWC-{{ doc.number|cut:"OD-INV-"|cut:"INV-"|cut:"OD-CHL-"|cut:"CHL-"|cut:"OD-" }}{% endif %} &nbsp;•&nbsp; Document Ref: {{ doc.number }}
     </div>
 
 </div>
 
+<!-- Fixed Page Number for Multi-Page Prints -->
+<div class="print-page-number">
+    Page <span class="page-current-num">1</span> of <span class="page-total-num">1</span>
+</div>
+
+<script>
+    function updatePageNumbers() {
+        const totalHeight = document.body.scrollHeight;
+        const totalPages = Math.max(1, Math.ceil(totalHeight / 1050));
+        document.querySelectorAll('.page-total-num').forEach(function (el) { el.textContent = totalPages; });
+        document.querySelectorAll('.page-current-num').forEach(function (el) {
+            if (!el.textContent || el.textContent === '1') el.textContent = '1';
+        });
+    }
+
+    function alignBottomSection() {
+        const bottomSection = document.querySelector('.bottom-cert-section');
+        const container = document.querySelector('.cert-container');
+        if (!bottomSection || !container) return;
+
+        // Reset margin to compute natural flow position
+        bottomSection.style.marginTop = '14px';
+
+        // Measure millimeter to px ratio
+        const testDiv = document.createElement('div');
+        testDiv.style.height = '100mm';
+        testDiv.style.position = 'absolute';
+        testDiv.style.visibility = 'hidden';
+        document.body.appendChild(testDiv);
+        const mmRatio = (testDiv.offsetHeight || 378) / 100;
+        document.body.removeChild(testDiv);
+
+        // A4 page height (297mm - 20mm margins = 277mm) minus container padding/borders (28px)
+        const usablePageHeight = (277 * mmRatio) - 28;
+
+        const containerRect = container.getBoundingClientRect();
+        const sectionRect = bottomSection.getBoundingClientRect();
+
+        const offsetFromContainerTop = sectionRect.top - containerRect.top;
+        const sectionHeight = bottomSection.offsetHeight;
+
+        const currentPageIndex = Math.floor(offsetFromContainerTop / usablePageHeight);
+        const currentPageBottom = (currentPageIndex + 1) * usablePageHeight;
+        const currentBottom = offsetFromContainerTop + sectionHeight;
+        const spaceRemaining = currentPageBottom - currentBottom;
+
+        if (spaceRemaining > 25) {
+            bottomSection.style.marginTop = Math.floor(14 + spaceRemaining - 22) + 'px';
+        }
+    }
+
+    function handleLayout() {
+        alignBottomSection();
+        updatePageNumbers();
+    }
+
+    window.addEventListener('DOMContentLoaded', handleLayout);
+    window.addEventListener('load', handleLayout);
+    window.addEventListener('resize', handleLayout);
+    window.addEventListener('beforeprint', handleLayout);
+</script>
+
 {% if auto_print %}
 <script>
     window.onload = function () {
+        handleLayout();
         setTimeout(function () { window.print(); }, 500);
     };
     window.onafterprint = function () { window.close(); };
