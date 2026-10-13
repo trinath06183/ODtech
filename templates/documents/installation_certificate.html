@@ -346,10 +346,6 @@
             page-break-inside: avoid;
         }
 
-        .print-page-number {
-            display: none;
-        }
-
         @media print {
             .no-print { display: none !important; }
             body {
@@ -369,16 +365,6 @@
                 border-radius: 8px !important;
                 -webkit-box-decoration-break: clone !important;
                 box-decoration-break: clone !important;
-            }
-            .print-page-number {
-                display: block !important;
-                position: fixed;
-                bottom: 3mm;
-                right: 10mm;
-                font-size: 8px;
-                color: #475569;
-                font-weight: 700;
-                z-index: 9999;
             }
         }
     </style>
@@ -698,88 +684,16 @@
 
         <!-- ═══ CLEAN MINIMAL FOOTER ════════════════════════════════════════ -->
         <div class="clean-footer">
-            <table style="width: 100%; border-collapse: collapse; border: none; margin: 0;">
-                <tr>
-                    <td style="text-align: left; border: none; padding: 0; font-size: 8px; color: #94a3b8;">
-                        ODtech Solutions &nbsp;•&nbsp; Installation-cum-Warranty Certificate &nbsp;•&nbsp; Cert No: {% if cert.certificate_number %}{{ cert.certificate_number }}{% else %}OD-ICWC-{{ doc.number|cut:"OD-INV-"|cut:"INV-"|cut:"OD-CHL-"|cut:"CHL-"|cut:"OD-" }}{% endif %} &nbsp;•&nbsp; Document Ref: {{ doc.number }}
-                    </td>
-                    <td style="text-align: right; border: none; padding: 0; font-size: 8px; color: #475569; font-weight: 700; white-space: nowrap;">
-                        Page <span class="page-current-num">1</span> of <span class="page-total-num">1</span>
-                    </td>
-                </tr>
-            </table>
+            ODtech Solutions &nbsp;•&nbsp; Installation-cum-Warranty Certificate &nbsp;•&nbsp; Cert No: {% if cert.certificate_number %}{{ cert.certificate_number }}{% else %}OD-ICWC-{{ doc.number|cut:"OD-INV-"|cut:"INV-"|cut:"OD-CHL-"|cut:"CHL-"|cut:"OD-" }}{% endif %} &nbsp;•&nbsp; Document Ref: {{ doc.number }}
         </div>
 
     </div>
 
 </div>
 
-<!-- Fixed Page Number for Multi-Page Prints -->
-<div class="print-page-number">
-    Page <span class="page-current-num">1</span> of <span class="page-total-num">1</span>
-</div>
-
-<script>
-    function updatePageNumbers() {
-        const totalHeight = document.body.scrollHeight;
-        const totalPages = Math.max(1, Math.ceil(totalHeight / 1050));
-        document.querySelectorAll('.page-total-num').forEach(function (el) { el.textContent = totalPages; });
-        document.querySelectorAll('.page-current-num').forEach(function (el) {
-            if (!el.textContent || el.textContent === '1') el.textContent = '1';
-        });
-    }
-
-    function alignBottomSection() {
-        const bottomSection = document.querySelector('.bottom-cert-section');
-        const container = document.querySelector('.cert-container');
-        if (!bottomSection || !container) return;
-
-        // Reset margin to compute natural flow position
-        bottomSection.style.marginTop = '14px';
-
-        // Measure millimeter to px ratio
-        const testDiv = document.createElement('div');
-        testDiv.style.height = '100mm';
-        testDiv.style.position = 'absolute';
-        testDiv.style.visibility = 'hidden';
-        document.body.appendChild(testDiv);
-        const mmRatio = (testDiv.offsetHeight || 378) / 100;
-        document.body.removeChild(testDiv);
-
-        // A4 page height (297mm - 20mm margins = 277mm) minus container padding/borders (28px)
-        const usablePageHeight = (277 * mmRatio) - 28;
-
-        const containerRect = container.getBoundingClientRect();
-        const sectionRect = bottomSection.getBoundingClientRect();
-
-        const offsetFromContainerTop = sectionRect.top - containerRect.top;
-        const sectionHeight = bottomSection.offsetHeight;
-
-        const currentPageIndex = Math.floor(offsetFromContainerTop / usablePageHeight);
-        const currentPageBottom = (currentPageIndex + 1) * usablePageHeight;
-        const currentBottom = offsetFromContainerTop + sectionHeight;
-        const spaceRemaining = currentPageBottom - currentBottom;
-
-        if (spaceRemaining > 25) {
-            bottomSection.style.marginTop = Math.floor(14 + spaceRemaining - 22) + 'px';
-        }
-    }
-
-    function handleLayout() {
-        alignBottomSection();
-        updatePageNumbers();
-    }
-
-    window.addEventListener('DOMContentLoaded', handleLayout);
-    window.addEventListener('load', handleLayout);
-    window.addEventListener('resize', handleLayout);
-    window.addEventListener('beforeprint', handleLayout);
-</script>
-
 {% if auto_print %}
 <script>
     window.onload = function () {
-        handleLayout();
         setTimeout(function () { window.print(); }, 500);
     };
     window.onafterprint = function () { window.close(); };
