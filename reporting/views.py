@@ -64,6 +64,10 @@ def stock_summary(request):
 @require_permission('REPORTING', 'read')
 def financial_dashboard(request):
     """Financial & Operational Summary Dashboard with P&L, sales, purchases, expenses, orders & reminders."""
+    if not (request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']):
+        messages.error(request, 'Access denied. The Company Overview dashboard is restricted to Admin, Managing Director, and Finance/Accounts department.')
+        return redirect('dashboard')
+
     today = date.today()
 
     # ── Date filter ────────────────────────────────────────────────────────────
@@ -245,6 +249,10 @@ def financial_dashboard(request):
             date__gte=start_date,
             date__lte=end_date,
         ).order_by('-date')
+        from payments.models import user_can_view_fixed_costs
+        can_view_fc = user_can_view_fixed_costs(request.user)
+        if not can_view_fc:
+            expenses_qs = expenses_qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
         total_expenses = expenses_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         expenses_count = expenses_qs.count()
         total_payments_given = total_purchases + total_expenses
@@ -1139,6 +1147,10 @@ def _compute_pl(start_date, end_date):
 
     # ── Operating Expenses ───────────────────────────────────────────────────
     exp_qs = Expense.objects.filter(date__gte=start_date, date__lte=end_date, status='Approved')
+    from payments.models import user_can_view_fixed_costs
+    can_view_fc = user_can_view_fixed_costs(request.user)
+    if not can_view_fc:
+        exp_qs = exp_qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
     total_opex = exp_qs.aggregate(t=Sum('amount'))['t'] or Z
 
     DAILY_TYPES = ['Petrol and Diesel', 'Travel', 'Hotel', 'Food Expenses',
@@ -1147,7 +1159,7 @@ def _compute_pl(start_date, end_date):
     FIXED_TYPES = ['Staff salary', 'OFC rent', 'Electricity bill', 'Internet Bill',
                    'Google workspace', 'Website and hosting cost', 'Other Fixed']
     daily_opex = exp_qs.filter(expense_type__in=DAILY_TYPES).aggregate(t=Sum('amount'))['t'] or Z
-    fixed_opex = exp_qs.filter(expense_type__in=FIXED_TYPES).aggregate(t=Sum('amount'))['t'] or Z
+    fixed_opex = exp_qs.filter(expense_type__in=FIXED_TYPES).aggregate(t=Sum('amount'))['t'] or Z if can_view_fc else Z
 
     expense_breakdown = list(
         exp_qs.values('expense_type')

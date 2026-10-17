@@ -39,7 +39,16 @@
         </div>
         {% endif %}
     </td>
-    <td class="px-6 py-4 text-sm text-gray-600">{{ expense.expense_type }}</td>
+    <td class="px-6 py-4 text-sm text-gray-600">
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <span>{{ expense.expense_type }}</span>
+            {% if expense.is_fixed_cost %}
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                Fixed Cost
+            </span>
+            {% endif %}
+        </div>
+    </td>
     <td class="px-6 py-4">
         <div class="font-bold text-gray-900">&#8377; {{ expense.amount }}</div>
         {% if expense.gst_amount > 0 %}

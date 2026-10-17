@@ -1902,9 +1902,11 @@ def delete_order_expense_api(request, expense_id):
 @require_permission('TRACKER', 'read')
 def api_search_app_expenses(request):
     """Search and return existing payments.Expense objects that can be linked to a Product or Order."""
-    from payments.models import Expense
+    from payments.models import Expense, user_can_view_fixed_costs
     q = request.GET.get('q', '').strip()
     expenses = Expense.objects.all().order_by('-date', '-created_at')
+    if not user_can_view_fixed_costs(request.user):
+        expenses = expenses.exclude(expense_type__in=Expense.get_fixed_cost_categories())
     if q:
         import re
         search_q = (

@@ -130,7 +130,14 @@
             
             <div>
                 <label class="block text-sm font-medium text-gray-500 mb-1">Category</label>
-                <div class="text-gray-900 font-semibold">{{ expense.expense_type }}</div>
+                <div class="text-gray-900 font-semibold flex items-center gap-2">
+                    {{ expense.expense_type }}
+                    {% if expense.is_fixed_cost %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                        Fixed Cost
+                    </span>
+                    {% endif %}
+                </div>
             </div>
             
             <div>

@@ -37,6 +37,28 @@ class User(AbstractUser, TimeStampedModel):
             return f"{code} — {full_name}"
         return code
 
+    @property
+    def can_view_fixed_costs(self):
+        """
+        Returns True if user is authorized to view, manage, and create Fixed Cost expenses.
+        Authorized roles: Admin, Managing Director, Director, Accounts, Accountant,
+        as well as superusers and staff.
+        """
+        if self.is_superuser or self.is_staff:
+            return True
+        return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']
+
+    @property
+    def can_view_company_overview(self):
+        """
+        Returns True if user is authorized to view Company Overview Dashboard.
+        Authorized roles: Admin, Managing Director, Director, Accounts, Accountant,
+        as well as superusers and staff.
+        """
+        if self.is_superuser or self.is_staff:
+            return True
+        return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']
+
     def has_section_perm(self, section, access_type='read'):
         """
         Check if user has permission for a specific section.

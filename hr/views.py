@@ -93,7 +93,7 @@ def _build_calendar(user, year, month):
 @require_permission('HR_ATTENDANCE', 'read')
 def dashboard(request):
     today = date.today()
-    all_active_users = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    all_active_users = list(User.objects.filter(is_active=True).order_by('first_name', 'last_name'))
 
     # Today's attendance summary
     today_records = AttendanceRecord.objects.filter(date=today).select_related('employee')
@@ -101,6 +101,16 @@ def dashboard(request):
     marked_today  = today_records.count()
     present_today = today_records.filter(status__in=['PRESENT', 'WFH', 'HALF_DAY']).count()
     absent_today  = today_records.filter(status='ABSENT').count()
+
+    can_mark_any = _is_hr_admin(request.user) or request.user.has_section_perm('HR_ATTENDANCE', 'write')
+
+    # Attach attendance details to each employee for direct dashboard marking
+    for u in all_active_users:
+        u.today_rec = today_dict.get(u.id)
+        u.is_self = (u.id == request.user.id)
+        u.can_edit = can_mark_any or u.is_self
+
+    my_record = today_dict.get(request.user.id)
 
     # Pending leave requests
     pending_leaves = LeaveRequest.objects.filter(status='PENDING').select_related('employee', 'leave_type').order_by('from_date')
@@ -124,8 +134,11 @@ def dashboard(request):
         'today': today,
         'all_users': all_active_users,
         'today_dict': today_dict,
+        'my_record': my_record,
+        'can_mark_any': can_mark_any,
+        'status_choices': AttendanceRecord.STATUS_CHOICES,
         'marked_today': marked_today,
-        'total_employees': all_active_users.count(),
+        'total_employees': len(all_active_users),
         'present_today': present_today,
         'absent_today': absent_today,
         'pending_leaves': pending_leaves,
@@ -533,11 +546,27 @@ def attendance_report(request):
     return render(request, 'hr/report.html', context)
 
 
+def _parse_time_val(val):
+    if not val:
+        return None
+    val_str = str(val).strip()
+    if val_str.lower() in ('now', 'auto'):
+        return timezone.localtime().time().replace(microsecond=0)
+    try:
+        from datetime import datetime
+        return datetime.strptime(val_str, '%H:%M').time()
+    except Exception:
+        try:
+            from datetime import time
+            return time.fromisoformat(val_str)
+        except Exception:
+            return None
+
+
 @login_required
-@require_permission('HR_ATTENDANCE', 'write')
 @require_POST
 def quick_update_attendance(request):
-    """AJAX endpoint to quickly update or clear attendance from report grid."""
+    """AJAX endpoint to quickly update or clear attendance, punch in/out, or mark all."""
     import json
     try:
         if request.content_type == 'application/json':
@@ -545,36 +574,179 @@ def quick_update_attendance(request):
         else:
             data = request.POST
 
-        employee_id = data.get('employee_id')
-        date_str    = data.get('date')
-        new_status  = (data.get('status') or '').strip().upper()
-
-        if not employee_id or not date_str:
-            return JsonResponse({'success': False, 'error': 'Missing employee_id or date.'}, status=400)
-
+        is_hr_admin_user = _is_hr_admin(request.user) or request.user.has_section_perm('HR_ATTENDANCE', 'write')
+        action = data.get('action')
+        date_str = data.get('date') or str(date.today())
         record_date = date.fromisoformat(date_str)
+        now_time = timezone.localtime().time().replace(microsecond=0)
+
+        # ── Bulk Action: Mark All Present ──
+        if action == 'mark_all_present':
+            if not is_hr_admin_user:
+                return JsonResponse({'success': False, 'error': 'Only HR/Admin can mark all employees.'}, status=403)
+
+            active_users = User.objects.filter(is_active=True)
+            records_data = []
+
+            for u in active_users:
+                rec, created = AttendanceRecord.objects.get_or_create(
+                    employee=u,
+                    date=record_date,
+                    defaults={
+                        'status': 'PRESENT',
+                        'check_in': now_time,
+                        'marked_by': request.user,
+                    }
+                )
+                if not created and rec.status not in ['PRESENT', 'WFH', 'HALF_DAY']:
+                    rec.status = 'PRESENT'
+                    if not rec.check_in:
+                        rec.check_in = now_time
+                    rec.marked_by = request.user
+                    rec.save()
+
+                records_data.append({
+                    'employee_id': u.id,
+                    'status': rec.status,
+                    'status_display': rec.get_status_display(),
+                    'status_badge_class': rec.status_badge_class,
+                    'check_in': rec.check_in.strftime('%I:%M %p') if rec.check_in else '',
+                    'check_in_raw': rec.check_in.strftime('%H:%M') if rec.check_in else '',
+                    'check_out': rec.check_out.strftime('%I:%M %p') if rec.check_out else '',
+                    'check_out_raw': rec.check_out.strftime('%H:%M') if rec.check_out else '',
+                })
+
+            today_records = AttendanceRecord.objects.filter(date=record_date)
+            today_present = today_records.filter(status__in=['PRESENT', 'WFH', 'HALF_DAY']).count()
+            today_absent  = today_records.filter(status='ABSENT').count()
+            today_marked  = today_records.count()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Marked all employees present.',
+                'records': records_data,
+                'today_stats': {
+                    'present_today': today_present,
+                    'absent_today': today_absent,
+                    'marked_today': today_marked,
+                    'total_employees': active_users.count(),
+                }
+            })
+
+        # ── Single Employee Action ──
+        employee_id = data.get('employee_id')
+        if not employee_id:
+            return JsonResponse({'success': False, 'error': 'Missing employee_id.'}, status=400)
+
         employee = get_object_or_404(User, id=employee_id)
+        is_self = (employee.id == request.user.id)
 
-        valid_statuses = [s[0] for s in AttendanceRecord.STATUS_CHOICES]
+        if not (is_hr_admin_user or is_self):
+            return JsonResponse({'success': False, 'error': 'Permission denied to mark attendance for this employee.'}, status=403)
 
-        if new_status in valid_statuses:
-            rec, created = AttendanceRecord.objects.update_or_create(
-                employee=employee,
-                date=record_date,
-                defaults={
+        new_status = (data.get('status') or '').strip().upper()
+        rec = AttendanceRecord.objects.filter(employee=employee, date=record_date).first()
+
+        if action == 'check_in':
+            if not rec:
+                rec = AttendanceRecord.objects.create(
+                    employee=employee,
+                    date=record_date,
+                    status='PRESENT',
+                    check_in=now_time,
+                    marked_by=request.user,
+                )
+            else:
+                if not rec.check_in:
+                    rec.check_in = now_time
+                if rec.status not in ['PRESENT', 'WFH', 'HALF_DAY']:
+                    rec.status = 'PRESENT'
+                rec.marked_by = request.user
+                rec.save()
+            new_status = rec.status
+            status_display = rec.get_status_display()
+
+        elif action == 'check_out':
+            if not rec:
+                rec = AttendanceRecord.objects.create(
+                    employee=employee,
+                    date=record_date,
+                    status='PRESENT',
+                    check_out=now_time,
+                    marked_by=request.user,
+                )
+            else:
+                rec.check_out = now_time
+                rec.marked_by = request.user
+                rec.save()
+            new_status = rec.status
+            status_display = rec.get_status_display()
+
+        elif action == 'set_times':
+            if 'check_in' in data:
+                parsed_in = _parse_time_val(data.get('check_in'))
+                if not rec:
+                    rec = AttendanceRecord.objects.create(
+                        employee=employee,
+                        date=record_date,
+                        status='PRESENT',
+                        check_in=parsed_in,
+                        marked_by=request.user,
+                    )
+                else:
+                    rec.check_in = parsed_in
+                    rec.marked_by = request.user
+                    rec.save()
+            if 'check_out' in data:
+                parsed_out = _parse_time_val(data.get('check_out'))
+                if not rec:
+                    rec = AttendanceRecord.objects.create(
+                        employee=employee,
+                        date=record_date,
+                        status='PRESENT',
+                        check_out=parsed_out,
+                        marked_by=request.user,
+                    )
+                else:
+                    rec.check_out = parsed_out
+                    rec.marked_by = request.user
+                    rec.save()
+            new_status = rec.status if rec else 'NOT_MARKED'
+            status_display = rec.get_status_display() if rec else 'Not Marked'
+
+        else:
+            valid_statuses = [s[0] for s in AttendanceRecord.STATUS_CHOICES]
+
+            if new_status in valid_statuses:
+                defaults = {
                     'status': new_status,
                     'marked_by': request.user,
                 }
-            )
-            status_display = rec.get_status_display()
-        elif new_status in ('CLEAR', 'NONE', ''):
-            AttendanceRecord.objects.filter(employee=employee, date=record_date).delete()
-            status_display = 'Not Marked'
-            new_status = 'NOT_MARKED'
-        else:
-            return JsonResponse({'success': False, 'error': f'Invalid status: {new_status}'}, status=400)
+                if 'check_in' in data:
+                    defaults['check_in'] = _parse_time_val(data.get('check_in'))
+                elif new_status in ['PRESENT', 'WFH', 'HALF_DAY']:
+                    if not rec or not rec.check_in:
+                        defaults['check_in'] = now_time
 
-        # Recalculate employee monthly counts
+                if 'check_out' in data:
+                    defaults['check_out'] = _parse_time_val(data.get('check_out'))
+
+                rec, _ = AttendanceRecord.objects.update_or_create(
+                    employee=employee,
+                    date=record_date,
+                    defaults=defaults
+                )
+                status_display = rec.get_status_display()
+
+            elif new_status in ('CLEAR', 'NONE', ''):
+                AttendanceRecord.objects.filter(employee=employee, date=record_date).delete()
+                rec = None
+                status_display = 'Not Marked'
+                new_status = 'NOT_MARKED'
+            else:
+                return JsonResponse({'success': False, 'error': f'Invalid status: {new_status}'}, status=400)
+
+        # Recalculate employee monthly counts (for report.html compatibility)
         year = record_date.year
         month = record_date.month
         holidays = set(Holiday.objects.filter(date__year=year, date__month=month).values_list('date', flat=True))
@@ -620,21 +792,41 @@ def quick_update_attendance(request):
             else:
                 badge_char = '—'
                 badge_color = 'text-slate-300'
+            status_badge_class = 'bg-slate-100 text-slate-400 border-slate-200'
         else:
             badge_char = badge_chars.get(new_status, '—')
             badge_color = badge_colors.get(new_status, 'text-slate-300')
+            status_badge_class = rec.status_badge_class if rec else 'bg-slate-100 text-slate-400 border-slate-200'
+
+        # Today's stats for dashboard stat cards
+        today_records = AttendanceRecord.objects.filter(date=record_date)
+        today_present = today_records.filter(status__in=['PRESENT', 'WFH', 'HALF_DAY']).count()
+        today_absent  = today_records.filter(status='ABSENT').count()
+        today_marked  = today_records.count()
+        total_employees = User.objects.filter(is_active=True).count()
 
         return JsonResponse({
             'success': True,
             'status': new_status,
             'status_display': status_display,
-            'badge_char': badge_chars.get(new_status, '—'),
-            'badge_color': badge_colors.get(new_status, 'text-slate-300'),
+            'status_badge_class': status_badge_class,
+            'badge_char': badge_char,
+            'badge_color': badge_color,
+            'check_in': rec.check_in.strftime('%I:%M %p') if (rec and rec.check_in) else '',
+            'check_in_raw': rec.check_in.strftime('%H:%M') if (rec and rec.check_in) else '',
+            'check_out': rec.check_out.strftime('%I:%M %p') if (rec and rec.check_out) else '',
+            'check_out_raw': rec.check_out.strftime('%H:%M') if (rec and rec.check_out) else '',
             'totals': {
                 'present': present,
                 'half_day': half_day,
                 'on_leave': on_leave,
                 'absent': absent,
+            },
+            'today_stats': {
+                'present_today': today_present,
+                'absent_today': today_absent,
+                'marked_today': today_marked,
+                'total_employees': total_employees,
             }
         })
     except Exception as e:

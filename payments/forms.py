@@ -15,11 +15,20 @@ class ExpenseForm(forms.ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
             self.initial['date'] = datetime.date.today()
+
+        from .models import user_can_view_fixed_costs
+        can_view_fc = user_can_view_fixed_costs(self.user) if self.user else False
+
+        if can_view_fc:
+            categories_to_show = list(Expense.EXPENSE_TYPES)
+        else:
+            categories_to_show = [('Daily Expenses', Expense.DAILY_EXPENSES)]
             
-        standard_choices = [('', '-- Select Category --')] + list(Expense.EXPENSE_TYPES)
+        standard_choices = [('', '-- Select Category --')] + categories_to_show
         standard_choices.append(('Custom', (('__custom__', '➕ Add Custom Category...'),)))
         
         self.fields['expense_type'] = forms.ChoiceField(
@@ -69,5 +78,11 @@ class ExpenseForm(forms.ModelForm):
                 self.add_error('custom_category', 'Please specify the custom category name.')
             else:
                 cleaned_data['expense_type'] = custom_category.strip()
+                expense_type = cleaned_data['expense_type']
+
+        from .models import user_can_view_fixed_costs
+        can_view_fc = user_can_view_fixed_costs(self.user) if self.user else False
+        if not can_view_fc and expense_type in Expense.get_fixed_cost_categories():
+            self.add_error('expense_type', 'You do not have permission to submit or assign Fixed Cost expenses.')
                 
         return cleaned_data

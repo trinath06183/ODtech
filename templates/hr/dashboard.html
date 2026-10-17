@@ -2,6 +2,7 @@
 {% block title %}HR & Attendance — Dashboard{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="space-y-6">
 
   <!-- Header -->
@@ -18,11 +19,11 @@
   <!-- Stats -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="glass rounded-2xl p-5">
-      <div class="text-3xl font-bold text-green-600">{{ present_today }}</div>
+      <div id="stat-present-today" class="text-3xl font-bold text-green-600">{{ present_today }}</div>
       <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Present Today</div>
     </div>
     <div class="glass rounded-2xl p-5">
-      <div class="text-3xl font-bold text-red-500">{{ absent_today }}</div>
+      <div id="stat-absent-today" class="text-3xl font-bold text-red-500">{{ absent_today }}</div>
       <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Absent Today</div>
     </div>
     <div class="glass rounded-2xl p-5">
@@ -30,7 +31,7 @@
       <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Pending Leaves</div>
     </div>
     <div class="glass rounded-2xl p-5">
-      <div class="text-3xl font-bold text-slate-700">{{ total_employees }}</div>
+      <div id="stat-total-employees" class="text-3xl font-bold text-slate-700">{{ total_employees }}</div>
       <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-1">Total Employees</div>
     </div>
   </div>
@@ -38,56 +39,173 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- Today's Attendance -->
-    <div class="lg:col-span-2 glass rounded-2xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 class="font-bold text-slate-800">Today's Attendance — {{ today|date:"d M Y" }}</h2>
-        <a href="{% url 'hr:mark_attendance' %}?date={{ today|date:'Y-m-d' }}" class="text-xs text-violet-600 hover:underline font-semibold">
-          {% if is_hr_admin %}Edit →{% endif %}
-        </a>
+    <div class="lg:col-span-2 glass rounded-2xl overflow-hidden shadow-xs border border-slate-100 flex flex-col">
+      <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white/50">
+        <div class="flex items-center gap-2.5">
+          <h2 class="font-bold text-slate-800">Today's Attendance — {{ today|date:"d M Y" }}</h2>
+          <span id="save-indicator" class="hidden text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+            ✓ Saved
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if can_mark_any %}
+          <button type="button" onclick="markAllPresent()" id="btn-mark-all-present"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            Mark All Present
+          </button>
+          <a href="{% url 'hr:mark_attendance' %}?date={{ today|date:'Y-m-d' }}" class="text-xs text-violet-600 hover:text-violet-800 font-semibold px-2 py-1.5 rounded-lg hover:bg-violet-50 transition">
+            Bulk Edit →
+          </a>
+          {% endif %}
+        </div>
       </div>
+
+      <!-- Quick Self Attendance Bar -->
+      <div class="px-6 py-3 bg-gradient-to-r from-violet-50/70 via-indigo-50/40 to-slate-50/60 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+            {{ request.user.first_name|first|default:request.user.username|first|upper }}
+          </div>
+          <div>
+            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Your Attendance Today</div>
+            <div class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <span id="self-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ my_record.status_badge_class|default:'bg-slate-100 text-slate-500 border-slate-200' }}">
+                {{ my_record.get_status_display|default:"Not Marked" }}
+              </span>
+              <span id="self-times-display" class="text-xs font-normal text-slate-500">
+                {% if my_record.check_in %}In: {{ my_record.check_in|time:"h:i A" }}{% endif %}
+                {% if my_record.check_out %} · Out: {{ my_record.check_out|time:"h:i A" }}{% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="quickCheckIn({{ request.user.id }})" id="self-checkin-btn"
+                  class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 {% if my_record.check_in %}hidden{% endif %}">
+            <span>🟢</span> Punch In Now
+          </button>
+          <button type="button" onclick="quickCheckOut({{ request.user.id }})" id="self-checkout-btn"
+                  class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 {% if not my_record.check_in or my_record.check_out %}hidden{% endif %}">
+            <span>🔴</span> Punch Out
+          </button>
+          <button type="button" onclick="quickMarkStatus({{ request.user.id }}, 'WFH')" id="self-wfh-btn"
+                  class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold border border-blue-200 transition active:scale-95 {% if my_record %}hidden{% endif %}">
+            🏠 WFH
+          </button>
+        </div>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider">
+          <thead class="bg-slate-50/70 text-xs text-slate-500 uppercase tracking-wider border-b border-slate-100">
             <tr>
-              <th class="px-6 py-3 text-left">Employee</th>
-              <th class="px-6 py-3 text-left">Status</th>
-              <th class="px-6 py-3 text-left">Check In</th>
-              <th class="px-6 py-3 text-left">Check Out</th>
+              <th class="px-5 py-3 text-left">Employee</th>
+              <th class="px-5 py-3 text-left">Status</th>
+              <th class="px-5 py-3 text-left">Check In</th>
+              <th class="px-5 py-3 text-left">Check Out</th>
+              <th class="px-5 py-3 text-left">Quick Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             {% for user in all_users %}
-            <tr class="hover:bg-violet-50/30 transition-colors">
-              <td class="px-6 py-3">
-                <div class="font-semibold text-slate-800">
-                  <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold mr-1.5">{{ user.empid|default:user.username }}</span>
-                  {{ user.get_full_name|default:user.username }}
-                </div>
-                <div class="text-xs text-slate-400">{{ user.designation|default:user.role }}</div>
-              </td>
-              <td class="px-6 py-3">
-                {% for uid, r in today_dict.items %}
-                  {% if uid == user.id %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border {{ r.status_badge_class }}">
-                      {{ r.get_status_display }}
-                    </span>
+            <tr id="row-user-{{ user.id }}" class="hover:bg-violet-50/20 transition-colors">
+              <td class="px-5 py-3.5">
+                <div class="font-semibold text-slate-800 flex items-center flex-wrap gap-1">
+                  <span class="font-mono text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold">{{ user.empid|default:user.username }}</span>
+                  <span>{{ user.get_full_name|default:user.username }}</span>
+                  {% if user.is_self %}
+                  <span class="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">You</span>
                   {% endif %}
-                {% empty %}{% endfor %}
-                {% if user.id not in today_dict %}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border bg-slate-100 text-slate-400 border-slate-200">Not Marked</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">{{ user.designation|default:user.role }}</div>
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="space-y-1.5">
+                  <span id="status-badge-{{ user.id }}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border {{ user.today_rec.status_badge_class|default:'bg-slate-100 text-slate-400 border-slate-200' }}">
+                    {{ user.today_rec.get_status_display|default:"Not Marked" }}
+                  </span>
+                  {% if user.can_edit %}
+                  <div>
+                    <select onchange="onStatusSelectChange({{ user.id }}, this.value)"
+                            id="status-select-{{ user.id }}"
+                            class="rounded-lg border-slate-200 text-xs px-2 py-1 focus:ring-2 focus:ring-violet-500 bg-white font-medium text-slate-700 shadow-xs">
+                      <option value="" {% if not user.today_rec %}selected{% endif %}>-- Change Status --</option>
+                      <option value="PRESENT" {% if user.today_rec.status == 'PRESENT' %}selected{% endif %}>🟢 Present</option>
+                      <option value="ABSENT" {% if user.today_rec.status == 'ABSENT' %}selected{% endif %}>🔴 Absent</option>
+                      <option value="HALF_DAY" {% if user.today_rec.status == 'HALF_DAY' %}selected{% endif %}>🟡 Half Day</option>
+                      <option value="WFH" {% if user.today_rec.status == 'WFH' %}selected{% endif %}>🏠 Work From Home</option>
+                      <option value="ON_LEAVE" {% if user.today_rec.status == 'ON_LEAVE' %}selected{% endif %}>✈️ On Leave</option>
+                      <option value="WEEKLY_OFF" {% if user.today_rec.status == 'WEEKLY_OFF' %}selected{% endif %}>📅 Weekly Off</option>
+                      <option value="HOLIDAY" {% if user.today_rec.status == 'HOLIDAY' %}selected{% endif %}>🏖️ Holiday</option>
+                      {% if user.today_rec %}
+                      <option value="CLEAR" class="text-red-500">✖ Clear (Not Marked)</option>
+                      {% endif %}
+                    </select>
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-5 py-3.5 text-xs text-slate-600">
+                <div class="flex items-center gap-1.5">
+                  <span id="checkin-text-{{ user.id }}" class="font-medium text-slate-700">
+                    {{ user.today_rec.check_in|time:"h:i A"|default:"—" }}
+                  </span>
+                  {% if user.can_edit %}
+                  <button type="button" onclick="quickCheckIn({{ user.id }})" id="checkin-btn-{{ user.id }}"
+                          class="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded font-semibold transition {% if user.today_rec.check_in %}hidden{% endif %}">
+                    Punch In
+                  </button>
+                  <button type="button" onclick="openTimePrompt({{ user.id }}, 'check_in', '{{ user.today_rec.check_in|time:'H:i'|default:'' }}')"
+                          title="Edit Check In Time" class="text-slate-400 hover:text-slate-700 text-xs px-1 py-0.5 transition">
+                    ✎
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-5 py-3.5 text-xs text-slate-600">
+                <div class="flex items-center gap-1.5">
+                  <span id="checkout-text-{{ user.id }}" class="font-medium text-slate-700">
+                    {{ user.today_rec.check_out|time:"h:i A"|default:"—" }}
+                  </span>
+                  {% if user.can_edit %}
+                  <button type="button" onclick="quickCheckOut({{ user.id }})" id="checkout-btn-{{ user.id }}"
+                          class="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 rounded font-semibold transition {% if not user.today_rec.check_in or user.today_rec.check_out %}hidden{% endif %}">
+                    Punch Out
+                  </button>
+                  <button type="button" onclick="openTimePrompt({{ user.id }}, 'check_out', '{{ user.today_rec.check_out|time:'H:i'|default:'' }}')"
+                          title="Edit Check Out Time" class="text-slate-400 hover:text-slate-700 text-xs px-1 py-0.5 transition">
+                    ✎
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-5 py-3.5 text-xs">
+                {% if user.can_edit %}
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="quickMarkStatus({{ user.id }}, 'PRESENT')"
+                          title="Mark Present"
+                          class="px-2 py-1 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-lg text-xs font-semibold transition active:scale-95">
+                    ✓ Present
+                  </button>
+                  <button type="button" onclick="quickMarkStatus({{ user.id }}, 'ABSENT')"
+                          title="Mark Absent"
+                          class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition active:scale-95">
+                    ✗ Absent
+                  </button>
+                  <button type="button" onclick="quickMarkStatus({{ user.id }}, 'WFH')"
+                          title="Work From Home"
+                          class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition active:scale-95">
+                    🏠 WFH
+                  </button>
+                </div>
+                {% else %}
+                <span class="text-slate-400 text-xs">—</span>
                 {% endif %}
-              </td>
-              <td class="px-6 py-3 text-slate-500 text-xs">
-                {% for uid, r in today_dict.items %}{% if uid == user.id %}{{ r.check_in|default:"—" }}{% endif %}{% endfor %}
-                {% if user.id not in today_dict %}—{% endif %}
-              </td>
-              <td class="px-6 py-3 text-slate-500 text-xs">
-                {% for uid, r in today_dict.items %}{% if uid == user.id %}{{ r.check_out|default:"—" }}{% endif %}{% endfor %}
-                {% if user.id not in today_dict %}—{% endif %}
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">No employees found.</td></tr>
+            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No employees found.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -159,4 +277,255 @@
   </div>
 
 </div>
+
+<!-- Floating Toast Notification -->
+<div id="attendance-toast" class="fixed bottom-5 right-5 z-50 transform translate-y-12 opacity-0 transition-all duration-300 pointer-events-none">
+  <div id="attendance-toast-content" class="px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2 bg-slate-900 text-white">
+    <span id="attendance-toast-icon">✓</span>
+    <span id="attendance-toast-msg">Attendance updated</span>
+  </div>
+</div>
+
+<script>
+  const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+  const TODAY_STR = "{{ today|date:'Y-m-d' }}";
+  const CURRENT_USER_ID = {{ request.user.id }};
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('attendance-toast');
+    const toastContent = document.getElementById('attendance-toast-content');
+    const toastMsg = document.getElementById('attendance-toast-msg');
+    const toastIcon = document.getElementById('attendance-toast-icon');
+
+    if (!toast) return;
+
+    toastMsg.textContent = msg;
+    if (isError) {
+      toastContent.className = 'px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2 bg-red-600 text-white';
+      toastIcon.textContent = '⚠';
+    } else {
+      toastContent.className = 'px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2 bg-slate-900 text-white';
+      toastIcon.textContent = '✓';
+    }
+
+    toast.classList.remove('translate-y-12', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    clearTimeout(window._toastTimeout);
+    window._toastTimeout = setTimeout(() => {
+      toast.classList.remove('translate-y-0', 'opacity-100');
+      toast.classList.add('translate-y-12', 'opacity-0');
+    }, 3200);
+  }
+
+  function showSavingIndicator(show) {
+    const indicator = document.getElementById('save-indicator');
+    if (!indicator) return;
+    if (show) {
+      indicator.classList.remove('hidden');
+      indicator.textContent = 'Saving...';
+      indicator.className = 'text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse';
+    } else {
+      indicator.textContent = '✓ Saved';
+      indicator.className = 'text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
+      setTimeout(() => {
+        indicator.classList.add('hidden');
+      }, 2500);
+    }
+  }
+
+  function updateRowUI(userId, data) {
+    // 1. Status badge
+    const badge = document.getElementById(`status-badge-${userId}`);
+    if (badge) {
+      badge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${data.status_badge_class || 'bg-slate-100 text-slate-400 border-slate-200'}`;
+      badge.textContent = data.status_display || 'Not Marked';
+    }
+
+    // 2. Status dropdown
+    const select = document.getElementById(`status-select-${userId}`);
+    if (select) {
+      select.value = (data.status === 'NOT_MARKED' ? '' : data.status);
+    }
+
+    // 3. Check In text & button
+    const checkinText = document.getElementById(`checkin-text-${userId}`);
+    if (checkinText) {
+      checkinText.textContent = data.check_in || '—';
+    }
+    const checkinBtn = document.getElementById(`checkin-btn-${userId}`);
+    if (checkinBtn) {
+      checkinBtn.classList.toggle('hidden', !!data.check_in);
+    }
+
+    // 4. Check Out text & button
+    const checkoutText = document.getElementById(`checkout-text-${userId}`);
+    if (checkoutText) {
+      checkoutText.textContent = data.check_out || '—';
+    }
+    const checkoutBtn = document.getElementById(`checkout-btn-${userId}`);
+    if (checkoutBtn) {
+      checkoutBtn.classList.toggle('hidden', (!data.check_in || !!data.check_out));
+    }
+
+    // 5. If this is current user, update self attendance banner
+    if (userId === CURRENT_USER_ID) {
+      const selfBadge = document.getElementById('self-status-badge');
+      if (selfBadge) {
+        selfBadge.className = `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${data.status_badge_class || 'bg-slate-100 text-slate-500 border-slate-200'}`;
+        selfBadge.textContent = data.status_display || 'Not Marked';
+      }
+
+      const selfTimes = document.getElementById('self-times-display');
+      if (selfTimes) {
+        let text = '';
+        if (data.check_in) text += `In: ${data.check_in}`;
+        if (data.check_out) text += ` · Out: ${data.check_out}`;
+        selfTimes.textContent = text;
+      }
+
+      const selfCheckin = document.getElementById('self-checkin-btn');
+      if (selfCheckin) selfCheckin.classList.toggle('hidden', !!data.check_in);
+
+      const selfCheckout = document.getElementById('self-checkout-btn');
+      if (selfCheckout) selfCheckout.classList.toggle('hidden', (!data.check_in || !!data.check_out));
+
+      const selfWfh = document.getElementById('self-wfh-btn');
+      if (selfWfh) selfWfh.classList.toggle('hidden', data.status !== 'NOT_MARKED');
+    }
+
+    // 6. Update top stats
+    if (data.today_stats) {
+      const p = document.getElementById('stat-present-today');
+      if (p) p.textContent = data.today_stats.present_today;
+      const a = document.getElementById('stat-absent-today');
+      if (a) a.textContent = data.today_stats.absent_today;
+      const t = document.getElementById('stat-total-employees');
+      if (t) t.textContent = data.today_stats.total_employees;
+    }
+  }
+
+  function sendAttendanceUpdate(payload, onSuccess) {
+    showSavingIndicator(true);
+
+    fetch("{% url 'hr:quick_update_attendance' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      showSavingIndicator(false);
+      if (data.success) {
+        if (onSuccess) onSuccess(data);
+      } else {
+        showToast(data.error || 'Failed to update attendance', true);
+      }
+    })
+    .catch(err => {
+      showSavingIndicator(false);
+      console.error(err);
+      showToast('Network error while saving attendance.', true);
+    });
+  }
+
+  function quickMarkStatus(userId, status) {
+    sendAttendanceUpdate({
+      employee_id: userId,
+      date: TODAY_STR,
+      status: status
+    }, (data) => {
+      updateRowUI(userId, data);
+      showToast(`Attendance marked as ${data.status_display}`);
+    });
+  }
+
+  function onStatusSelectChange(userId, statusVal) {
+    quickMarkStatus(userId, statusVal);
+  }
+
+  function quickCheckIn(userId) {
+    sendAttendanceUpdate({
+      employee_id: userId,
+      date: TODAY_STR,
+      action: 'check_in'
+    }, (data) => {
+      updateRowUI(userId, data);
+      showToast(`Checked in at ${data.check_in}`);
+    });
+  }
+
+  function quickCheckOut(userId) {
+    sendAttendanceUpdate({
+      employee_id: userId,
+      date: TODAY_STR,
+      action: 'check_out'
+    }, (data) => {
+      updateRowUI(userId, data);
+      showToast(`Checked out at ${data.check_out}`);
+    });
+  }
+
+  function openTimePrompt(userId, timeType, currentTime) {
+    const title = timeType === 'check_in' ? 'Check In Time' : 'Check Out Time';
+    const input = prompt(`Enter ${title} (HH:MM in 24hr format, e.g. 09:30 or 18:00):`, currentTime || '');
+    if (input === null) return;
+
+    sendAttendanceUpdate({
+      employee_id: userId,
+      date: TODAY_STR,
+      action: 'set_times',
+      [timeType]: input.trim()
+    }, (data) => {
+      updateRowUI(userId, data);
+      showToast(`${title} updated`);
+    });
+  }
+
+  function markAllPresent() {
+    if (!confirm('Mark all active employees as Present today with current time?')) return;
+
+    const btn = document.getElementById('btn-mark-all-present');
+    if (btn) btn.disabled = true;
+
+    sendAttendanceUpdate({
+      action: 'mark_all_present',
+      date: TODAY_STR
+    }, (data) => {
+      if (btn) btn.disabled = false;
+      if (data.records && Array.isArray(data.records)) {
+        data.records.forEach(rec => {
+          updateRowUI(rec.employee_id, {
+            status: rec.status,
+            status_display: rec.status_display,
+            status_badge_class: rec.status_badge_class,
+            check_in: rec.check_in,
+            check_out: rec.check_out,
+            today_stats: data.today_stats
+          });
+        });
+      }
+      showToast('✓ All active employees marked Present!');
+    });
+  }
+</script>
 {% endblock %}

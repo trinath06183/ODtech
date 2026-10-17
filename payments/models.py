@@ -40,30 +40,55 @@ class Payment(TimeStampedModel):
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+def user_can_view_fixed_costs(user):
+    """
+    Returns True if user has permission to view, filter, export, and create Fixed Cost expenses.
+    Authorized: Superusers, Staff, and users with roles:
+    'Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant'.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
+        return True
+    return getattr(user, 'role', '') in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']
+
+
 class Expense(TimeStampedModel):
-    EXPENSE_TYPES = (
-        ('Daily Expenses', (
-            ('Petrol and Diesel', 'Petrol and Diesel'),
-            ('Travel', 'Travel'),
-            ('Hotel', 'Hotel'),
-            ('Food Expenses', 'Food Expenses'),
-            ('Office stationary', 'Office stationary'),
-            ('Courier expenses', 'Courier expenses'),
-            ('Transportation Payment', 'Transportation Payment'),
-            ('Marketing Expenses', 'Marketing Expenses'),
-            ('Customer Delight', 'Customer Delight'),
-            ('Other Daily', 'Other'),
-        )),
-        ('Fixed Cost', (
-            ('Staff salary', 'Staff salary'),
-            ('OFC rent', 'OFC rent'),
-            ('Electricity bill', 'Electricity bill'),
-            ('Internet Bill', 'Internet Bill'),
-            ('Google workspace', 'Google workspace'),
-            ('Website and hosting cost', 'Website and hosting cost'),
-            ('Other Fixed', 'Other'),
-        ))
+    DAILY_EXPENSES = (
+        ('Petrol and Diesel', 'Petrol and Diesel'),
+        ('Travel', 'Travel'),
+        ('Hotel', 'Hotel'),
+        ('Food Expenses', 'Food Expenses'),
+        ('Office stationary', 'Office stationary'),
+        ('Courier expenses', 'Courier expenses'),
+        ('Transportation Payment', 'Transportation Payment'),
+        ('Marketing Expenses', 'Marketing Expenses'),
+        ('Customer Delight', 'Customer Delight'),
+        ('Other Daily', 'Other'),
     )
+    FIXED_COSTS = (
+        ('Staff salary', 'Staff salary'),
+        ('OFC rent', 'OFC rent'),
+        ('Electricity bill', 'Electricity bill'),
+        ('Internet Bill', 'Internet Bill'),
+        ('Google workspace', 'Google workspace'),
+        ('Website and hosting cost', 'Website and hosting cost'),
+        ('Other Fixed', 'Other'),
+    )
+    EXPENSE_TYPES = (
+        ('Daily Expenses', DAILY_EXPENSES),
+        ('Fixed Cost', FIXED_COSTS),
+    )
+
+    @classmethod
+    def get_fixed_cost_categories(cls):
+        """Returns list of category strings that are classified as Fixed Cost."""
+        return [c[0] for c in cls.FIXED_COSTS] + ['Fixed Cost']
+
+    @property
+    def is_fixed_cost(self):
+        """Returns True if this expense is categorized as a Fixed Cost."""
+        return self.expense_type in self.get_fixed_cost_categories()
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
         ('Clarification', 'Needs Clarification'),

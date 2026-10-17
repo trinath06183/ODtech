@@ -227,7 +227,7 @@ def payment_delete(request, payment_id):
 # EXPENSE MANAGEMENT VIEWS
 # ==============================================================================
 from django.utils import timezone
-from .models import Expense
+from .models import Expense, user_can_view_fixed_costs
 from .forms import ExpenseForm
 
 def get_user_expense_q(user):
@@ -261,12 +261,17 @@ def expense_list(request):
     if current_tab != 'my':
         current_tab = 'all'
 
+    can_view_fc = user_can_view_fixed_costs(request.user)
     my_q = get_user_expense_q(request.user)
 
-    all_count = Expense.objects.count()
-    my_count = Expense.objects.filter(my_q).count()
+    all_qs = Expense.objects.all()
+    if not can_view_fc:
+        all_qs = all_qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
 
-    expenses = Expense.objects.all()
+    all_count = all_qs.count()
+    my_count = all_qs.filter(my_q).count()
+
+    expenses = all_qs
     if current_tab == 'my':
         expenses = expenses.filter(my_q)
 
@@ -376,7 +381,8 @@ def expense_list(request):
 
     return render(request, 'payments/expense_list.html', {
         'expenses': page_obj,
-        'expense_types': Expense.EXPENSE_TYPES,
+        'expense_types': Expense.EXPENSE_TYPES if can_view_fc else [('Daily Expenses', Expense.DAILY_EXPENSES)],
+        'can_view_fixed_costs': can_view_fc,
         'total_expenses': total_expenses,
         'total_paid': total_paid,
         'total_unpaid': total_unpaid,
@@ -392,6 +398,8 @@ def expense_list(request):
 def print_unpaid_expenses(request):
     tab = request.GET.get('tab', 'all').strip().lower()
     unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False)
+    if not user_can_view_fixed_costs(request.user):
+        unpaid_expenses = unpaid_expenses.exclude(expense_type__in=Expense.get_fixed_cost_categories())
     if tab == 'my':
         unpaid_expenses = unpaid_expenses.filter(get_user_expense_q(request.user))
     unpaid_expenses = unpaid_expenses.select_related('submitted_by').order_by('employee_code', 'date')
@@ -453,7 +461,7 @@ def print_unpaid_expenses(request):
 @require_permission('PAYMENTS', 'write')
 def expense_create(request):
     if request.method == 'POST':
-        form = ExpenseForm(request.POST, request.FILES)
+        form = ExpenseForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.submitted_by = request.user
@@ -481,7 +489,7 @@ def expense_create(request):
             messages.success(request, 'Expense submitted successfully.')
             return redirect('expense_list')
     else:
-        form = ExpenseForm()
+        form = ExpenseForm(user=request.user)
     return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Submit New Expense'})
 
 @require_permission('PAYMENTS', 'write')
@@ -491,6 +499,10 @@ def expense_edit(request, pk):
         expense = get_object_or_404(Expense, pk=pk)
     else:
         expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
+
+    if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
+        messages.error(request, 'Permission denied. You do not have permission to view or edit Fixed Cost expenses.')
+        return redirect('expense_list')
         
     allowed_statuses = ['Pending', 'Clarification', 'Clarification Provided']
     if expense.status not in allowed_statuses and not is_admin:
@@ -498,7 +510,7 @@ def expense_edit(request, pk):
         return redirect('expense_list')
         
     if request.method == 'POST':
-        form = ExpenseForm(request.POST, request.FILES, instance=expense)
+        form = ExpenseForm(request.POST, request.FILES, instance=expense, user=request.user)
         if form.is_valid():
             expense = form.save(commit=False)
             
@@ -539,7 +551,7 @@ def expense_edit(request, pk):
 
             return redirect('expense_list')
     else:
-        form = ExpenseForm(instance=expense)
+        form = ExpenseForm(instance=expense, user=request.user)
     return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Edit Expense', 'expense': expense})
 
 @require_permission('PAYMENTS', 'write')
@@ -586,6 +598,9 @@ def dismiss_clarification_popup(request):
 @require_permission('PAYMENTS', 'read')
 def expense_detail(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
+    if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
+        messages.error(request, 'Permission denied. You do not have permission to view Fixed Cost expenses.')
+        return redirect('expense_list')
         
     return render(request, 'payments/expense_detail.html', {'title': 'View Expense', 'expense': expense})
 
@@ -596,6 +611,10 @@ def expense_delete(request, pk):
         expense = get_object_or_404(Expense, pk=pk)
     else:
         expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
+
+    if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
+        messages.error(request, 'Permission denied. You do not have permission to delete Fixed Cost expenses.')
+        return redirect('expense_list')
         
     if not is_admin and expense.status not in ['Pending', 'Clarification', 'Clarification Provided']:
         messages.error(request, 'You can only delete pending or unapproved expenses.')
@@ -782,6 +801,8 @@ def expense_export_csv(request):
     status = request.GET.get('status', 'All')
     
     expenses = Expense.objects.select_related('submitted_by').all()
+    if not user_can_view_fixed_costs(request.user):
+        expenses = expenses.exclude(expense_type__in=Expense.get_fixed_cost_categories())
     
     tab = request.GET.get('tab', 'all').strip().lower()
     if tab == 'my':

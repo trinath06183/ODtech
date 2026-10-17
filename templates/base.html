@@ -386,7 +386,7 @@
                 </a>
 
                 <!-- Financial / Company Dashboard -->
-                {% if request.user|has_read_perm:'REPORTING' %}
+                {% if request.user.can_view_company_overview and request.user|has_read_perm:'REPORTING' %}
                 <a href="{% url 'financial_dashboard' %}"
                     class="nav-link group relative rounded-xl px-3.5 py-3 flex items-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors mb-1.5"
                     :class="!sidebarOpen ? 'md:justify-center' : ''" title="Company Overview Dashboard">
