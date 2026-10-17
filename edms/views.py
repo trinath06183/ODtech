@@ -118,6 +118,9 @@ class DocumentDetailView(EDMSLoginRequiredMixin, EDMSContextMixin, DetailView):
             messages.error(self.request, f"Access denied: {reason}")
             raise Http404
 
+        if hasattr(doc, 'get_commercial_doc'):
+            doc.get_commercial_doc()
+
         AuditService.log(
             action=EDMSAuditLog.ACTION_PREVIEW,
             request=self.request,
@@ -428,7 +431,8 @@ class DocumentDownloadView(EDMSLoginRequiredMixin, View):
             return redirect('edms:document_detail', doc_id=doc.id)
 
         # Redirect commercial docs to their dedicated PDF generator endpoint
-        if doc.source_type == EDMSDocument.SOURCE_COMMERCIAL and doc.commercial_doc_id:
+        comm_doc = doc.get_commercial_doc() if hasattr(doc, 'get_commercial_doc') else doc.commercial_doc
+        if comm_doc:
             # Audit log the download before redirecting
             AuditService.log(
                 action=EDMSAuditLog.ACTION_DOWNLOAD,
@@ -436,7 +440,7 @@ class DocumentDownloadView(EDMSLoginRequiredMixin, View):
                 document=doc,
                 description=f"Downloaded commercial document PDF for '{doc.title}'",
             )
-            return redirect(f'/documents/{doc.commercial_doc_id}/pdf/?download=1')
+            return redirect(f'/documents/{comm_doc.id}/pdf/?download=1')
 
         # Get version
         if version_number:
@@ -510,7 +514,8 @@ class DocumentPreviewView(EDMSLoginRequiredMixin, View):
             return HttpResponse(f"Access denied: {reason}", status=403)
 
         # Redirect commercial docs to their dedicated HTML preview endpoint
-        if doc.source_type == EDMSDocument.SOURCE_COMMERCIAL and doc.commercial_doc_id:
+        comm_doc = doc.get_commercial_doc() if hasattr(doc, 'get_commercial_doc') else doc.commercial_doc
+        if comm_doc:
             AuditService.log(
                 action=EDMSAuditLog.ACTION_PREVIEW,
                 request=request,
@@ -518,7 +523,7 @@ class DocumentPreviewView(EDMSLoginRequiredMixin, View):
                 description=f"Previewed commercial document HTML for '{doc.title}'",
             )
             # Use the raw HTML preview view so it renders nicely in the iframe
-            return redirect(f'/documents/{doc.commercial_doc_id}/html/')
+            return redirect(f'/documents/{comm_doc.id}/html/')
 
         if version_number:
             version = get_object_or_404(EDMSDocumentVersion, document=doc, version_number=version_number)

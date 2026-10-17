@@ -158,20 +158,24 @@ def sync_commercial_doc_to_edms(sender, instance, created, **kwargs):
 
         metadata = _build_edms_metadata(instance)
 
-        # Try to find an existing EDMS record linked to this commercial doc
-        try:
-            edms_doc = EDMSDocument.objects.get(commercial_doc=instance)
+        # Try to find an existing EDMS record linked to this commercial doc (or matching reference_number)
+        edms_doc = EDMSDocument.objects.filter(commercial_doc=instance).first()
+        if not edms_doc and instance.number:
+            edms_doc = EDMSDocument.objects.filter(reference_number=instance.number).first()
+
+        if edms_doc:
+            edms_doc.commercial_doc = instance
+            edms_doc.source_type = EDMSDocument.SOURCE_COMMERCIAL
             # Update all metadata fields
             for field, value in metadata.items():
                 setattr(edms_doc, field, value)
             edms_doc.category = category
             edms_doc.save()
             logger.info(
-                "[EDMS SYNC] Updated EDMSDocument for commercial doc %s (edms_id=%s)",
+                "[EDMS SYNC] Updated/Linked EDMSDocument for commercial doc %s (edms_id=%s)",
                 instance.number, edms_doc.id,
             )
-
-        except EDMSDocument.DoesNotExist:
+        else:
             # Create a fresh EDMS record (no file — it's a virtual/commercial doc)
             edms_doc = EDMSDocument(
                 owner=uploader,

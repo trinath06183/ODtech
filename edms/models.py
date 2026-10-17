@@ -428,6 +428,36 @@ class EDMSDocument(TimeStampedModel):
             Q(target_type=doc_ct, target_id=self.id)
         ).order_by('-created_at')
 
+    def get_commercial_doc(self):
+        """
+        Return the linked commercial Document.
+        If commercial_doc_id is missing (e.g. after sync gap, restore, or migration),
+        automatically resolve by reference_number or title and self-heal the FK.
+        """
+        if self.commercial_doc_id:
+            return self.commercial_doc
+
+        from documents.models import Document
+        ref = (self.reference_number or '').strip()
+        if not ref and self.title and '—' in self.title:
+            ref = self.title.split('—')[-1].strip()
+
+        if ref:
+            doc = Document.objects.filter(number=ref).first()
+            if doc:
+                try:
+                    EDMSDocument.objects.filter(id=self.id).update(
+                        commercial_doc=doc,
+                        source_type=self.SOURCE_COMMERCIAL,
+                    )
+                    self.commercial_doc = doc
+                    self.commercial_doc_id = doc.id
+                    self.source_type = self.SOURCE_COMMERCIAL
+                except Exception:
+                    pass
+                return doc
+        return None
+
     def save(self, *args, **kwargs):
         if not self.doc_seq or not self.document_id:
             from django.db.models import Max

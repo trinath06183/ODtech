@@ -42,7 +42,7 @@ class Command(BaseCommand):
         for doc in docs:
             try:
                 from edms.models import EDMSDocument
-                exists = EDMSDocument.objects.filter(commercial_doc=doc).exists()
+                exists = EDMSDocument.objects.filter(commercial_doc=doc).exists() or (doc.number and EDMSDocument.objects.filter(reference_number=doc.number).exists())
 
                 if dry_run:
                     status = 'UPDATE' if exists else 'CREATE'
