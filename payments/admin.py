@@ -17,6 +17,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         'title',
         'employee_code',
         'expense_type',
+        'is_confidential',
         'amount',
         'date',
         'submitted_by',
@@ -24,7 +25,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         'is_paid',
         'approved_by',
     )
-    list_filter = ('status', 'is_paid', 'expense_type', 'date')
+    list_filter = ('is_confidential', 'status', 'is_paid', 'expense_type', 'date')
     search_fields = (
         'title',
         'employee_code',
@@ -34,7 +35,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         'submitted_by__empid',
         'notes',
     )
-    list_editable = ('status', 'is_paid')
+    list_editable = ('status', 'is_paid', 'is_confidential')
     readonly_fields = ('created_at', 'updated_at', 'approved_at', 'paid_at')
     ordering = ('-date', '-id')
     actions = ['approve_expenses', 'reject_expenses', 'mark_as_paid', 'reset_to_pending']

@@ -218,3 +218,62 @@ class FixedCostPermissionTests(TestCase):
         self.assertIn(self.daily_expense.id, expense_ids)
         self.assertIn(self.fixed_cost_expense.id, expense_ids)
         self.assertIn(self.rent_expense.id, expense_ids)
+
+    def test_expense_form_confidential_checkbox_authorized(self):
+        form = ExpenseForm(
+            data={
+                'title': 'Confidential Client Dinner',
+                'expense_type': 'Food Expenses',
+                'is_confidential': 'on',
+                'amount': '8000',
+                'gst_amount': '0',
+                'date': str(datetime.date.today()),
+            },
+            user=self.hr_user
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        exp = form.save(commit=False)
+        exp.submitted_by = self.hr_user
+        exp.save()
+        self.assertTrue(exp.is_confidential)
+        self.assertTrue(exp.is_fixed_cost)
+
+    def test_expense_form_confidential_checkbox_unauthorized_rejected(self):
+        form = ExpenseForm(
+            data={
+                'title': 'Confidential Travel',
+                'expense_type': 'Travel',
+                'is_confidential': 'on',
+                'amount': '15000',
+                'gst_amount': '0',
+                'date': str(datetime.date.today()),
+            },
+            user=self.staff_user
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('is_confidential', form.errors)
+
+    def test_custom_confidential_expense_hidden_from_normal_users(self):
+        # Create an expense with a daily category (Travel) but marked as confidential
+        confidential_travel = Expense.objects.create(
+            title='Confidential Executive Travel',
+            expense_type='Travel',
+            is_confidential=True,
+            amount=20000.00,
+            date=datetime.date.today(),
+            submitted_by=self.admin_user,
+            status='Approved',
+        )
+
+        # Staff user should NOT see it
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('expense_list'))
+        expense_ids = [e.id for e in response.context['expenses']]
+        self.assertNotIn(confidential_travel.id, expense_ids)
+
+        # HR user SHOULD see it
+        self.client.force_login(self.hr_user)
+        response = self.client.get(reverse('expense_list'))
+        expense_ids = [e.id for e in response.context['expenses']]
+        self.assertIn(confidential_travel.id, expense_ids)
+

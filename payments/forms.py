@@ -14,11 +14,22 @@ class ExpenseForm(forms.ModelForm):
         })
     )
 
+    is_confidential = forms.BooleanField(
+        required=False,
+        label="Mark as Confidential",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer',
+            'id': 'id_is_confidential',
+        })
+    )
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
             self.initial['date'] = datetime.date.today()
+        else:
+            self.initial['is_confidential'] = self.instance.is_confidential or self.instance.is_fixed_cost
 
         from .models import user_can_view_fixed_costs
         can_view_fc = user_can_view_fixed_costs(self.user) if self.user else False
@@ -43,7 +54,7 @@ class ExpenseForm(forms.ModelForm):
 
     class Meta:
         model = Expense
-        fields = ['title', 'employee_code', 'expense_type', 'amount', 'gst_amount', 'date', 'receipt', 'notes']
+        fields = ['title', 'employee_code', 'expense_type', 'is_confidential', 'amount', 'gst_amount', 'date', 'receipt', 'notes']
         widgets = {
             'employee_code': forms.TextInput(attrs={'class': 'mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm', 'list': 'employee-code-suggestions'}),
             'title': forms.TextInput(attrs={'class': 'mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'}),
@@ -72,6 +83,7 @@ class ExpenseForm(forms.ModelForm):
         cleaned_data = super().clean()
         expense_type = cleaned_data.get('expense_type')
         custom_category = cleaned_data.get('custom_category')
+        is_confidential = cleaned_data.get('is_confidential', False)
         
         if expense_type == '__custom__':
             if not custom_category:
@@ -80,9 +92,16 @@ class ExpenseForm(forms.ModelForm):
                 cleaned_data['expense_type'] = custom_category.strip()
                 expense_type = cleaned_data['expense_type']
 
+        if Expense.is_fixed_cost_category(expense_type):
+            cleaned_data['is_confidential'] = True
+            is_confidential = True
+
         from .models import user_can_view_fixed_costs
         can_view_fc = user_can_view_fixed_costs(self.user) if self.user else False
-        if not can_view_fc and Expense.is_fixed_cost_category(expense_type):
-            self.add_error('expense_type', 'You do not have permission to submit or assign confidential / Fixed Cost expenses.')
+        if not can_view_fc:
+            if is_confidential:
+                self.add_error('is_confidential', 'You do not have permission to mark expenses as confidential.')
+            if Expense.is_fixed_cost_category(expense_type):
+                self.add_error('expense_type', 'You do not have permission to submit or assign confidential / Fixed Cost expenses.')
                 
         return cleaned_data

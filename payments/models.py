@@ -124,11 +124,11 @@ class Expense(TimeStampedModel):
     @classmethod
     def get_fixed_cost_q(cls):
         """
-        Returns a Q object matching any Fixed Cost / confidential expense by category or keywords.
+        Returns a Q object matching any Fixed Cost / confidential expense by category, keywords, or is_confidential flag.
         """
         from django.db.models import Q
         categories = cls.get_fixed_cost_categories()
-        q = Q(expense_type__in=categories)
+        q = Q(expense_type__in=categories) | Q(is_confidential=True)
         for kw in cls.CONFIDENTIAL_KEYWORDS:
             q |= Q(expense_type__icontains=kw)
         return q
@@ -136,12 +136,8 @@ class Expense(TimeStampedModel):
     @property
     def is_fixed_cost(self):
         """Returns True if this expense is categorized as a Fixed Cost or confidential expense."""
-        return self.is_fixed_cost_category(self.expense_type)
+        return bool(self.is_confidential) or self.is_fixed_cost_category(self.expense_type)
 
-    @property
-    def is_confidential(self):
-        """Alias for is_fixed_cost."""
-        return self.is_fixed_cost
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
         ('Clarification', 'Needs Clarification'),
@@ -153,6 +149,7 @@ class Expense(TimeStampedModel):
     title = models.CharField(max_length=255)
     employee_code = models.CharField(max_length=50, blank=True, null=True, help_text="Optional Employee Code for this expense")
     expense_type = models.CharField(max_length=100)
+    is_confidential = models.BooleanField(default=False, db_index=True, help_text="Mark as confidential expense visible only to Admin, MD, Accounts, HR")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     gst_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     date = models.DateField()
@@ -165,6 +162,11 @@ class Expense(TimeStampedModel):
     receipt = models.FileField(upload_to='expenses/receipts/', null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
     payload = models.JSONField(blank=True, null=True, default=dict)
+
+    def save(self, *args, **kwargs):
+        if self.is_fixed_cost_category(self.expense_type):
+            self.is_confidential = True
+        super().save(*args, **kwargs)
 
     # Clarification workflow fields
     clarification_query = models.TextField(blank=True, null=True, help_text="Admin query on missing or incorrect information")
