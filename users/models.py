@@ -41,23 +41,28 @@ class User(AbstractUser, TimeStampedModel):
     def can_view_fixed_costs(self):
         """
         Returns True if user is authorized to view, manage, and create Fixed Cost expenses.
-        Authorized roles: Admin, Managing Director, Director, Accounts, Accountant,
+        Authorized roles: Admin, Managing Director, Director, Accounts, Accountant, HR,
         as well as superusers and staff.
         """
         if self.is_superuser or self.is_staff:
             return True
-        return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']
+        return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant', 'HR']
+
+    @property
+    def can_view_confidential_expenses(self):
+        """Alias for can_view_fixed_costs."""
+        return self.can_view_fixed_costs
 
     @property
     def can_view_company_overview(self):
         """
         Returns True if user is authorized to view Company Overview Dashboard.
-        Authorized roles: Admin, Managing Director, Director, Accounts, Accountant,
+        Authorized roles: Admin, Managing Director, Director, Accounts, Accountant, HR,
         as well as superusers and staff.
         """
         if self.is_superuser or self.is_staff:
             return True
-        return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']
+        return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant', 'HR']
 
     def has_section_perm(self, section, access_type='read'):
         """

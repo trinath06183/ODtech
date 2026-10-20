@@ -266,7 +266,7 @@ def expense_list(request):
 
     all_qs = Expense.objects.all()
     if not can_view_fc:
-        all_qs = all_qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+        all_qs = all_qs.exclude(Expense.get_fixed_cost_q())
 
     all_count = all_qs.count()
     my_count = all_qs.filter(my_q).count()
@@ -399,7 +399,7 @@ def print_unpaid_expenses(request):
     tab = request.GET.get('tab', 'all').strip().lower()
     unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False)
     if not user_can_view_fixed_costs(request.user):
-        unpaid_expenses = unpaid_expenses.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+        unpaid_expenses = unpaid_expenses.exclude(Expense.get_fixed_cost_q())
     if tab == 'my':
         unpaid_expenses = unpaid_expenses.filter(get_user_expense_q(request.user))
     unpaid_expenses = unpaid_expenses.select_related('submitted_by').order_by('employee_code', 'date')
@@ -629,6 +629,9 @@ def expense_delete(request, pk):
 @require_permission('PAYMENTS', 'write')
 def expense_mark_paid(request, pk):
     expense = get_object_or_404(Expense, pk=pk, status='Approved', is_paid=False)
+    if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
+        messages.error(request, 'Permission denied. You do not have permission to modify confidential expenses.')
+        return redirect('expense_list')
     # Superusers, staff (admins), and the expense submitter can mark as paid
     is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
     if not is_admin and expense.submitted_by != request.user:
@@ -651,6 +654,9 @@ def expense_approve(request, pk, status):
         return redirect('expense_list')
 
     expense = get_object_or_404(Expense, pk=pk)
+    if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
+        messages.error(request, 'Permission denied. You do not have permission to modify confidential expenses.')
+        return redirect('expense_list')
     if status in ['Approved', 'Rejected']:
         expense.status = status
         expense.approved_by = request.user
@@ -683,6 +689,8 @@ def bulk_expense_action(request):
         return redirect('expense_list')
 
     expenses = Expense.objects.filter(pk__in=expense_ids)
+    if not user_can_view_fixed_costs(request.user):
+        expenses = expenses.exclude(Expense.get_fixed_cost_q())
 
     if action == 'approve':
         eligible = expenses.filter(status__in=['Pending', 'Clarification Provided'])
@@ -802,7 +810,7 @@ def expense_export_csv(request):
     
     expenses = Expense.objects.select_related('submitted_by').all()
     if not user_can_view_fixed_costs(request.user):
-        expenses = expenses.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+        expenses = expenses.exclude(Expense.get_fixed_cost_q())
     
     tab = request.GET.get('tab', 'all').strip().lower()
     if tab == 'my':

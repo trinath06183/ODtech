@@ -542,9 +542,11 @@ def _build_product_list_context(request, products_qs, order, lot=None):
     linked_expenses = []
     linked_order_expenses = []
     try:
-        from payments.models import Expense
+        from payments.models import Expense, user_can_view_fixed_costs
         import json
         all_app_expenses = Expense.objects.all()
+        if not user_can_view_fixed_costs(request.user):
+            all_app_expenses = all_app_expenses.exclude(Expense.get_fixed_cost_q())
         for le in all_app_expenses:
             p_payload = le.payload or {}
             if isinstance(p_payload, str):
@@ -1032,8 +1034,10 @@ def product_detail_view(request, product_id):
 
     # Fetch linked payments.Expense items
     try:
-        from payments.models import Expense
+        from payments.models import Expense, user_can_view_fixed_costs
         all_app_expenses = Expense.objects.all()
+        if not user_can_view_fixed_costs(request.user):
+            all_app_expenses = all_app_expenses.exclude(Expense.get_fixed_cost_q())
         for le in all_app_expenses:
             p_payload = le.payload or {}
             if isinstance(p_payload, str):
@@ -1299,8 +1303,10 @@ def product_modal_detail_view(request, product_id):
     
     # Fetch linked payments.Expense items
     try:
-        from payments.models import Expense
+        from payments.models import Expense, user_can_view_fixed_costs
         all_app_expenses = Expense.objects.all()
+        if not user_can_view_fixed_costs(request.user):
+            all_app_expenses = all_app_expenses.exclude(Expense.get_fixed_cost_q())
         for le in all_app_expenses:
             p_payload = le.payload or {}
             if isinstance(p_payload, str):
@@ -1906,7 +1912,7 @@ def api_search_app_expenses(request):
     q = request.GET.get('q', '').strip()
     expenses = Expense.objects.all().order_by('-date', '-created_at')
     if not user_can_view_fixed_costs(request.user):
-        expenses = expenses.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+        expenses = expenses.exclude(Expense.get_fixed_cost_q())
     if q:
         import re
         search_q = (

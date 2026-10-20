@@ -64,8 +64,8 @@ def stock_summary(request):
 @require_permission('REPORTING', 'read')
 def financial_dashboard(request):
     """Financial & Operational Summary Dashboard with P&L, sales, purchases, expenses, orders & reminders."""
-    if not (request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']):
-        messages.error(request, 'Access denied. The Company Overview dashboard is restricted to Admin, Managing Director, and Finance/Accounts department.')
+    if not (request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant', 'HR']):
+        messages.error(request, 'Access denied. The Company Overview dashboard is restricted to Admin, Managing Director, and Finance/Accounts/HR department.')
         return redirect('dashboard')
 
     today = date.today()
@@ -252,7 +252,7 @@ def financial_dashboard(request):
         from payments.models import user_can_view_fixed_costs
         can_view_fc = user_can_view_fixed_costs(request.user)
         if not can_view_fc:
-            expenses_qs = expenses_qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+            expenses_qs = expenses_qs.exclude(Expense.get_fixed_cost_q())
         total_expenses = expenses_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
         expenses_count = expenses_qs.count()
         total_payments_given = total_purchases + total_expenses
@@ -277,17 +277,17 @@ def financial_dashboard(request):
                 'link': '/payments/expenses/',
             })
 
-        pending_expenses = Expense.objects.filter(status='Pending').aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        pending_qs = Expense.objects.filter(status='Pending')
+        if not can_view_fc:
+            pending_qs = pending_qs.exclude(Expense.get_fixed_cost_q())
+        pending_expenses = pending_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
 
         daily_expenses = expenses_qs.filter(
             expense_type__in=['Petrol and Diesel', 'Travel', 'Hotel', 'Food Expenses',
                               'Office stationary', 'Courier expenses', 'Transportation Payment',
                               'Marketing Expenses', 'Customer Delight', 'Other Daily']
         ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        fixed_expenses = expenses_qs.filter(
-            expense_type__in=['Staff salary', 'OFC rent', 'Electricity bill', 'Internet Bill',
-                              'Google workspace', 'Website and hosting cost', 'Other Fixed']
-        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        fixed_expenses = expenses_qs.filter(Expense.get_fixed_cost_q()).aggregate(t=Sum('amount'))['t'] or Decimal('0') if can_view_fc else Decimal('0')
     except Exception:
         total_expenses = Decimal('0')
         total_payments_given = Decimal('0')
@@ -419,9 +419,12 @@ def financial_dashboard(request):
             ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Decimal('0')
 
             try:
-                m_exp = Expense.objects.filter(
+                m_exp_qs = Expense.objects.filter(
                     status='Approved', date__gte=m_start, date__lte=m_end
-                ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+                )
+                if not can_view_fc:
+                    m_exp_qs = m_exp_qs.exclude(Expense.get_fixed_cost_q())
+                m_exp = m_exp_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
             except Exception:
                 m_exp = Decimal('0')
 
@@ -440,8 +443,11 @@ def financial_dashboard(request):
     # ── Expense breakdown by category ─────────────────────────────────────────
     expense_by_type = []
     try:
+        exp_by_type_qs = Expense.objects.filter(date__gte=start_date, date__lte=end_date, status='Approved')
+        if not can_view_fc:
+            exp_by_type_qs = exp_by_type_qs.exclude(Expense.get_fixed_cost_q())
         expense_by_type = list(
-            Expense.objects.filter(date__gte=start_date, date__lte=end_date, status='Approved')
+            exp_by_type_qs
             .values('expense_type')
             .annotate(total=Sum('amount'), count=Count('id'))
             .order_by('-total')[:8]
@@ -612,11 +618,15 @@ def financial_dashboard(request):
                 })
 
         # C) Pending Expenses in the selected period
-        for exp in Expense.objects.filter(
+        pending_exp_qs = Expense.objects.filter(
             status='Pending',
             date__gte=start_date,
             date__lte=end_date,
-        ).order_by('-date')[:100]:
+        )
+        from payments.models import user_can_view_fixed_costs
+        if not user_can_view_fixed_costs(request.user):
+            pending_exp_qs = pending_exp_qs.exclude(Expense.get_fixed_cost_q())
+        for exp in pending_exp_qs.order_by('-date')[:100]:
             total_payables_due += exp.amount
             payables_list.append({
                 'id': exp.id,
@@ -1150,16 +1160,14 @@ def _compute_pl(start_date, end_date):
     from payments.models import user_can_view_fixed_costs
     can_view_fc = user_can_view_fixed_costs(request.user)
     if not can_view_fc:
-        exp_qs = exp_qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+        exp_qs = exp_qs.exclude(Expense.get_fixed_cost_q())
     total_opex = exp_qs.aggregate(t=Sum('amount'))['t'] or Z
 
     DAILY_TYPES = ['Petrol and Diesel', 'Travel', 'Hotel', 'Food Expenses',
                    'Office stationary', 'Courier expenses', 'Transportation Payment',
                    'Marketing Expenses', 'Customer Delight', 'Other Daily']
-    FIXED_TYPES = ['Staff salary', 'OFC rent', 'Electricity bill', 'Internet Bill',
-                   'Google workspace', 'Website and hosting cost', 'Other Fixed']
     daily_opex = exp_qs.filter(expense_type__in=DAILY_TYPES).aggregate(t=Sum('amount'))['t'] or Z
-    fixed_opex = exp_qs.filter(expense_type__in=FIXED_TYPES).aggregate(t=Sum('amount'))['t'] or Z if can_view_fc else Z
+    fixed_opex = exp_qs.filter(Expense.get_fixed_cost_q()).aggregate(t=Sum('amount'))['t'] or Z if can_view_fc else Z
 
     expense_breakdown = list(
         exp_qs.values('expense_type')
@@ -1197,8 +1205,10 @@ def _compute_pl(start_date, end_date):
         m_cogs = Document.objects.filter(type='PO', status='Approved',
                                          date__gte=ms, date__lte=me
                                          ).aggregate(t=Sum(F('grand_total') * F('exchange_rate'), output_field=DecimalField()))['t'] or Z
-        m_exp = Expense.objects.filter(status='Approved', date__gte=ms, date__lte=me
-                                       ).aggregate(t=Sum('amount'))['t'] or Z
+        m_exp_qs = Expense.objects.filter(status='Approved', date__gte=ms, date__lte=me)
+        if not can_view_fc:
+            m_exp_qs = m_exp_qs.exclude(Expense.get_fixed_cost_q())
+        m_exp = m_exp_qs.aggregate(t=Sum('amount'))['t'] or Z
         monthly_trend.append({
             'month': ms.strftime('%b %Y'),
             'revenue': float(m_rev),

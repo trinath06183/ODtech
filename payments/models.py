@@ -42,15 +42,17 @@ User = get_user_model()
 
 def user_can_view_fixed_costs(user):
     """
-    Returns True if user has permission to view, filter, export, and create Fixed Cost expenses.
+    Returns True if user has permission to view, filter, export, and create Fixed Cost / confidential expenses.
     Authorized: Superusers, Staff, and users with roles:
-    'Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant'.
+    'Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant', 'HR'.
     """
     if not user or not user.is_authenticated:
         return False
     if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
         return True
-    return getattr(user, 'role', '') in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant']
+    return getattr(user, 'role', '') in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant', 'HR']
+
+user_can_view_confidential_expenses = user_can_view_fixed_costs
 
 
 class Expense(TimeStampedModel):
@@ -68,6 +70,7 @@ class Expense(TimeStampedModel):
     )
     FIXED_COSTS = (
         ('Staff salary', 'Staff salary'),
+        ('Office rent', 'Office rent'),
         ('OFC rent', 'OFC rent'),
         ('Electricity bill', 'Electricity bill'),
         ('Internet Bill', 'Internet Bill'),
@@ -80,15 +83,65 @@ class Expense(TimeStampedModel):
         ('Fixed Cost', FIXED_COSTS),
     )
 
+    CONFIDENTIAL_KEYWORDS = [
+        'office rent',
+        'ofc rent',
+        'staff salary',
+        'salary',
+        'salaries',
+        'electricity bill',
+        'electricity bills',
+        'electric bill',
+        'power bill',
+        'internet bill',
+        'google workspace',
+        'hosting cost',
+        'website and hosting',
+    ]
+
     @classmethod
     def get_fixed_cost_categories(cls):
-        """Returns list of category strings that are classified as Fixed Cost."""
-        return [c[0] for c in cls.FIXED_COSTS] + ['Fixed Cost']
+        """Returns list of category strings that are classified as Fixed Cost / Confidential."""
+        categories = [c[0] for c in cls.FIXED_COSTS] + ['Fixed Cost', 'Office rent', 'OFC rent']
+        return list(dict.fromkeys(categories))
+
+    @classmethod
+    def is_fixed_cost_category(cls, category_name):
+        """
+        Check if a category name is confidential / fixed cost (case-insensitive and keyword-aware).
+        """
+        if not category_name:
+            return False
+        cat_lower = str(category_name).strip().lower()
+        fixed_cats_lower = [c.lower() for c in cls.get_fixed_cost_categories()]
+        if cat_lower in fixed_cats_lower:
+            return True
+        for kw in cls.CONFIDENTIAL_KEYWORDS:
+            if kw in cat_lower:
+                return True
+        return False
+
+    @classmethod
+    def get_fixed_cost_q(cls):
+        """
+        Returns a Q object matching any Fixed Cost / confidential expense by category or keywords.
+        """
+        from django.db.models import Q
+        categories = cls.get_fixed_cost_categories()
+        q = Q(expense_type__in=categories)
+        for kw in cls.CONFIDENTIAL_KEYWORDS:
+            q |= Q(expense_type__icontains=kw)
+        return q
 
     @property
     def is_fixed_cost(self):
-        """Returns True if this expense is categorized as a Fixed Cost."""
-        return self.expense_type in self.get_fixed_cost_categories()
+        """Returns True if this expense is categorized as a Fixed Cost or confidential expense."""
+        return self.is_fixed_cost_category(self.expense_type)
+
+    @property
+    def is_confidential(self):
+        """Alias for is_fixed_cost."""
+        return self.is_fixed_cost
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
         ('Clarification', 'Needs Clarification'),

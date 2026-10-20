@@ -82,7 +82,7 @@ class ExpenseForm(forms.ModelForm):
 
         from .models import user_can_view_fixed_costs
         can_view_fc = user_can_view_fixed_costs(self.user) if self.user else False
-        if not can_view_fc and expense_type in Expense.get_fixed_cost_categories():
-            self.add_error('expense_type', 'You do not have permission to submit or assign Fixed Cost expenses.')
+        if not can_view_fc and Expense.is_fixed_cost_category(expense_type):
+            self.add_error('expense_type', 'You do not have permission to submit or assign confidential / Fixed Cost expenses.')
                 
         return cleaned_data

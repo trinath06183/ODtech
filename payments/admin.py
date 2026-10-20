@@ -47,7 +47,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         from .models import user_can_view_fixed_costs
         if not user_can_view_fixed_costs(request.user):
-            qs = qs.exclude(expense_type__in=Expense.get_fixed_cost_categories())
+            qs = qs.exclude(Expense.get_fixed_cost_q())
         return qs
 
     def save_model(self, request, obj, form, change):
