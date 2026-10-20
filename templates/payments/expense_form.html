@@ -67,9 +67,21 @@
             {% endif %}
 
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Title / Purpose</label>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-gray-700">Title / Purpose</label>
+                    <label for="{{ form.is_confidential.id_for_label }}" class="inline-flex items-center gap-1.5 cursor-pointer select-none text-sm text-gray-700 hover:text-gray-900">
+                        {{ form.is_confidential }}
+                        <span class="inline-flex items-center gap-1 font-semibold text-gray-800 text-xs md:text-sm">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            Mark as Confidential
+                        </span>
+                    </label>
+                </div>
                 {{ form.title }}
                 {{ form.title.errors }}
+                {% if form.is_confidential.errors %}
+                <p class="text-xs text-red-600 mt-1 font-medium">{{ form.is_confidential.errors.0 }}</p>
+                {% endif %}
             </div>
             
             <div class="md:col-span-2">
@@ -299,26 +311,6 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
                 {{ form.notes }}
                 {{ form.notes.errors }}
-            </div>
-
-            <div class="md:col-span-2">
-                <div class="flex items-start gap-3 p-4 bg-amber-50/70 border border-amber-200 rounded-xl transition-all hover:bg-amber-50">
-                    <div class="flex items-center h-5 mt-0.5">
-                        {{ form.is_confidential }}
-                    </div>
-                    <div class="text-sm">
-                        <label for="{{ form.is_confidential.id_for_label }}" class="font-semibold text-gray-900 cursor-pointer flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            Mark this as Confidential
-                        </label>
-                        <p class="text-xs text-gray-600 mt-0.5">
-                            Confidential expenses (such as office rent, staff salaries, electricity bills, etc.) are hidden from normal users and only visible to Admin, MD, Accounts, and HR.
-                        </p>
-                        {% if form.is_confidential.errors %}
-                        <p class="text-xs text-red-600 mt-1 font-medium">{{ form.is_confidential.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
             </div>
         </div>
         
