@@ -303,3 +303,66 @@ class ExpenseNotificationService:
         """
         cls._send_email_async(subject, email_addrs, html_content)
 
+    @classmethod
+    def notify_edit_permission_requested(cls, expense, requesting_user, reason='', request=None):
+        """Notify all Admins when an employee requests permission to edit an expense."""
+        try:
+            from tracker.models import Notification
+        except Exception:
+            Notification = None
+
+        if not Notification:
+            return
+
+        from django.db.models import Q
+        admins = User.objects.filter(is_active=True).filter(Q(role='Admin') | Q(is_superuser=True))
+        req_name = requesting_user.get_full_name() or requesting_user.username
+        reason_txt = f" Reason: '{reason[:80]}'" if reason else ""
+
+        for admin in admins:
+            try:
+                Notification.objects.create(
+                    user=admin,
+                    title=f"Edit Permission Request: {expense.expense_id}",
+                    message=f"{req_name} requested permission to edit expense {expense.expense_id} ({expense.title} — ₹{expense.amount}).{reason_txt}",
+                    link=f"/payments/expenses/{expense.id}/",
+                )
+            except Exception as ex:
+                logger.warning(f"Could not create admin notification for edit request: {ex}")
+
+    @classmethod
+    def notify_edit_permission_decided(cls, expense, decision, admin_user, request=None):
+        """Notify the requesting employee whether their edit permission request was approved or rejected."""
+        try:
+            from tracker.models import Notification
+        except Exception:
+            Notification = None
+
+        if not Notification:
+            return
+
+        recipient = expense.edit_requested_by or expense.submitted_by
+        if not recipient:
+            return
+
+        admin_name = admin_user.get_full_name() or admin_user.username
+
+        if decision == 'APPROVED':
+            title = f"Edit Permission Approved: {expense.expense_id}"
+            message = f"Admin {admin_name} approved your request to edit expense {expense.expense_id} ({expense.title}). You can now edit it."
+            link = f"/payments/expenses/{expense.id}/edit/"
+        else:
+            title = f"Edit Permission Rejected: {expense.expense_id}"
+            message = f"Admin {admin_name} rejected your request to edit expense {expense.expense_id} ({expense.title})."
+            link = f"/payments/expenses/{expense.id}/"
+
+        try:
+            Notification.objects.create(
+                user=recipient,
+                title=title,
+                message=message,
+                link=link,
+            )
+        except Exception as ex:
+            logger.warning(f"Could not create user notification for edit decision: {ex}")
+

@@ -175,6 +175,38 @@ class Expense(TimeStampedModel):
     clarification_raised_at = models.DateTimeField(null=True, blank=True)
     clarification_popup_seen = models.BooleanField(default=True, help_text="Set to False when admin raises clarification; True when user views/acknowledges")
 
+    # Edit permission workflow fields
+    EDIT_PERMISSION_CHOICES = (
+        ('NONE', 'No Request'),
+        ('PENDING', 'Pending Admin Approval'),
+        ('APPROVED', 'Approved for Edit'),
+        ('REJECTED', 'Rejected'),
+    )
+    edit_permission_status = models.CharField(
+        max_length=20,
+        choices=EDIT_PERMISSION_CHOICES,
+        default='NONE',
+        db_index=True,
+        help_text="Status of admin approval for user to edit this expense"
+    )
+    edit_requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='expense_edit_requests'
+    )
+    edit_requested_at = models.DateTimeField(null=True, blank=True)
+    edit_request_reason = models.TextField(blank=True, null=True, help_text="Reason user wants to edit this expense")
+    edit_reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='expense_edits_reviewed'
+    )
+    edit_reviewed_at = models.DateTimeField(null=True, blank=True)
+
     @property
     def is_clarification_unresolved(self):
         """Returns True if a clarification query was raised and the expense is not yet marked as approved (or rejected)."""

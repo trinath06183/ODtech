@@ -19,5 +19,7 @@ urlpatterns = [
     path('expenses/<int:pk>/raise-clarification/', views.expense_raise_clarification, name='expense_raise_clarification'),
     path('expenses/dismiss-clarification-popup/', views.dismiss_clarification_popup, name='dismiss_clarification_popup'),
     path('expenses/<int:pk>/mark_paid/', views.expense_mark_paid, name='expense_mark_paid'),
+    path('expenses/<int:pk>/ask-edit-permission/', views.expense_ask_edit_permission, name='expense_ask_edit_permission'),
+    path('expenses/<int:pk>/edit-permission/<str:decision>/', views.expense_decide_edit_permission, name='expense_decide_edit_permission'),
     path('api/employee-codes/', views.employee_code_autocomplete, name='employee_code_autocomplete'),
 ]

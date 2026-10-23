@@ -77,6 +77,11 @@
         {% else %}
             <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Pending</span>
         {% endif %}
+        {% if expense.edit_permission_status == 'PENDING' %}
+        <span class="px-2 py-0.5 mt-1 inline-block rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Edit Requested</span>
+        {% elif expense.edit_permission_status == 'APPROVED' %}
+        <span class="px-2 py-0.5 mt-1 inline-block rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Edit Approved</span>
+        {% endif %}
         {% if expense.is_paid %}
         <span class="px-2.5 py-1 mt-1 inline-block rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Paid</span>
         {% endif %}
@@ -116,9 +121,16 @@
             </form>
             {% endif %}
 
-            {% if expense.status == 'Pending' or expense.status == 'Clarification' or expense.status == 'Clarification Provided' %}
-            <a href="{% url 'expense_edit' expense.id %}" onclick="event.stopPropagation();" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" title="{% if expense.status == 'Clarification' %}Respond & Edit{% else %}Edit{% endif %}">
+            {% if expense.status == 'Pending' or expense.status == 'Clarification' or expense.status == 'Clarification Provided' or expense.edit_permission_status == 'APPROVED' or request.user.is_superuser or request.user.role == 'Admin' %}
+            <a href="{% url 'expense_edit' expense.id %}" onclick="event.stopPropagation();"
+               class="p-2 {% if expense.edit_permission_status == 'PENDING' %}bg-amber-100 text-amber-700 hover:bg-amber-200{% elif expense.edit_permission_status == 'APPROVED' %}bg-emerald-100 text-emerald-700 hover:bg-emerald-200{% else %}bg-gray-100 hover:bg-gray-200 text-gray-700{% endif %} rounded-lg transition-colors relative"
+               title="{% if expense.edit_permission_status == 'PENDING' %}Edit Request Pending Admin Approval{% elif expense.edit_permission_status == 'APPROVED' %}Edit Approved — Click to Edit{% elif expense.status == 'Clarification' %}Respond & Edit{% else %}Edit{% endif %}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                {% if expense.edit_permission_status == 'PENDING' %}
+                <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white"></span>
+                {% elif expense.edit_permission_status == 'APPROVED' %}
+                <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+                {% endif %}
             </a>
             {% endif %}
 

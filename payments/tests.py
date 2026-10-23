@@ -277,3 +277,69 @@ class FixedCostPermissionTests(TestCase):
         expense_ids = [e.id for e in response.context['expenses']]
         self.assertIn(confidential_travel.id, expense_ids)
 
+    def test_admin_can_edit_expense_directly(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('expense_edit', args=[self.daily_expense.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'payments/expense_form.html')
+
+    def test_user_requires_admin_permission_to_edit(self):
+        # Staff user created an expense
+        user_expense = Expense.objects.create(
+            title='Staff Local Travel',
+            expense_type='Travel',
+            amount=500.00,
+            date=datetime.date.today(),
+            submitted_by=self.staff_user,
+            status='Pending',
+        )
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('expense_edit', args=[user_expense.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'payments/expense_edit_permission.html')
+
+    def test_ask_edit_permission_and_admin_approve_flow(self):
+        from tracker.models import Notification
+        user_expense = Expense.objects.create(
+            title='Office Stationary',
+            expense_type='Office stationary',
+            amount=1200.00,
+            date=datetime.date.today(),
+            submitted_by=self.staff_user,
+            status='Pending',
+        )
+        self.client.force_login(self.staff_user)
+
+        # 1. User asks permission
+        response = self.client.post(
+            reverse('expense_ask_edit_permission', args=[user_expense.id]),
+            {'reason': 'Forgot to add GST bill'}
+        )
+        self.assertRedirects(response, reverse('expense_edit', args=[user_expense.id]))
+        user_expense.refresh_from_db()
+        self.assertEqual(user_expense.edit_permission_status, 'PENDING')
+        self.assertEqual(user_expense.edit_request_reason, 'Forgot to add GST bill')
+
+        # Verify admin received notification
+        admin_notif = Notification.objects.filter(user=self.admin_user, title__icontains='Edit Permission Request').first()
+        self.assertIsNotNone(admin_notif)
+        self.assertIn(user_expense.expense_id, admin_notif.title)
+
+        # 2. Admin approves request
+        self.client.force_login(self.admin_user)
+        response = self.client.post(reverse('expense_decide_edit_permission', args=[user_expense.id, 'approve']))
+        self.assertRedirects(response, reverse('expense_detail', args=[user_expense.id]))
+        user_expense.refresh_from_db()
+        self.assertEqual(user_expense.edit_permission_status, 'APPROVED')
+
+        # Verify user received approval notification
+        user_notif = Notification.objects.filter(user=self.staff_user, title__icontains='Edit Permission Approved').first()
+        self.assertIsNotNone(user_notif)
+
+        # 3. User now gets the edit form
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('expense_edit', args=[user_expense.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'payments/expense_form.html')
+
+

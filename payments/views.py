@@ -9,6 +9,8 @@ from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from contacts.models import Contact
 from config.models import CompanyProfile
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 from .models import Payment
 
 
@@ -503,17 +505,28 @@ def expense_edit(request, pk):
     if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
         messages.error(request, 'Permission denied. You do not have permission to view or edit Fixed Cost expenses.')
         return redirect('expense_list')
-        
+
+    # Non-admin users require explicit admin permission to edit an expense
+    if not is_admin and expense.edit_permission_status != 'APPROVED':
+        return render(request, 'payments/expense_edit_permission.html', {
+            'expense': expense,
+            'title': 'Admin Permission Required',
+        })
+
     allowed_statuses = ['Pending', 'Clarification', 'Clarification Provided']
-    if expense.status not in allowed_statuses and not is_admin:
+    if expense.status not in allowed_statuses and not is_admin and expense.edit_permission_status != 'APPROVED':
         messages.error(request, 'You cannot edit an expense that has already been approved or rejected.')
         return redirect('expense_list')
-        
+
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES, instance=expense, user=request.user)
         if form.is_valid():
             expense = form.save(commit=False)
-            
+
+            # Once saved by non-admin, consume the one-time edit permission
+            if not is_admin:
+                expense.edit_permission_status = 'NONE'
+
             # Extract payload fields
             payload = {}
             for key in request.POST.keys():
@@ -539,7 +552,7 @@ def expense_edit(request, pk):
             if was_in_clarification:
                 expense.status = 'Clarification Provided'
                 expense.clarification_popup_seen = True
-            
+
             expense.save()
 
             if was_in_clarification and clarification_resp:
@@ -552,7 +565,72 @@ def expense_edit(request, pk):
             return redirect('expense_list')
     else:
         form = ExpenseForm(instance=expense, user=request.user)
-    return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Edit Expense', 'expense': expense})
+    return render(request, 'payments/expense_form.html', {
+        'form': form,
+        'title': 'Edit Expense',
+        'expense': expense,
+        'is_edit_approved': (expense.edit_permission_status == 'APPROVED'),
+    })
+
+
+@require_permission('PAYMENTS', 'write')
+@require_POST
+def expense_ask_edit_permission(request, pk):
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if is_admin:
+        messages.info(request, "Administrators can edit expenses directly without asking for permission.")
+        return redirect('expense_edit', pk=pk)
+
+    expense = get_object_or_404(Expense, pk=pk, submitted_by=request.user)
+    reason = request.POST.get('reason', '').strip()
+
+    expense.edit_permission_status = 'PENDING'
+    expense.edit_requested_by = request.user
+    expense.edit_requested_at = timezone.now()
+    expense.edit_request_reason = reason
+    expense.save(update_fields=['edit_permission_status', 'edit_requested_by', 'edit_requested_at', 'edit_request_reason'])
+
+    from .services import ExpenseNotificationService
+    ExpenseNotificationService.notify_edit_permission_requested(expense, request.user, reason=reason, request=request)
+
+    messages.success(request, 'Permission request sent to Admin. You will receive a notification once reviewed.')
+    return redirect('expense_edit', pk=pk)
+
+
+@require_permission('PAYMENTS', 'write')
+@require_POST
+def expense_decide_edit_permission(request, pk, decision):
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if not is_admin:
+        messages.error(request, 'Permission denied. Only Administrators can review edit requests.')
+        return redirect('expense_detail', pk=pk)
+
+    expense = get_object_or_404(Expense, pk=pk)
+    decision = decision.upper()
+
+    from .services import ExpenseNotificationService
+
+    if decision == 'APPROVE':
+        expense.edit_permission_status = 'APPROVED'
+        expense.edit_reviewed_by = request.user
+        expense.edit_reviewed_at = timezone.now()
+        expense.save(update_fields=['edit_permission_status', 'edit_reviewed_by', 'edit_reviewed_at'])
+
+        ExpenseNotificationService.notify_edit_permission_decided(expense, 'APPROVED', request.user, request=request)
+        user_name = expense.edit_requested_by.get_full_name() or expense.edit_requested_by.username if expense.edit_requested_by else "User"
+        messages.success(request, f"Edit permission APPROVED for {user_name}. They can now edit this expense.")
+
+    elif decision == 'REJECT':
+        expense.edit_permission_status = 'REJECTED'
+        expense.edit_reviewed_by = request.user
+        expense.edit_reviewed_at = timezone.now()
+        expense.save(update_fields=['edit_permission_status', 'edit_reviewed_by', 'edit_reviewed_at'])
+
+        ExpenseNotificationService.notify_edit_permission_decided(expense, 'REJECTED', request.user, request=request)
+        user_name = expense.edit_requested_by.get_full_name() or expense.edit_requested_by.username if expense.edit_requested_by else "User"
+        messages.info(request, f"Edit permission REJECTED for {user_name}.")
+
+    return redirect('expense_detail', pk=pk)
 
 @require_permission('PAYMENTS', 'write')
 def expense_raise_clarification(request, pk):
@@ -600,9 +678,12 @@ def expense_detail(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
     if expense.is_fixed_cost and not user_can_view_fixed_costs(request.user):
         messages.error(request, 'Permission denied. You do not have permission to view Fixed Cost expenses.')
-        return redirect('expense_list')
-        
-    return render(request, 'payments/expense_detail.html', {'title': 'View Expense', 'expense': expense})
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    return render(request, 'payments/expense_detail.html', {
+        'title': 'View Expense',
+        'expense': expense,
+        'is_admin': is_admin,
+    })
 
 @require_permission('PAYMENTS', 'write')
 def expense_delete(request, pk):

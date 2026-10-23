@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Permission Required — {{ expense.expense_id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+
+    <!-- Back Link -->
+    <div class="mb-6">
+        <a href="{% url 'expense_detail' expense.id %}" class="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-slate-800 transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Expense {{ expense.expense_id }}
+        </a>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden">
+        
+        <!-- Top Visual Header -->
+        <div class="p-8 text-center bg-gradient-to-b from-amber-50/60 to-white border-b border-slate-100">
+            <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-200">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">Admin Permission Required</h1>
+            <p class="text-slate-500 text-sm mt-1.5 max-w-md mx-auto">
+                Need admin permission to edit this expense. You can request authorization from the Administrator below.
+            </p>
+        </div>
+
+        <!-- Expense Snapshot Card -->
+        <div class="p-6 md:p-8 space-y-6">
+            <div class="bg-slate-50 rounded-xl p-5 border border-slate-200/70">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-white text-indigo-700 border border-slate-200 shadow-2xs">
+                        {{ expense.expense_id }}
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+                        {% if expense.status == 'Approved' %}bg-emerald-100 text-emerald-800 border border-emerald-200
+                        {% elif expense.status == 'Rejected' %}bg-rose-100 text-rose-800 border border-rose-200
+                        {% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
+                        Status: {{ expense.status }}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">Title / Description</span>
+                        <span class="font-semibold text-slate-800 text-sm">{{ expense.title }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-slate-400 block mb-0.5">Amount</span>
+                        <span class="font-bold text-slate-900 text-base">₹{{ expense.amount }}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block mb-0.5">Category</span>
+                        <span class="font-medium text-slate-700">{{ expense.expense_type }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-slate-400 block mb-0.5">Expense Date</span>
+                        <span class="font-medium text-slate-700">{{ expense.date|date:"d M Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conditional State: Pending -->
+            {% if expense.edit_permission_status == 'PENDING' %}
+            <div class="p-5 rounded-xl bg-amber-50 border border-amber-200">
+                <div class="flex items-start gap-3">
+                    <span class="relative flex h-3 w-3 mt-1">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                    </span>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-amber-900 text-sm">Permission Request Sent to Admin</h3>
+                        <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+                            Your request to edit this expense was sent on <strong>{{ expense.edit_requested_at|date:"d M Y, h:i A" }}</strong>.
+                            An administrator has been notified. Once approved, you will be able to edit this expense.
+                        </p>
+                        {% if expense.edit_request_reason %}
+                        <div class="mt-2.5 p-2 bg-white/70 rounded-lg text-xs text-amber-900 border border-amber-200/60">
+                            <span class="font-semibold">Reason provided:</span> {{ expense.edit_request_reason }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <a href="{% url 'expense_detail' expense.id %}" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition">
+                    Cancel
+                </a>
+            </div>
+
+            <!-- Conditional State: Rejected or None -->
+            {% else %}
+                {% if expense.edit_permission_status == 'REJECTED' %}
+                <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-xs text-rose-800">
+                    <span class="font-bold text-base text-rose-600">✕</span>
+                    <div>
+                        <div class="font-bold text-rose-900">Previous Request Rejected</div>
+                        <p class="mt-0.5">Your earlier request to edit this expense was not approved by Admin. You may submit a new request with a clarification below.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+            <form method="post" action="{% url 'expense_ask_edit_permission' expense.id %}" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="reason" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                        Reason for Editing <span class="text-slate-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <textarea id="reason" name="reason" rows="3"
+                              class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition placeholder-slate-400"
+                              placeholder="Briefly state why you need to edit this expense (e.g. wrong amount, updated bill receipt, incorrect category)..."></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <a href="{% url 'expense_detail' expense.id %}" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-xl text-sm transition shadow-md flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        Ask Permission
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
