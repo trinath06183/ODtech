@@ -4,9 +4,9 @@
 
 {% block document_body %}
 <div class="info-grid">
-    {% if doc.shipping_address and doc.has_custom_bill_to %}
-    {# ── Case 1: Custom Bill To AND Ship To both enabled (4 columns) ── #}
-    <div class="info-col" style="width: 27%;">
+    {% if doc.has_custom_bill_to and doc.shipping_address %}
+    {# ── Case 1: Custom Bill To AND Ship To (Ship To stacked under Bill To) ── #}
+    <div class="info-col" style="width: 35%;">
         <div class="text-red mb-1" style="font-size: 11px;">Purchase Order To:</div>
         <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.contact.name }}</div>
 
@@ -30,39 +30,39 @@
         {% endif %}
     </div>
 
-    <div class="info-col" style="width: 27%; padding-left: 12px; border-left: 1px solid #ddd;">
+    <div class="info-col" style="width: 35%; padding-left: 15px; border-left: 1px solid #ddd;">
         <div class="text-red mb-1" style="font-size: 11px;">Bill To:</div>
         <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.billing_name|default:'ODtech Solutions' }}</div>
 
         {% if doc.billing_address %}
-        <div style="font-size: 9.5px; margin-bottom: 4px; max-width: 95%;">
+        <div style="font-size: 9.5px; margin-bottom: 3px; max-width: 95%;">
             {{ doc.billing_address|linebreaksbr }}
         </div>
         {% endif %}
 
         {% if doc.billing_gstin %}
-        <table style="font-size: 9.5px; border: none; margin-top: 3px;">
+        <table style="font-size: 9.5px; border: none; margin-top: 2px;">
             <tr>
-                <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 2px;">GSTIN:</td>
-                <td style="border:none; padding-bottom: 2px;">{{ doc.billing_gstin }}</td>
+                <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 1px;">GSTIN:</td>
+                <td style="border:none; padding-bottom: 1px;">{{ doc.billing_gstin }}</td>
             </tr>
             <tr>
-                <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 2px;">State:</td>
-                <td style="border:none; padding-bottom: 2px;">{{ doc.billing_gstin|gst_state }}</td>
+                <td class="bold" style="padding-right: 8px; border:none; padding-bottom: 1px;">State:</td>
+                <td style="border:none; padding-bottom: 1px;">{{ doc.billing_gstin|gst_state }}</td>
             </tr>
         </table>
         {% endif %}
-    </div>
 
-    <div class="info-col" style="width: 26%; padding-left: 12px; border-left: 1px solid #ddd;">
-        <div class="text-red mb-1" style="font-size: 11px;">Ship To:</div>
-        <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.shipping_name|default:doc.contact.name }}</div>
-        <div style="font-size: 9.5px; margin-bottom: 4px; max-width: 95%;">
-            {{ doc.shipping_address|linebreaksbr }}
+        <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #cbd5e1;">
+            <div class="text-red mb-1" style="font-size: 11px;">Ship To:</div>
+            <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">{{ doc.shipping_name|default:doc.contact.name }}</div>
+            <div style="font-size: 9.5px; max-width: 95%;">
+                {{ doc.shipping_address|linebreaksbr }}
+            </div>
         </div>
     </div>
 
-    <div class="info-col" style="width: 20%; padding-left: 12px;">
+    <div class="info-col" style="width: 30%; padding-left: 15px;">
         <div style="font-size: 18px; margin-bottom: 8px; font-weight: bold;">Purchase Order</div>
 
         <table style="width: 100%; font-size: 9.5px; border: none;">
