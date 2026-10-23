@@ -4,7 +4,7 @@
 
 {% block document_body %}
 <div class="info-grid">
-    {% if doc.shipping_address and (doc.billing_name or doc.billing_address or doc.billing_gstin) %}
+    {% if doc.shipping_address and doc.has_custom_bill_to %}
     {# ── Case 1: Custom Bill To AND Ship To both enabled (4 columns) ── #}
     <div class="info-col" style="width: 27%;">
         <div class="text-red mb-1" style="font-size: 11px;">Purchase Order To:</div>
@@ -81,7 +81,7 @@
         </table>
     </div>
 
-    {% elif doc.billing_name or doc.billing_address or doc.billing_gstin %}
+    {% elif doc.has_custom_bill_to %}
     {# ── Case 2: Custom Bill To enabled, NO Ship To (3 columns) ── #}
     <div class="info-col" style="width: 35%;">
         <div class="text-red mb-1" style="font-size: 11px;">Purchase Order To:</div>

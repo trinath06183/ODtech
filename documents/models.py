@@ -164,6 +164,10 @@ class Document(TimeStampedModel):
         return (self.billing_gstin or '').strip() or (self.contact.gstin if self.contact else '')
 
     @property
+    def has_custom_bill_to(self):
+        return bool((self.billing_name or '').strip() or (self.billing_address or '').strip() or (self.billing_gstin or '').strip())
+
+    @property
     def is_eway_bill_satisfied(self):
         """
         Returns True if:
