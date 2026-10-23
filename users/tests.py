@@ -84,6 +84,19 @@ class UserManagementRBACConstraintTests(TestCase):
         # Should redirect to dashboard with access denied error
         self.assertRedirects(response, reverse('dashboard'))
 
+    def test_managing_director_cannot_access_user_list(self):
+        md_user = User.objects.create_user(username='md_user', password='password123', role='Managing Director')
+        self.client.login(username='md_user', password='password123')
+        response = self.client.get(reverse('user_list'))
+        self.assertRedirects(response, reverse('dashboard'))
+
+    def test_non_admin_with_perm_cannot_access_user_list(self):
+        from users.models import UserSectionPermission
+        UserSectionPermission.objects.create(user=self.staff, section='USERS', can_read=True, can_write=True)
+        self.client.login(username='staff_user', password='password123')
+        response = self.client.get(reverse('user_list'))
+        self.assertRedirects(response, reverse('dashboard'))
+
     def test_admin_can_create_user(self):
         self.client.login(username='admin_user', password='password123')
         response = self.client.post(reverse('user_create'), {

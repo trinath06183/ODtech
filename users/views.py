@@ -449,13 +449,13 @@ def password_reset_complete(request):
 
 # ─── User Management (Admin only) ────────────────────────────────────────────
 
-@require_permission('USERS', 'read')
+@role_required('Admin')
 def user_list(request):
     users = User.objects.all().order_by('username')
     return render(request, 'users/user_list.html', {'users': users})
 
 
-@require_permission('USERS', 'write')
+@role_required('Admin')
 def user_create(request):
     if request.method == 'POST':
         empid      = request.POST.get('empid', '').strip()
@@ -491,8 +491,10 @@ def user_create(request):
             # Send verification email
             send_verification_email(request, user)
 
-            # Save section permissions
+            # Save section permissions (USERS is strictly Admin-only)
             for section, label in AppSection.choices:
+                if section == 'USERS':
+                    continue
                 can_read = request.POST.get(f'perm_{section}_read') == 'on'
                 can_write = request.POST.get(f'perm_{section}_write') == 'on'
                 if can_read or can_write:
@@ -503,7 +505,7 @@ def user_create(request):
             messages.success(request, f'User with Employee Code "{empid}" created successfully. Verification email sent.')
             return redirect('user_list')
 
-    permissions_data = [{'code': s, 'label': l, 'read': False, 'write': False} for s, l in AppSection.choices]
+    permissions_data = [{'code': s, 'label': l, 'read': False, 'write': False} for s, l in AppSection.choices if s != 'USERS']
 
     return render(request, 'users/user_form.html', {
         'form_title': 'Create User',
@@ -513,7 +515,7 @@ def user_create(request):
     })
 
 
-@require_permission('USERS', 'write')
+@role_required('Admin')
 def user_edit(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
 
@@ -539,8 +541,10 @@ def user_edit(request, user_id):
                 target_user.set_password(new_password)
             target_user.save()
 
-            # Save section permissions
+            # Save section permissions (USERS is strictly Admin-only)
             for section, label in AppSection.choices:
+                if section == 'USERS':
+                    continue
                 can_read = request.POST.get(f'perm_{section}_read') == 'on'
                 can_write = request.POST.get(f'perm_{section}_write') == 'on'
                 
@@ -554,6 +558,8 @@ def user_edit(request, user_id):
 
     permissions_data = []
     for section, label in AppSection.choices:
+        if section == 'USERS':
+            continue
         perm = target_user.section_permissions.filter(section=section).first()
         permissions_data.append({
             'code': section,
@@ -571,7 +577,7 @@ def user_edit(request, user_id):
     })
 
 
-@require_permission('USERS', 'write')
+@role_required('Admin')
 def user_delete(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
 

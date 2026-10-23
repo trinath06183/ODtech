@@ -67,10 +67,19 @@ class User(AbstractUser, TimeStampedModel):
     def has_section_perm(self, section, access_type='read'):
         """
         Check if user has permission for a specific section.
-        Admins and Managing Directors bypass all checks.
+        Admins and superusers have full access to all sections.
+        USERS section is strictly restricted to Admin and superusers only.
+        Managing Directors bypass all checks except USERS.
         access_type can be 'read' or 'write'.
         """
-        if self.role in ['Admin', 'Managing Director']:
+        if self.is_superuser or self.role == 'Admin':
+            return True
+
+        # User Management section is strictly Admin only
+        if section == 'USERS':
+            return False
+
+        if self.role == 'Managing Director':
             return True
 
         # HR role has full access to HR_ATTENDANCE

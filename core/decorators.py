@@ -43,7 +43,7 @@ def role_required(*allowed_roles):
                 path = quote(request.get_full_path())
                 return redirect(f"{reverse('login')}?next={path}")
             user_role = getattr(request.user, 'role', None)
-            if user_role not in allowed_roles:
+            if not request.user.is_superuser and user_role not in allowed_roles:
                 if _is_api_request(request):
                     return JsonResponse({'success': False, 'error': f"Access denied. Requires one of these roles: {', '.join(allowed_roles)}."}, status=403)
                 messages.error(

@@ -644,7 +644,7 @@
                 </a>
                 {% endif %}
 
-                {% if request.user|has_read_perm:'USERS' %}
+                {% if request.user.is_superuser or request.user.role == 'Admin' %}
                 <div x-show="sidebarOpen" style="display: none;"
                     class="pt-6 pb-2 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administration
                 </div>
