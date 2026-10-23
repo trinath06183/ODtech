@@ -391,6 +391,9 @@ class DocumentService:
             ship_from_name=kwargs.get("ship_from_name") or None,
             ship_from_address=kwargs.get("ship_from_address") or None,
             ship_from_gstin=kwargs.get("ship_from_gstin") or None,
+            billing_name=kwargs.get("billing_name") or None,
+            billing_address=kwargs.get("billing_address") or None,
+            billing_gstin=kwargs.get("billing_gstin") or None,
             repeat_header=kwargs.get("repeat_header", False),
             source_document=kwargs.get("source_document"),
             created_by=kwargs.get("created_by"),
@@ -517,6 +520,12 @@ class DocumentService:
             document.ship_from_address = kwargs.get("ship_from_address") or None
         if "ship_from_gstin" in kwargs:
             document.ship_from_gstin = kwargs.get("ship_from_gstin") or None
+        if "billing_name" in kwargs:
+            document.billing_name = kwargs.get("billing_name") or None
+        if "billing_address" in kwargs:
+            document.billing_address = kwargs.get("billing_address") or None
+        if "billing_gstin" in kwargs:
+            document.billing_gstin = kwargs.get("billing_gstin") or None
         if "repeat_header" in kwargs:
             document.repeat_header = kwargs.get("repeat_header")
         document.save()
@@ -796,6 +805,9 @@ class DocumentBundleService:
                 'ship_from_name': doc.ship_from_name,
                 'ship_from_address': doc.ship_from_address,
                 'ship_from_gstin': doc.ship_from_gstin,
+                'billing_name': doc.billing_name,
+                'billing_address': doc.billing_address,
+                'billing_gstin': doc.billing_gstin,
                 'terms_and_conditions': doc.terms_and_conditions,
                 'subtotal': str(doc.subtotal),
                 'tax_total': str(doc.tax_total),
@@ -889,6 +901,9 @@ class DocumentBundleService:
                 'ship_from_name': doc_dict.get('ship_from_name'),
                 'ship_from_address': doc_dict.get('ship_from_address'),
                 'ship_from_gstin': doc_dict.get('ship_from_gstin'),
+                'billing_name': doc_dict.get('billing_name'),
+                'billing_address': doc_dict.get('billing_address'),
+                'billing_gstin': doc_dict.get('billing_gstin'),
                 'terms_and_conditions': doc_dict.get('terms_and_conditions'),
                 'subtotal': Decimal(str(doc_dict.get('subtotal', '0.00'))),
                 'tax_total': Decimal(str(doc_dict.get('tax_total', '0.00'))),

@@ -607,15 +607,23 @@
         {% endif %}
 
         <!-- Bill From & Ship From Details (If configured) -->
-        {% if doc.bill_from_name or doc.bill_from_address or doc.ship_from_name or doc.ship_from_address %}
+        {% if doc.bill_from_name or doc.bill_from_address or doc.ship_from_name or doc.ship_from_address or doc.billing_name or doc.billing_address or doc.billing_gstin %}
         <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-red-500/20" style="position: relative; z-index: 10;">
             {# Issue 8: fix heading level skip — H1 → H2 (was H3) #}
             <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
                 🏢 Dispatch &amp; Billing Location
             </h2>
             <div class="text-xs space-y-2.5">
-                {% if doc.bill_from_name or doc.bill_from_address %}
+                {% if doc.billing_name or doc.billing_address or doc.billing_gstin %}
                 <div>
+                    <span class="text-emerald-600 block text-xs font-semibold">Custom Bill To (Buyer Billing Address)</span>
+                    <span class="text-slate-800 font-bold">{{ doc.display_billing_name }}</span>
+                    {% if doc.billing_address %}<div class="text-slate-600 text-xs mt-0.5">{{ doc.billing_address|linebreaksbr }}</div>{% endif %}
+                    {% if doc.billing_gstin %}<div class="text-slate-500 font-mono text-xs mt-0.5">GSTIN: {{ doc.billing_gstin }}</div>{% endif %}
+                </div>
+                {% endif %}
+                {% if doc.bill_from_name or doc.bill_from_address %}
+                <div {% if doc.billing_name or doc.billing_address or doc.billing_gstin %}class="pt-2 border-t border-slate-200"{% endif %}>
                     <span class="text-red-600 block text-xs font-semibold">Bill From (Seller Unit)</span>
                     <span class="text-slate-800 font-bold">{{ doc.bill_from_name|default:'ODtech Solutions' }}</span>
                     {% if doc.bill_from_address %}<div class="text-slate-600 text-xs mt-0.5">{{ doc.bill_from_address|linebreaksbr }}</div>{% endif %}

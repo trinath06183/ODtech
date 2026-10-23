@@ -403,6 +403,9 @@
                 <input type="hidden" name="ship_from_name" :value="enableShipFrom ? shipFromName : ''">
                 <input type="hidden" name="ship_from_address" :value="enableShipFrom ? shipFromAddress : ''">
                 <input type="hidden" name="ship_from_gstin" :value="enableShipFrom ? shipFromGstin : ''">
+                <input type="hidden" name="billing_name" :value="enableBillTo ? billingName : ''">
+                <input type="hidden" name="billing_address" :value="enableBillTo ? billingAddress : ''">
+                <input type="hidden" name="billing_gstin" :value="enableBillTo ? billingGstin : ''">
                 <input type="hidden" name="repeat_header" :value="repeatHeader ? 'true' : 'false'">
                 <input type="hidden" name="show_payment_summary" :value="sections.payment_summary ? 'true' : 'false'">
                 <input type="hidden" name="source_order_id" value="{% if source_order %}{{ source_order.id }}{% elif doc and doc.tracker_order %}{{ doc.tracker_order.id }}{% endif %}">
@@ -740,6 +743,35 @@
                                         <input type="text" name="ship_from_gstin" form="document-main-form" x-model="shipFromGstin"
                                             class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500 font-mono"
                                             placeholder="e.g. 27AAHFO5846M1ZZ">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bill To / Buyer Billing Details Toggle -->
+                            <div class="pt-2 border-t border-slate-700/30">
+                                <label class="flex items-center gap-3 cursor-pointer group py-1">
+                                    <input type="checkbox" x-model="enableBillTo"
+                                        class="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-600 focus:ring-red-500">
+                                    <span class="text-sm text-gray-600 group-hover:text-gray-900 transition font-medium">Custom Bill To (Buyer Billing Address)</span>
+                                </label>
+                                <div x-show="enableBillTo" x-transition class="pt-2 space-y-2 pl-7">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bill To Company / Customer Name</label>
+                                        <input type="text" form="document-main-form" x-model="billingName"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="e.g. Client Billing Name (leave empty to use Customer Name)">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bill To Address</label>
+                                        <textarea form="document-main-form" x-model="billingAddress" rows="2"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500"
+                                            placeholder="Type or paste custom buyer billing address here..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bill To GSTIN</label>
+                                        <input type="text" form="document-main-form" x-model="billingGstin"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-red-500 focus:border-red-500 font-mono"
+                                            placeholder="e.g. 21AAHFO5846M1ZY (leave empty to use Customer GSTIN)">
                                     </div>
                                 </div>
                             </div>
@@ -2185,6 +2217,7 @@ function documentForm() {
         enableShippingAddress: {% if doc and doc.shipping_address %}true{% else %}false{% endif %},
         enableBillFrom: {% if doc and doc.bill_from_name or doc.bill_from_address or doc.bill_from_gstin %}true{% else %}false{% endif %},
         enableShipFrom: {% if doc and doc.ship_from_name or doc.ship_from_address or doc.ship_from_gstin %}true{% else %}false{% endif %},
+        enableBillTo: {% if doc and doc.billing_name or doc.billing_address or doc.billing_gstin %}true{% else %}false{% endif %},
         repeatHeader: {% if doc %}{{ doc.repeat_header|yesno:"true,false" }}{% else %}(lastSettings && lastSettings.repeat_header !== undefined ? lastSettings.repeat_header : true){% endif %},
         shippingAddress: '{{ doc.shipping_address|default_if_none:""|escapejs }}',
         shippingName: '{{ doc.shipping_name|default_if_none:""|escapejs }}',
@@ -2194,6 +2227,9 @@ function documentForm() {
         shipFromName: '{{ doc.ship_from_name|default_if_none:""|escapejs }}',
         shipFromAddress: '{{ doc.ship_from_address|default_if_none:""|escapejs }}',
         shipFromGstin: '{{ doc.ship_from_gstin|default_if_none:""|escapejs }}',
+        billingName: '{{ doc.billing_name|default_if_none:""|escapejs }}',
+        billingAddress: '{{ doc.billing_address|default_if_none:""|escapejs }}',
+        billingGstin: '{{ doc.billing_gstin|default_if_none:""|escapejs }}',
         transporterDetails: '{{ doc.transporter_details|default:"Local Transportation"|escapejs }}',
         vehicleNumber: '{{ doc.vehicle_number|default_if_none:""|escapejs }}',
         transportDocNo: '{{ doc.transport_doc_no|default_if_none:""|escapejs }}',

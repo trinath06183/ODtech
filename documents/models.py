@@ -127,6 +127,11 @@ class Document(TimeStampedModel):
     ship_from_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Ship From Name / Dispatch Location")
     ship_from_address = models.TextField(blank=True, null=True, verbose_name="Ship From Address / Warehouse")
     ship_from_gstin = models.CharField(max_length=15, blank=True, null=True, verbose_name="Ship From GSTIN")
+
+    # Custom Bill To (Buyer / Client Billing Address)
+    billing_name = models.CharField(max_length=255, blank=True, null=True, verbose_name="Bill To Name")
+    billing_address = models.TextField(blank=True, null=True, verbose_name="Bill To Address")
+    billing_gstin = models.CharField(max_length=15, blank=True, null=True, verbose_name="Bill To GSTIN")
     
     DISCOUNT_TYPES = (
         ('none', 'No Discount'),
@@ -145,6 +150,18 @@ class Document(TimeStampedModel):
     @property
     def total_discount(self):
         return sum(item.discount for item in self.items.all())
+
+    @property
+    def display_billing_name(self):
+        return (self.billing_name or '').strip() or (self.contact.name if self.contact else '')
+
+    @property
+    def display_billing_address(self):
+        return (self.billing_address or '').strip() or (self.contact.address if self.contact else '')
+
+    @property
+    def display_billing_gstin(self):
+        return (self.billing_gstin or '').strip() or (self.contact.gstin if self.contact else '')
 
     @property
     def is_eway_bill_satisfied(self):

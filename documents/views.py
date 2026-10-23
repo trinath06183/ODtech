@@ -1226,6 +1226,9 @@ def document_form(request, doc=None, default_type='QTN'):
         ship_from_name = request.POST.get('ship_from_name', '').strip()
         ship_from_address = request.POST.get('ship_from_address', '').strip()
         ship_from_gstin = request.POST.get('ship_from_gstin', '').strip()
+        billing_name = request.POST.get('billing_name', '').strip()
+        billing_address = request.POST.get('billing_address', '').strip()
+        billing_gstin = request.POST.get('billing_gstin', '').strip()
         repeat_header = request.POST.get('repeat_header') in ('on', 'true', True)
         
         # Transporter Details POST parameters (For Delivery Challans)
@@ -1376,6 +1379,9 @@ def document_form(request, doc=None, default_type='QTN'):
                 ship_from_name=ship_from_name,
                 ship_from_address=ship_from_address,
                 ship_from_gstin=ship_from_gstin,
+                billing_name=billing_name,
+                billing_address=billing_address,
+                billing_gstin=billing_gstin,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
                 show_payment_summary=show_payment_summary,
@@ -1434,6 +1440,9 @@ def document_form(request, doc=None, default_type='QTN'):
                 ship_from_name=ship_from_name,
                 ship_from_address=ship_from_address,
                 ship_from_gstin=ship_from_gstin,
+                billing_name=billing_name,
+                billing_address=billing_address,
+                billing_gstin=billing_gstin,
                 repeat_header=repeat_header,
                 force_igst=force_igst,
                 show_payment_summary=show_payment_summary,
