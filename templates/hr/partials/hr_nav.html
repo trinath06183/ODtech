@@ -1,9 +1,11 @@
 {% load permissions %}
 <div class="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200 rounded-2xl shadow-inner max-w-full overflow-x-auto whitespace-nowrap">
+  {% if is_hr_admin or request.user.role == 'Admin' or request.user.role == 'Managing Director' or request.user.role == 'HR' or request.user.is_superuser %}
   <a href="{% url 'hr:dashboard' %}"
      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
     <span>📊</span><span>Overview</span>
   </a>
+  {% endif %}
   <a href="{% url 'hr:attendance_history' %}"
      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'attendance_history my_attendance employee_attendance_history' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
     <span>📅</span><span>My Attendance</span>
@@ -16,7 +18,7 @@
      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name == 'leave_balance' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
     <span>⚖️</span><span>Leave Balance</span>
   </a>
-  {% if request.user|has_write_perm:'HR_ATTENDANCE' %}
+  {% if is_hr_admin or request.user.role == 'Admin' or request.user.role == 'Managing Director' or request.user.role == 'HR' or request.user.is_superuser %}
   <a href="{% url 'hr:mark_attendance' %}"
      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all {% if request.resolver_match.url_name in 'mark_attendance attendance_mark' %}bg-white text-rose-600 shadow-sm font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-white/60{% endif %}">
     <span>✏️</span><span>Mark Attendance</span>

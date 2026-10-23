@@ -92,6 +92,9 @@ def _build_calendar(user, year, month):
 @login_required
 @require_permission('HR_ATTENDANCE', 'read')
 def dashboard(request):
+    if not _is_hr_admin(request.user):
+        return redirect('hr:my_attendance')
+
     today = date.today()
     all_active_users = list(User.objects.filter(is_active=True).order_by('first_name', 'last_name'))
 
@@ -108,7 +111,7 @@ def dashboard(request):
     for u in all_active_users:
         u.today_rec = today_dict.get(u.id)
         u.is_self = (u.id == request.user.id)
-        u.can_edit = can_mark_any or u.is_self
+        u.can_edit = can_mark_any
 
     my_record = today_dict.get(request.user.id)
 
@@ -157,6 +160,10 @@ def dashboard(request):
 @require_permission('HR_ATTENDANCE', 'write')
 def mark_attendance(request):
     """HR marks attendance for all employees for a given date."""
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can mark attendance.")
+        return redirect('hr:my_attendance')
+
     selected_date = date.today()
     employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
 
@@ -330,6 +337,7 @@ def apply_leave(request):
         'form': form,
         'leave_balance': leave_balance,
         'my_requests': my_requests,
+        'is_hr_admin': _is_hr_admin(request.user),
     }
     return render(request, 'hr/leave_apply.html', context)
 
@@ -354,6 +362,10 @@ def cancel_leave(request, leave_id):
 @require_permission('HR_ATTENDANCE', 'write')
 def leave_requests(request):
     """HR/Admin list and approve/reject all leave requests."""
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can review leave requests.")
+        return redirect('hr:my_attendance')
+
     status_filter = request.GET.get('status', 'PENDING')
     employee_filter = request.GET.get('employee', '')
 
@@ -383,6 +395,10 @@ def leave_requests(request):
 @require_permission('HR_ATTENDANCE', 'write')
 def review_leave(request, leave_id):
     """HR approves or rejects a leave request."""
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can review leave requests.")
+        return redirect('hr:my_attendance')
+
     leave_req = get_object_or_404(LeaveRequest, id=leave_id)
 
     if request.method == 'POST':
@@ -430,9 +446,13 @@ def review_leave(request, leave_id):
 @login_required
 @require_permission('HR_ATTENDANCE', 'read')
 def leave_balance(request):
-    """Leave balance summary for all employees."""
+    """Leave balance summary for employees."""
     year = int(request.GET.get('year', timezone.now().year))
-    employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    is_hr = _is_hr_admin(request.user)
+    if is_hr:
+        employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    else:
+        employees = [request.user]
     leave_types = LeaveType.objects.filter(is_active=True)
 
     data = []
@@ -445,7 +465,7 @@ def leave_balance(request):
         'leave_types': leave_types,
         'year': year,
         'years': range(2023, timezone.now().year + 2),
-        'is_hr_admin': _is_hr_admin(request.user),
+        'is_hr_admin': is_hr,
     }
     return render(request, 'hr/leave_balance.html', context)
 
@@ -456,6 +476,10 @@ def leave_balance(request):
 @require_permission('HR_ATTENDANCE', 'read')
 def attendance_report(request):
     """Monthly attendance report with CSV download."""
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can view attendance reports.")
+        return redirect('hr:my_attendance')
+
     today = date.today()
     form  = AttendanceFilterForm(request.GET or None)
     year  = today.year
@@ -574,7 +598,7 @@ def quick_update_attendance(request):
         else:
             data = request.POST
 
-        is_hr_admin_user = _is_hr_admin(request.user) or request.user.has_section_perm('HR_ATTENDANCE', 'write')
+        is_hr_admin_user = _is_hr_admin(request.user)
         action = data.get('action')
         date_str = data.get('date') or str(date.today())
         record_date = date.fromisoformat(date_str)
@@ -639,10 +663,8 @@ def quick_update_attendance(request):
             return JsonResponse({'success': False, 'error': 'Missing employee_id.'}, status=400)
 
         employee = get_object_or_404(User, id=employee_id)
-        is_self = (employee.id == request.user.id)
-
-        if not (is_hr_admin_user or is_self):
-            return JsonResponse({'success': False, 'error': 'Permission denied to mark attendance for this employee.'}, status=403)
+        if not is_hr_admin_user:
+            return JsonResponse({'success': False, 'error': 'Permission denied. Only HR/Admin can mark or update attendance.'}, status=403)
 
         new_status = (data.get('status') or '').strip().upper()
         rec = AttendanceRecord.objects.filter(employee=employee, date=record_date).first()
@@ -839,6 +861,10 @@ def quick_update_attendance(request):
 @require_permission('HR_ATTENDANCE', 'write')
 def manage_allocations(request):
     """HR manages leave allocations for employees."""
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can manage allocations.")
+        return redirect('hr:my_attendance')
+
     year = int(request.GET.get('year', timezone.now().year))
     allocations = LeaveAllocation.objects.filter(year=year).select_related('user', 'leave_type').order_by('user__first_name')
 
@@ -873,6 +899,10 @@ def manage_allocations(request):
 @require_permission('HR_ATTENDANCE', 'write')
 def manage_holidays(request):
     """HR manages office holidays."""
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can manage holidays.")
+        return redirect('hr:my_attendance')
+
     year = int(request.GET.get('year', timezone.now().year))
     holidays = Holiday.objects.filter(date__year=year).order_by('date')
 
@@ -897,6 +927,10 @@ def manage_holidays(request):
 @login_required
 @require_permission('HR_ATTENDANCE', 'write')
 def delete_holiday(request, holiday_id):
+    if not _is_hr_admin(request.user):
+        messages.error(request, "Permission denied. Only HR, Admin, or Managing Director can manage holidays.")
+        return redirect('hr:my_attendance')
+
     holiday = get_object_or_404(Holiday, id=holiday_id)
     holiday.delete()
     messages.success(request, "Holiday deleted.")

@@ -80,6 +80,7 @@
             </div>
           </div>
         </div>
+        {% if can_mark_any %}
         <div class="flex items-center gap-2">
           <button type="button" onclick="quickCheckIn({{ request.user.id }})" id="self-checkin-btn"
                   class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 {% if my_record.check_in %}hidden{% endif %}">
@@ -94,6 +95,7 @@
             🏠 WFH
           </button>
         </div>
+        {% endif %}
       </div>
 
       <div class="overflow-x-auto">
@@ -104,7 +106,9 @@
               <th class="px-5 py-3 text-left">Status</th>
               <th class="px-5 py-3 text-left">Check In</th>
               <th class="px-5 py-3 text-left">Check Out</th>
+              {% if can_mark_any %}
               <th class="px-5 py-3 text-left">Quick Actions</th>
+              {% endif %}
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -180,6 +184,7 @@
                   {% endif %}
                 </div>
               </td>
+              {% if can_mark_any %}
               <td class="px-5 py-3.5 text-xs">
                 {% if user.can_edit %}
                 <div class="flex items-center gap-1">
@@ -203,9 +208,10 @@
                 <span class="text-slate-400 text-xs">—</span>
                 {% endif %}
               </td>
+              {% endif %}
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No employees found.</td></tr>
+            <tr><td colspan="{% if can_mark_any %}5{% else %}4{% endif %}" class="px-6 py-8 text-center text-slate-400">No employees found.</td></tr>
             {% endfor %}
           </tbody>
         </table>
