@@ -144,6 +144,10 @@ class Document(TimeStampedModel):
     discount_value = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
 
     @property
+    def ordered_items(self):
+        return self.items.all().order_by('id')
+
+    @property
     def gross_subtotal(self):
         return sum(item.quantity * item.unit_price for item in self.items.all())
 
@@ -576,6 +580,9 @@ class DocumentItem(models.Model):
     @property
     def base_amount(self):
         return (self.quantity * self.unit_price) - self.discount
+
+    class Meta:
+        ordering = ['id']
 
     def __str__(self):
         return f"{self.product.name} - {self.document.number}"

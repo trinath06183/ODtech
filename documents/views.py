@@ -682,7 +682,7 @@ def document_html_preview(request, document_id):
 def document_preview_data(request, document_id):
     doc = get_object_or_404(Document, id=document_id)
     items = []
-    for item in doc.items.select_related('product').all():
+    for item in doc.items.select_related('product').all().order_by('id'):
         has_product = item.product is not None
         items.append({
             'name': item.product.name if has_product else (item.name or ''),
@@ -1497,7 +1497,7 @@ def document_form(request, doc=None, default_type='QTN'):
     source_order = None
     matched_contact = None
     if doc:
-        for di in doc.items.all():
+        for di in doc.items.all().order_by('id'):
             gross = float(di.quantity) * float(di.unit_price)
             pct = round((float(di.discount) / gross * 100), 2) if gross > 0 else 0
             existing_items.append({
@@ -1864,7 +1864,7 @@ def send_to_tracker_api(request, document_id):
         # Create Products
         sl_no = 1
         is_approved_pi = (doc.type == 'PRO' and doc.status == 'Approved')
-        for item in doc.items.all():
+        for item in doc.items.all().order_by('id'):
             qty = item.quantity if item.quantity else Decimal('1.00')
             rate = item.unit_price if item.unit_price else Decimal('0.00')
             tax_rate = item.tax_rate if item.tax_rate else Decimal('18.00')

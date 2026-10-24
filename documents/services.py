@@ -610,6 +610,10 @@ class DocumentService:
         items = [
             {
                 "product_id": item.product_id,
+                "name": item.name,
+                "description": item.description or "",
+                "part_number": item.part_number or "",
+                "hsn_code": item.hsn_code or "",
                 "qty": str(item.quantity),
                 "unit": item.unit,
                 "rate": str(item.unit_price),
@@ -617,8 +621,12 @@ class DocumentService:
                 "discount": str(item.discount),
                 "discount_pct": "0.00",
                 "serial_number": item.serial_number or "",
+                "has_warranty": item.has_warranty,
+                "model": item.model or "",
+                "warranty_period": item.warranty_period or "",
+                "warranty_start_date": item.warranty_start_date.strftime('%Y-%m-%d') if item.warranty_start_date else None,
             }
-            for item in source_doc.items.all()
+            for item in source_doc.items.all().order_by('id')
         ]
 
         return DocumentService.create_document(
@@ -689,7 +697,7 @@ class DocumentService:
                     )
 
                     sl_no = 1
-                    for item in doc.items.all():
+                    for item in doc.items.all().order_by('id'):
                         qty = item.quantity if item.quantity else Decimal('1.00')
                         rate = item.unit_price if item.unit_price else Decimal('0.00')
                         tax_rate = item.tax_rate if item.tax_rate else Decimal('18.00')
@@ -753,7 +761,7 @@ class DocumentBundleService:
         doc = Document.objects.select_related('contact').prefetch_related('items__product').get(id=document_id)
         
         items_data = []
-        for it in doc.items.all():
+        for it in doc.items.all().order_by('id'):
             items_data.append({
                 'product_sku': it.product.sku if it.product else '',
                 'product_name': it.product.name if it.product else it.name,

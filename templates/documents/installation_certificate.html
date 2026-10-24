@@ -514,7 +514,7 @@
             </tr>
         </thead>
         <tbody>
-            {% with items=doc.items.all %}
+            {% with items=doc.ordered_items %}
             {% for item in items %}
             <tr>
                 <td class="center">{{ forloop.counter }}</td>

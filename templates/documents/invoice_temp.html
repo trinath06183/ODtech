@@ -1,4 +1,4 @@
-﻿{% extends 'documents/base_print.html' %}
+{% extends 'documents/base_print.html' %}
 {% load static %}
 {% load document_filters %}
 
@@ -160,7 +160,7 @@
 {% include 'documents/print_items_table.html' %}
 
 {# -- Warranty Information Section (Invoice only, conditional) -- #}
-{% with warranty_items=doc.items.all %}
+{% with warranty_items=doc.ordered_items %}
 
 {% if doc.enable_warranty %}
 {% for item in warranty_items %}{% if item.product.warranty_months > 0 and item.has_warranty %}{% if forloop.first %}
