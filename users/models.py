@@ -64,6 +64,16 @@ class User(AbstractUser, TimeStampedModel):
             return True
         return self.role in ['Admin', 'Managing Director', 'Director', 'Accounts', 'Accountant', 'HR']
 
+    @property
+    def is_admin_or_superuser(self):
+        """
+        Returns True if user is a superuser, staff, or holds an administrative role
+        (Admin, Managing Director, Director).
+        """
+        if self.is_superuser or self.is_staff:
+            return True
+        return self.role in ['Admin', 'Managing Director', 'Director']
+
     def has_section_perm(self, section, access_type='read'):
         """
         Check if user has permission for a specific section.

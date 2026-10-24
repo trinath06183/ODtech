@@ -360,18 +360,36 @@ class ExpenseBulkCreateTests(TestCase):
             empid='ADM001'
         )
 
-    def test_bulk_create_get(self):
+    def test_bulk_create_non_admin_blocked(self):
+        """Non-admin / non-superuser must be blocked from bulk expense creation."""
         self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('expense_bulk_create'))
+        self.assertRedirects(response, reverse('expense_list'))
+
+        post_data = {
+            'global_employee_code': 'EMP777',
+            'row_indices': '0',
+            'date_0': '2026-10-24',
+            'title_0': 'Unauthorized Bulk Attempt',
+            'expense_type_0': 'Travel',
+            'amount_0': '500.00',
+        }
+        post_response = self.client.post(reverse('expense_bulk_create'), post_data)
+        self.assertRedirects(post_response, reverse('expense_list'))
+        self.assertEqual(Expense.objects.filter(title='Unauthorized Bulk Attempt').count(), 0)
+
+    def test_bulk_create_get(self):
+        self.client.force_login(self.admin_user)
         response = self.client.get(reverse('expense_bulk_create'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'payments/expense_bulk_form.html')
         self.assertIn('daily_categories', response.context)
-        self.assertFalse(response.context['can_view_fc'])
+        self.assertTrue(response.context['can_view_fc'])
 
     def test_bulk_create_post_success(self):
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.admin_user)
         post_data = {
-            'global_employee_code': 'EMP777',
+            'global_employee_code': 'ADM001',
             'row_indices': '0,1',
             # Row 0
             'date_0': '2026-10-24',
@@ -379,7 +397,7 @@ class ExpenseBulkCreateTests(TestCase):
             'expense_type_0': 'Travel',
             'amount_0': '650.00',
             'gst_amount_0': '0.00',
-            'employee_code_0': 'EMP777',
+            'employee_code_0': 'ADM001',
             'notes_0': 'Client demo meeting',
             # Row 1
             'date_1': '2026-10-24',
@@ -387,20 +405,20 @@ class ExpenseBulkCreateTests(TestCase):
             'expense_type_1': 'Food Expenses',
             'amount_1': '1250.50',
             'gst_amount_1': '62.50',
-            'employee_code_1': 'EMP777',
+            'employee_code_1': 'ADM001',
             'notes_1': '',
         }
         response = self.client.post(reverse('expense_bulk_create'), post_data)
         self.assertRedirects(response, reverse('expense_list'))
 
-        expenses = Expense.objects.filter(submitted_by=self.staff_user).order_by('id')
+        expenses = Expense.objects.filter(submitted_by=self.admin_user).order_by('id')
         self.assertEqual(expenses.count(), 2)
 
         exp0 = expenses[0]
         self.assertEqual(exp0.title, 'Taxi to client office')
         self.assertEqual(exp0.expense_type, 'Travel')
         self.assertEqual(float(exp0.amount), 650.00)
-        self.assertEqual(exp0.employee_code, 'EMP777')
+        self.assertEqual(exp0.employee_code, 'ADM001')
         self.assertEqual(exp0.status, 'Pending')
 
         exp1 = expenses[1]
@@ -410,10 +428,10 @@ class ExpenseBulkCreateTests(TestCase):
         self.assertEqual(float(exp1.gst_amount), 62.50)
 
     def test_bulk_create_validation_error(self):
-        self.client.force_login(self.staff_user)
+        self.client.force_login(self.admin_user)
         # Row with missing title
         post_data = {
-            'global_employee_code': 'EMP777',
+            'global_employee_code': 'ADM001',
             'row_indices': '0',
             'date_0': '2026-10-24',
             'title_0': '',
@@ -423,21 +441,7 @@ class ExpenseBulkCreateTests(TestCase):
         response = self.client.post(reverse('expense_bulk_create'), post_data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'payments/expense_bulk_form.html')
-        self.assertEqual(Expense.objects.filter(submitted_by=self.staff_user).count(), 0)
-
-    def test_bulk_create_unauthorized_fixed_cost_blocked(self):
-        self.client.force_login(self.staff_user)
-        post_data = {
-            'global_employee_code': 'EMP777',
-            'row_indices': '0',
-            'date_0': '2026-10-24',
-            'title_0': 'Office Rent Attempt',
-            'expense_type_0': 'Office rent',
-            'amount_0': '50000.00',
-        }
-        response = self.client.post(reverse('expense_bulk_create'), post_data)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(Expense.objects.filter(submitted_by=self.staff_user).count(), 0)
+        self.assertEqual(Expense.objects.filter(submitted_by=self.admin_user).count(), 0)
 
 
 

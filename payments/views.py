@@ -462,7 +462,12 @@ def print_unpaid_expenses(request):
 
 @require_permission('PAYMENTS', 'write')
 def expense_bulk_create(request):
-    """Allow user to enter and submit multiple expenses at once."""
+    """Allow Admin or Superuser to enter and submit multiple expenses at once."""
+    is_admin = request.user.is_superuser or request.user.is_staff or getattr(request.user, 'role', '') in ['Admin', 'Managing Director', 'Director']
+    if not is_admin:
+        messages.error(request, 'Permission denied. Submitting multiple expenses at once is only available for Administrators and Superusers.')
+        return redirect('expense_list')
+
     import datetime
     import json
     from decimal import Decimal
