@@ -4,7 +4,7 @@ from core.decorators import require_permission
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -258,12 +258,11 @@ def verify_email_view(request, uidb64, token):
         return render(request, 'users/verify_email_failed.html')
 
 
-@login_required
+@csrf_exempt
 def logout_view(request):
-    """POST-only logout for CSRF safety; GET redirects to login."""
-    if request.method == 'POST':
-        logout(request)
-        messages.success(request, 'You have been signed out successfully.')
+    """Logs out the user safely on both POST and GET without CSRF verification failures."""
+    logout(request)
+    messages.success(request, 'You have been signed out successfully.')
     return redirect('login')
 
 
