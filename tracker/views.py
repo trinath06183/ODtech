@@ -2455,10 +2455,10 @@ def mark_notification_read_api(request, notification_id):
 @login_required
 def mark_all_notifications_read_api(request):
     Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.method == 'POST' or 'application/json' in request.headers.get('accept', ''):
         return JsonResponse({'success': True, 'unread_count': 0})
     referer = request.META.get('HTTP_REFERER')
-    if referer:
+    if referer and 'mark-all-read' not in referer and 'api/notification' not in referer:
         return redirect(referer)
     return redirect(reverse('tracker:dashboard'))
 

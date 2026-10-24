@@ -851,6 +851,7 @@
                             tab: 'unread',
                             unreadCount: {{ unread_notifications_count|default:0 }},
                             async markAllRead() {
+                                this.unreadCount = 0;
                                 try {
                                     const res = await fetch("{% url 'tracker:api_mark_all_notifications_read' %}", {
                                         method: 'POST',
@@ -859,16 +860,10 @@
                                             'X-Requested-With': 'XMLHttpRequest'
                                         }
                                     });
-                                    const data = await res.json();
-                                    if (data.success) {
-                                        this.unreadCount = 0;
-                                        window.location.reload();
-                                    } else {
-                                        window.location.href = "{% url 'tracker:api_mark_all_notifications_read' %}";
-                                    }
                                 } catch (err) {
-                                    window.location.href = "{% url 'tracker:api_mark_all_notifications_read' %}";
+                                    console.error('Mark all read error:', err);
                                 }
+                                window.location.reload();
                             }
                         };
                     }
