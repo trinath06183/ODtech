@@ -20,6 +20,8 @@ class Payment(TimeStampedModel):
 
     @property
     def linked_document(self):
+        if hasattr(self, '_cached_linked_doc'):
+            return self._cached_linked_doc
         if not self.document_ref:
             return None
         from documents.models import Document
@@ -71,7 +73,6 @@ class Expense(TimeStampedModel):
     FIXED_COSTS = (
         ('Staff salary', 'Staff salary'),
         ('Office rent', 'Office rent'),
-        ('OFC rent', 'OFC rent'),
         ('Electricity bill', 'Electricity bill'),
         ('Internet Bill', 'Internet Bill'),
         ('Google workspace', 'Google workspace'),

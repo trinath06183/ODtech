@@ -1,7 +1,6 @@
-const CACHE_NAME = 'odtech-erp-cache-v1';
+const CACHE_NAME = 'odtech-erp-cache-v2';
 const urlsToCache = [
   '/',
-  '/static/css/tailwind.min.css',
   '/static/img/logo.png'
 ];
 

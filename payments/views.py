@@ -59,6 +59,16 @@ def payment_list(request):
     paginator = Paginator(payments, 30)
     page_obj = paginator.get_page(page_num)
 
+    from documents.models import Document
+    doc_refs = [p.document_ref for p in page_obj if p.document_ref]
+    if doc_refs:
+        docs_by_ref = {d.number: d for d in Document.objects.filter(number__in=doc_refs)}
+        for p in page_obj:
+            p._cached_linked_doc = docs_by_ref.get(p.document_ref)
+    else:
+        for p in page_obj:
+            p._cached_linked_doc = None
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         rows_html = render_to_string(
             'payments/partials/payment_rows.html',
@@ -86,15 +96,51 @@ def payment_list(request):
     })
 
 
+def get_payment_form_documents(preselected_ref=None):
+    from documents.models import Document
+    from decimal import Decimal
+    # Select related contact to avoid N+1 queries per document
+    docs_qs = Document.objects.select_related('contact').order_by('-date', '-id')
+    # Limit to latest 300 documents for instant page response
+    docs = list(docs_qs[:300])
+
+    if preselected_ref:
+        clean_ref = str(preselected_ref).strip()
+        already_present = any(d.number == clean_ref or str(d.id) == clean_ref for d in docs)
+        if not already_present:
+            extra_q = Q(number=clean_ref)
+            if clean_ref.isdigit():
+                extra_q |= Q(id=int(clean_ref))
+            extra = Document.objects.select_related('contact').filter(extra_q).first()
+            if extra:
+                docs.insert(0, extra)
+
+    # Batch compute total payments for these documents in ONE single query
+    doc_numbers = [d.number for d in docs if d.number]
+    if doc_numbers:
+        paid_aggregates = dict(
+            Payment.objects.filter(document_ref__in=doc_numbers)
+            .values('document_ref')
+            .annotate(total_paid=Sum('amount'))
+            .values_list('document_ref', 'total_paid')
+        )
+    else:
+        paid_aggregates = {}
+
+    for d in docs:
+        d._cached_amount_paid = Decimal(str(paid_aggregates.get(d.number) or '0.00'))
+
+    return docs
+
+
 @require_permission('PAYMENTS', 'write')
 def payment_create(request):
-    contacts  = Contact.objects.all().order_by('name')
-    from documents.models import Document
-    documents = Document.objects.all().order_by('-date', '-id')
+    contacts = Contact.objects.all().order_by('name')
 
     # Pre-select contact and document if passed as query param
     preselect_contact = request.GET.get('contact', '')
     preselect_document = request.GET.get('document', '')
+    documents = get_payment_form_documents(preselect_document)
 
     if request.method == 'POST':
         contact_id = request.POST.get('contact')
@@ -150,8 +196,11 @@ def payment_create(request):
 def payment_edit(request, payment_id):
     payment = get_object_or_404(Payment, id=payment_id)
     contacts = Contact.objects.all().order_by('name')
-    from documents.models import Document
-    documents = Document.objects.all().order_by('-date', '-id')
+
+    # Find linked doc id for preselection if available
+    linked_doc = payment.linked_document
+    preselect_document = str(linked_doc.id) if linked_doc else (payment.document_ref or '')
+    documents = get_payment_form_documents(payment.document_ref or preselect_document)
 
     if request.method == 'POST':
         contact_id = request.POST.get('contact')
@@ -189,10 +238,6 @@ def payment_edit(request, payment_id):
             if next_url:
                 return redirect(next_url)
             return redirect('payment_list')
-
-    # Find linked doc id for preselection if available
-    linked_doc = payment.linked_document
-    preselect_document = str(linked_doc.id) if linked_doc else ''
 
     from django.utils import timezone
     return render(request, 'payments/payment_form.html', {
@@ -270,8 +315,8 @@ def expense_list(request):
     fc_q = Expense.get_fixed_cost_q()
 
     # General / All Expenses strictly excludes confidential expenses
-    general_qs = Expense.objects.exclude(fc_q)
-    confidential_qs = Expense.objects.filter(fc_q) if can_view_fc else Expense.objects.none()
+    general_qs = Expense.objects.select_related('submitted_by').exclude(fc_q)
+    confidential_qs = Expense.objects.select_related('submitted_by').filter(fc_q) if can_view_fc else Expense.objects.none()
 
     all_count = general_qs.count()
     my_count = general_qs.filter(my_q).count()
