@@ -69,11 +69,13 @@ class ExpenseForm(forms.ModelForm):
         code = self.cleaned_data.get('employee_code')
         if code:
             code = code.strip()
+            if code.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY']:
+                return 'OFFICE'
             User = get_user_model()
             from django.db.models import Q
             matched = User.objects.filter(Q(empid__iexact=code) | Q(username__iexact=code)).first()
             if not matched:
-                raise forms.ValidationError("Invalid Employee Code. No such employee exists.")
+                raise forms.ValidationError("Invalid Employee Code. Enter a valid employee code or 'OFFICE'.")
             if matched.empid:
                 return matched.empid.strip()
             return matched.username.strip()

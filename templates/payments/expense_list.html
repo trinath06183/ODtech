@@ -305,49 +305,54 @@
         const input = document.getElementById('filter_employee_code');
         const datalist = document.getElementById('filter-employee-code-suggestions');
         const nameDisplay = document.getElementById('filter-employee-name-display');
-        let employeeMap = {};
+        let employeeMap = {
+            'OFFICE': '🏢 Official / Company Expense (No User)'
+        };
 
         function checkName(query) {
-            if (employeeMap[query]) {
-                nameDisplay.textContent = '✓ ' + employeeMap[query];
+            const trimmed = (query || '').trim().toUpperCase();
+            if (trimmed === 'OFFICE' || trimmed === 'OFFICIAL' || trimmed === 'COMPANY') {
+                nameDisplay.textContent = '✓ 🏢 Official / Company Expense (No User)';
+                nameDisplay.className = 'text-xs text-amber-700 font-semibold mt-1';
+                nameDisplay.classList.remove('hidden');
+                return;
+            }
+            if (employeeMap[query] || employeeMap[trimmed]) {
+                const label = employeeMap[query] || employeeMap[trimmed];
+                nameDisplay.textContent = '✓ ' + label;
+                nameDisplay.className = 'text-xs text-green-600 font-medium mt-1';
                 nameDisplay.classList.remove('hidden');
             } else {
                 nameDisplay.classList.add('hidden');
             }
         }
         
-        if (input) {
-            if (input.value) {
-                fetch(`/payments/api/employee-codes/?q=${encodeURIComponent(input.value)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(item => { employeeMap[item.code] = item.name; });
-                        checkName(input.value);
-                    }).catch(err => console.error(err));
-            }
-
-            input.addEventListener('input', function() {
-                const query = this.value;
-                checkName(query);
-
-                if (query.length > 0) {
-                    fetch(`/payments/api/employee-codes/?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            datalist.innerHTML = '';
-                            data.forEach(item => {
-                                employeeMap[item.code] = item.name;
-                                const option = document.createElement('option');
-                                option.value = item.code;
-                                option.textContent = item.name;
-                                datalist.appendChild(option);
-                            });
-                            checkName(input.value);
-                        })
-                        .catch(err => console.error('Error fetching employee codes:', err));
-                } else {
+        fetch('/payments/api/employee-codes/?q=')
+            .then(response => response.json())
+            .then(data => {
+                if (datalist && Array.isArray(data) && data.length > 0) {
                     datalist.innerHTML = '';
+                    data.forEach(item => {
+                        employeeMap[item.code] = item.name;
+                        const option = document.createElement('option');
+                        option.value = item.code;
+                        option.label = item.name;
+                        option.textContent = `${item.code} — ${item.name}`;
+                        datalist.appendChild(option);
+                    });
                 }
+                if (input && input.value) {
+                    checkName(input.value);
+                }
+            })
+            .catch(err => console.error(err));
+
+        if (input) {
+            input.addEventListener('input', function() {
+                checkName(this.value);
+            });
+            input.addEventListener('change', function() {
+                checkName(this.value);
             });
         }
     });

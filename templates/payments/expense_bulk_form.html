@@ -38,14 +38,26 @@
                                    name="global_employee_code"
                                    x-model="globalEmpCode"
                                    list="employee-code-suggestions"
-                                   placeholder="e.g. EMP123"
+                                   placeholder="e.g. EMP123 or OFFICE"
                                    class="text-xs font-mono rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 px-2.5 w-36 uppercase">
-                            <datalist id="employee-code-suggestions"></datalist>
+                            <datalist id="employee-code-suggestions">
+                                <option value="OFFICE" label="🏢 Official / Company Expense (No User)">OFFICE — 🏢 Official / Company Expense</option>
+                                {% for emp in active_employees %}
+                                <option value="{{ emp.code }}" label="{{ emp.name }}">{{ emp.code }} — {{ emp.name }}</option>
+                                {% endfor %}
+                            </datalist>
                         </div>
                         <button type="button"
                                 @click="applyEmpCodeToAll()"
-                                class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors shadow-none border border-gray-300">
+                                class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors shadow-none border border-gray-300"
+                                title="Apply current code to all rows">
                             Apply to all
+                        </button>
+                        <button type="button"
+                                @click="setOfficeExpenseForAll()"
+                                class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg transition-colors border border-amber-300 flex items-center gap-1 shadow-sm"
+                                title="Set all rows as Official Office Expense (without user attribution)">
+                            <span>🏢 Office Expense</span>
                         </button>
                     </div>
 
@@ -135,14 +147,24 @@
                                            required
                                            class="w-full rounded-lg border-gray-300 text-xs py-1.5 px-2.5 focus:ring-indigo-500 focus:border-indigo-500 bg-white font-medium">
                                     <!-- Optional Per-Row Employee Code override toggle -->
-                                    <div class="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
+                                    <div class="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500 flex-wrap">
                                         <span>Emp Code:</span>
                                         <input type="text"
                                                :name="'employee_code_' + row.id"
                                                x-model="row.employee_code"
-                                               placeholder="Inherit"
+                                               placeholder="OFFICE / EMP"
                                                list="employee-code-suggestions"
                                                class="text-[11px] font-mono rounded px-1.5 py-0.5 border-gray-200 text-gray-700 w-24 uppercase focus:ring-indigo-500">
+                                        <button type="button"
+                                                @click="row.employee_code = (row.employee_code === 'OFFICE' ? '' : 'OFFICE')"
+                                                :class="row.employee_code === 'OFFICE' ? 'bg-amber-100 text-amber-800 border-amber-300 font-bold' : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border-gray-200'"
+                                                class="px-1.5 py-0.5 text-[10px] rounded border transition-colors cursor-pointer"
+                                                title="Toggle this row as Official Office Expense (without user attribution)">
+                                            🏢 <span x-text="row.employee_code === 'OFFICE' ? 'Office' : 'Office?'"></span>
+                                        </button>
+                                        <template x-if="row.employee_code === 'OFFICE'">
+                                            <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Official Expense</span>
+                                        </template>
                                     </div>
                                 </td>
 
@@ -431,10 +453,15 @@ function bulkExpenseApp() {
             this.rows = nonEmpty.length > 0 ? nonEmpty : [this.rows[0]];
         },
 
+        setOfficeExpenseForAll() {
+            this.globalEmpCode = 'OFFICE';
+            this.applyEmpCodeToAll();
+        },
+
         applyEmpCodeToAll() {
-            if (!this.globalEmpCode) return;
+            const code = (this.globalEmpCode || '').trim();
             this.rows.forEach(r => {
-                r.employee_code = this.globalEmpCode;
+                r.employee_code = code;
             });
         },
 
@@ -477,11 +504,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             const datalist = document.getElementById('employee-code-suggestions');
-            if (datalist && Array.isArray(data)) {
+            if (datalist && Array.isArray(data) && data.length > 0) {
                 datalist.innerHTML = '';
                 data.forEach(item => {
                     const opt = document.createElement('option');
                     opt.value = item.code;
+                    opt.label = item.name;
                     opt.textContent = `${item.code} — ${item.name}`;
                     datalist.appendChild(opt);
                 });

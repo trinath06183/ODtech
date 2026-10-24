@@ -443,5 +443,38 @@ class ExpenseBulkCreateTests(TestCase):
         self.assertTemplateUsed(response, 'payments/expense_bulk_form.html')
         self.assertEqual(Expense.objects.filter(submitted_by=self.admin_user).count(), 0)
 
+    def test_bulk_create_office_expense(self):
+        """Admin can submit official company expenses using 'OFFICE' without attributing to a user."""
+        self.client.force_login(self.admin_user)
+        post_data = {
+            'global_employee_code': 'OFFICE',
+            'row_indices': '0',
+            'date_0': '2026-10-24',
+            'title_0': 'Office Electricity Bill',
+            'expense_type_0': 'Electricity bill',
+            'amount_0': '4500.00',
+            'gst_amount_0': '810.00',
+            'employee_code_0': 'OFFICE',
+        }
+        response = self.client.post(reverse('expense_bulk_create'), post_data)
+        self.assertRedirects(response, reverse('expense_list'))
+
+        exp = Expense.objects.filter(title='Office Electricity Bill').first()
+        self.assertIsNotNone(exp)
+        self.assertEqual(exp.employee_code, 'OFFICE')
+        self.assertEqual(exp.display_employee_code, 'OFFICE')
+        self.assertEqual(exp.employee_name, 'Office / Company')
+
+    def test_employee_code_autocomplete_returns_all_on_empty(self):
+        """Autocomplete returns all active employees and OFFICE even when query is empty."""
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('employee_code_autocomplete') + '?q=')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        codes = [item['code'] for item in data]
+        self.assertIn('OFFICE', codes)
+        self.assertIn('ADM001', codes)
+        self.assertIn('EMP777', codes)
+
 
 

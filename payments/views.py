@@ -479,8 +479,21 @@ def expense_bulk_create(request):
     default_emp_code = (getattr(request.user, 'empid', None) or '').strip()
     today_iso = datetime.date.today().isoformat()
 
+    User = get_user_model()
+    active_employees = [
+        {
+            'code': (u.empid or u.username).strip(),
+            'name': u.get_full_name().strip() or u.first_name or u.username,
+        }
+        for u in User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    ]
+
     if request.method == 'POST':
-        global_emp_code = request.POST.get('global_employee_code', '').strip() or default_emp_code
+        global_emp_code = request.POST.get('global_employee_code', '').strip()
+        if global_emp_code.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY', 'OFF']:
+            global_emp_code = 'OFFICE'
+        elif not global_emp_code:
+            global_emp_code = default_emp_code
 
         # Parse row indices
         row_indices_raw = request.POST.getlist('row_indices')
@@ -510,7 +523,13 @@ def expense_bulk_create(request):
             custom_category = request.POST.get(f'custom_category_{idx}', '').strip()
             amount_str = request.POST.get(f'amount_{idx}', '').strip()
             gst_amount_str = request.POST.get(f'gst_amount_{idx}', '0').strip() or '0'
-            emp_code = request.POST.get(f'employee_code_{idx}', '').strip() or global_emp_code
+            raw_emp = request.POST.get(f'employee_code_{idx}', '').strip()
+            if not raw_emp:
+                emp_code = global_emp_code
+            elif raw_emp.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY', 'OFF']:
+                emp_code = 'OFFICE'
+            else:
+                emp_code = raw_emp
             notes = request.POST.get(f'notes_{idx}', '').strip()
             is_conf = bool(request.POST.get(f'is_confidential_{idx}'))
             receipt = request.FILES.get(f'receipt_{idx}')
@@ -598,7 +617,7 @@ def expense_bulk_create(request):
                     'date': parsed_date,
                     'amount': parsed_amount,
                     'gst_amount': parsed_gst,
-                    'employee_code': emp_code,
+                    'employee_code': emp_code or 'OFFICE',
                     'notes': notes,
                     'is_confidential': is_conf or Expense.is_fixed_cost_category(final_category),
                     'receipt': receipt,
@@ -618,6 +637,7 @@ def expense_bulk_create(request):
                 'global_employee_code': global_emp_code,
                 'initial_rows_json': json.dumps(row_states if row_states else []),
                 'default_date': today_iso,
+                'active_employees': active_employees,
             })
 
         # Atomic bulk create
@@ -658,17 +678,30 @@ def expense_bulk_create(request):
         'global_employee_code': default_emp_code,
         'initial_rows_json': json.dumps(default_rows),
         'default_date': today_iso,
+        'active_employees': active_employees,
     })
 
 
 @require_permission('PAYMENTS', 'write')
 def expense_create(request):
+    User = get_user_model()
+    active_employees = [
+        {
+            'code': (u.empid or u.username).strip(),
+            'name': u.get_full_name().strip() or u.first_name or u.username,
+        }
+        for u in User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    ]
+
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.submitted_by = request.user
-            if not expense.employee_code and request.user.empid:
+            raw_code = request.POST.get('employee_code', '').strip()
+            if raw_code.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY', 'OFF'] or expense.employee_code == 'OFFICE':
+                expense.employee_code = 'OFFICE'
+            elif not expense.employee_code and request.user.empid:
                 expense.employee_code = request.user.empid
             
             # Extract payload fields
@@ -693,7 +726,11 @@ def expense_create(request):
             return redirect('expense_list')
     else:
         form = ExpenseForm(user=request.user)
-    return render(request, 'payments/expense_form.html', {'form': form, 'title': 'Submit New Expense'})
+    return render(request, 'payments/expense_form.html', {
+        'form': form,
+        'title': 'Submit New Expense',
+        'active_employees': active_employees,
+    })
 
 @require_permission('PAYMENTS', 'write')
 def expense_edit(request, pk):
@@ -766,11 +803,21 @@ def expense_edit(request, pk):
             return redirect('expense_list')
     else:
         form = ExpenseForm(instance=expense, user=request.user)
+    
+    User = get_user_model()
+    active_employees = [
+        {
+            'code': (u.empid or u.username).strip(),
+            'name': u.get_full_name().strip() or u.first_name or u.username,
+        }
+        for u in User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    ]
     return render(request, 'payments/expense_form.html', {
         'form': form,
         'title': 'Edit Expense',
         'expense': expense,
         'is_edit_approved': (expense.edit_permission_status == 'APPROVED'),
+        'active_employees': active_employees,
     })
 
 
@@ -1011,6 +1058,12 @@ def bulk_expense_action(request):
 def employee_code_autocomplete(request):
     query = request.GET.get('q', '').strip()
     User = get_user_model()
+    results = []
+
+    # Include OFFICE option if matching query or on initial load
+    if not query or any(kw in query.lower() for kw in ['off', 'com', 'gen', 'adm']):
+        results.append({'code': 'OFFICE', 'name': 'OFFICE — Office / Company Expense (No User)'})
+
     if query:
         users = User.objects.filter(
             Q(empid__icontains=query) |
@@ -1018,14 +1071,15 @@ def employee_code_autocomplete(request):
             Q(last_name__icontains=query) |
             Q(username__icontains=query),
             is_active=True
-        )[:10]
-        results = []
-        for u in users:
-            code = (u.empid or u.username).strip()
-            full_name = u.get_full_name().strip() or u.first_name or u.username
-            results.append({'code': code, 'name': f"{full_name} ({code})"})
+        ).order_by('first_name', 'last_name')[:50]
     else:
-        results = []
+        users = User.objects.filter(is_active=True).order_by('first_name', 'last_name')[:200]
+
+    for u in users:
+        code = (u.empid or u.username).strip()
+        full_name = u.get_full_name().strip() or u.first_name or u.username
+        results.append({'code': code, 'name': f"{code} — {full_name}"})
+
     return JsonResponse(results, safe=False)
 
 

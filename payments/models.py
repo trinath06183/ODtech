@@ -223,7 +223,10 @@ class Expense(TimeStampedModel):
     @property
     def display_employee_code(self):
         if self.employee_code:
-            return self.employee_code.strip()
+            code = self.employee_code.strip()
+            if code.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY']:
+                return "OFFICE"
+            return code
         if self.submitted_by and getattr(self.submitted_by, 'empid', None):
             return self.submitted_by.empid.strip()
         if self.submitted_by and getattr(self.submitted_by, 'username', None):
@@ -235,6 +238,8 @@ class Expense(TimeStampedModel):
         if hasattr(self, '_cached_employee_user'):
             return self._cached_employee_user
         code = (self.employee_code or '').strip()
+        if code.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY']:
+            return None
         if code:
             from django.contrib.auth import get_user_model
             User = get_user_model()
@@ -247,6 +252,9 @@ class Expense(TimeStampedModel):
     def employee_name(self):
         if hasattr(self, '_cached_employee_name'):
             return self._cached_employee_name
+        code = (self.employee_code or '').strip()
+        if code.upper() in ['OFFICE', 'OFFICIAL', 'COMPANY']:
+            return "Office / Company"
         user = self.employee_user
         if user:
             return user.get_full_name().strip() or user.first_name or user.username

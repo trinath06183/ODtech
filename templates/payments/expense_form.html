@@ -102,13 +102,26 @@
             </div>
             
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Employee Code (Optional)</label>
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <label class="block text-sm font-medium text-gray-700">Employee Code (Optional)</label>
+                    <button type="button"
+                            onclick="const inp=document.getElementById('id_employee_code'); if(inp){ inp.value='OFFICE'; inp.dispatchEvent(new Event('input')); }"
+                            class="text-xs font-semibold px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                            title="Set as Official Company Expense (No Employee)">
+                        <span>🏢 Set as Official / Office Expense</span>
+                    </button>
+                </div>
                 {{ form.employee_code }}
                 {% if form.employee_code.errors %}
                 <p class="text-sm text-red-500 mt-1 font-medium">{{ form.employee_code.errors.0 }}</p>
                 {% endif %}
                 <p id="employee-name-display" class="text-sm text-green-600 font-medium mt-1 hidden"></p>
-                <datalist id="employee-code-suggestions"></datalist>
+                <datalist id="employee-code-suggestions">
+                    <option value="OFFICE" label="🏢 Official / Company Expense (No User)">OFFICE — 🏢 Official / Company Expense</option>
+                    {% for emp in active_employees %}
+                    <option value="{{ emp.code }}" label="{{ emp.name }}">{{ emp.code }} — {{ emp.name }}</option>
+                    {% endfor %}
+                </datalist>
             </div>
             
             <div>
@@ -404,51 +417,55 @@
         const input = document.getElementById('id_employee_code');
         const datalist = document.getElementById('employee-code-suggestions');
         const nameDisplay = document.getElementById('employee-name-display');
-        let employeeMap = {};
+        let employeeMap = {
+            'OFFICE': '🏢 Official / Company Expense (No User)'
+        };
 
         function checkName(query) {
-            if (employeeMap[query]) {
-                nameDisplay.textContent = '✓ ' + employeeMap[query];
+            const trimmed = (query || '').trim().toUpperCase();
+            if (trimmed === 'OFFICE' || trimmed === 'OFFICIAL' || trimmed === 'COMPANY') {
+                nameDisplay.textContent = '✓ 🏢 Official / Company Expense (No User)';
+                nameDisplay.className = 'text-sm text-amber-700 font-semibold mt-1';
+                nameDisplay.classList.remove('hidden');
+                return;
+            }
+            if (employeeMap[query] || employeeMap[trimmed]) {
+                const label = employeeMap[query] || employeeMap[trimmed];
+                nameDisplay.textContent = '✓ ' + label;
+                nameDisplay.className = 'text-sm text-green-600 font-medium mt-1';
                 nameDisplay.classList.remove('hidden');
             } else {
                 nameDisplay.classList.add('hidden');
             }
         }
         
-        if (input) {
-            // Check pre-filled value on load
-            if (input.value) {
-                fetch(`/payments/api/employee-codes/?q=${encodeURIComponent(input.value)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(item => { employeeMap[item.code] = item.name; });
-                        checkName(input.value);
-                    }).catch(err => console.error(err));
-            }
-
-            input.addEventListener('input', function() {
-                const query = this.value;
-                checkName(query);
-                
-                if (query.length > 0) {
-                    fetch(`/payments/api/employee-codes/?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            datalist.innerHTML = '';
-                            data.forEach(item => {
-                                employeeMap[item.code] = item.name;
-                                const option = document.createElement('option');
-                                option.value = item.code;
-                                option.textContent = item.name;
-                                datalist.appendChild(option);
-                            });
-                            // Re-check name in case it just fetched the match
-                            checkName(input.value);
-                        })
-                        .catch(err => console.error('Error fetching employee codes:', err));
-                } else {
+        // Fetch all active codes to populate suggestions and employeeMap on load
+        fetch('/payments/api/employee-codes/?q=')
+            .then(response => response.json())
+            .then(data => {
+                if (datalist && Array.isArray(data) && data.length > 0) {
                     datalist.innerHTML = '';
+                    data.forEach(item => {
+                        employeeMap[item.code] = item.name;
+                        const option = document.createElement('option');
+                        option.value = item.code;
+                        option.label = item.name;
+                        option.textContent = `${item.code} — ${item.name}`;
+                        datalist.appendChild(option);
+                    });
                 }
+                if (input && input.value) {
+                    checkName(input.value);
+                }
+            })
+            .catch(err => console.error('Error fetching employee codes:', err));
+
+        if (input) {
+            input.addEventListener('input', function() {
+                checkName(this.value);
+            });
+            input.addEventListener('change', function() {
+                checkName(this.value);
             });
         }
     });
