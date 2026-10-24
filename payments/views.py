@@ -259,23 +259,30 @@ def get_user_expense_q(user):
 
 @require_permission('PAYMENTS', 'read')
 def expense_list(request):
+    can_view_fc = user_can_view_fixed_costs(request.user)
     current_tab = request.GET.get('tab', 'all').strip().lower()
-    if current_tab != 'my':
+    if current_tab == 'confidential' and not can_view_fc:
+        current_tab = 'all'
+    elif current_tab not in ('my', 'confidential'):
         current_tab = 'all'
 
-    can_view_fc = user_can_view_fixed_costs(request.user)
     my_q = get_user_expense_q(request.user)
+    fc_q = Expense.get_fixed_cost_q()
 
-    all_qs = Expense.objects.all()
-    if not can_view_fc:
-        all_qs = all_qs.exclude(Expense.get_fixed_cost_q())
+    # General / All Expenses strictly excludes confidential expenses
+    general_qs = Expense.objects.exclude(fc_q)
+    confidential_qs = Expense.objects.filter(fc_q) if can_view_fc else Expense.objects.none()
 
-    all_count = all_qs.count()
-    my_count = all_qs.filter(my_q).count()
+    all_count = general_qs.count()
+    my_count = general_qs.filter(my_q).count()
+    confidential_count = confidential_qs.count()
 
-    expenses = all_qs
-    if current_tab == 'my':
-        expenses = expenses.filter(my_q)
+    if current_tab == 'confidential':
+        expenses = confidential_qs
+    elif current_tab == 'my':
+        expenses = general_qs.filter(my_q)
+    else:
+        expenses = general_qs
 
     search = request.GET.get('search', '').strip()
     category = request.GET.get('category', '').strip()
@@ -381,9 +388,11 @@ def expense_list(request):
             'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
         })
 
+    category_choices = [('Fixed Cost', Expense.FIXED_COSTS)] if current_tab == 'confidential' else [('Daily Expenses', Expense.DAILY_EXPENSES)]
+
     return render(request, 'payments/expense_list.html', {
         'expenses': page_obj,
-        'expense_types': Expense.EXPENSE_TYPES if can_view_fc else [('Daily Expenses', Expense.DAILY_EXPENSES)],
+        'expense_types': category_choices,
         'can_view_fixed_costs': can_view_fc,
         'total_expenses': total_expenses,
         'total_paid': total_paid,
@@ -391,6 +400,7 @@ def expense_list(request):
         'total_count': total_count,
         'all_count': all_count,
         'my_count': my_count,
+        'confidential_count': confidential_count,
         'current_tab': current_tab,
         'has_next': page_obj.has_next(),
         'next_page': page_obj.next_page_number() if page_obj.has_next() else '',
@@ -398,12 +408,20 @@ def expense_list(request):
 
 @require_permission('PAYMENTS', 'read')
 def print_unpaid_expenses(request):
+    can_view_fc = user_can_view_fixed_costs(request.user)
     tab = request.GET.get('tab', 'all').strip().lower()
     unpaid_expenses = Expense.objects.exclude(status='Pending').exclude(status='Rejected').filter(is_paid=False)
-    if not user_can_view_fixed_costs(request.user):
+    
+    if tab == 'confidential':
+        if can_view_fc:
+            unpaid_expenses = unpaid_expenses.filter(Expense.get_fixed_cost_q())
+        else:
+            unpaid_expenses = unpaid_expenses.none()
+    elif tab == 'my':
+        unpaid_expenses = unpaid_expenses.exclude(Expense.get_fixed_cost_q()).filter(get_user_expense_q(request.user))
+    else:
         unpaid_expenses = unpaid_expenses.exclude(Expense.get_fixed_cost_q())
-    if tab == 'my':
-        unpaid_expenses = unpaid_expenses.filter(get_user_expense_q(request.user))
+
     unpaid_expenses = unpaid_expenses.select_related('submitted_by').order_by('employee_code', 'date')
     total_unpaid = unpaid_expenses.aggregate(total=Sum('amount'))['total'] or 0
 
@@ -1144,13 +1162,19 @@ def expense_export_csv(request):
     sort = request.GET.get('sort', '').strip()
     status = request.GET.get('status', 'All')
     
+    can_view_fc = user_can_view_fixed_costs(request.user)
     expenses = Expense.objects.select_related('submitted_by').all()
-    if not user_can_view_fixed_costs(request.user):
-        expenses = expenses.exclude(Expense.get_fixed_cost_q())
-    
     tab = request.GET.get('tab', 'all').strip().lower()
-    if tab == 'my':
-        expenses = expenses.filter(get_user_expense_q(request.user))
+    
+    if tab == 'confidential':
+        if can_view_fc:
+            expenses = expenses.filter(Expense.get_fixed_cost_q())
+        else:
+            expenses = expenses.none()
+    elif tab == 'my':
+        expenses = expenses.exclude(Expense.get_fixed_cost_q()).filter(get_user_expense_q(request.user))
+    else:
+        expenses = expenses.exclude(Expense.get_fixed_cost_q())
     
     if search:
         expenses = expenses.filter(

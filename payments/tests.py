@@ -201,7 +201,7 @@ class FixedCostPermissionTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_expense_list_confidential_filtering(self):
-        # Staff user should only see daily expense, not fixed cost / rent expenses
+        # Staff user should only see daily expense in All Expenses, not fixed cost / rent expenses
         self.client.force_login(self.staff_user)
         response = self.client.get(reverse('expense_list'))
         self.assertEqual(response.status_code, 200)
@@ -210,14 +210,28 @@ class FixedCostPermissionTests(TestCase):
         self.assertNotIn(self.fixed_cost_expense.id, expense_ids)
         self.assertNotIn(self.rent_expense.id, expense_ids)
 
-        # HR user should see all expenses including fixed cost and rent
+        # In All Expenses tab, confidential expenses are generally excluded even for HR
         self.client.force_login(self.hr_user)
         response = self.client.get(reverse('expense_list'))
         self.assertEqual(response.status_code, 200)
         expense_ids = [e.id for e in response.context['expenses']]
         self.assertIn(self.daily_expense.id, expense_ids)
-        self.assertIn(self.fixed_cost_expense.id, expense_ids)
-        self.assertIn(self.rent_expense.id, expense_ids)
+        self.assertNotIn(self.fixed_cost_expense.id, expense_ids)
+        self.assertNotIn(self.rent_expense.id, expense_ids)
+
+        # In dedicated Confidential tab, authorized HR user sees confidential expenses
+        response_conf = self.client.get(reverse('expense_list') + '?tab=confidential')
+        self.assertEqual(response_conf.status_code, 200)
+        conf_ids = [e.id for e in response_conf.context['expenses']]
+        self.assertNotIn(self.daily_expense.id, conf_ids)
+        self.assertIn(self.fixed_cost_expense.id, conf_ids)
+        self.assertIn(self.rent_expense.id, conf_ids)
+
+        # Unauthorized staff user cannot access confidential tab (defaults back to all)
+        self.client.force_login(self.staff_user)
+        response_staff_conf = self.client.get(reverse('expense_list') + '?tab=confidential')
+        self.assertEqual(response_staff_conf.status_code, 200)
+        self.assertEqual(response_staff_conf.context['current_tab'], 'all')
 
     def test_expense_form_confidential_checkbox_authorized(self):
         form = ExpenseForm(
