@@ -461,6 +461,202 @@ def print_unpaid_expenses(request):
     })
 
 @require_permission('PAYMENTS', 'write')
+def expense_bulk_create(request):
+    """Allow user to enter and submit multiple expenses at once."""
+    import datetime
+    import json
+    from decimal import Decimal
+    from django.db import transaction
+
+    can_view_fc = user_can_view_fixed_costs(request.user)
+    daily_categories = [c[0] for c in Expense.DAILY_EXPENSES]
+    fixed_categories = [c[0] for c in Expense.FIXED_COSTS] if can_view_fc else []
+    default_emp_code = (getattr(request.user, 'empid', None) or '').strip()
+    today_iso = datetime.date.today().isoformat()
+
+    if request.method == 'POST':
+        global_emp_code = request.POST.get('global_employee_code', '').strip() or default_emp_code
+
+        # Parse row indices
+        row_indices_raw = request.POST.getlist('row_indices')
+        indices = []
+        for val in row_indices_raw:
+            for item in str(val).split(','):
+                item = item.strip()
+                if item and item not in indices:
+                    indices.append(item)
+
+        # Fallback: discover row IDs from POST parameters
+        if not indices:
+            for k in request.POST.keys():
+                if k.startswith('title_'):
+                    idx = k.replace('title_', '').strip()
+                    if idx and idx not in indices:
+                        indices.append(idx)
+
+        valid_items = []
+        errors = []
+        row_states = []
+
+        for idx in indices:
+            date_str = request.POST.get(f'date_{idx}', '').strip()
+            title = request.POST.get(f'title_{idx}', '').strip()
+            expense_type = request.POST.get(f'expense_type_{idx}', '').strip()
+            custom_category = request.POST.get(f'custom_category_{idx}', '').strip()
+            amount_str = request.POST.get(f'amount_{idx}', '').strip()
+            gst_amount_str = request.POST.get(f'gst_amount_{idx}', '0').strip() or '0'
+            emp_code = request.POST.get(f'employee_code_{idx}', '').strip() or global_emp_code
+            notes = request.POST.get(f'notes_{idx}', '').strip()
+            is_conf = bool(request.POST.get(f'is_confidential_{idx}'))
+            receipt = request.FILES.get(f'receipt_{idx}')
+
+            row_state = {
+                'id': idx,
+                'date': date_str or today_iso,
+                'title': title,
+                'expense_type': expense_type,
+                'custom_category': custom_category,
+                'amount': amount_str,
+                'gst_amount': gst_amount_str,
+                'employee_code': emp_code,
+                'notes': notes,
+                'is_confidential': is_conf,
+            }
+            row_states.append(row_state)
+
+            # Skip row if totally empty
+            if not title and not amount_str and not expense_type:
+                continue
+
+            row_num = len(row_states)
+            row_has_error = False
+
+            if not title:
+                errors.append(f"Row #{row_num}: Title / Purpose is required.")
+                row_has_error = True
+
+            final_category = expense_type
+            if not final_category:
+                errors.append(f"Row #{row_num}: Category is required.")
+                row_has_error = True
+            elif final_category == '__custom__':
+                if not custom_category:
+                    errors.append(f"Row #{row_num}: Please enter the custom category name.")
+                    row_has_error = True
+                else:
+                    final_category = custom_category
+
+            if final_category and Expense.is_fixed_cost_category(final_category) and not can_view_fc:
+                errors.append(f"Row #{row_num}: You do not have permission to submit confidential / fixed cost expenses.")
+                row_has_error = True
+
+            parsed_date = None
+            if not date_str:
+                errors.append(f"Row #{row_num}: Date is required.")
+                row_has_error = True
+            else:
+                try:
+                    parsed_date = datetime.date.fromisoformat(date_str)
+                except ValueError:
+                    errors.append(f"Row #{row_num}: Invalid date '{date_str}'. Expected format YYYY-MM-DD.")
+                    row_has_error = True
+
+            parsed_amount = None
+            if not amount_str:
+                errors.append(f"Row #{row_num}: Amount is required.")
+                row_has_error = True
+            else:
+                try:
+                    parsed_amount = Decimal(amount_str)
+                    if parsed_amount <= 0:
+                        errors.append(f"Row #{row_num}: Amount must be greater than zero.")
+                        row_has_error = True
+                except Exception:
+                    errors.append(f"Row #{row_num}: Invalid amount '{amount_str}'.")
+                    row_has_error = True
+
+            parsed_gst = Decimal('0.00')
+            if gst_amount_str:
+                try:
+                    parsed_gst = Decimal(gst_amount_str)
+                    if parsed_gst < 0:
+                        errors.append(f"Row #{row_num}: GST Amount cannot be negative.")
+                        row_has_error = True
+                except Exception:
+                    errors.append(f"Row #{row_num}: Invalid GST amount '{gst_amount_str}'.")
+                    row_has_error = True
+
+            if not row_has_error:
+                valid_items.append({
+                    'title': title,
+                    'expense_type': final_category,
+                    'date': parsed_date,
+                    'amount': parsed_amount,
+                    'gst_amount': parsed_gst,
+                    'employee_code': emp_code,
+                    'notes': notes,
+                    'is_confidential': is_conf or Expense.is_fixed_cost_category(final_category),
+                    'receipt': receipt,
+                })
+
+        if not valid_items and not errors:
+            errors.append("Please fill in at least one expense row.")
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+            return render(request, 'payments/expense_bulk_form.html', {
+                'title': 'Submit Multiple Expenses',
+                'can_view_fc': can_view_fc,
+                'daily_categories': daily_categories,
+                'fixed_categories': fixed_categories,
+                'global_employee_code': global_emp_code,
+                'initial_rows_json': json.dumps(row_states if row_states else []),
+                'default_date': today_iso,
+            })
+
+        # Atomic bulk create
+        total_amount = Decimal('0.00')
+        with transaction.atomic():
+            for item in valid_items:
+                exp = Expense.objects.create(
+                    title=item['title'],
+                    expense_type=item['expense_type'],
+                    date=item['date'],
+                    amount=item['amount'],
+                    gst_amount=item['gst_amount'],
+                    employee_code=item['employee_code'],
+                    submitted_by=request.user,
+                    status='Pending',
+                    notes=item['notes'],
+                    is_confidential=item['is_confidential'],
+                    receipt=item['receipt'],
+                )
+                total_amount += item['amount']
+
+        messages.success(request, f"Successfully submitted {len(valid_items)} expenses totaling ₹{total_amount:,.2f}.")
+        return redirect('expense_list')
+
+    # Default GET initial rows (start with 3 clean rows)
+    import json
+    default_rows = [
+        {'id': '0', 'date': today_iso, 'title': '', 'expense_type': '', 'custom_category': '', 'amount': '', 'gst_amount': '0.00', 'employee_code': default_emp_code, 'notes': '', 'is_confidential': False},
+        {'id': '1', 'date': today_iso, 'title': '', 'expense_type': '', 'custom_category': '', 'amount': '', 'gst_amount': '0.00', 'employee_code': default_emp_code, 'notes': '', 'is_confidential': False},
+        {'id': '2', 'date': today_iso, 'title': '', 'expense_type': '', 'custom_category': '', 'amount': '', 'gst_amount': '0.00', 'employee_code': default_emp_code, 'notes': '', 'is_confidential': False},
+    ]
+
+    return render(request, 'payments/expense_bulk_form.html', {
+        'title': 'Submit Multiple Expenses',
+        'can_view_fc': can_view_fc,
+        'daily_categories': daily_categories,
+        'fixed_categories': fixed_categories,
+        'global_employee_code': default_emp_code,
+        'initial_rows_json': json.dumps(default_rows),
+        'default_date': today_iso,
+    })
+
+
+@require_permission('PAYMENTS', 'write')
 def expense_create(request):
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES, user=request.user)

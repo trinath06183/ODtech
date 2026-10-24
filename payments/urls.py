@@ -12,6 +12,7 @@ urlpatterns = [
     path('expenses/print_unpaid/', views.print_unpaid_expenses, name='print_unpaid_expenses'),
     path('expenses/bulk-action/', views.bulk_expense_action, name='bulk_expense_action'),
     path('expenses/new/', views.expense_create, name='expense_create'),
+    path('expenses/bulk-new/', views.expense_bulk_create, name='expense_bulk_create'),
     path('expenses/<int:pk>/', views.expense_detail, name='expense_detail'),
     path('expenses/<int:pk>/edit/', views.expense_edit, name='expense_edit'),
     path('expenses/<int:pk>/delete/', views.expense_delete, name='expense_delete'),
