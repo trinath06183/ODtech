@@ -541,7 +541,10 @@ def attendance_report(request):
             for d in all_dates:
                 r = row['records'].get(d, None)
                 if r:
-                    cells.append(r.get_status_display())
+                    disp = r.get_status_display()
+                    if r.notes:
+                        disp = f"{disp} ({r.notes})"
+                    cells.append(disp)
                 elif d.weekday() == 6:
                     cells.append('Weekly Off')
                 elif d in holidays:
@@ -736,6 +739,32 @@ def quick_update_attendance(request):
             new_status = rec.status if rec else 'NOT_MARKED'
             status_display = rec.get_status_display() if rec else 'Not Marked'
 
+        elif action == 'save_note':
+            note_text = (data.get('notes') or '').strip()
+            if not rec:
+                year = record_date.year
+                month = record_date.month
+                holidays_set = set(Holiday.objects.filter(date__year=year, date__month=month).values_list('date', flat=True))
+                if record_date.weekday() == 6:
+                    initial_status = 'WEEKLY_OFF'
+                elif record_date in holidays_set:
+                    initial_status = 'HOLIDAY'
+                else:
+                    initial_status = 'PRESENT'
+                rec = AttendanceRecord.objects.create(
+                    employee=employee,
+                    date=record_date,
+                    status=initial_status,
+                    notes=note_text,
+                    marked_by=request.user,
+                )
+            else:
+                rec.notes = note_text
+                rec.marked_by = request.user
+                rec.save()
+            new_status = rec.status
+            status_display = rec.get_status_display()
+
         else:
             valid_statuses = [s[0] for s in AttendanceRecord.STATUS_CHOICES]
 
@@ -744,6 +773,11 @@ def quick_update_attendance(request):
                     'status': new_status,
                     'marked_by': request.user,
                 }
+                if 'notes' in data:
+                    defaults['notes'] = (data.get('notes') or '').strip()
+                elif rec and rec.notes:
+                    defaults['notes'] = rec.notes
+
                 if 'check_in' in data:
                     defaults['check_in'] = _parse_time_val(data.get('check_in'))
                 elif new_status in ['PRESENT', 'WFH', 'HALF_DAY']:
@@ -834,6 +868,8 @@ def quick_update_attendance(request):
             'status_badge_class': status_badge_class,
             'badge_char': badge_char,
             'badge_color': badge_color,
+            'notes': rec.notes if rec else '',
+            'has_notes': bool(rec and rec.notes),
             'check_in': rec.check_in.strftime('%I:%M %p') if (rec and rec.check_in) else '',
             'check_in_raw': rec.check_in.strftime('%H:%M') if (rec and rec.check_in) else '',
             'check_out': rec.check_out.strftime('%I:%M %p') if (rec and rec.check_out) else '',
