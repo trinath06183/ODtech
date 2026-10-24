@@ -1856,13 +1856,7 @@ def update_order_status_api(request, order_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@require_permission('TRACKER', 'write')
-@require_POST
-def mark_notification_read_api(request, notification_id):
-    notif = get_object_or_404(Notification, id=notification_id, user=request.user)
-    notif.is_read = True
-    notif.save()
-    return JsonResponse({'success': True})
+
 
 @require_permission('TRACKER', 'write')
 @require_POST
@@ -2442,19 +2436,27 @@ def bulk_add_internal_note_api(request):
 
     return JsonResponse({'success': True, 'created_count': len(notes)})
 
-@require_permission('TRACKER', 'write')
+@login_required
 def mark_notification_read_api(request, notification_id):
     notif = get_object_or_404(Notification, id=notification_id, user=request.user)
     notif.is_read = True
-    notif.save()
+    notif.save(update_fields=['is_read'])
     
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+        return JsonResponse({'success': True, 'link': notif.link or ''})
+
     if notif.link:
         return redirect(notif.link)
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
     return redirect(reverse('tracker:dashboard'))
 
-@require_permission('TRACKER', 'write')
+@login_required
 def mark_all_notifications_read_api(request):
-    request.user.notifications.filter(is_read=False).update(is_read=True)
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+        return JsonResponse({'success': True, 'unread_count': 0})
     referer = request.META.get('HTTP_REFERER')
     if referer:
         return redirect(referer)

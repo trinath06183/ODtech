@@ -792,8 +792,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
-                        {% if unread_notifications_count > 0 %}<span
-                            class="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white">{{ unread_notifications_count }}</span>{% endif %}
+                        <span x-show="unreadCount > 0"
+                            x-text="unreadCount"
+                            class="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white">{{ unread_notifications_count }}</span>
                     </button>
                     <!-- Dropdown -->
                     <div x-show="open" x-cloak style="display: none;"
@@ -812,10 +813,13 @@
                         </div>
                         <div x-show="tab === 'unread'" class="max-h-64 overflow-y-auto flex-1">
                             {% if unread_notifications %}
-                            <div class="px-4 py-2 border-b border-gray-50 flex justify-end"><a
-                                    href="{% url 'tracker:api_mark_all_notifications_read' %}"
-                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors">Mark
-                                    all as read</a></div>
+                            <div class="px-4 py-2 border-b border-gray-50 flex justify-end">
+                                <button type="button"
+                                    @click.prevent="markAllRead()"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer focus:outline-none">
+                                    Mark all as read
+                                </button>
+                            </div>
                             {% endif %}
                             {% for notif in unread_notifications %}
                             <a href="{% url 'tracker:api_mark_notification_read' notif.id %}"
@@ -840,7 +844,35 @@
                         </div>
                     </div>
                 </div>
-                <script>function notificationsDropdown() { return { open: false, tab: 'unread' } }</script>
+                <script>
+                    function notificationsDropdown() {
+                        return {
+                            open: false,
+                            tab: 'unread',
+                            unreadCount: {{ unread_notifications_count|default:0 }},
+                            async markAllRead() {
+                                try {
+                                    const res = await fetch("{% url 'tracker:api_mark_all_notifications_read' %}", {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRFToken': '{{ csrf_token }}',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        this.unreadCount = 0;
+                                        window.location.reload();
+                                    } else {
+                                        window.location.href = "{% url 'tracker:api_mark_all_notifications_read' %}";
+                                    }
+                                } catch (err) {
+                                    window.location.href = "{% url 'tracker:api_mark_all_notifications_read' %}";
+                                }
+                            }
+                        };
+                    }
+                </script>
 
                 <!-- ODtech Logo in Header -->
                 <a href="{% url 'tracker:dashboard' %}" class="flex items-center ml-4">
