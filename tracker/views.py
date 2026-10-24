@@ -2436,6 +2436,9 @@ def bulk_add_internal_note_api(request):
 
     return JsonResponse({'success': True, 'created_count': len(notes)})
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @login_required
 def mark_notification_read_api(request, notification_id):
     notif = get_object_or_404(Notification, id=notification_id, user=request.user)
@@ -2448,15 +2451,16 @@ def mark_notification_read_api(request, notification_id):
     if notif.link:
         return redirect(notif.link)
     referer = request.META.get('HTTP_REFERER')
-    if referer:
+    if referer and 'api/notification' not in referer:
         return redirect(referer)
     return redirect(reverse('tracker:dashboard'))
 
+@csrf_exempt
 @login_required
 def mark_all_notifications_read_api(request):
-    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    updated = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.method == 'POST' or 'application/json' in request.headers.get('accept', ''):
-        return JsonResponse({'success': True, 'unread_count': 0})
+        return JsonResponse({'success': True, 'unread_count': 0, 'updated': updated})
     referer = request.META.get('HTTP_REFERER')
     if referer and 'mark-all-read' not in referer and 'api/notification' not in referer:
         return redirect(referer)
