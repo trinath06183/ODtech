@@ -30,16 +30,39 @@
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    fontFamily: { sans: ['Outfit', 'Inter', 'sans-serif'] },
                     colors: {
-                        dark: { bg: '#F0F9FF', card: 'rgba(255,255,255,0.75)', border: 'rgba(56,189,248,0.15)', text: '#0F172A' },
-                        brand: { primary: '#3B82F6', secondary: '#8B5CF6', accent: '#10B981' },
-                        surface: '#f7f9fb',
-                        'surface-dim': '#d8dadc',
-                        primary: '#2a14b4',
-                        secondary: '#006c49',
-                        tertiary: '#00414d',
-                        outline: '#777586',
+                        primary: {
+                            DEFAULT: '#4664EB',
+                            hover: '#3654D8',
+                            light: '#EAF0FF',
+                            50: '#F0F4FF',
+                            100: '#EAF0FF',
+                            500: '#4664EB',
+                            600: '#3654D8',
+                            700: '#2A44B8',
+                        },
+                        navy: {
+                            DEFAULT: '#111827',
+                            900: '#111827',
+                            800: '#1F2937',
+                            700: '#374151',
+                            600: '#4B5563',
+                        },
+                        body: '#697386',
+                        muted: '#8A95A6',
+                        page: '#FFFFFF',
+                        'page-alt': '#FAFBFF',
+                        fine: '#DDE3EC',
+                        dotted: '#9AA5B5',
+                        success: {
+                            DEFAULT: '#2DA866',
+                            light: '#ECF9F1',
+                        },
+                        dark: { bg: '#FFFFFF', card: '#ffffff', border: '#DDE3EC', text: '#111827' },
+                        brand: { primary: '#4664EB', secondary: '#3654D8', accent: '#2DA866' },
+                        surface: '#FAFBFF',
+                        'surface-dim': '#EAF0FF',
                     }
                 }
             }
@@ -50,71 +73,93 @@
     <script defer src="{% static 'vendor/js/Sortable.min.js' %}"></script>
     <script defer src="{% static 'vendor/js/htmx.min.js' %}"></script>
     <style>
+        :root {
+            --primary: #4664EB;
+            --primary-hover: #3654D8;
+            --primary-light: #EAF0FF;
+            --navy: #111827;
+            --text-body: #697386;
+            --text-muted: #8A95A6;
+            --bg-page: #FFFFFF;
+            --bg-alt: #FAFBFF;
+            --border-fine: #DDE3EC;
+            --border-dotted: #9AA5B5;
+            --success: #2DA866;
+            --success-light: #ECF9F1;
+        }
+
         [x-cloak] {
             display: none !important;
         }
 
-        .glass {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            border-radius: 0.75rem;
+        /* ── Cloud-Hosting Theme Base Canvas ── */
+        body {
+            background-color: #FFFFFF !important;
+            background-image: radial-gradient(#DDE3EC 1px, transparent 1px) !important;
+            background-size: 28px 28px !important;
+            background-attachment: fixed !important;
+            color: #111827 !important;
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+        }
+
+        /* ── Clean White Card Surfaces ── */
+        .glass, .card-cloud {
+            background-color: #ffffff !important;
+            border: 1px solid #DDE3EC !important;
+            box-shadow: 0 1px 3px 0 rgba(17, 24, 39, 0.04) !important;
+            border-radius: 12px;
         }
 
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
         }
 
         ::-webkit-scrollbar-track {
-            background: transparent;
+            background: #FAFBFF;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(14, 165, 233, 0.2);
+            background: #DDE3EC;
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(14, 165, 233, 0.3);
+            background: #9AA5B5;
         }
 
-        body {
-            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
-            background-attachment: fixed;
-        }
-
+        /* ── Navigation Links (Clean Navy & Royal Blue Active Pill) ── */
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 0.6rem 1rem;
-            border-radius: 0.75rem;
+            padding: 0.6rem 0.85rem;
+            border-radius: 10px;
             border: 1px solid transparent;
             font-weight: 500;
-            color: #334155;
+            color: #697386;
             font-size: 0.875rem;
-            transition: all 0.2s ease;
+            transition: all 0.18s ease;
             position: relative;
         }
 
         .nav-link:hover {
-            background: rgba(59, 130, 246, 0.08);
-            border-color: rgba(59, 130, 246, 0.15);
-            color: #2563eb;
+            background: #FAFBFF;
+            border-color: #DDE3EC;
+            color: #4664EB;
         }
 
-        /* ── Active Module / Active Navigation Item Highlighting ── */
+        /* Active Navigation Item Highlighting */
         .nav-link.active-nav,
         .nav-link.active {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.18)) !important;
-            border-color: rgba(37, 99, 235, 0.35) !important;
-            color: #1d4ed8 !important;
+            background: #EAF0FF !important;
+            border-color: #DDE3EC !important;
+            color: #4664EB !important;
             font-weight: 700 !important;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12) !important;
+            box-shadow: none !important;
         }
         .nav-link.active-nav svg,
         .nav-link.active svg {
-            color: #1d4ed8 !important;
+            color: #4664EB !important;
             stroke-width: 2.2 !important;
         }
         /* Active left indicator pill */
@@ -123,17 +168,17 @@
             content: '';
             position: absolute;
             left: 0;
-            top: 20%;
-            bottom: 20%;
-            width: 4px;
-            background: #2563eb;
+            top: 15%;
+            bottom: 15%;
+            width: 3.5px;
+            background: #4664EB;
             border-radius: 0 4px 4px 0;
         }
 
         /* Submenu active item */
         .nav-sublink.active-sublink {
-            background: rgba(37, 99, 235, 0.1) !important;
-            color: #1d4ed8 !important;
+            background: #EAF0FF !important;
+            color: #4664EB !important;
             font-weight: 700 !important;
         }
 
@@ -142,124 +187,104 @@
             font-size: 1rem;
         }
 
-        /* Premium Light Theme overrides */
-        /* Text color overrides */
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6,
-        .text-white:not(.bg-gradient-to-br *):not(.bg-blue-500 *):not(.bg-red-500 *):not(.bg-slate-500 *):not(.bg-cyan-600 *):not(.bg-emerald-600 *):not(.bg-red-600 *):not(.bg-blue-600 *):not(button *):not(a.bg-blue-600 *):not(a.bg-cyan-600 *) {
-            color: #0F172A !important;
+        /* ── Button System (Cloud-Hosting Spec) ── */
+        .btn-primary {
+            background-color: #4664EB !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.55rem 1.25rem;
+            box-shadow: 0 2px 4px rgba(70, 100, 235, 0.2);
+            transition: all 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #3654D8 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(70, 100, 235, 0.28);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn-primary:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px #EAF0FF, 0 0 0 5px #4664EB;
+        }
+
+        .btn-secondary {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            border: 1px solid #DDE3EC !important;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.55rem 1.25rem;
+            transition: all 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-secondary:hover {
+            background-color: #EAF0FF !important;
+            border-color: #4664EB !important;
+            color: #4664EB !important;
+        }
+
+        /* ── Typography & Text Overrides ── */
+        h1, h2, h3, h4, h5, h6 {
+            color: #111827 !important;
+            letter-spacing: -0.02em;
+        }
+
+        p, .text-body {
+            color: #697386;
+        }
+
+        .text-white:not(.bg-gradient-to-br *):not(.bg-blue-500 *):not(.bg-red-500 *):not(.bg-slate-500 *):not(.bg-cyan-600 *):not(.bg-emerald-600 *):not(.bg-red-600 *):not(.bg-blue-600 *):not(.bg-primary *):not(.btn-primary *):not(button.bg-indigo-600 *):not(button.bg-blue-600 *):not(button.bg-emerald-600 *):not(button.bg-red-600 *):not(button.btn-primary *):not(.promo-strip *):not(a.bg-blue-600 *):not(a.bg-cyan-600 *):not(a.bg-primary *):not(a.btn-primary *) {
+            color: #111827 !important;
         }
 
         .text-gray-300 {
-            color: #334155 !important;
+            color: #4B5563 !important;
         }
 
         .text-gray-400 {
-            color: #475569 !important;
+            color: #697386 !important;
         }
 
         .text-gray-500 {
-            color: #475569 !important;
+            color: #697386 !important;
         }
 
         .text-gray-600 {
-            color: #64748B !important;
+            color: #4B5563 !important;
         }
 
-        /* Protect text visibility on dark buttons against global light overrides */
-        .bg-slate-700.text-white,
-        .bg-slate-700.text-gray-300,
-        .bg-slate-700 .text-white,
-        .bg-slate-700 .text-gray-300 {
-            color: #f8fafc !important;
+        /* ── Badges & Status Highlights ── */
+        .text-emerald-200, .text-emerald-300, .text-emerald-400 {
+            color: #2DA866 !important;
         }
 
-        /* Overrides for text highlights so they remain readable in light mode */
-        .text-emerald-200 {
-            color: #065f46 !important;
+        .text-blue-300, .text-blue-400 {
+            color: #4664EB !important;
         }
 
-        .text-red-200 {
-            color: #991b1b !important;
+        .text-purple-300, .text-purple-400 {
+            color: #7C3AED !important;
         }
 
-        .text-green-300 {
-            color: #15803d !important;
+        .text-amber-300, .text-amber-400 {
+            color: #D97706 !important;
         }
 
-        .text-green-400 {
-            color: #166534 !important;
+        .text-red-300, .text-red-400 {
+            color: #DC2626 !important;
         }
 
-        .text-emerald-300 {
-            color: #0f766e !important;
-        }
-
-        .text-emerald-400 {
-            color: #115e59 !important;
-        }
-
-        .text-orange-300 {
-            color: #c2410c !important;
-        }
-
-        .text-orange-400 {
-            color: #9a3412 !important;
-        }
-
-        .text-amber-300 {
-            color: #b45309 !important;
-        }
-
-        .text-amber-400 {
-            color: #854d0e !important;
-        }
-
-        .text-blue-300 {
-            color: #1d4ed8 !important;
-        }
-
-        .text-blue-400 {
-            color: #1e40af !important;
-        }
-
-        .text-purple-300 {
-            color: #6d28d9 !important;
-        }
-
-        .text-purple-400 {
-            color: #5b21b6 !important;
-        }
-
-        .text-cyan-300 {
-            color: #0e7490 !important;
-        }
-
-        .text-cyan-400 {
-            color: #155e75 !important;
-        }
-
-        .text-rose-300 {
-            color: #be123c !important;
-        }
-
-        .text-rose-400 {
-            color: #9f1239 !important;
-        }
-
-        .text-red-300 {
-            color: #b91c1c !important;
-        }
-
-        .text-red-400 {
-            color: #991b1b !important;
-        }
-
-        /* ── Comprehensive Dark-to-Light Theme Overrides ── */
+        /* Dark surfaces converted to crisp white/FAFBFF */
         .bg-slate-900,
         .bg-slate-800,
         .bg-slate-700 {
@@ -269,73 +294,75 @@
         .bg-slate-900\/80,
         .bg-slate-900\/60,
         .bg-slate-900\/50,
-        .bg-slate-900\/40 {
-            background-color: #f8fafc !important;
-        }
-
+        .bg-slate-900\/40,
         .bg-slate-800\/80,
         .bg-slate-800\/60,
         .bg-slate-800\/50,
         .bg-slate-800\/40 {
-            background-color: #f1f5f9 !important;
+            background-color: #FAFBFF !important;
         }
 
         .bg-slate-700\/50,
-        .bg-slate-500\/20 {
-            background-color: #f1f5f9 !important;
-        }
-
+        .bg-slate-500\/20,
         .bg-white\/5,
         .bg-white\/10 {
-            background-color: #f8fafc !important;
+            background-color: #FAFBFF !important;
         }
 
         .border-slate-800,
         .border-slate-700,
         .border-slate-600,
-        .border-slate-500 {
-            border-color: #cbd5e1 !important;
-        }
-
+        .border-slate-500,
         .border-slate-700\/50,
         .border-white\/10,
         .border-white\/20,
         .border-white\/5 {
-            border-color: #e2e8f0 !important;
+            border-color: #DDE3EC !important;
         }
 
         .divide-white\/5>*+*,
         .divide-white\/10>*+* {
-            border-color: #e2e8f0 !important;
+            border-color: #DDE3EC !important;
         }
-
-        /* Removed Input elements styling that conflicted with Tailwind */
 
         /* Select option wrapper */
         select option {
             background-color: #ffffff !important;
-            color: #0F172A !important;
+            color: #111827 !important;
         }
 
-        /* Table header and row overrides */
+        /* ── Tables ── */
         thead {
-            background-color: rgba(224, 242, 254, 0.4) !important;
-            border-bottom: 1px solid rgba(56, 189, 248, 0.15) !important;
+            background-color: #FAFBFF !important;
+            border-bottom: 1px solid #DDE3EC !important;
         }
 
         thead tr th {
-            color: #334155 !important;
+            color: #111827 !important;
+            font-weight: 600 !important;
+            font-size: 0.75rem !important;
+            letter-spacing: 0.05em !important;
+            text-transform: uppercase !important;
         }
 
         tbody tr {
-            border-bottom: 1px solid rgba(56, 189, 248, 0.1) !important;
+            border-bottom: 1px solid #DDE3EC !important;
+            transition: background-color 0.15s ease;
         }
 
         tbody tr:hover {
-            background-color: rgba(224, 242, 254, 0.15) !important;
+            background-color: #FAFBFF !important;
         }
 
-        /* Secondary actions/buttons overrides removed to prevent conflicts */
+        /* ── Technical Dotted Motif ── */
+        .dotted-divider {
+            border-top: 1px dotted #9AA5B5;
+            opacity: 0.6;
+        }
+        .dotted-col {
+            border-right: 1px dotted #9AA5B5;
+            opacity: 0.6;
+        }
     </style>
 </head>
 
@@ -739,107 +766,107 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
 
-        <header
-            class="h-20 glass border-b border-dark-border flex items-center justify-between px-4 md:px-8 z-30 relative shadow-md flex-shrink-0">
+
+
+        <!-- 2. HEADER (Clean White Navigation Bar) -->
+        <header class="h-16 bg-white/95 backdrop-blur-md border-b border-[#DDE3EC] flex items-center justify-between px-4 md:px-8 z-20 relative flex-shrink-0 shadow-[0_1px_2px_rgba(17,24,39,0.03)]">
             <div class="flex items-center gap-4">
-
-
                 <!-- Back Button -->
                 <button onclick="window.history.back()" title="Go Back"
-                    class="p-2 rounded-xl glass border border-white/10 hover:border-white/20 text-gray-400 hover:text-blue-500 transition-all group hidden sm:block">
-                    <svg class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1" fill="none"
+                    class="p-2 rounded-xl bg-white border border-[#DDE3EC] hover:border-[#4664EB] text-[#697386] hover:text-[#4664EB] transition-all group hidden sm:block shadow-xs">
+                    <svg class="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-0.5" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                 </button>
 
-                <h2
-                    class="text-xl md:text-2xl font-semibold text-white tracking-wide truncate max-w-[150px] md:max-w-none">
+                <h2 class="text-lg md:text-xl font-bold text-[#111827] tracking-tight truncate max-w-[150px] md:max-w-none">
                     {% block header %}Dashboard{% endblock %}
                 </h2>
             </div>
-            <div class="flex items-center space-x-2 md:space-x-4">
+            <div class="flex items-center space-x-2 md:space-x-3">
 
                 <!-- Global Search Trigger -->
                 <button @click="window.dispatchEvent(new CustomEvent('open-search'))"
-                    class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-lg transition-colors border border-gray-200"
+                    class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#FAFBFF] hover:bg-[#EAF0FF] text-[#697386] hover:text-[#4664EB] rounded-lg transition-colors border border-[#DDE3EC]"
                     title="Global Search (Ctrl+K)">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <span class="text-xs font-medium mr-2">Search...</span>
-                    <kbd class="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 bg-white border border-gray-300 rounded shadow-sm">Ctrl K</kbd>
+                    <kbd class="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-[#8A95A6] bg-white border border-[#DDE3EC] rounded shadow-xs">Ctrl K</kbd>
                 </button>
                 <button @click="window.dispatchEvent(new CustomEvent('open-search'))"
-                    class="md:hidden p-2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none"
+                    class="md:hidden p-2 text-[#697386] hover:text-[#4664EB] transition-colors focus:outline-none"
                     title="Search">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </button>
 
                 <!-- Notes & To-Do Button -->
                 <button id="notes-todo-btn" onclick="openNotesPanel()"
-                    class="p-2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none"
+                    class="p-2 text-[#697386] hover:text-[#4664EB] hover:bg-[#EAF0FF]/60 rounded-lg transition-colors focus:outline-none"
                     title="Notes & To-Do">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6m-6 4h6" />
                     </svg>
                 </button>
+
                 <!-- Notification Bell -->
-                <div class="relative" x-data="notificationsDropdown()">
-                    <button @click="open = !open" @click.away="open = false"
-                        class="relative p-2 text-gray-400 hover:text-indigo-600 transition-colors focus:outline-none">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="relative" x-data="notificationsDropdown()" @click.outside="open = false">
+                    <button @click="open = !open"
+                        class="relative p-2 text-[#697386] hover:text-[#4664EB] hover:bg-[#EAF0FF]/60 rounded-lg transition-colors focus:outline-none">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         <span x-show="unreadCount > 0"
                             x-text="unreadCount"
-                            class="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white">{{ unread_notifications_count }}</span>
+                            class="absolute top-1 right-1 h-4 w-4 bg-[#4664EB] rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white">{{ unread_notifications_count }}</span>
                     </button>
                     <!-- Dropdown -->
                     <div x-show="open" x-cloak style="display: none;"
-                        class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 border border-gray-200 z-50 overflow-hidden flex flex-col">
-                        <div class="px-4 py-2 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                        class="absolute right-0 top-full mt-2 w-80 sm:w-88 bg-white rounded-2xl shadow-2xl py-1 border border-[#DDE3EC] z-50 overflow-hidden flex flex-col">
+                        <div class="px-4 py-2 border-b border-[#DDE3EC] flex justify-between items-center bg-[#FAFBFF]">
+                            <h3 class="text-xs font-bold text-[#111827] uppercase tracking-wider">Notifications</h3>
                             <div class="flex gap-2">
                                 <button @click="tab = 'unread'"
-                                    :class="tab === 'unread' ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                                    :class="tab === 'unread' ? 'text-[#4664EB] font-bold' : 'text-[#697386] hover:text-[#111827]'"
                                     class="text-xs transition-colors focus:outline-none">Unread</button>
-                                <span class="text-gray-300">|</span>
+                                <span class="text-[#DDE3EC]">|</span>
                                 <button @click="tab = 'read'"
-                                    :class="tab === 'read' ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                                    :class="tab === 'read' ? 'text-[#4664EB] font-bold' : 'text-[#697386] hover:text-[#111827]'"
                                     class="text-xs transition-colors focus:outline-none">Read</button>
                             </div>
                         </div>
                         <div x-show="tab === 'unread'" class="max-h-64 overflow-y-auto flex-1">
                             {% if unread_notifications %}
-                            <div class="px-4 py-2 border-b border-gray-50 flex justify-end">
+                            <div class="px-4 py-2 border-b border-[#DDE3EC] flex justify-end bg-white">
                                 <button type="button"
                                     @click.prevent="markAllRead()"
-                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer focus:outline-none">
+                                    class="text-xs text-[#4664EB] hover:text-[#3654D8] font-semibold transition-colors cursor-pointer focus:outline-none">
                                     Mark all as read
                                 </button>
                             </div>
                             {% endif %}
                             {% for notif in unread_notifications %}
                             <a href="{% url 'tracker:api_mark_notification_read' notif.id %}"
-                                class="block px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors relative group cursor-pointer"
+                                class="block px-4 py-3 border-b border-[#DDE3EC] hover:bg-[#FAFBFF] transition-colors relative group cursor-pointer"
                                 :id="'notif-'+'{{ notif.id }}'">
-                                <p class="text-sm font-medium text-gray-900">{{ notif.title }}</p>
-                                <p class="text-xs text-gray-500 mt-1">{{ notif.message }}</p>
+                                <p class="text-sm font-semibold text-[#111827]">{{ notif.title }}</p>
+                                <p class="text-xs text-[#697386] mt-0.5">{{ notif.message }}</p>
                             </a>
                             {% empty %}
-                            <div class="px-4 py-6 text-center text-sm text-gray-500">You're all caught up!</div>
+                            <div class="px-4 py-6 text-center text-xs text-[#8A95A6]">You're all caught up!</div>
                             {% endfor %}
                         </div>
                         <div x-show="tab === 'read'" style="display: none;" class="max-h-64 overflow-y-auto flex-1">
                             {% for notif in read_notifications %}
-                            <div class="block px-4 py-3 border-b border-gray-50 opacity-75">
-                                <p class="text-sm font-medium text-gray-700">{{ notif.title }}</p>
-                                <p class="text-xs text-gray-500 mt-1">{{ notif.message }}</p>
+                            <div class="block px-4 py-3 border-b border-[#DDE3EC] opacity-80 bg-white">
+                                <p class="text-sm font-semibold text-[#111827]">{{ notif.title }}</p>
+                                <p class="text-xs text-[#697386] mt-0.5">{{ notif.message }}</p>
                             </div>
                             {% empty %}
-                            <div class="px-4 py-6 text-center text-sm text-gray-500">No read messages yet.</div>
+                            <div class="px-4 py-6 text-center text-xs text-[#8A95A6]">No read messages yet.</div>
                             {% endfor %}
                         </div>
                     </div>
@@ -868,10 +895,10 @@
                     }
                 </script>
 
-                <!-- ODtech Logo in Header -->
-                <a href="{% url 'tracker:dashboard' %}" class="flex items-center ml-4">
+                <!-- ODtech Brand in Header -->
+                <a href="{% url 'dashboard' %}" class="flex items-center ml-2 pl-3 border-l border-[#DDE3EC]">
                     <img src="{% static 'img/logo.png' %}" alt="ODtech Logo"
-                        class="h-8 md:h-10 object-contain transition-opacity hover:opacity-80">
+                        class="h-8 md:h-9 object-contain transition-opacity hover:opacity-85">
                 </a>
             </div>
         </header>

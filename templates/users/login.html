@@ -4,106 +4,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — ODtech ERP</title>
+    <title>Sign In — ODtech Enterprise Cloud</title>
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
     <link href="{% static 'vendor/css/fonts.css' %}" rel="stylesheet">
     <script src="{% static 'vendor/js/tailwindcss.js' %}"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] } } }
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'Inter', 'sans-serif'] },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#4664EB',
+                            hover: '#3654D8',
+                            light: '#EAF0FF',
+                        },
+                        navy: '#111827',
+                        body: '#697386',
+                        muted: '#8A95A6',
+                        fine: '#DDE3EC',
+                    }
+                }
+            }
         }
     </script>
     <style>
-        body { background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); background-attachment: fixed; }
-        .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, 0.18); }
-        .input-field {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            color: #0f172a;
+        :root {
+            --primary: #4664EB;
+            --primary-hover: #3654D8;
+            --primary-light: #EAF0FF;
+            --navy: #111827;
+            --text-body: #697386;
+            --border-fine: #DDE3EC;
+        }
+
+        body {
+            background-color: #FFFFFF;
+            background-image: radial-gradient(#DDE3EC 1px, transparent 1px);
+            background-size: 28px 28px;
+            background-attachment: fixed;
+            color: #111827;
+        }
+
+        .card-cloud {
+            background: #ffffff;
+            border: 1px solid #DDE3EC;
+            box-shadow: 0 4px 20px -2px rgba(17, 24, 39, 0.05), 0 2px 6px -1px rgba(17, 24, 39, 0.03);
+            border-radius: 1.25rem;
+        }
+
+        .input-cloud {
+            background: #FAFBFF;
+            border: 1px solid #DDE3EC;
+            color: #111827;
             border-radius: 0.75rem;
             padding: 0.75rem 1rem;
             width: 100%;
             font-size: 0.95rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.18s ease;
             outline: none;
         }
-        .input-field:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,0.15); }
-        .input-field::placeholder { color: rgba(71, 85, 105, 0.6); }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        .blob { animation: float 6s ease-in-out infinite; }
-        .blob2 { animation: float 8s ease-in-out infinite reverse; }
+        .input-cloud:focus {
+            background: #ffffff;
+            border-color: #4664EB;
+            box-shadow: 0 0 0 3.5px #EAF0FF;
+        }
+        .input-cloud::placeholder {
+            color: #8A95A6;
+        }
 
-        /* Premium Light Theme overrides */
-        .text-white { color: #0F172A !important; }
-        .text-gray-300 { color: #334155 !important; }
-        .text-gray-400 { color: #475569 !important; }
-        .text-gray-500 { color: #475569 !important; }
-        .text-gray-600 { color: #64748B !important; }
+        .btn-primary-cloud {
+            background-color: #4664EB;
+            color: #ffffff;
+            font-weight: 700;
+            border-radius: 0.75rem;
+            transition: all 0.18s ease;
+            box-shadow: 0 2px 6px rgba(70, 100, 235, 0.25);
+        }
+        .btn-primary-cloud:hover {
+            background-color: #3654D8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(70, 100, 235, 0.32);
+        }
+        .btn-primary-cloud:active {
+            transform: translateY(0);
+        }
+        .btn-primary-cloud:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px #EAF0FF, 0 0 0 5px #4664EB;
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center font-sans antialiased relative overflow-hidden">
+<body class="min-h-screen flex items-center justify-center font-sans antialiased relative p-4">
 
-    <!-- Decorative blobs -->
-    <div class="blob absolute top-[-8%] left-[-5%] w-96 h-96 bg-blue-600/15 rounded-full blur-[80px] pointer-events-none"></div>
-    <div class="blob2 absolute bottom-[-8%] right-[-5%] w-96 h-96 bg-purple-600/15 rounded-full blur-[80px] pointer-events-none"></div>
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <!-- Top Announcement Strip for Login -->
+    <div class="fixed top-0 inset-x-0 h-8 bg-[#4664EB] text-white flex items-center justify-center px-4 text-xs font-semibold tracking-wide z-30 select-none">
+        <span>⚡ <strong>ODtech Enterprise Cloud</strong> &bull; Production Cluster &bull; High Performance ERP</span>
+    </div>
 
-    <div class="w-full max-w-md px-4">
-        <!-- Logo + Brand -->
-        <div class="text-center mb-10">
-            <a href="/">
-                <img src="{% static 'img/logo.png' %}" alt="ODtech Logo" class="h-16 mx-auto mb-4 drop-shadow-lg">
+    <!-- Centered Login Box -->
+    <div class="w-full max-w-md pt-8">
+        
+        <!-- Brand Header -->
+        <div class="text-center mb-8">
+            <a href="/" class="inline-block transition-transform hover:scale-105 duration-200">
+                <img src="{% static 'img/logo.png' %}" alt="ODtech Logo" class="h-16 mx-auto mb-4 object-contain">
             </a>
-            <h1 class="text-3xl font-bold text-white mb-1">Welcome back</h1>
-            <p class="text-gray-400 text-sm">Sign in to ODtech ERP</p>
+            <h1 class="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">Welcome Back</h1>
+            <p class="text-sm text-[#697386] mt-1 font-medium">Sign in to ODtech Enterprise Unified Portal</p>
         </div>
 
-        <!-- Card -->
-        <div class="glass rounded-3xl p-8 shadow-2xl">
-
-            <!-- Flash messages -->
+        <!-- White Cloud Card -->
+        <div class="card-cloud p-8 sm:p-9 relative">
+            
+            <!-- Flash Messages -->
             {% if messages %}
             {% for msg in messages %}
-            <div class="mb-4 p-3 rounded-xl text-sm font-medium text-center {% if msg.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-emerald-50 text-emerald-600 border border-emerald-200{% endif %}">
+            <div class="mb-5 p-3 rounded-xl text-xs font-bold text-center {% if msg.tags == 'error' %}bg-rose-50 text-rose-600 border border-rose-200{% else %}bg-[#ECF9F1] text-[#2DA866] border border-[#2DA866]/30{% endif %}">
                 {{ msg }}
             </div>
             {% endfor %}
             {% endif %}
 
-            <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" autocomplete="off">
+            <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" autocomplete="off" class="space-y-5">
                 {% csrf_token %}
 
                 <!-- Employee Code -->
-                <div class="mb-5">
-                    <label for="id_username" class="block text-sm font-medium text-gray-300 mb-2">Employee Code</label>
+                <div>
+                    <label for="id_username" class="block text-xs font-bold uppercase tracking-wider text-[#111827] mb-2">
+                        Employee Code / Username
+                    </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#8A95A6] pointer-events-none">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         </span>
-                        <input type="text" id="id_username" name="username" placeholder="Enter your employee code"
-                               class="input-field pl-11" required autofocus>
+                        <input type="text" id="id_username" name="username" placeholder="e.g. OD0124"
+                               class="input-cloud pl-11" required autofocus>
                     </div>
                 </div>
 
                 <!-- Password -->
-                <div class="mb-7">
+                <div>
                     <div class="flex items-center justify-between mb-2">
-                        <label for="id_password" class="block text-sm font-medium text-gray-300">Password</label>
-                        <a href="{% url 'password_reset' %}" class="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">Forgot Password?</a>
+                        <label for="id_password" class="block text-xs font-bold uppercase tracking-wider text-[#111827]">
+                            Password
+                        </label>
+                        <a href="{% url 'password_reset' %}" class="text-xs font-bold text-[#4664EB] hover:text-[#3654D8] transition-colors">
+                            Forgot Password?
+                        </a>
                     </div>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500 pointer-events-none">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#8A95A6] pointer-events-none">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                         </span>
                         <input type="password" id="id_password" name="password" placeholder="Enter your password"
-                               class="input-field pl-11 pr-11" required>
-                        <button type="button" id="toggle_password" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-200 transition-colors focus:outline-none">
-                            <!-- eye icon (visible when password is shown) -->
+                               class="input-cloud pl-11 pr-11" required>
+                        <button type="button" id="toggle_password" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#8A95A6] hover:text-[#111827] transition-colors focus:outline-none" aria-label="Toggle password visibility">
+                            <!-- eye icon -->
                             <svg id="eye_open" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            <!-- eye off icon (visible when password is hidden) -->
+                            <!-- eye off icon -->
                             <svg id="eye_closed" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                             </svg>
@@ -111,16 +174,30 @@
                     </div>
                 </div>
 
-                <!-- Submit -->
-                <button type="submit"
-                        class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-base">
-                    Sign In
-                </button>
+                <!-- Submit Button -->
+                <div class="pt-2">
+                    <button type="submit"
+                            class="btn-primary-cloud w-full py-3.5 px-6 text-sm flex items-center justify-center gap-2">
+                        <span>Sign In to Platform</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </button>
+                </div>
             </form>
+
+            <!-- Security Assurance Tag -->
+            <div class="mt-6 pt-5 border-t border-[#DDE3EC] flex items-center justify-center gap-2 text-xs text-[#697386]">
+                <svg class="w-4 h-4 text-[#2DA866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <span>SSL Encrypted &bull; 99.9% Uptime Cluster</span>
+            </div>
+
         </div>
 
-        <p class="text-center text-gray-600 text-xs mt-6">
-            ODtech ERP &copy; 2026 &mdash; All rights reserved
+        <p class="text-center text-[#8A95A6] text-xs mt-6 font-medium">
+            ODtech Enterprise &copy; 2026 &bull; All Rights Reserved
         </p>
     </div>
 
@@ -132,17 +209,19 @@
             const eyeOpen = document.getElementById('eye_open');
             const eyeClosed = document.getElementById('eye_closed');
 
-            toggleBtn.addEventListener('click', function() {
-                if (passwordInput.type === 'password') {
-                    passwordInput.type = 'text';
-                    eyeOpen.classList.remove('hidden');
-                    eyeClosed.classList.add('hidden');
-                } else {
-                    passwordInput.type = 'password';
-                    eyeOpen.classList.add('hidden');
-                    eyeClosed.classList.remove('hidden');
-                }
-            });
+            if (toggleBtn && passwordInput) {
+                toggleBtn.addEventListener('click', function() {
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        eyeOpen.classList.remove('hidden');
+                        eyeClosed.classList.add('hidden');
+                    } else {
+                        passwordInput.type = 'password';
+                        eyeOpen.classList.add('hidden');
+                        eyeClosed.classList.remove('hidden');
+                    }
+                });
+            }
         });
     </script>
 </body>
