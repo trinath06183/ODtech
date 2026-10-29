@@ -159,7 +159,12 @@
                                             <span class="font-semibold text-slate-800">Received on {{ p.date|date:"d M Y" }}</span>
                                             <span class="text-slate-500">via {{ p.payment_mode }}{% if p.reference_number %} (Ref: {{ p.reference_number }}){% elif p.voucher_no %} (Doc: {{ p.voucher_no }}){% endif %}</span>
                                         </div>
-                                        <span class="font-mono font-bold text-emerald-600">+ ₹{{ p.amount|floatformat:2 }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-mono font-bold text-emerald-600">+ ₹{{ p.amount|floatformat:2 }}</span>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200" title="{{ p.percent_of_order|floatformat:1 }}% of order #{{ row.doc_number }} paid">
+                                                {{ p.percent_of_order|floatformat:1 }}%
+                                            </span>
+                                        </div>
                                     </div>
                                     {% endfor %}
                                 </div>

@@ -300,30 +300,40 @@
         }
 
         /* ── Luminous Status Chips & Badges Across Every Page ── */
-        .badge-success, [class*="bg-emerald-100"], [class*="bg-emerald-50"] {
+        span.bg-emerald-50, span.bg-emerald-100, .badge-success {
             background-color: #ECFDF5 !important;
             color: #047857 !important;
             border: 1px solid rgba(16, 185, 129, 0.3) !important;
         }
-        .badge-info, [class*="bg-blue-100"], [class*="bg-blue-50"] {
+        span.bg-blue-50, span.bg-blue-100, .badge-info {
             background-color: #EFF6FF !important;
             color: #1D4ED8 !important;
             border: 1px solid rgba(59, 130, 246, 0.3) !important;
         }
-        .badge-warning, [class*="bg-amber-100"], [class*="bg-amber-50"] {
+        span.bg-amber-50, span.bg-amber-100, .badge-warning {
             background-color: #FFFBEB !important;
             color: #B45309 !important;
             border: 1px solid rgba(245, 158, 11, 0.3) !important;
         }
-        .badge-danger, [class*="bg-red-100"], [class*="bg-red-50"], [class*="bg-rose-100"], [class*="bg-rose-50"] {
+        span.bg-red-50, span.bg-red-100, span.bg-rose-50, span.bg-rose-100, .badge-danger {
             background-color: #FEF2F2 !important;
             color: #B91C1C !important;
             border: 1px solid rgba(239, 68, 68, 0.3) !important;
         }
-        .badge-purple, [class*="bg-purple-100"], [class*="bg-purple-50"], [class*="bg-violet-100"], [class*="bg-violet-50"] {
+        span.bg-purple-50, span.bg-purple-100, span.bg-violet-50, span.bg-violet-100, .badge-purple {
             background-color: #FAF5FF !important;
             color: #6D28D9 !important;
             border: 1px solid rgba(139, 92, 246, 0.3) !important;
+        }
+
+        /* Explicit protection for primary buttons */
+        a.bg-blue-600, button.bg-blue-600, a.bg-blue-500, button.bg-blue-500 {
+            background-color: #2563EB !important;
+            color: #FFFFFF !important;
+        }
+        a.bg-blue-600:hover, button.bg-blue-600:hover, a.bg-blue-500:hover, button.bg-blue-500:hover {
+            background-color: #1D4ED8 !important;
+            color: #FFFFFF !important;
         }
 
 

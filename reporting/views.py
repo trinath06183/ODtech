@@ -1369,6 +1369,8 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
         b['credits_paid'] += alloc
         pay_unallocated[pay.id] -= alloc
         rem_after = b['grand_total'] - b['credits_paid']
+        pct_of_order = (alloc / b['grand_total'] * Decimal('100.0')) if b['grand_total'] > Decimal('0.00') else Decimal('100.0')
+        cum_pct_of_order = (b['credits_paid'] / b['grand_total'] * Decimal('100.0')) if b['grand_total'] > Decimal('0.00') else Decimal('100.0')
         b['payments'].append({
             'date': pay.date,
             'payment_mode': pay.payment_mode,
@@ -1377,6 +1379,8 @@ def _build_contact_statement_ledger(contact, start_date=None, end_date=None):
             'notes': pay.notes,
             'amount': alloc,
             'bill_remaining': rem_after,
+            'percent_of_order': min(Decimal('100.0'), max(Decimal('0.0'), pct_of_order)),
+            'cum_percent_of_order': min(Decimal('100.0'), max(Decimal('0.0'), cum_pct_of_order)),
         })
 
     # Pass 1: Direct exact match on document_ref == bill.number
