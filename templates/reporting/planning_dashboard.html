@@ -185,21 +185,21 @@
     {# ════════════════════════════════════════════════════════════════════════════ #}
     {# SECTION 1: ORDER BOOKING PLAN                                               #}
     {# ════════════════════════════════════════════════════════════════════════════ #}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-amber-200/70 overflow-hidden" style="box-shadow: 0 10px 30px -5px rgba(245, 158, 11, 0.16), 0 4px 12px -2px rgba(245, 158, 11, 0.08);">
         
-        {# Decorative Top Accent Line #}
-        <div class="h-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-500"></div>
+        {# Decorative Top Accent Line with Warm Amber Glow #}
+        <div class="h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400"></div>
 
         {# Light, Crisp, High-Contrast Section Header Banner #}
-        <div class="bg-slate-50 border-b border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div class="bg-amber-50/40 border-b border-amber-200/60 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs">
+                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                     Order Booking Plan
                 </span>
                 <span class="text-base font-bold text-slate-900 tracking-tight">
                     {{ month_name }} {{ selected_year }}
                 </span>
-                <span class="text-xs bg-slate-200 text-slate-700 font-semibold px-2.5 py-0.5 rounded-full">
+                <span class="text-xs bg-amber-100/80 text-amber-900 font-semibold px-2.5 py-0.5 rounded-full border border-amber-200">
                     {{ booking_groups|length }} Orders &bull; {{ booking_items|length }} Items
                 </span>
             </div>
@@ -212,9 +212,9 @@
                     </div>
                 </div>
 
-                <div class="bg-indigo-50 border border-indigo-200 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
-                    <div class="text-[10px] text-indigo-600 uppercase tracking-wider font-bold">Total Inc. GST</div>
-                    <div class="font-mono font-black text-sm text-indigo-700">
+                <div class="bg-amber-50 border border-amber-300 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
+                    <div class="text-[10px] text-amber-700 uppercase tracking-wider font-bold">Total Inc. GST</div>
+                    <div class="font-mono font-black text-sm text-amber-900">
                         ₹<span id="booking-banner-gst">{{ booking_total_gst|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
@@ -242,19 +242,16 @@
                     {% for group in booking_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row {% if group.is_supplied %}hover:brightness-95{% elif forloop.counter|divisibleby:2 %}hover:brightness-95{% else %}hover:bg-slate-50{% endif %} transition-colors"
-                            style="border-top: 4px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#3B82F6{% else %}#64748B{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#E2EDFD{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-amber-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#FCD34D{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
-                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-4 border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-4 border-l-blue-600{% else %}border-l-4 border-l-slate-600{% endif %}"
-                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#CFE2FE{% else %}#F1F5F9{% endif %} !important;">
-                                <div class="flex flex-col items-center justify-center gap-1.5 py-1">
-                                    <span class="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-2xs {% if group.is_supplied %}bg-emerald-700 text-white{% elif forloop.counter|divisibleby:2 %}bg-blue-600 text-white{% else %}bg-slate-700 text-white{% endif %}">
-                                        ORDER
-                                    </span>
-                                    <span class="text-lg font-black leading-none {% if group.is_supplied %}text-emerald-950{% elif forloop.counter|divisibleby:2 %}text-blue-900{% else %}text-slate-800{% endif %}">
-                                        #{{ forloop.counter }}
+                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-amber-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
+                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FEF08A{% else %}#F8FAFC{% endif %} !important;">
+                                <div class="flex items-center justify-center">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-amber-500 text-amber-950 font-black border border-amber-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                        {{ forloop.counter }}
                                     </span>
                                 </div>
                             </td>
@@ -262,27 +259,22 @@
                             {# Customer & Document No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
                                 class="py-3 px-4 border-r border-slate-200 align-top"
-                                style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#E2EDFD{% else %}#FFFFFF{% endif %} !important;">
-                                <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-blue-600 text-white{% else %}bg-slate-700 text-white{% endif %}">
-                                        Order #{{ forloop.counter }}
-                                    </span>
-                                    {% if group.item_count > 1 %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold {% if forloop.counter|divisibleby:2 %}bg-blue-100 text-blue-900 border border-blue-300{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
-                                        {{ group.item_count }} Items
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                <div class="font-bold text-slate-900 text-xs sm:text-sm leading-snug cursor-pointer hover:text-indigo-600 transition-colors"
+                                style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;">
+                                <div class="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-amber-700 transition-colors"
                                      onclick="enableCellEdit(this, 'customer_name', '{{ first_item.id }}')" title="Click to edit customer name">
                                     {{ group.customer_name }}
                                 </div>
-                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     {% if group.document %}
-                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-300 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
-                                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         {{ group.doc_number }}
                                     </a>
+                                    {% endif %}
+                                    {% if group.item_count > 1 %}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                                        {{ group.item_count }} items
+                                    </span>
                                     {% endif %}
                                     {% if group.project_name %}
                                     <span class="text-[11px] text-slate-500 italic block w-full mt-0.5">
@@ -293,26 +285,26 @@
                             </td>
 
                             {# First Item Description #}
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ first_item.id }}')" title="Click to edit">
                                 ₹{{ first_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ first_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-indigo-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-950">
                                 ₹<span class="row-inc-gst">{{ first_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer transition-colors"
@@ -340,7 +332,7 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-500 hover:text-indigo-600 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-500 hover:text-amber-700 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Order Booking Plan?')">
@@ -357,29 +349,29 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t {% if forloop.parentloop.counter|divisibleby:2 %}border-blue-200/80 hover:brightness-95{% elif group.is_supplied %}border-emerald-200/80 hover:brightness-95{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
-                            style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#E2EDFD{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="border-t {% if forloop.parentloop.counter|divisibleby:2 %}border-amber-200/60 hover:bg-amber-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
+                            style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ sub_item.id }}">
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-indigo-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-amber-700 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ sub_item.id }}')" title="Click to edit">
                                 ₹{{ sub_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ sub_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-indigo-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-950">
                                 ₹<span class="row-inc-gst">{{ sub_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer transition-colors"
@@ -407,7 +399,7 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ sub_item.id }}, '{{ sub_item.customer_name|escapejs }}', '{{ sub_item.item_description|escapejs }}', '{{ sub_item.quantity }}', '{{ sub_item.uom|escapejs }}', '{{ sub_item.probable_order_value }}', '{{ sub_item.gst_rate }}', '{{ sub_item.order_status|escapejs }}')" class="text-slate-500 hover:text-indigo-600 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ sub_item.id }}, '{{ sub_item.customer_name|escapejs }}', '{{ sub_item.item_description|escapejs }}', '{{ sub_item.quantity }}', '{{ sub_item.uom|escapejs }}', '{{ sub_item.probable_order_value }}', '{{ sub_item.gst_rate }}', '{{ sub_item.order_status|escapejs }}')" class="text-slate-500 hover:text-amber-700 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Order Booking Plan?')">
@@ -424,21 +416,19 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="border-t-2 {% if group.is_supplied %}border-emerald-400 text-emerald-950{% elif forloop.counter|divisibleby:2 %}border-blue-300 text-blue-950{% else %}border-slate-300 text-slate-900{% endif %} font-bold text-xs select-none shadow-xs"
-                            style="background-color: {% if group.is_supplied %}#A7F3D0{% elif forloop.counter|divisibleby:2 %}#BFDBFE{% else %}#E2E8F0{% endif %} !important;">
-                            <td colspan="4" class="py-2.5 px-4 text-right border-r {% if forloop.counter|divisibleby:2 %}border-blue-300 text-blue-950{% else %}border-slate-300 text-slate-800{% endif %} font-extrabold uppercase tracking-wider text-[11px]">
-                                ORDER #{{ forloop.counter }} TOTAL ({{ group.item_count }} ITEMS):
+                        <tr class="border-t border-amber-300 font-semibold text-xs select-none shadow-2xs"
+                            style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FDE68A{% else %}#EDF2F7{% endif %} !important;">
+                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] text-amber-950">
+                                Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold border-r {% if forloop.counter|divisibleby:2 %}border-blue-300 text-blue-950{% else %}border-slate-300 text-slate-950{% endif %}">
+                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900 border-r border-slate-200">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-black border-r {% if forloop.counter|divisibleby:2 %}border-blue-300 text-blue-950{% else %}border-slate-300 text-slate-950{% endif %}">
+                            <td class="py-2.5 px-4 text-right font-mono font-black text-amber-950 border-r border-slate-200">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
-                            <td colspan="2" class="py-2.5 px-4 text-xs font-bold {% if forloop.counter|divisibleby:2 %}text-blue-900{% else %}text-slate-700{% endif %}">
-                                <span class="inline-flex items-center gap-1 font-semibold italic text-[11px]">
-                                    Order Total
-                                </span>
+                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-amber-800 italic">
+                                Order Subtotal
                             </td>
                         </tr>
                         {% endif %}
@@ -483,21 +473,21 @@
     {# ════════════════════════════════════════════════════════════════════════════ #}
     {# SECTION 2: SALES PLAN                                                       #}
     {# ════════════════════════════════════════════════════════════════════════════ #}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-xl border border-pink-200/70 overflow-hidden" style="box-shadow: 0 10px 30px -5px rgba(244, 114, 182, 0.16), 0 4px 12px -2px rgba(244, 114, 182, 0.08);">
         
-        {# Decorative Top Accent Line #}
-        <div class="h-1 bg-gradient-to-r from-teal-500 via-emerald-600 to-green-500"></div>
+        {# Decorative Top Accent Line with Soft Rose Pink Glow #}
+        <div class="h-1 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-500"></div>
 
         {# Light, Crisp, High-Contrast Section Header Banner #}
-        <div class="bg-slate-50 border-b border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div class="bg-pink-50/40 border-b border-pink-200/60 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-teal-100 text-teal-800 border border-teal-200 shadow-2xs">
+                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-pink-100 text-pink-900 border border-pink-300 shadow-2xs">
                     Sales Plan
                 </span>
                 <span class="text-base font-bold text-slate-900 tracking-tight">
                     {{ month_name }} {{ selected_year }}
                 </span>
-                <span class="text-xs bg-slate-200 text-slate-700 font-semibold px-2.5 py-0.5 rounded-full">
+                <span class="text-xs bg-pink-100/80 text-pink-900 font-semibold px-2.5 py-0.5 rounded-full border border-pink-200">
                     {{ sales_groups|length }} Orders &bull; {{ sales_items|length }} Items
                 </span>
             </div>
@@ -510,9 +500,9 @@
                     </div>
                 </div>
 
-                <div class="bg-teal-50 border border-teal-200 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
-                    <div class="text-[10px] text-teal-600 uppercase tracking-wider font-bold">Total Inc. GST</div>
-                    <div class="font-mono font-black text-sm text-teal-700">
+                <div class="bg-pink-50 border border-pink-300 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
+                    <div class="text-[10px] text-pink-700 uppercase tracking-wider font-bold">Total Inc. GST</div>
+                    <div class="font-mono font-black text-sm text-pink-900">
                         ₹<span id="sales-banner-gst">{{ sales_total_gst|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
@@ -540,19 +530,16 @@
                     {% for group in sales_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row {% if group.is_supplied %}hover:brightness-95{% elif forloop.counter|divisibleby:2 %}hover:brightness-95{% else %}hover:bg-slate-50{% endif %} transition-colors"
-                            style="border-top: 4px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#0D9488{% else %}#64748B{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#E0F5EE{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-pink-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#F472B6{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
-                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-4 border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-4 border-l-teal-600{% else %}border-l-4 border-l-slate-600{% endif %}"
-                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#BEE9DC{% else %}#F1F5F9{% endif %} !important;">
-                                <div class="flex flex-col items-center justify-center gap-1.5 py-1">
-                                    <span class="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-2xs {% if group.is_supplied %}bg-emerald-700 text-white{% elif forloop.counter|divisibleby:2 %}bg-teal-700 text-white{% else %}bg-slate-700 text-white{% endif %}">
-                                        ORDER
-                                    </span>
-                                    <span class="text-lg font-black leading-none {% if group.is_supplied %}text-emerald-950{% elif forloop.counter|divisibleby:2 %}text-teal-950{% else %}text-slate-800{% endif %}">
-                                        #{{ forloop.counter }}
+                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-pink-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
+                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FCE7F3{% else %}#F8FAFC{% endif %} !important;">
+                                <div class="flex items-center justify-center">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-pink-500 text-white font-black border border-pink-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                        {{ forloop.counter }}
                                     </span>
                                 </div>
                             </td>
@@ -560,27 +547,22 @@
                             {# Customer & Document No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
                                 class="py-3 px-4 border-r border-slate-200 align-top"
-                                style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#E0F5EE{% else %}#FFFFFF{% endif %} !important;">
-                                <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-teal-700 text-white{% else %}bg-slate-700 text-white{% endif %}">
-                                        Order #{{ forloop.counter }}
-                                    </span>
-                                    {% if group.item_count > 1 %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold {% if forloop.counter|divisibleby:2 %}bg-teal-100 text-teal-900 border border-teal-300{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
-                                        {{ group.item_count }} Items
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                <div class="font-bold text-slate-900 text-xs sm:text-sm leading-snug cursor-pointer hover:text-teal-600 transition-colors"
+                                style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;">
+                                <div class="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-pink-700 transition-colors"
                                      onclick="enableCellEdit(this, 'customer_name', '{{ first_item.id }}')" title="Click to edit customer name">
                                     {{ group.customer_name }}
                                 </div>
-                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     {% if group.document %}
-                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-teal-700 hover:bg-teal-50 border border-teal-300 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
-                                        <svg class="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-pink-700 hover:bg-pink-100 border border-pink-300 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         {{ group.doc_number }}
                                     </a>
+                                    {% endif %}
+                                    {% if group.item_count > 1 %}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-pink-100 text-pink-800 border border-pink-300">
+                                        {{ group.item_count }} items
+                                    </span>
                                     {% endif %}
                                     {% if group.project_name %}
                                     <span class="text-[11px] text-slate-500 italic block w-full mt-0.5">
@@ -591,26 +573,26 @@
                             </td>
 
                             {# First Item Description #}
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ first_item.id }}')" title="Click to edit">
                                 ₹{{ first_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ first_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-teal-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-950">
                                 ₹<span class="row-inc-gst">{{ first_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer transition-colors"
@@ -638,7 +620,7 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-500 hover:text-teal-600 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-500 hover:text-pink-700 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Sales Plan?')">
@@ -655,29 +637,29 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t {% if forloop.parentloop.counter|divisibleby:2 %}border-teal-200/80 hover:brightness-95{% elif group.is_supplied %}border-emerald-200/80 hover:brightness-95{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
-                            style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#E0F5EE{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="border-t {% if forloop.parentloop.counter|divisibleby:2 %}border-pink-200/60 hover:bg-pink-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
+                            style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ sub_item.id }}">
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-teal-600 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-pink-700 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ sub_item.id }}')" title="Click to edit">
                                 ₹{{ sub_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ sub_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-teal-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-950">
                                 ₹<span class="row-inc-gst">{{ sub_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
                             <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer transition-colors"
@@ -722,21 +704,19 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="border-t-2 {% if group.is_supplied %}border-emerald-400 text-emerald-950{% elif forloop.counter|divisibleby:2 %}border-teal-300 text-teal-950{% else %}border-slate-300 text-slate-900{% endif %} font-bold text-xs select-none shadow-xs"
-                            style="background-color: {% if group.is_supplied %}#A7F3D0{% elif forloop.counter|divisibleby:2 %}#99E3CF{% else %}#E2E8F0{% endif %} !important;">
-                            <td colspan="4" class="py-2.5 px-4 text-right border-r {% if forloop.counter|divisibleby:2 %}border-teal-300 text-teal-950{% else %}border-slate-300 text-slate-800{% endif %} font-extrabold uppercase tracking-wider text-[11px]">
-                                ORDER #{{ forloop.counter }} TOTAL ({{ group.item_count }} ITEMS):
+                        <tr class="border-t border-pink-300 font-semibold text-xs select-none shadow-2xs"
+                            style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FBCFE8{% else %}#EDF2F7{% endif %} !important;">
+                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] text-pink-950">
+                                Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-950 border-r {% if forloop.counter|divisibleby:2 %}border-teal-300 text-teal-950{% else %}border-slate-300 text-slate-950{% endif %}">
+                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900 border-r border-slate-200">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-black border-r {% if forloop.counter|divisibleby:2 %}border-teal-300 text-teal-950{% else %}border-slate-300 text-slate-950{% endif %}">
+                            <td class="py-2.5 px-4 text-right font-mono font-black text-pink-950 border-r border-slate-200">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
-                            <td colspan="2" class="py-2.5 px-4 text-xs font-bold {% if forloop.counter|divisibleby:2 %}text-teal-950{% else %}text-slate-700{% endif %}">
-                                <span class="inline-flex items-center gap-1 font-semibold italic text-[11px]">
-                                    Order Total
-                                </span>
+                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-pink-800 italic">
+                                Order Subtotal
                             </td>
                         </tr>
                         {% endif %}
