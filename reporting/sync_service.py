@@ -178,3 +178,4 @@ def sync_all_documents_to_plan(target_month=None):
         except Exception as e:
             logger.error(f"Error syncing document {getattr(doc, 'number', '?')}: {e}", exc_info=True)
     return count
+

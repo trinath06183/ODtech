@@ -1073,6 +1073,41 @@ def business_planning_dashboard(request):
     months_list = [(i, calendar.month_name[i]) for i in range(1, 13)]
     years_list = range(2024, 2030)
 
+    # Group items by order/document
+    def build_plan_groups(items):
+        from collections import OrderedDict
+        groups_dict = OrderedDict()
+        for item in items:
+            key = f"doc_{item.document_id}" if item.document_id else f"item_{item.id}"
+            if key not in groups_dict:
+                groups_dict[key] = {
+                    'key': key,
+                    'customer_name': item.customer_name,
+                    'document': item.document,
+                    'doc_number': item.document.number if item.document else None,
+                    'project_name': item.document.project_name if (item.document and item.document.project_name) else None,
+                    'items': [],
+                    'total_order_value': Decimal('0.00'),
+                    'including_gst_amount': Decimal('0.00'),
+                    'is_supplied': False,
+                }
+            g = groups_dict[key]
+            g['items'].append(item)
+            g['total_order_value'] += (item.total_order_value or Decimal('0.00'))
+            g['including_gst_amount'] += (item.including_gst_amount or Decimal('0.00'))
+            if item.is_supplied:
+                g['is_supplied'] = True
+
+        groups_list = list(groups_dict.values())
+        for g in groups_list:
+            item_count = len(g['items'])
+            g['item_count'] = item_count
+            g['row_span'] = item_count + (1 if item_count > 1 else 0)
+        return groups_list
+
+    booking_groups = build_plan_groups(booking_items)
+    sales_groups = build_plan_groups(sales_items)
+
     context = {
         'selected_year': selected_year,
         'selected_month': selected_month,
@@ -1085,6 +1120,8 @@ def business_planning_dashboard(request):
 
         'booking_items': booking_items,
         'sales_items': sales_items,
+        'booking_groups': booking_groups,
+        'sales_groups': sales_groups,
 
         'booking_total_val': booking_total_val,
         'booking_total_gst': booking_total_gst,
