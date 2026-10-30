@@ -337,11 +337,104 @@
         }
 
 
-        /* Submenu active item */
-        .nav-sublink.active-sublink {
-            background: #EAF0FF !important;
-            color: #4664EB !important;
+        /* Dropdown section container */
+        .nav-dropdown-group {
+            border-radius: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .nav-dropdown-group.is-open {
+            padding: 0.25rem;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+        }
+        .nav-dropdown-group.is-open.group-blue {
+            background: rgba(239, 246, 255, 0.65);
+            border-color: rgba(191, 219, 254, 0.8);
+        }
+        .nav-dropdown-group.is-open.group-amber {
+            background: rgba(254, 243, 199, 0.55);
+            border-color: rgba(253, 230, 138, 0.8);
+        }
+        .nav-dropdown-group.is-open.group-emerald {
+            background: rgba(236, 253, 245, 0.65);
+            border-color: rgba(167, 243, 208, 0.8);
+        }
+
+        /* Sub-link item styling inside dropdown section */
+        .nav-sublink {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            padding: 0.45rem 0.75rem !important;
+            border-radius: 0.5rem !important;
+            font-size: 0.75rem !important;
+            font-weight: 500 !important;
+            color: #475569 !important;
+            transition: all 0.15s ease !important;
+            text-decoration: none !important;
+        }
+        .nav-sublink:hover {
+            background: #FFFFFF !important;
+            color: #0F172A !important;
             font-weight: 700 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+            transform: translateX(3px) !important;
+        }
+        .nav-sublink:hover .sublink-dot {
+            transform: scale(1.4);
+        }
+        .nav-sublink.active-sublink {
+            background: #FFFFFF !important;
+            color: #2563EB !important;
+            font-weight: 700 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        /* Floating Tooltip when hovering options in Collapsed Sidebar */
+        .sidebar-tooltip {
+            display: none;
+        }
+        .sidebar-collapsed #main-sidebar {
+            overflow-x: visible !important;
+        }
+        .sidebar-collapsed #main-sidebar nav {
+            overflow-x: visible !important;
+        }
+        .sidebar-collapsed #main-sidebar .nav-link:hover .sidebar-tooltip {
+            display: flex !important;
+            align-items: center !important;
+            position: absolute !important;
+            left: calc(100% + 12px) !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            background: #0F172A !important;
+            color: #FFFFFF !important;
+            font-size: 0.75rem !important;
+            font-weight: 700 !important;
+            padding: 0.4rem 0.75rem !important;
+            border-radius: 0.5rem !important;
+            white-space: nowrap !important;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.35) !important;
+            z-index: 99999 !important;
+            pointer-events: none !important;
+            animation: tooltipFadeIn 0.15s ease-out forwards;
+        }
+        .sidebar-collapsed #main-sidebar .nav-link:hover .sidebar-tooltip * {
+            color: #FFFFFF !important;
+        }
+        .sidebar-collapsed #main-sidebar .nav-link:hover .sidebar-tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent #0F172A transparent transparent;
+        }
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+            to { opacity: 1; transform: translateY(-50%) translateX(0); }
         }
 
         .nav-link .icon {
@@ -574,6 +667,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Dashboard</span>
+                <span class="sidebar-tooltip">Dashboard</span>
                 </a>
 
                 <!-- Financial / Company Dashboard -->
@@ -588,6 +682,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Company Overview</span>
+                <span class="sidebar-tooltip">Company Overview</span>
                 </a>
                 {% endif %}
 
@@ -603,14 +698,16 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Business Planning</span>
+                <span class="sidebar-tooltip">Business Planning</span>
                 </a>
                 {% endif %}
 
                 <!-- Material Tracker -->
                 {% if request.user|has_read_perm:'TRACKER' %}
-                <div x-data="{ open: false }" class="mb-1">
+                <div x-data="{ open: {% if 'tracker' in request.path %}true{% else %}false{% endif %} }" class="mb-1 rounded-xl transition-all duration-200 nav-dropdown-group"
+                     :class="open && sidebarOpen ? 'is-open group-blue' : ''">
                     <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link nav-blue w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none"
+                        class="nav-link nav-blue w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none relative group"
                         :class="!sidebarOpen ? 'md:justify-center' : ''" title="Material Tracker">
                         <div class="nav-icon-tile">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -621,20 +718,26 @@
                         <div x-show="sidebarOpen" style="display: none;"
                             class="flex-1 flex items-center justify-between ml-3">
                             <span class="whitespace-nowrap font-semibold text-slate-700 text-sm">Material Tracker</span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none"
                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
+                        <span class="sidebar-tooltip">Material Tracker</span>
                     </button>
-                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
-                        <a href="{% url 'tracker:dashboard' %}"
-                            class="block text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 px-3 py-1.5 rounded-lg transition-colors">Tracker
-                            Dashboard</a>
-                        <a href="{% url 'tracker:individual_products' %}"
-                            class="block text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 px-3 py-1.5 rounded-lg transition-colors">All
-                            Products</a>
+                    <!-- Submenu list INSIDE that section container -->
+                    <div x-show="open && sidebarOpen" x-collapse class="mt-1 pl-3 pr-1 py-1 space-y-1 border-l-2 border-blue-300 ml-5">
+                        <a href="{% url 'tracker:dashboard' %}" title="Tracker Dashboard"
+                            class="nav-sublink {% if request.resolver_match.url_name == 'dashboard' and 'tracker' in request.path %}active-sublink{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 sublink-dot flex-shrink-0 transition-transform"></span>
+                            <span class="truncate">Tracker Dashboard</span>
+                        </a>
+                        <a href="{% url 'tracker:individual_products' %}" title="All Products"
+                            class="nav-sublink {% if 'individual_products' in request.path %}active-sublink{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 sublink-dot flex-shrink-0 transition-transform"></span>
+                            <span class="truncate">All Products</span>
+                        </a>
                     </div>
                 </div>
                 {% endif %}
@@ -652,14 +755,16 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Doc Management</span>
+                <span class="sidebar-tooltip">Doc Management</span>
                 </a>
                 {% endif %}
 
                 <!-- Expense Management -->
                 {% if request.user|has_read_perm:'PAYMENTS' %}
-                <div x-data="{ open: false }" class="mb-1">
+                <div x-data="{ open: {% if 'expense' in request.path %}true{% else %}false{% endif %} }" class="mb-1 rounded-xl transition-all duration-200 nav-dropdown-group"
+                     :class="open && sidebarOpen ? 'is-open group-amber' : ''">
                     <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link nav-amber w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none"
+                        class="nav-link nav-amber w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none relative group"
                         :class="!sidebarOpen ? 'md:justify-center' : ''" title="Expense Management">
                         <div class="nav-icon-tile">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -670,26 +775,32 @@
                         <div x-show="sidebarOpen" style="display: none;"
                             class="flex-1 flex items-center justify-between ml-3">
                             <span class="whitespace-nowrap font-semibold text-slate-700 text-sm">Expense Mgt.</span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none"
                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
+                        <span class="sidebar-tooltip">Expense Management</span>
                     </button>
-                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
-                        <a href="{% url 'expense_list' %}"
-                            class="block text-xs font-medium text-slate-600 hover:text-amber-600 hover:bg-amber-50/60 px-3 py-1.5 rounded-lg transition-colors">Expenses</a>
+                    <!-- Submenu list INSIDE that section container -->
+                    <div x-show="open && sidebarOpen" x-collapse class="mt-1 pl-3 pr-1 py-1 space-y-1 border-l-2 border-amber-300 ml-5">
+                        <a href="{% url 'expense_list' %}" title="Expenses"
+                            class="nav-sublink {% if 'expense' in request.path %}active-sublink{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 sublink-dot flex-shrink-0 transition-transform"></span>
+                            <span class="truncate">Expenses</span>
+                        </a>
                     </div>
                 </div>
                 {% endif %}
 
                 <!-- Generated Documents (Invoices/POs/QTNs) -->
                 {% if request.user|has_read_perm:'DOCUMENTS' %}
-                <div x-data="{ open: {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}true{% else %}false{% endif %} }" class="mb-1">
+                <div x-data="{ open: {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}true{% else %}false{% endif %} }" class="mb-1 rounded-xl transition-all duration-200 nav-dropdown-group"
+                     :class="open && sidebarOpen ? 'is-open group-emerald' : ''">
                     <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link nav-emerald w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}active-nav{% endif %}"
-                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Generated Documents">
+                        class="nav-link nav-emerald w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none relative group {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}active-nav{% endif %}"
+                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Commercial Docs">
                         <div class="nav-icon-tile">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -699,22 +810,32 @@
                         <div x-show="sidebarOpen" style="display: none;"
                             class="flex-1 flex items-center justify-between ml-3">
                             <span class="whitespace-nowrap font-semibold text-slate-700 text-sm">Commercial Docs</span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none"
+                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none"
                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
+                        <span class="sidebar-tooltip">Commercial Docs</span>
                     </button>
-                    <div x-show="open && sidebarOpen" x-collapse class="pl-12 pr-3 py-1 space-y-1">
-                        <a href="{% url 'document_list' %}"
-                            class="block text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors {% if 'documents' in request.path %}bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600{% else %}text-slate-600 hover:text-emerald-600 hover:bg-emerald-50/60{% endif %}"
-                            {% if 'documents' in request.path %}aria-current="page"{% endif %}>All Documents</a>
+                    <!-- Submenu list INSIDE that section container -->
+                    <div x-show="open && sidebarOpen" x-collapse class="mt-1 pl-3 pr-1 py-1 space-y-1 border-l-2 border-emerald-300 ml-5">
+                        <a href="{% url 'document_list' %}" title="All Documents"
+                            class="nav-sublink {% if 'documents' in request.path and not 'create' in request.path %}active-sublink{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 sublink-dot flex-shrink-0 transition-transform"></span>
+                            <span class="truncate">All Documents</span>
+                        </a>
                         {% if request.user|has_write_perm:'DOCUMENTS' %}
-                        <a href="{% url 'create_invoice' %}"
-                            class="block text-xs font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50/60 px-3 py-1.5 rounded-lg transition-colors">+ New Invoice</a>
-                        <a href="{% url 'create_quotation' %}"
-                            class="block text-xs font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50/60 px-3 py-1.5 rounded-lg transition-colors">+ New Quotation</a>
+                        <a href="{% url 'create_invoice' %}" title="New Invoice"
+                            class="nav-sublink {% if 'invoice/create' in request.path or 'create_invoice' in request.resolver_match.url_name %}active-sublink{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 sublink-dot flex-shrink-0 transition-transform"></span>
+                            <span class="truncate">+ New Invoice</span>
+                        </a>
+                        <a href="{% url 'create_quotation' %}" title="New Quotation"
+                            class="nav-sublink {% if 'quotation/create' in request.path or 'create_quotation' in request.resolver_match.url_name %}active-sublink{% endif %}">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 sublink-dot flex-shrink-0 transition-transform"></span>
+                            <span class="truncate">+ New Quotation</span>
+                        </a>
                         {% endif %}
                     </div>
                 </div>
@@ -739,6 +860,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Inventory</span>
+                <span class="sidebar-tooltip">Inventory</span>
                 </a>
 
                 <a href="{% url 'warranty_tracker' %}"
@@ -752,6 +874,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Warranty Tracker</span>
+                <span class="sidebar-tooltip">Warranty Tracker</span>
                 </a>
                 {% elif request.user|has_read_perm:'INVENTORY' %}
                 <!-- Only Warranty Tracker if Inventory is hidden -->
@@ -771,6 +894,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Warranty Tracker</span>
+                <span class="sidebar-tooltip">Warranty Tracker</span>
                 </a>
                 {% endif %}
 
@@ -792,6 +916,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Contacts</span>
+                <span class="sidebar-tooltip">Contacts</span>
                 </a>
                 {% endif %}
 
@@ -814,6 +939,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">HR &amp; Attendance</span>
+                <span class="sidebar-tooltip">HR &amp; Attendance</span>
                 </a>
                 {% endif %}
 
@@ -836,6 +962,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Statement of Account</span>
+                <span class="sidebar-tooltip">Statement of Account</span>
                 </a>
 
                 <a href="{% url 'document_offline' %}"
@@ -852,6 +979,7 @@
                         Offline Generator
                         <span class="px-1.5 py-0.5 text-[9px] font-bold bg-cyan-100 text-cyan-700 rounded-md">Offline</span>
                     </span>
+                <span class="sidebar-tooltip">Offline Generator</span>
                 </a>
                 {% endif %}
 
@@ -874,6 +1002,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Users</span>
+                <span class="sidebar-tooltip">Users</span>
                 </a>
                 <a href="{% url 'settings' %}"
                     class="nav-link nav-slate group relative rounded-xl px-2.5 py-2 flex items-center transition-all mb-1"
@@ -888,6 +1017,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Settings</span>
+                <span class="sidebar-tooltip">Settings</span>
                 </a>
                 <a href="{% url 'backup_manager' %}"
                     class="nav-link nav-rose group relative rounded-xl px-2.5 py-2 flex items-center transition-all mb-1"
@@ -899,6 +1029,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Backup &amp; Restore</span>
+                <span class="sidebar-tooltip">Backup &amp; Restore</span>
                 </a>
                 <a href="{% url 'system_logs' %}"
                     class="nav-link nav-purple group relative rounded-xl px-2.5 py-2 flex items-center transition-all mb-1"
@@ -911,6 +1042,7 @@
                     </div>
                     <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
                         class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">System Logs</span>
+                <span class="sidebar-tooltip">System Logs</span>
                 </a>
                 {% endif %}
             </nav>
@@ -949,7 +1081,8 @@
                             </svg>
                         </div>
                         <span x-show="sidebarOpen" style="display: none;" class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Sign Out</span>
-                    </button>
+                    <span class="sidebar-tooltip">Sign Out</span>
+                </button>
                 </form>
             </div>
         </div>
