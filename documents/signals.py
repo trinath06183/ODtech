@@ -230,3 +230,33 @@ def remove_edms_record_on_delete(sender, instance, **kwargs):
             "[EDMS SYNC] Failed to soft-delete EDMS record for doc %s: %s",
             getattr(instance, 'number', '?'), exc,
         )
+
+
+# ─── Execution Planning Auto-Sync Signals ─────────────────────────────────────
+
+@receiver(post_save, sender='documents.Document')
+def sync_document_to_execution_plan_signal(sender, instance, **kwargs):
+    """
+    Automatically sync Invoices to Sales Plan and Quotations/Proformas to Order Booking Plan
+    whenever a Document is created or updated.
+    """
+    if getattr(instance, 'type', None) in ('INV', 'QTN', 'PRO'):
+        try:
+            from reporting.sync_service import sync_single_document_to_plan
+            sync_single_document_to_plan(instance)
+        except Exception as exc:
+            logger.error("[PLAN SYNC] Failed to sync document %s to execution plan: %s", getattr(instance, 'number', '?'), exc)
+
+
+@receiver(post_save, sender='documents.DocumentItem')
+def sync_document_item_to_execution_plan_signal(sender, instance, **kwargs):
+    """
+    Whenever a DocumentItem is saved, re-sync its parent Document to the Execution Plan.
+    """
+    doc = getattr(instance, 'document', None)
+    if doc and getattr(doc, 'type', None) in ('INV', 'QTN', 'PRO'):
+        try:
+            from reporting.sync_service import sync_single_document_to_plan
+            sync_single_document_to_plan(doc)
+        except Exception as exc:
+            logger.error("[PLAN SYNC] Failed to sync document item for %s: %s", getattr(doc, 'number', '?'), exc)

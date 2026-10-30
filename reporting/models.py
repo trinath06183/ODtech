@@ -84,6 +84,20 @@ class ExecutionPlanItem(models.Model):
     including_gst_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00, verbose_name="Including GST Amount")
     order_status = models.CharField(max_length=255, default='Pending')
     is_supplied = models.BooleanField(default=False, help_text="Triggers green highlight if supplied/completed")
+    document = models.ForeignKey(
+        'documents.Document',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='execution_plan_items'
+    )
+    document_item = models.ForeignKey(
+        'documents.DocumentItem',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='execution_plan_items'
+    )
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

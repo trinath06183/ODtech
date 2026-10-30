@@ -932,6 +932,23 @@ def business_planning_dashboard(request):
                     continue
             messages.success(request, f'{created_count} ERP order(s) successfully imported.')
 
+        elif action == 'sync_erp_documents':
+            from reporting.sync_service import sync_all_documents_to_plan
+            synced_count = sync_all_documents_to_plan(selected_month_start)
+            messages.success(request, f"Successfully synchronized ERP Invoices and Quotations for {calendar.month_name[selected_month]} {selected_year}.")
+            return redirect(f"{request.path}?year={selected_year}&month={selected_month}")
+
+        return redirect(f"{request.path}?year={selected_year}&month={selected_month}")
+
+    # ── Auto-Sync Invoices & Quotations for Selected Month ──
+    try:
+        from reporting.sync_service import sync_all_documents_to_plan
+        sync_all_documents_to_plan(selected_month_start)
+    except Exception as exc:
+        logger.warning(f"Error auto-syncing documents to execution plan: {exc}")
+
+    if request.GET.get('sync') == '1':
+        messages.success(request, f"Successfully synchronized ERP Invoices & Quotations for {calendar.month_name[selected_month]} {selected_year}.")
         return redirect(f"{request.path}?year={selected_year}&month={selected_month}")
 
     # ── Initial Seed for Reference Demo (April 2026) if table is empty ──
@@ -987,8 +1004,8 @@ def business_planning_dashboard(request):
             )
 
     # ── Fetch Data for Selected Month ──
-    booking_items = ExecutionPlanItem.objects.filter(plan_type='booking', month=selected_month_start).order_by('sort_order', 'id')
-    sales_items = ExecutionPlanItem.objects.filter(plan_type='sales', month=selected_month_start).order_by('sort_order', 'id')
+    booking_items = ExecutionPlanItem.objects.filter(plan_type='booking', month=selected_month_start).select_related('document', 'document_item').order_by('sort_order', 'id')
+    sales_items = ExecutionPlanItem.objects.filter(plan_type='sales', month=selected_month_start).select_related('document', 'document_item').order_by('sort_order', 'id')
 
     # Aggregations
     booking_total_val = booking_items.aggregate(t=Sum('total_order_value'))['t'] or Decimal('0.00')
