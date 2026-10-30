@@ -735,307 +735,349 @@ def financial_dashboard(request):
 @require_permission('REPORTING', 'read')
 def business_planning_dashboard(request):
 
-    from .models import PlannedOrder, PlannedPurchase
+    from .models import PlannedOrder, PlannedPurchase, ExecutionPlanItem
     from datetime import date
+    import calendar
+    import csv
     from django.contrib import messages
     from django.shortcuts import redirect
+    from django.http import HttpResponse, JsonResponse
     from django.db.models import Q, Sum
     from decimal import Decimal
 
     today = date.today()
-    current_month_start = date(today.year, today.month, 1)
-    
-    if today.month == 1:
-        prev_month_start = date(today.year - 1, 12, 1)
+    try:
+        selected_year = int(request.GET.get('year', today.year))
+        selected_month = int(request.GET.get('month', today.month))
+        selected_month_start = date(selected_year, selected_month, 1)
+    except (ValueError, TypeError):
+        selected_year = today.year
+        selected_month = today.month
+        selected_month_start = date(today.year, today.month, 1)
+
+    if selected_month == 1:
+        prev_month_start = date(selected_year - 1, 12, 1)
     else:
-        prev_month_start = date(today.year, today.month - 1, 1)
-        
-    if today.month == 12:
-        next_month_start = date(today.year + 1, 1, 1)
+        prev_month_start = date(selected_year, selected_month - 1, 1)
+
+    if selected_month == 12:
+        next_month_start = date(selected_year + 1, 1, 1)
     else:
-        next_month_start = date(today.year, today.month + 1, 1)
+        next_month_start = date(selected_year, selected_month + 1, 1)
+
+    # ── AJAX Quick Cell Edit ──
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        if request.method == 'POST':
+            import json
+            try:
+                data = json.loads(request.body)
+            except Exception:
+                data = request.POST
+            action = data.get('action')
+            if action == 'quick_update_cell':
+                item_id = data.get('item_id')
+                item = ExecutionPlanItem.objects.filter(id=item_id).first()
+                if not item:
+                    return JsonResponse({'success': False, 'error': 'Item not found'}, status=404)
+                field = data.get('field')
+                val = data.get('value')
+                if field in ['quantity', 'probable_order_value', 'total_order_value', 'gst_rate', 'including_gst_amount']:
+                    try:
+                        clean_val = str(val or '0').replace(',', '').replace('₹', '').strip()
+                        setattr(item, field, Decimal(clean_val or '0'))
+                    except Exception:
+                        pass
+                elif field in ['customer_name', 'item_description', 'uom', 'order_status']:
+                    setattr(item, field, str(val or '').strip())
+
+                # Auto recalculate totals if qty or rate changed
+                if field in ['quantity', 'probable_order_value']:
+                    item.total_order_value = round((item.quantity or 0) * (item.probable_order_value or 0), 2)
+                    gst = item.gst_rate if item.gst_rate is not None else Decimal('18')
+                    item.including_gst_amount = round(item.total_order_value * (1 + (gst / Decimal('100'))), 2)
+                elif field == 'total_order_value':
+                    gst = item.gst_rate if item.gst_rate is not None else Decimal('18')
+                    item.including_gst_amount = round(item.total_order_value * (1 + (gst / Decimal('100'))), 2)
+                elif field == 'gst_rate':
+                    gst = item.gst_rate if item.gst_rate is not None else Decimal('18')
+                    item.including_gst_amount = round(item.total_order_value * (1 + (gst / Decimal('100'))), 2)
+
+                status_lower = (item.order_status or '').lower()
+                item.is_supplied = ('supplied' in status_lower or 'completed' in status_lower or 'delivered' in status_lower)
+                item.save()
+
+                # Get updated section totals
+                sec_items = ExecutionPlanItem.objects.filter(plan_type=item.plan_type, month=item.month)
+                sec_total_val = sec_items.aggregate(t=Sum('total_order_value'))['t'] or Decimal('0.00')
+                sec_total_gst = sec_items.aggregate(t=Sum('including_gst_amount'))['t'] or Decimal('0.00')
+                sec_total_prob = sec_items.aggregate(t=Sum('probable_order_value'))['t'] or Decimal('0.00')
+
+                return JsonResponse({
+                    'success': True,
+                    'item': {
+                        'id': item.id,
+                        'customer_name': item.customer_name,
+                        'item_description': item.item_description,
+                        'quantity': float(item.quantity),
+                        'uom': item.uom,
+                        'probable_order_value': float(item.probable_order_value),
+                        'total_order_value': float(item.total_order_value),
+                        'gst_rate': float(item.gst_rate),
+                        'including_gst_amount': float(item.including_gst_amount),
+                        'order_status': item.order_status,
+                        'is_supplied': item.is_supplied,
+                    },
+                    'section_totals': {
+                        'probable_val': float(sec_total_prob),
+                        'total_val': float(sec_total_val),
+                        'including_gst': float(sec_total_gst),
+                    }
+                })
+
+    def parse_month(month_str):
+        if month_str and len(month_str) == 7:  # YYYY-MM
+            return month_str + '-01'
+        return month_str
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        
-        def parse_month(month_str):
-            if month_str and len(month_str) == 7: # YYYY-MM
-                return month_str + '-01'
-            return month_str
 
-        
-        if action == 'add_order':
-            PlannedOrder.objects.create(
-                title=request.POST.get('title'),
-                amount=request.POST.get('amount') or 0,
-                expected_month=parse_month(request.POST.get('expected_month')),
+        if action == 'add_plan_item':
+            plan_type = request.POST.get('plan_type', 'booking')
+            m_str = request.POST.get('month')
+            m_date = parse_month(m_str) if m_str else selected_month_start
+            clean_qty = Decimal(str(request.POST.get('quantity') or '1').replace(',', '').strip() or '1')
+            clean_rate = Decimal(str(request.POST.get('probable_order_value') or '0').replace(',', '').replace('₹', '').strip() or '0')
+            clean_tot = Decimal(str(request.POST.get('total_order_value') or str(clean_qty * clean_rate)).replace(',', '').replace('₹', '').strip() or '0')
+            clean_gst = Decimal(str(request.POST.get('gst_rate') or '18').replace('%', '').strip() or '18')
+            clean_inc_gst = Decimal(str(request.POST.get('including_gst_amount') or str(clean_tot * (1 + (clean_gst / Decimal('100'))))).replace(',', '').replace('₹', '').strip() or '0')
+
+            status_str = request.POST.get('order_status', 'Pending').strip() or 'Pending'
+            status_lower = status_str.lower()
+            is_sup = ('supplied' in status_lower or 'completed' in status_lower or 'delivered' in status_lower)
+
+            max_sort = ExecutionPlanItem.objects.filter(plan_type=plan_type, month=m_date).count()
+
+            ExecutionPlanItem.objects.create(
+                plan_type=plan_type,
+                month=m_date,
+                customer_name=request.POST.get('customer_name', '').strip(),
+                item_description=request.POST.get('item_description', '').strip(),
+                quantity=clean_qty,
+                uom=request.POST.get('uom', 'Nos').strip() or 'Nos',
+                probable_order_value=clean_rate,
+                total_order_value=clean_tot,
+                gst_rate=clean_gst,
+                including_gst_amount=clean_inc_gst,
+                order_status=status_str,
+                is_supplied=is_sup,
+                sort_order=max_sort + 1,
             )
-            messages.success(request, 'Planned order added.')
-            
-        elif action == 'add_purchase':
-            PlannedPurchase.objects.create(
-                title=request.POST.get('title'),
-                amount=request.POST.get('amount') or 0,
-                expected_month=parse_month(request.POST.get('expected_month')),
-            )
-            messages.success(request, 'Planned purchase added.')
-            
-        elif action == 'edit_order':
-            order = PlannedOrder.objects.get(id=request.POST.get('id'))
-            order.title = request.POST.get('title', order.title)
-            order.amount = request.POST.get('amount') or order.amount
-            if request.POST.get('expected_month'):
-                order.expected_month = parse_month(request.POST.get('expected_month'))
-            order.payments_received = request.POST.get('payments_received') or 0
-            order.status = request.POST.get('status')
-            if order.status == 'Completed' and not order.completed_month:
-                order.completed_month = current_month_start
-            elif order.status != 'Completed':
-                order.completed_month = None
-            order.save()
-            messages.success(request, 'Order updated.')
-            
-        elif action == 'edit_purchase':
-            purchase = PlannedPurchase.objects.get(id=request.POST.get('id'))
-            purchase.title = request.POST.get('title', purchase.title)
-            purchase.amount = request.POST.get('amount') or purchase.amount
-            if request.POST.get('expected_month'):
-                purchase.expected_month = parse_month(request.POST.get('expected_month'))
-            purchase.payments_given = request.POST.get('payments_given') or 0
-            purchase.status = request.POST.get('status')
-            if purchase.status == 'Completed' and not purchase.completed_month:
-                purchase.completed_month = current_month_start
-            elif purchase.status != 'Completed':
-                purchase.completed_month = None
-            purchase.save()
-            messages.success(request, 'Purchase updated.')
+            messages.success(request, f"Item added to {'Order Booking Plan' if plan_type == 'booking' else 'Sales Plan'}.")
 
-        elif action == 'delete_order':
-            order = PlannedOrder.objects.get(id=request.POST.get('id'))
-            order.delete()
-            messages.success(request, 'Order deleted.')
+        elif action == 'edit_plan_item':
+            item_id = request.POST.get('id')
+            item = ExecutionPlanItem.objects.filter(id=item_id).first()
+            if item:
+                item.customer_name = request.POST.get('customer_name', item.customer_name).strip()
+                item.item_description = request.POST.get('item_description', item.item_description).strip()
+                clean_qty = Decimal(str(request.POST.get('quantity') or item.quantity).replace(',', '').strip() or '1')
+                clean_rate = Decimal(str(request.POST.get('probable_order_value') or item.probable_order_value).replace(',', '').replace('₹', '').strip() or '0')
+                clean_gst = Decimal(str(request.POST.get('gst_rate') or item.gst_rate).replace('%', '').strip() or '18')
+                item.quantity = clean_qty
+                item.uom = request.POST.get('uom', item.uom).strip() or item.uom
+                item.probable_order_value = clean_rate
+                item.gst_rate = clean_gst
+                item.total_order_value = round(clean_qty * clean_rate, 2)
+                item.including_gst_amount = round(item.total_order_value * (1 + (clean_gst / Decimal('100'))), 2)
+                item.order_status = request.POST.get('order_status', item.order_status).strip()
+                status_lower = (item.order_status or '').lower()
+                item.is_supplied = ('supplied' in status_lower or 'completed' in status_lower or 'delivered' in status_lower)
+                item.save()
+                messages.success(request, 'Item updated.')
 
-        elif action == 'delete_purchase':
-            purchase = PlannedPurchase.objects.get(id=request.POST.get('id'))
-            purchase.delete()
-            messages.success(request, 'Purchase deleted.')
+        elif action == 'delete_plan_item':
+            item_id = request.POST.get('id')
+            ExecutionPlanItem.objects.filter(id=item_id).delete()
+            messages.success(request, 'Item deleted.')
 
-        elif action == 'bulk_import_orders':
+        elif action == 'bulk_import_erp':
             titles = request.POST.getlist('import_title')
             amounts = request.POST.getlist('import_amount')
             months = request.POST.getlist('import_month')
             selected_indices = request.POST.getlist('selected_orders')
+            plan_type = request.POST.get('target_plan_type', 'booking')
 
             created_count = 0
             for idx_str in selected_indices:
                 try:
                     idx = int(idx_str)
                     if idx < len(titles) and titles[idx]:
-                        PlannedOrder.objects.create(
-                            title=titles[idx].strip(),
-                            amount=Decimal(amounts[idx] or '0'),
-                            expected_month=parse_month(months[idx]) or current_month_start,
+                        amt = Decimal(str(amounts[idx] or '0'))
+                        ExecutionPlanItem.objects.create(
+                            plan_type=plan_type,
+                            month=parse_month(months[idx]) or selected_month_start,
+                            customer_name=titles[idx].split(':')[1].strip() if ':' in titles[idx] else titles[idx].strip(),
+                            item_description=titles[idx].split(':')[0].strip() if ':' in titles[idx] else 'ERP Order',
+                            quantity=1,
+                            uom='Set',
+                            probable_order_value=amt,
+                            total_order_value=amt,
+                            gst_rate=Decimal('18'),
+                            including_gst_amount=round(amt * Decimal('1.18'), 2),
+                            order_status='Pending',
                         )
                         created_count += 1
                 except (ValueError, IndexError):
                     continue
-            messages.success(request, f'{created_count} order(s) successfully imported into execution plan.')
+            messages.success(request, f'{created_count} ERP order(s) successfully imported.')
 
-        elif action == 'bulk_import_purchases':
-            titles = request.POST.getlist('import_title')
-            amounts = request.POST.getlist('import_amount')
-            months = request.POST.getlist('import_month')
-            selected_indices = request.POST.getlist('selected_purchases')
+        return redirect(f"{request.path}?year={selected_year}&month={selected_month}")
 
-            created_count = 0
-            for idx_str in selected_indices:
-                try:
-                    idx = int(idx_str)
-                    if idx < len(titles) and titles[idx]:
-                        PlannedPurchase.objects.create(
-                            title=titles[idx].strip(),
-                            amount=Decimal(amounts[idx] or '0'),
-                            expected_month=parse_month(months[idx]) or current_month_start,
-                        )
-                        created_count += 1
-                except (ValueError, IndexError):
-                    continue
-            messages.success(request, f'{created_count} purchase(s) successfully imported into execution plan.')
-            
-        return redirect('business_planning')
+    # ── Initial Seed for Reference Demo (April 2026) if table is empty ──
+    if selected_year == 2026 and selected_month == 4 and not ExecutionPlanItem.objects.filter(month=selected_month_start).exists():
+        demo_booking = [
+            ("KIIT", "CoE-ITI", 1, "Set", Decimal("1250000.00"), "Pending"),
+            ("KIIT", "ITI-Booth", 1, "Set", Decimal("850000.00"), "Pending"),
+            ("JH Sciaky", "IAW800", 2, "Nos", Decimal("2500000.00"), "Confirmed"),
+            ("Cimtrix Systems", "IDP8210", 1, "Nos", Decimal("1650000.00"), "Pending"),
+            ("Impo-Expo Group, Poland", "IDP8210", 1, "Nos", Decimal("1850000.00"), "Pending"),
+            ("Tesca", "CD800+INC350+IND400S", 1, "Set", Decimal("2200000.00"), "Pending"),
+            ("Amada", "MF6160", 1, "Nos", Decimal("1950000.00"), "Pending"),
+            ("Mechnolinc Engineers", "IAW800", 1, "Nos", Decimal("1177590.52"), "Pending"),
+        ]
+        for idx, (cust, desc, qty, uom, rate, st) in enumerate(demo_booking):
+            ExecutionPlanItem.objects.create(
+                plan_type='booking',
+                month=selected_month_start,
+                customer_name=cust,
+                item_description=desc,
+                quantity=qty,
+                uom=uom,
+                probable_order_value=rate,
+                total_order_value=qty * rate,
+                gst_rate=Decimal('18'),
+                including_gst_amount=round((qty * rate) * Decimal('1.18'), 2),
+                order_status=st,
+                sort_order=idx + 1
+            )
 
-    def get_month_items(model, month_start, is_current=False):
-        if is_current:
-            return model.objects.filter(
-                Q(expected_month=month_start) | 
-                (Q(expected_month__lt=month_start) & ~Q(status='Completed'))
-            ).order_by('expected_month', '-created_at')
-        else:
-            if month_start < current_month_start:
-                return model.objects.filter(completed_month=month_start).order_by('-created_at')
-            else:
-                return model.objects.filter(expected_month__gt=current_month_start).order_by('expected_month', '-created_at')
+        demo_sales = [
+            ("KIIT", "CoE-Diploma", 1, "Set", Decimal("1500000.00"), "Pending"),
+            ("Industech", "Lincoln mc+others", 1, "Set", Decimal("3323465.94"), "Supplied on 03.08.26"),
+            ("JayHind", "IAW800T", 1, "Nos", Decimal("1250000.00"), "Pending"),
+            ("JPK Automation", "IDP5420+HD400B", 1, "Nos", Decimal("950000.00"), "Pending"),
+            ("Sai Pet Preforms", "PowerInd350i", 1, "Nos", Decimal("650000.00"), "Pending"),
+            ("Emech-Bangalore", "MF350KVA - Transformer", 1, "Nos", Decimal("450000.00"), "Pending"),
+        ]
+        for idx, (cust, desc, qty, uom, rate, st) in enumerate(demo_sales):
+            ExecutionPlanItem.objects.create(
+                plan_type='sales',
+                month=selected_month_start,
+                customer_name=cust,
+                item_description=desc,
+                quantity=qty,
+                uom=uom,
+                probable_order_value=rate,
+                total_order_value=qty * rate,
+                gst_rate=Decimal('18'),
+                including_gst_amount=round((qty * rate) * Decimal('1.18'), 2),
+                order_status=st,
+                sort_order=idx + 1
+            )
 
-    context = {
-        'current_month_start': current_month_start,
-        'prev_month_start': prev_month_start,
-        'next_month_start': next_month_start,
-        
-        'curr_orders': get_month_items(PlannedOrder, current_month_start, True),
-        'curr_purchases': get_month_items(PlannedPurchase, current_month_start, True),
-        
-        'prev_orders': get_month_items(PlannedOrder, prev_month_start, False),
-        'prev_purchases': get_month_items(PlannedPurchase, prev_month_start, False),
-        
-        'next_orders': get_month_items(PlannedOrder, next_month_start, False),
-        'next_purchases': get_month_items(PlannedPurchase, next_month_start, False),
-    }
+    # ── Fetch Data for Selected Month ──
+    booking_items = ExecutionPlanItem.objects.filter(plan_type='booking', month=selected_month_start).order_by('sort_order', 'id')
+    sales_items = ExecutionPlanItem.objects.filter(plan_type='sales', month=selected_month_start).order_by('sort_order', 'id')
 
-    # Calculate Totals using Django aggregation
-    context['curr_orders_total'] = context['curr_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    context['curr_purchases_total'] = context['curr_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    
-    context['prev_orders_total'] = context['prev_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    context['prev_purchases_total'] = context['prev_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    context['next_orders_total'] = context['next_orders'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    context['next_purchases_total'] = context['next_purchases'].aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    # Aggregations
+    booking_total_val = booking_items.aggregate(t=Sum('total_order_value'))['t'] or Decimal('0.00')
+    booking_total_gst = booking_items.aggregate(t=Sum('including_gst_amount'))['t'] or Decimal('0.00')
+    booking_total_prob = booking_items.aggregate(t=Sum('probable_order_value'))['t'] or Decimal('0.00')
 
-    # ── Rollover Analytics ──
-    rolled_over_orders = PlannedOrder.objects.filter(
-        expected_month__lt=current_month_start
-    ).exclude(status='Completed')
-    rolled_over_orders_count = rolled_over_orders.count()
-    rolled_over_orders_total = rolled_over_orders.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+    sales_total_val = sales_items.aggregate(t=Sum('total_order_value'))['t'] or Decimal('0.00')
+    sales_total_gst = sales_items.aggregate(t=Sum('including_gst_amount'))['t'] or Decimal('0.00')
+    sales_total_prob = sales_items.aggregate(t=Sum('probable_order_value'))['t'] or Decimal('0.00')
 
-    rolled_over_purchases = PlannedPurchase.objects.filter(
-        expected_month__lt=current_month_start
-    ).exclude(status='Completed')
-    rolled_over_purchases_count = rolled_over_purchases.count()
-    rolled_over_purchases_total = rolled_over_purchases.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+    # ── CSV Export ──
+    if request.GET.get('export') in ('csv', 'excel'):
+        month_label = f"{calendar.month_name[selected_month]} {selected_year}"
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="Execution_Plan_{selected_year}_{selected_month:02d}.csv"'
+        writer = csv.writer(response)
 
-    has_rollover = (rolled_over_orders_count > 0 or rolled_over_purchases_count > 0)
+        # 1. Order Booking Plan Section
+        writer.writerow([f"{month_label} Order Booking Plan", "", "", "", "", "Total Order Booking Plan", f"{booking_total_val:,.2f}", f"{booking_total_gst:,.2f}", ""])
+        writer.writerow(["Sl. No.", "Customer", "Item Description", "Qty", "UoM", "Probable Order Value", "Total Order Value", "Including GST amount", "Order Status"])
+        for idx, item in enumerate(booking_items, 1):
+            writer.writerow([
+                idx,
+                item.customer_name,
+                item.item_description,
+                item.quantity,
+                item.uom,
+                f"{item.probable_order_value:,.2f}",
+                f"{item.total_order_value:,.2f}",
+                f"{item.including_gst_amount:,.2f}",
+                item.order_status,
+            ])
+        writer.writerow([])
+        writer.writerow([])
 
-    # ── Cash Gap Analysis ──
-    curr_orders_total = context['curr_orders_total']
-    curr_purchases_total = context['curr_purchases_total']
-    cash_gap = curr_orders_total - curr_purchases_total
-    is_cash_deficit = (curr_purchases_total > curr_orders_total) and (curr_purchases_total > 0)
-    cash_deficit_amount = (curr_purchases_total - curr_orders_total) if is_cash_deficit else Decimal('0.00')
-    cash_surplus_amount = (curr_orders_total - curr_purchases_total) if not is_cash_deficit else Decimal('0.00')
+        # 2. Sales Plan Section
+        writer.writerow([f"{month_label} Sales Plan", "", "", "", "", "Total Sales Plan", f"{sales_total_val:,.2f}", f"{sales_total_gst:,.2f}", ""])
+        writer.writerow(["Sl. No.", "Customer", "Item Description", "Qty", "UoM", "Probable Order Value", "Total Order Value", "Including GST amount", "Order Status"])
+        for idx, item in enumerate(sales_items, 1):
+            writer.writerow([
+                idx,
+                item.customer_name,
+                item.item_description,
+                item.quantity,
+                item.uom,
+                f"{item.probable_order_value:,.2f}",
+                f"{item.total_order_value:,.2f}",
+                f"{item.including_gst_amount:,.2f}",
+                item.order_status,
+            ])
+        return response
 
-    profit_margin_pct = Decimal('0.0')
-    if curr_orders_total > 0:
-        profit_margin_pct = round(((curr_orders_total - curr_purchases_total) / curr_orders_total) * 100, 1)
-
-    # ── Auto-Import Candidates from ERP ──
-    existing_order_titles = set(PlannedOrder.objects.values_list('title', flat=True))
-    available_orders = []
-
-    try:
-        from tracker.models import Order as TrackerOrder
-        tracker_orders = TrackerOrder.objects.filter(
-            order_status__in=['OPEN', 'SOURCING', 'PROCURED']
-        ).prefetch_related('products').order_by('-order_date')[:30]
-
-        for to in tracker_orders:
-            sp_total = sum((p.selling_price_inc_gst or 0) * (p.quantity or 1) for p in to.products.all())
-            title = f"Tracker #{to.order_number}: {to.customer_name}"
-            if title not in existing_order_titles:
-                available_orders.append({
-                    'source': 'Tracker Order',
-                    'badge_color': 'indigo',
-                    'title': title,
-                    'amount': float(sp_total),
-                    'ref': to.order_number,
-                })
-    except Exception:
-        tracker_orders = []
-
-    try:
-        doc_orders = Document.objects.filter(
-            type__in=['PRO', 'QTN'],
-            status='Approved'
-        ).select_related('contact').order_by('-date')[:30]
-
-        for doc in doc_orders:
-            c_name = doc.contact.name if doc.contact else (doc.customer_name or 'Client')
-            title = f"{doc.get_type_display()} {doc.number}: {c_name}"
-            if title not in existing_order_titles:
-                available_orders.append({
-                    'source': doc.get_type_display(),
-                    'badge_color': 'emerald',
-                    'title': title,
-                    'amount': float(doc.balance_due or doc.grand_total or 0),
-                    'ref': doc.number,
-                })
-    except Exception:
-        pass
-
-    # Available Purchases from ERP
-    existing_purchase_titles = set(PlannedPurchase.objects.values_list('title', flat=True))
-    available_purchases = []
-
-    try:
-        pos = Document.objects.filter(
-            type='PO'
-        ).exclude(status='Cancelled').select_related('contact').order_by('-date')[:30]
-
-        for po in pos:
-            v_name = po.contact.name if po.contact else (po.vendor_name or 'Supplier')
-            title = f"PO {po.number}: {v_name}"
-            if title not in existing_purchase_titles:
-                available_purchases.append({
-                    'source': 'Purchase Order',
-                    'badge_color': 'purple',
-                    'title': title,
-                    'amount': float(po.balance_due or po.grand_total or 0),
-                    'ref': po.number,
-                })
-    except Exception:
-        pass
-
-    try:
-        for to in tracker_orders:
-            bp_total = sum((p.buying_price_inc_gst or 0) * (p.quantity or 1) for p in to.products.all() if p.buying_price_inc_gst)
-            if bp_total > 0:
-                title = f"Tracker Procure #{to.order_number}: {to.customer_name}"
-                if title not in existing_purchase_titles:
-                    available_purchases.append({
-                        'source': 'Tracker Procurement',
-                        'badge_color': 'violet',
-                        'title': title,
-                        'amount': float(bp_total),
-                        'ref': to.order_number,
-                    })
-    except Exception:
-        pass
-
-    # Autocomplete Contacts
+    # ── Autocomplete Contacts ──
     try:
         from contacts.models import Contact
         customer_names = list(Contact.objects.filter(contact_type__in=['Customer', 'Both']).values_list('name', flat=True).distinct()[:100])
-        vendor_names = list(Contact.objects.filter(contact_type__in=['Vendor', 'Both']).values_list('name', flat=True).distinct()[:100])
     except Exception:
-        customer_names, vendor_names = [], []
+        customer_names = []
 
-    context.update({
-        'rolled_over_orders_count': rolled_over_orders_count,
-        'rolled_over_orders_total': rolled_over_orders_total,
-        'rolled_over_purchases_count': rolled_over_purchases_count,
-        'rolled_over_purchases_total': rolled_over_purchases_total,
-        'has_rollover': has_rollover,
-        'is_cash_deficit': is_cash_deficit,
-        'cash_deficit_amount': cash_deficit_amount,
-        'cash_surplus_amount': cash_surplus_amount,
-        'profit_margin_pct': profit_margin_pct,
-        'cash_gap': cash_gap,
-        'available_orders': available_orders,
-        'available_purchases': available_purchases,
+    # Months list for dropdown
+    months_list = [(i, calendar.month_name[i]) for i in range(1, 13)]
+    years_list = range(2024, 2030)
+
+    context = {
+        'selected_year': selected_year,
+        'selected_month': selected_month,
+        'selected_month_start': selected_month_start,
+        'month_name': calendar.month_name[selected_month],
+        'prev_month_url': f"?year={prev_month_start.year}&month={prev_month_start.month}",
+        'next_month_url': f"?year={next_month_start.year}&month={next_month_start.month}",
+        'months_list': months_list,
+        'years_list': years_list,
+
+        'booking_items': booking_items,
+        'sales_items': sales_items,
+
+        'booking_total_val': booking_total_val,
+        'booking_total_gst': booking_total_gst,
+        'booking_total_prob': booking_total_prob,
+
+        'sales_total_val': sales_total_val,
+        'sales_total_gst': sales_total_gst,
+        'sales_total_prob': sales_total_prob,
+
         'customer_names': customer_names,
-        'vendor_names': vendor_names,
-    })
+    }
 
     return render(request, 'reporting/planning_dashboard.html', context)
+
 
 
 # ─── Live P&L Statement ────────────────────────────────────────────────────────

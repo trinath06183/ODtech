@@ -1,509 +1,631 @@
 {% extends 'base.html' %}
-{% block title %}Execution Planning Dashboard — ODtech ERP{% endblock %}
+{% load humanize %}
+
+{% block title %}Execution Planning Dashboard — {{ month_name }} {{ selected_year }}{% endblock %}
 {% block header %}Execution Planning Dashboard{% endblock %}
 
 {% block content %}
-<div class="max-w-[1600px] mx-auto space-y-6">
+<div class="space-y-6 max-w-[1700px] mx-auto pb-16">
 
-    {# Header #}
-    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-indigo-200">
-                🎯
-            </div>
-            <div>
-                <h1 class="text-xl font-bold text-slate-800 tracking-tight">Execution Planning Dashboard</h1>
-                <p class="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                    Plan individual orders and purchases. Incomplete items automatically roll over to the current month!
-                </p>
-            </div>
-        </div>
-    </div>
-
-    {# ── Cash Gap & Balance Alert Banner ── #}
-    {% if is_cash_deficit %}
-    <div class="bg-gradient-to-r from-rose-50 to-red-50 border-l-4 border-rose-500 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                ⚠️
-            </div>
-            <div>
-                <h2 class="text-sm font-bold text-rose-900 flex items-center gap-2 flex-wrap">
-                    <span>Projected Cash Gap Alert ({{ current_month_start|date:'F Y' }})</span>
-                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-200 text-rose-900">Deficit: ₹{{ cash_deficit_amount|floatformat:2 }}</span>
-                </h2>
-                <p class="text-xs text-rose-700 mt-0.5 leading-relaxed">
-                    Planned purchases (<strong>₹{{ curr_purchases_total|floatformat:2 }}</strong>) exceed planned customer orders (<strong>₹{{ curr_orders_total|floatformat:2 }}</strong>). Auto-import or schedule additional orders to ensure positive liquidity.
-                </p>
-            </div>
-        </div>
-        <button type="button" onclick="openModal('importOrdersModal')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm whitespace-nowrap flex items-center gap-1.5 flex-shrink-0">
-            <span>⚡ Import Orders to Balance</span>
-        </button>
-    </div>
-    {% elif curr_orders_total > 0 %}
-    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-l-4 border-emerald-500 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                🛡️
-            </div>
-            <div>
-                <h2 class="text-sm font-bold text-emerald-900 flex items-center gap-2 flex-wrap">
-                    <span>Positive Cash Flow Outlook ({{ current_month_start|date:'F Y' }})</span>
-                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-900">Net Surplus: +₹{{ cash_surplus_amount|floatformat:2 }}</span>
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Margin: {{ profit_margin_pct }}%</span>
-                </h2>
-                <p class="text-xs text-emerald-700 mt-0.5 leading-relaxed">
-                    Planned customer orders (<strong>₹{{ curr_orders_total|floatformat:2 }}</strong>) provide healthy coverage over planned vendor purchases (<strong>₹{{ curr_purchases_total|floatformat:2 }}</strong>).
-                </p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {# ── Rollover Notice Banner ── #}
-    {% if has_rollover %}
-    <div class="bg-amber-50/90 border-l-4 border-amber-400 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                ⏳
-            </div>
-            <div>
-                <h2 class="text-sm font-bold text-amber-900 flex items-center gap-2 flex-wrap">
-                    <span>Rollover in Effect (Carried into {{ current_month_start|date:'F Y' }})</span>
-                    <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900">
-                        {{ rolled_over_orders_count }} Order(s) (₹{{ rolled_over_orders_total|floatformat:2 }}) • {{ rolled_over_purchases_count }} Purchase(s) (₹{{ rolled_over_purchases_total|floatformat:2 }})
-                    </span>
-                </h2>
-                <p class="text-xs text-amber-700 mt-0.5 leading-relaxed">
-                    These items were planned in prior months and were not marked completed. They automatically stay active in your execution schedule until fulfilled.
-                </p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {# Split Screen: Left Sales, Right Purchases #}
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+    {# ── TOP NAVIGATION & MONTH CONTROL BAR ── #}
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col lg:flex-row items-center justify-between gap-4">
         
-        {# LEFT: PLANNED ORDERS #}
-        <div class="space-y-6">
-            <div class="flex items-center justify-between border-b pb-2">
-                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">📈</span>
-                    Planned Orders
-                </h2>
-                <button type="button" onclick="openModal('importOrdersModal')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-xs rounded-xl transition-all shadow-sm">
-                    <span>⚡ Auto-Import ERP</span>
-                    {% if available_orders %}
-                    <span class="px-1.5 py-0.2 rounded-full bg-emerald-700 text-white text-[10px]">{{ available_orders|length }}</span>
-                    {% endif %}
+        {# Title & Month badge #}
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                📋
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <span>Execution Planning Dashboard</span>
+                    <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                        {{ month_name }} {{ selected_year }}
+                    </span>
+                </h1>
+                <p class="text-xs text-slate-500">
+                    Month-wise Order Booking Plan & Sales Plan tracking with automated calculations.
+                </p>
+            </div>
+        </div>
+
+        {# Month Navigation Form #}
+        <form method="GET" class="flex flex-wrap items-center gap-2">
+            <a href="{{ prev_month_url }}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1">
+                ◀ Prev
+            </a>
+
+            <select name="month" onchange="this.form.submit()" class="rounded-xl border-slate-300 text-xs font-semibold px-3 py-1.5 bg-white shadow-sm focus:ring-2 focus:ring-red-500">
+                {% for num, m_name in months_list %}
+                <option value="{{ num }}" {% if num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="year" onchange="this.form.submit()" class="rounded-xl border-slate-300 text-xs font-semibold px-3 py-1.5 bg-white shadow-sm focus:ring-2 focus:ring-red-500">
+                {% for y in years_list %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+
+            <a href="{{ next_month_url }}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1">
+                Next ▶
+            </a>
+
+            {# Action Buttons #}
+            <div class="flex items-center gap-2 ml-2">
+                <button type="button" onclick="openAddItemModal('booking')" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                    <span>+ Add Booking Item</span>
                 </button>
+                <button type="button" onclick="openAddItemModal('sales')" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                    <span>+ Add Sales Item</span>
+                </button>
+                <a href="?year={{ selected_year }}&month={{ selected_month }}&export=csv" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                    <span>⬇ Export Excel</span>
+                </a>
             </div>
+        </form>
+    </div>
 
-            {# Add New Form #}
-            <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                <form method="POST" class="flex flex-col sm:flex-row gap-3 items-end">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="add_order">
-                    <div class="flex-1 w-full">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Customer / Title</label>
-                        <input type="text" name="title" list="customerListDatalist" placeholder="e.g. Acme Corp or type to search..." required class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500">
-                    </div>
-                    <div class="w-full sm:w-32">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Amount (₹)</label>
-                        <input type="number" step="0.01" name="amount" class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500">
-                    </div>
-                    <div class="w-full sm:w-40">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Planned Month</label>
-                        <input type="month" name="expected_month" value="{{ current_month_start|date:'Y-m' }}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-emerald-500" required>
-                    </div>
-                    <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition-colors">
-                        Add
-                    </button>
-                </form>
+    {# ════════════════════════════════════════════════════════════════════════════ #}
+    {# SECTION 1: ORDER BOOKING PLAN                                               #}
+    {# ════════════════════════════════════════════════════════════════════════════ #}
+    <div class="bg-white rounded-xl shadow-md border border-slate-300 overflow-hidden">
+        
+        {# Red Header Banner #}
+        <div class="bg-red-600 text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-4 font-bold select-none border-b border-red-700">
+            <div class="text-sm tracking-wide uppercase font-black flex items-center gap-2">
+                <span>🔴 {{ month_name }} {{ selected_year }} Order Booking Plan</span>
+                <span class="text-xs bg-red-700/80 text-red-100 font-semibold px-2 py-0.5 rounded-md">{{ booking_items|length }} Items</span>
             </div>
-
-            {# Current Month #}
-            <div>
-                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    Current Month ({{ current_month_start|date:'M Y' }})
-                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ curr_orders|length }} Items</span>
-                    {% if curr_orders_total > 0 %}
-                    <span class="text-xs font-bold text-emerald-600 ml-auto">₹{{ curr_orders_total|floatformat:2 }}</span>
-                    {% endif %}
-                </h3>
-                <div class="space-y-3">
-                    {% for order in curr_orders %}
-                        {% include "reporting/partials/_order_row.html" with item=order %}
-                    {% empty %}
-                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No pending orders for this month.</p>
-                    {% endfor %}
-                </div>
-            </div>
-
-            {# Future Months #}
-            <div>
-                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    Future Months
-                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ next_orders|length }} Items</span>
-                    {% if next_orders_total > 0 %}
-                    <span class="text-xs font-bold text-emerald-600 ml-auto">₹{{ next_orders_total|floatformat:2 }}</span>
-                    {% endif %}
-                </h3>
-                <div class="space-y-3">
-                    {% for order in next_orders %}
-                        {% include "reporting/partials/_order_row.html" with item=order %}
-                    {% empty %}
-                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No orders planned for the future.</p>
-                    {% endfor %}
-                </div>
-            </div>
-            
-            {# Previous Month (Completed Only) #}
-            <div>
-                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    Previous Month ({{ prev_month_start|date:'M Y' }})
-                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ prev_orders|length }} Completed</span>
-                    {% if prev_orders_total > 0 %}
-                    <span class="text-xs font-bold text-emerald-600 ml-auto">₹{{ prev_orders_total|floatformat:2 }}</span>
-                    {% endif %}
-                </h3>
-                <div class="space-y-3 opacity-75">
-                    {% for order in prev_orders %}
-                        {% include "reporting/partials/_order_row.html" with item=order %}
-                    {% empty %}
-                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No orders completed last month.</p>
-                    {% endfor %}
+            <div class="flex items-center gap-6 text-sm">
+                <span class="text-xs text-red-100 font-semibold uppercase tracking-wider">Total Order Booking Plan:</span>
+                <div class="flex items-center gap-4 font-mono font-black text-sm">
+                    <span title="Total Order Value (Base)" class="bg-red-700/90 px-3 py-1 rounded-lg border border-red-500/60 shadow-inner">
+                        ₹<span id="booking-banner-base">{{ booking_total_val|floatformat:2|intcomma }}</span>
+                    </span>
+                    <span title="Total Including GST" class="bg-white text-red-700 px-3 py-1 rounded-lg shadow-sm border border-red-200">
+                        ₹<span id="booking-banner-gst">{{ booking_total_gst|floatformat:2|intcomma }}</span> <span class="text-[10px] text-red-500 font-sans font-bold">Inc. GST</span>
+                    </span>
                 </div>
             </div>
         </div>
 
-        {# RIGHT: PLANNED PURCHASES #}
-        <div class="space-y-6">
-            <div class="flex items-center justify-between border-b pb-2">
-                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">🛒</span>
-                    Planned Purchases
-                </h2>
-                <button type="button" onclick="openModal('importPurchasesModal')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold text-xs rounded-xl transition-all shadow-sm">
-                    <span>⚡ Auto-Import ERP</span>
-                    {% if available_purchases %}
-                    <span class="px-1.5 py-0.2 rounded-full bg-purple-700 text-white text-[10px]">{{ available_purchases|length }}</span>
-                    {% endif %}
-                </button>
-            </div>
-
-            {# Add New Form #}
-            <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                <form method="POST" class="flex flex-col sm:flex-row gap-3 items-end">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="add_purchase">
-                    <div class="flex-1 w-full">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendor / Title</label>
-                        <input type="text" name="title" list="vendorListDatalist" placeholder="e.g. Supplier name or type to search..." required class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500">
-                    </div>
-                    <div class="w-full sm:w-32">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Amount (₹)</label>
-                        <input type="number" step="0.01" name="amount" class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500">
-                    </div>
-                    <div class="w-full sm:w-40">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Planned Month</label>
-                        <input type="month" name="expected_month" value="{{ current_month_start|date:'Y-m' }}" class="w-full text-sm rounded-lg border-slate-300 focus:ring-purple-500" required>
-                    </div>
-                    <button type="submit" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition-colors">
-                        Add
-                    </button>
-                </form>
-            </div>
-
-            {# Current Month #}
-            <div>
-                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    Current Month ({{ current_month_start|date:'M Y' }})
-                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ curr_purchases|length }} Items</span>
-                    {% if curr_purchases_total > 0 %}
-                    <span class="text-xs font-bold text-purple-600 ml-auto">₹{{ curr_purchases_total|floatformat:2 }}</span>
-                    {% endif %}
-                </h3>
-                <div class="space-y-3">
-                    {% for purchase in curr_purchases %}
-                        {% include "reporting/partials/_purchase_row.html" with item=purchase %}
+        {# Table Container with Spreadsheet Gridlines #}
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                {# Yellow Column Header Row #}
+                <thead class="bg-yellow-300 text-slate-900 uppercase font-black tracking-tight border-b-2 border-slate-400 select-none">
+                    <tr>
+                        <th class="py-2.5 px-3 border border-slate-400 text-center w-14">Sl. No.</th>
+                        <th class="py-2.5 px-4 border border-slate-400 min-w-[180px]">Customer</th>
+                        <th class="py-2.5 px-4 border border-slate-400 min-w-[260px]">Item Description / Project Name</th>
+                        <th class="py-2.5 px-3 border border-slate-400 text-center w-20">Qty</th>
+                        <th class="py-2.5 px-3 border border-slate-400 text-center w-20">UoM</th>
+                        <th class="py-2.5 px-4 border border-slate-400 text-right min-w-[150px]">Probable Order Value</th>
+                        <th class="py-2.5 px-4 border border-slate-400 text-right min-w-[150px]">Total Order Value</th>
+                        <th class="py-2.5 px-4 border border-slate-400 text-right min-w-[160px]">Including GST amount</th>
+                        <th class="py-2.5 px-4 border border-slate-400 min-w-[170px]">Order Status</th>
+                        <th class="py-2.5 px-2 border border-slate-400 text-center w-20">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-slate-800 font-medium bg-white">
+                    {% for item in booking_items %}
+                    <tr class="hover:bg-amber-50/50 transition-colors {% if item.is_supplied %}bg-emerald-100/70 text-emerald-950 font-semibold{% endif %}" data-item-id="{{ item.id }}">
+                        <td class="py-2 px-3 border border-slate-300 text-center font-bold text-slate-500">
+                            {{ forloop.counter }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 font-semibold text-slate-900 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'customer_name', '{{ item.id }}')" title="Click to edit">
+                            {{ item.customer_name }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'item_description', '{{ item.id }}')" title="Click to edit">
+                            {{ item.item_description }}
+                        </td>
+                        <td class="py-2 px-3 border border-slate-300 text-center font-mono cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'quantity', '{{ item.id }}')" title="Click to edit">
+                            {{ item.quantity }}
+                        </td>
+                        <td class="py-2 px-3 border border-slate-300 text-center font-semibold text-slate-600 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'uom', '{{ item.id }}')" title="Click to edit">
+                            {{ item.uom }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 text-right font-mono cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'probable_order_value', '{{ item.id }}')" title="Click to edit">
+                            ₹{{ item.probable_order_value|floatformat:2|intcomma }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 text-right font-mono font-bold text-slate-900">
+                            ₹<span class="row-tot-val">{{ item.total_order_value|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 text-right font-mono font-black text-slate-900">
+                            ₹<span class="row-inc-gst">{{ item.including_gst_amount|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'order_status', '{{ item.id }}')" title="Click to edit">
+                            <span class="inline-flex items-center gap-1.5">
+                                {% if item.is_supplied %}
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                {% endif %}
+                                <span class="status-text">{{ item.order_status }}</span>
+                            </span>
+                        </td>
+                        <td class="py-2 px-2 border border-slate-300 text-center whitespace-nowrap">
+                            <button type="button" onclick="openEditModal({{ item.id }}, '{{ item.customer_name|escapejs }}', '{{ item.item_description|escapejs }}', '{{ item.quantity }}', '{{ item.uom|escapejs }}', '{{ item.probable_order_value }}', '{{ item.gst_rate }}', '{{ item.order_status|escapejs }}')" class="text-slate-400 hover:text-indigo-600 p-1" title="Edit row">
+                                ✏️
+                            </button>
+                            <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Order Booking Plan?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_plan_item">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" class="text-slate-400 hover:text-red-600 p-1" title="Delete row">
+                                    🗑️
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
                     {% empty %}
-                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No pending purchases for this month.</p>
+                    <tr>
+                        <td colspan="10" class="py-6 text-center text-slate-400 italic bg-slate-50">
+                            No items in the Order Booking Plan for {{ month_name }} {{ selected_year }}. Click "+ Add Booking Item" to add an item.
+                        </td>
+                    </tr>
                     {% endfor %}
+                </tbody>
+                {# Bottom Total Footer Row #}
+                {% if booking_items %}
+                <tfoot class="bg-yellow-100 font-bold text-slate-900 border-t-2 border-slate-400">
+                    <tr>
+                        <td colspan="3" class="py-2 px-4 border border-slate-400 text-right uppercase tracking-wider font-black">
+                            Total Order Booking Plan:
+                        </td>
+                        <td class="py-2 px-3 border border-slate-400 text-center font-mono">
+                            {{ booking_items|length }} Items
+                        </td>
+                        <td class="py-2 px-3 border border-slate-400 text-center">—</td>
+                        <td class="py-2 px-4 border border-slate-400 text-right font-mono font-bold">
+                            ₹{{ booking_total_prob|floatformat:2|intcomma }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-400 text-right font-mono font-black text-slate-950">
+                            ₹{{ booking_total_val|floatformat:2|intcomma }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-400 text-right font-mono font-black text-red-700 text-sm">
+                            ₹{{ booking_total_gst|floatformat:2|intcomma }}
+                        </td>
+                        <td colspan="2" class="py-2 px-4 border border-slate-400 text-center text-slate-500 font-normal">
+                            All totals auto-calculated
+                        </td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+    {# ════════════════════════════════════════════════════════════════════════════ #}
+    {# SECTION 2: SALES PLAN                                                       #}
+    {# ════════════════════════════════════════════════════════════════════════════ #}
+    <div class="bg-white rounded-xl shadow-md border border-slate-300 overflow-hidden">
+        
+        {# Red Header Banner #}
+        <div class="bg-red-600 text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-4 font-bold select-none border-b border-red-700">
+            <div class="text-sm tracking-wide uppercase font-black flex items-center gap-2">
+                <span>🔴 {{ month_name }} {{ selected_year }} Sales Plan</span>
+                <span class="text-xs bg-red-700/80 text-red-100 font-semibold px-2 py-0.5 rounded-md">{{ sales_items|length }} Items</span>
+            </div>
+            <div class="flex items-center gap-6 text-sm">
+                <span class="text-xs text-red-100 font-semibold uppercase tracking-wider">Total Sales Plan:</span>
+                <div class="flex items-center gap-4 font-mono font-black text-sm">
+                    <span title="Total Order Value (Base)" class="bg-red-700/90 px-3 py-1 rounded-lg border border-red-500/60 shadow-inner">
+                        ₹<span id="sales-banner-base">{{ sales_total_val|floatformat:2|intcomma }}</span>
+                    </span>
+                    <span title="Total Including GST" class="bg-white text-red-700 px-3 py-1 rounded-lg shadow-sm border border-red-200">
+                        ₹<span id="sales-banner-gst">{{ sales_total_gst|floatformat:2|intcomma }}</span> <span class="text-[10px] text-red-500 font-sans font-bold">Inc. GST</span>
+                    </span>
                 </div>
             </div>
+        </div>
 
-            {# Future Months #}
-            <div>
-                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    Future Months
-                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ next_purchases|length }} Items</span>
-                    {% if next_purchases_total > 0 %}
-                    <span class="text-xs font-bold text-purple-600 ml-auto">₹{{ next_purchases_total|floatformat:2 }}</span>
-                    {% endif %}
-                </h3>
-                <div class="space-y-3">
-                    {% for purchase in next_purchases %}
-                        {% include "reporting/partials/_purchase_row.html" with item=purchase %}
+        {# Table Container with Spreadsheet Gridlines #}
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left border-collapse border border-slate-300">
+                {# Yellow Column Header Row #}
+                <thead class="bg-yellow-300 text-slate-900 uppercase font-black tracking-tight border-b-2 border-slate-400 select-none">
+                    <tr>
+                        <th class="py-2.5 px-3 border border-slate-400 text-center w-14">Sl. No.</th>
+                        <th class="py-2.5 px-4 border border-slate-400 min-w-[180px]">Customer</th>
+                        <th class="py-2.5 px-4 border border-slate-400 min-w-[260px]">Item Description / Project Name</th>
+                        <th class="py-2.5 px-3 border border-slate-400 text-center w-20">Qty</th>
+                        <th class="py-2.5 px-3 border border-slate-400 text-center w-20">UoM</th>
+                        <th class="py-2.5 px-4 border border-slate-400 text-right min-w-[150px]">Probable Order Value</th>
+                        <th class="py-2.5 px-4 border border-slate-400 text-right min-w-[150px]">Total Order Value</th>
+                        <th class="py-2.5 px-4 border border-slate-400 text-right min-w-[160px]">Including GST amount</th>
+                        <th class="py-2.5 px-4 border border-slate-400 min-w-[170px]">Order Status</th>
+                        <th class="py-2.5 px-2 border border-slate-400 text-center w-20">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-slate-800 font-medium bg-white">
+                    {% for item in sales_items %}
+                    <tr class="hover:bg-amber-50/50 transition-colors {% if item.is_supplied %}bg-emerald-100/70 text-emerald-950 font-semibold{% endif %}" data-item-id="{{ item.id }}">
+                        <td class="py-2 px-3 border border-slate-300 text-center font-bold text-slate-500">
+                            {{ forloop.counter }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 font-semibold text-slate-900 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'customer_name', '{{ item.id }}')" title="Click to edit">
+                            {{ item.customer_name }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'item_description', '{{ item.id }}')" title="Click to edit">
+                            {{ item.item_description }}
+                        </td>
+                        <td class="py-2 px-3 border border-slate-300 text-center font-mono cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'quantity', '{{ item.id }}')" title="Click to edit">
+                            {{ item.quantity }}
+                        </td>
+                        <td class="py-2 px-3 border border-slate-300 text-center font-semibold text-slate-600 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'uom', '{{ item.id }}')" title="Click to edit">
+                            {{ item.uom }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 text-right font-mono cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'probable_order_value', '{{ item.id }}')" title="Click to edit">
+                            ₹{{ item.probable_order_value|floatformat:2|intcomma }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 text-right font-mono font-bold text-slate-900">
+                            ₹<span class="row-tot-val">{{ item.total_order_value|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 text-right font-mono font-black text-slate-900">
+                            ₹<span class="row-inc-gst">{{ item.including_gst_amount|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td class="py-2 px-4 border border-slate-300 cursor-pointer hover:bg-yellow-50"
+                            onclick="enableCellEdit(this, 'order_status', '{{ item.id }}')" title="Click to edit">
+                            <span class="inline-flex items-center gap-1.5">
+                                {% if item.is_supplied %}
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                {% endif %}
+                                <span class="status-text">{{ item.order_status }}</span>
+                            </span>
+                        </td>
+                        <td class="py-2 px-2 border border-slate-300 text-center whitespace-nowrap">
+                            <button type="button" onclick="openEditModal({{ item.id }}, '{{ item.customer_name|escapejs }}', '{{ item.item_description|escapejs }}', '{{ item.quantity }}', '{{ item.uom|escapejs }}', '{{ item.probable_order_value }}', '{{ item.gst_rate }}', '{{ item.order_status|escapejs }}')" class="text-slate-400 hover:text-indigo-600 p-1" title="Edit row">
+                                ✏️
+                            </button>
+                            <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Sales Plan?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_plan_item">
+                                <input type="hidden" name="id" value="{{ item.id }}">
+                                <button type="submit" class="text-slate-400 hover:text-red-600 p-1" title="Delete row">
+                                    🗑️
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
                     {% empty %}
-                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No purchases planned for the future.</p>
+                    <tr>
+                        <td colspan="10" class="py-6 text-center text-slate-400 italic bg-slate-50">
+                            No items in the Sales Plan for {{ month_name }} {{ selected_year }}. Click "+ Add Sales Item" to add an item.
+                        </td>
+                    </tr>
                     {% endfor %}
-                </div>
-            </div>
-            
-            {# Previous Month (Completed Only) #}
-            <div>
-                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
-                    Previous Month ({{ prev_month_start|date:'M Y' }})
-                    <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{{ prev_purchases|length }} Completed</span>
-                    {% if prev_purchases_total > 0 %}
-                    <span class="text-xs font-bold text-purple-600 ml-auto">₹{{ prev_purchases_total|floatformat:2 }}</span>
-                    {% endif %}
-                </h3>
-                <div class="space-y-3 opacity-75">
-                    {% for purchase in prev_purchases %}
-                        {% include "reporting/partials/_purchase_row.html" with item=purchase %}
-                    {% empty %}
-                        <p class="text-sm text-slate-400 italic bg-white p-4 rounded-xl border border-dashed border-slate-200">No purchases completed last month.</p>
-                    {% endfor %}
-                </div>
-            </div>
+                </tbody>
+                {# Bottom Total Footer Row #}
+                {% if sales_items %}
+                <tfoot class="bg-yellow-100 font-bold text-slate-900 border-t-2 border-slate-400">
+                    <tr>
+                        <td colspan="3" class="py-2 px-4 border border-slate-400 text-right uppercase tracking-wider font-black">
+                            Total Sales Plan:
+                        </td>
+                        <td class="py-2 px-3 border border-slate-400 text-center font-mono">
+                            {{ sales_items|length }} Items
+                        </td>
+                        <td class="py-2 px-3 border border-slate-400 text-center">—</td>
+                        <td class="py-2 px-4 border border-slate-400 text-right font-mono font-bold">
+                            ₹{{ sales_total_prob|floatformat:2|intcomma }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-400 text-right font-mono font-black text-slate-950">
+                            ₹{{ sales_total_val|floatformat:2|intcomma }}
+                        </td>
+                        <td class="py-2 px-4 border border-slate-400 text-right font-mono font-black text-red-700 text-sm">
+                            ₹{{ sales_total_gst|floatformat:2|intcomma }}
+                        </td>
+                        <td colspan="2" class="py-2 px-4 border border-slate-400 text-center text-slate-500 font-normal">
+                            All totals auto-calculated
+                        </td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
         </div>
     </div>
 </div>
 
-{# ── Datalists for Party Autocomplete ── #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# MODAL: ADD NEW ITEM                                                         #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+<div id="addItemModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <h3 id="modalTitle" class="text-base font-black text-slate-900 flex items-center gap-2">
+                <span>➕ Add Planning Item</span>
+            </h3>
+            <button type="button" onclick="closeModal('addItemModal')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+        </div>
+
+        <form method="POST" class="mt-4 space-y-4" id="addItemForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_plan_item">
+            <input type="hidden" name="plan_type" id="modalPlanType" value="booking">
+            <input type="hidden" name="month" value="{{ selected_month_start|date:'Y-m-d' }}">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Customer Name *</label>
+                    <input type="text" name="customer_name" list="customerListDatalist" required placeholder="e.g. KIIT, Amada, etc." class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Item Description / Project Name *</label>
+                    <input type="text" name="item_description" required placeholder="e.g. CoE-ITI, IAW800, etc." class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Quantity</label>
+                    <input type="number" step="0.01" name="quantity" id="addQty" value="1" oninput="calcModalTotals('add')" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">UoM</label>
+                    <input type="text" name="uom" value="Nos" placeholder="Nos, Set, Lot..." class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Probable Order Value (₹)</label>
+                    <input type="number" step="0.01" name="probable_order_value" id="addRate" value="0.00" oninput="calcModalTotals('add')" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">GST Rate (%)</label>
+                    <select name="gst_rate" id="addGst" onchange="calcModalTotals('add')" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                        <option value="18" selected>18% (Standard)</option>
+                        <option value="0">0% (Nil)</option>
+                        <option value="5">5%</option>
+                        <option value="12">12%</option>
+                        <option value="28">28%</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Total Order Value (₹)</label>
+                    <input type="text" name="total_order_value" id="addTotalVal" readonly class="w-full text-sm rounded-xl border-slate-200 bg-slate-50 font-mono font-bold text-slate-800">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Including GST Amount (₹)</label>
+                    <input type="text" name="including_gst_amount" id="addIncGst" readonly class="w-full text-sm rounded-xl border-slate-200 bg-slate-50 font-mono font-black text-red-600">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Order Status</label>
+                    <input type="text" name="order_status" value="Pending" placeholder="Pending, Confirmed, Supplied on DD.MM.YY..." class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="closeModal('addItemModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">Cancel</button>
+                <button type="submit" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition-colors">Save Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
+{# MODAL: EDIT ITEM                                                            #}
+{# ════════════════════════════════════════════════════════════════════════════ #}
+<div id="editItemModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                <span>✏️ Edit Planning Item</span>
+            </h3>
+            <button type="button" onclick="closeModal('editItemModal')" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+        </div>
+
+        <form method="POST" class="mt-4 space-y-4" id="editItemForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit_plan_item">
+            <input type="hidden" name="id" id="editItemId">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Customer Name *</label>
+                    <input type="text" name="customer_name" id="editCustomer" list="customerListDatalist" required class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Item Description / Project Name *</label>
+                    <input type="text" name="item_description" id="editDesc" required class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Quantity</label>
+                    <input type="number" step="0.01" name="quantity" id="editQty" oninput="calcModalTotals('edit')" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">UoM</label>
+                    <input type="text" name="uom" id="editUom" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Probable Order Value (₹)</label>
+                    <input type="number" step="0.01" name="probable_order_value" id="editRate" oninput="calcModalTotals('edit')" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">GST Rate (%)</label>
+                    <select name="gst_rate" id="editGst" onchange="calcModalTotals('edit')" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                        <option value="18">18% (Standard)</option>
+                        <option value="0">0% (Nil)</option>
+                        <option value="5">5%</option>
+                        <option value="12">12%</option>
+                        <option value="28">28%</option>
+                    </select>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Order Status</label>
+                    <input type="text" name="order_status" id="editStatus" class="w-full text-sm rounded-xl border-slate-300 focus:ring-red-500">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="closeModal('editItemModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">Cancel</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-colors">Update Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Datalist for autocomplete #}
 <datalist id="customerListDatalist">
     {% for name in customer_names %}
     <option value="{{ name }}">
     {% endfor %}
 </datalist>
 
-<datalist id="vendorListDatalist">
-    {% for name in vendor_names %}
-    <option value="{{ name }}">
-    {% endfor %}
-</datalist>
-
-{# ════════════════════════════════════════════════════════════════════════════ #}
-{# MODAL: AUTO-IMPORT ORDERS FROM ERP                                          #}
-{# ════════════════════════════════════════════════════════════════════════════ #}
-<div id="importOrdersModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-        <!-- Header -->
-        <div class="px-6 py-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                    ⚡
-                </div>
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Auto-Import Orders from ERP</h3>
-                    <p class="text-xs text-slate-500">Select active Tracker manufacturing orders or approved Quotations/Proformas</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeModal('importOrdersModal')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 flex items-center justify-center transition-colors">
-                ✕
-            </button>
-        </div>
-
-        <!-- Filter / Quick Search -->
-        <div class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
-            <input type="text" id="orderSearchInput" onkeyup="filterModalRows('orderSearchInput', 'orderRowList')" placeholder="Quick search candidate orders..." class="text-xs rounded-xl border-slate-300 w-full max-w-sm focus:ring-emerald-500">
-            <div class="flex items-center gap-2">
-                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer select-none">
-                    <input type="checkbox" id="selectAllOrders" onchange="toggleSelectAll('selectAllOrders', 'orderCheckbox', 'selectedOrdersCount')" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                    Select All
-                </label>
-            </div>
-        </div>
-
-        <!-- Candidate Form & List -->
-        <form method="POST" class="flex-1 flex flex-col overflow-hidden">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="bulk_import_orders">
-
-            <div class="flex-1 overflow-y-auto p-6 space-y-2.5 divide-y divide-slate-100" id="orderRowList">
-                {% for item in available_orders %}
-                <div class="order-candidate-item pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <input type="checkbox" name="selected_orders" value="{{ forloop.counter0 }}" onchange="updateSelectedCount('orderCheckbox', 'selectedOrdersCount')" class="orderCheckbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if item.badge_color == 'indigo' %}bg-indigo-100 text-indigo-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
-                                    {{ item.source }}
-                                </span>
-                                <span class="text-xs font-bold text-slate-800 truncate" title="{{ item.title }}">{{ item.title }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <input type="hidden" name="import_title" value="{{ item.title }}">
-                        <div class="w-32">
-                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Amount (₹)</label>
-                            <input type="number" step="0.01" name="import_amount" value="{{ item.amount|stringformat:'.2f' }}" class="text-xs py-1 px-2 font-bold text-emerald-700 border-slate-200 rounded-lg w-full focus:ring-emerald-500">
-                        </div>
-                        <div class="w-36">
-                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Planned Month</label>
-                            <input type="month" name="import_month" value="{{ current_month_start|date:'Y-m' }}" class="text-xs py-1 px-2 border-slate-200 rounded-lg w-full focus:ring-emerald-500">
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center py-12">
-                    <p class="text-sm font-semibold text-slate-500">No unimported orders found in ERP.</p>
-                    <p class="text-xs text-slate-400 mt-1">All active Tracker orders and approved documents are already in your execution plan!</p>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Footer -->
-            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500" id="selectedOrdersCount">0 selected</span>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="closeModal('importOrdersModal')" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-white transition-colors">
-                        Cancel
-                    </button>
-                    {% if available_orders %}
-                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
-                        Import Selected Orders
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-{# ════════════════════════════════════════════════════════════════════════════ #}
-{# MODAL: AUTO-IMPORT PURCHASES FROM ERP                                       #}
-{# ════════════════════════════════════════════════════════════════════════════ #}
-<div id="importPurchasesModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-        <!-- Header -->
-        <div class="px-6 py-5 bg-gradient-to-r from-purple-50 to-fuchsia-50 border-b border-purple-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                    ⚡
-                </div>
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Auto-Import Purchases from ERP</h3>
-                    <p class="text-xs text-slate-500">Select active Purchase Orders (PO) or Tracker procurement requirements</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeModal('importPurchasesModal')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 flex items-center justify-center transition-colors">
-                ✕
-            </button>
-        </div>
-
-        <!-- Filter / Quick Search -->
-        <div class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
-            <input type="text" id="purchaseSearchInput" onkeyup="filterModalRows('purchaseSearchInput', 'purchaseRowList')" placeholder="Quick search candidate purchases..." class="text-xs rounded-xl border-slate-300 w-full max-w-sm focus:ring-purple-500">
-            <div class="flex items-center gap-2">
-                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer select-none">
-                    <input type="checkbox" id="selectAllPurchases" onchange="toggleSelectAll('selectAllPurchases', 'purchaseCheckbox', 'selectedPurchasesCount')" class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
-                    Select All
-                </label>
-            </div>
-        </div>
-
-        <!-- Candidate Form & List -->
-        <form method="POST" class="flex-1 flex flex-col overflow-hidden">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="bulk_import_purchases">
-
-            <div class="flex-1 overflow-y-auto p-6 space-y-2.5 divide-y divide-slate-100" id="purchaseRowList">
-                {% for item in available_purchases %}
-                <div class="purchase-candidate-item pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <input type="checkbox" name="selected_purchases" value="{{ forloop.counter0 }}" onchange="updateSelectedCount('purchaseCheckbox', 'selectedPurchasesCount')" class="purchaseCheckbox rounded border-slate-300 text-purple-600 focus:ring-purple-500 h-4 w-4">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if item.badge_color == 'purple' %}bg-purple-100 text-purple-700{% else %}bg-violet-100 text-violet-700{% endif %}">
-                                    {{ item.source }}
-                                </span>
-                                <span class="text-xs font-bold text-slate-800 truncate" title="{{ item.title }}">{{ item.title }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <input type="hidden" name="import_title" value="{{ item.title }}">
-                        <div class="w-32">
-                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Amount (₹)</label>
-                            <input type="number" step="0.01" name="import_amount" value="{{ item.amount|stringformat:'.2f' }}" class="text-xs py-1 px-2 font-bold text-purple-700 border-slate-200 rounded-lg w-full focus:ring-purple-500">
-                        </div>
-                        <div class="w-36">
-                            <label class="block text-[9px] font-bold text-slate-400 uppercase">Planned Month</label>
-                            <input type="month" name="import_month" value="{{ current_month_start|date:'Y-m' }}" class="text-xs py-1 px-2 border-slate-200 rounded-lg w-full focus:ring-purple-500">
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="text-center py-12">
-                    <p class="text-sm font-semibold text-slate-500">No unimported purchases found in ERP.</p>
-                    <p class="text-xs text-slate-400 mt-1">All active Purchase Orders and Tracker procurement costs are already in your execution plan!</p>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Footer -->
-            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500" id="selectedPurchasesCount">0 selected</span>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="closeModal('importPurchasesModal')" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-white transition-colors">
-                        Cancel
-                    </button>
-                    {% if available_purchases %}
-                    <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
-                        Import Selected Purchases
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
+{# ── Client-side Inline Edit & Calculation Scripts ── #}
 <script>
 function openModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('hidden');
+    document.getElementById(id).classList.remove('hidden');
 }
-
 function closeModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.add('hidden');
+    document.getElementById(id).classList.add('hidden');
 }
 
-function toggleSelectAll(selectAllId, checkboxClass, countId) {
-    const checked = document.getElementById(selectAllId).checked;
-    document.querySelectorAll('.' + checkboxClass).forEach(cb => {
-        if (cb.closest('div').offsetParent !== null) { // only visible
-            cb.checked = checked;
+function openAddItemModal(planType) {
+    document.getElementById('modalPlanType').value = planType;
+    document.getElementById('modalTitle').innerHTML = planType === 'booking' ? '➕ Add to Order Booking Plan' : '➕ Add to Sales Plan';
+    calcModalTotals('add');
+    openModal('addItemModal');
+}
+
+function openEditModal(id, cust, desc, qty, uom, rate, gst, status) {
+    document.getElementById('editItemId').value = id;
+    document.getElementById('editCustomer').value = cust;
+    document.getElementById('editDesc').value = desc;
+    document.getElementById('editQty').value = qty;
+    document.getElementById('editUom').value = uom;
+    document.getElementById('editRate').value = rate;
+    document.getElementById('editGst').value = Math.round(parseFloat(gst) || 18);
+    document.getElementById('editStatus').value = status;
+    openModal('editItemModal');
+}
+
+function calcModalTotals(prefix) {
+    const qty = parseFloat(document.getElementById(prefix + 'Qty').value) || 0;
+    const rate = parseFloat(document.getElementById(prefix + 'Rate').value) || 0;
+    const gst = parseFloat(document.getElementById(prefix + 'Gst').value) || 18;
+
+    const total = qty * rate;
+    const incGst = total * (1 + (gst / 100));
+
+    if (document.getElementById(prefix + 'TotalVal')) {
+        document.getElementById(prefix + 'TotalVal').value = total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    if (document.getElementById(prefix + 'IncGst')) {
+        document.getElementById(prefix + 'IncGst').value = incGst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+}
+
+// ── In-Place Inline Direct Cell Edit ──
+function enableCellEdit(cell, field, itemId) {
+    if (cell.querySelector('input')) return; // already in edit mode
+
+    const originalText = cell.innerText.trim().replace(/^₹/, '').replace(/,/g, '');
+    const isNumeric = ['quantity', 'probable_order_value', 'gst_rate'].includes(field);
+
+    const input = document.createElement('input');
+    input.type = isNumeric ? 'number' : 'text';
+    if (isNumeric) input.step = '0.01';
+    input.value = originalText;
+    input.className = 'w-full text-xs font-medium px-2 py-1 rounded border-2 border-indigo-500 bg-white focus:outline-none shadow-inner';
+
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+
+    function saveValue() {
+        const newVal = input.value.trim();
+        cell.innerHTML = '<span class="text-slate-400 italic">Saving...</span>';
+
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                action: 'quick_update_cell',
+                item_id: itemId,
+                field: field,
+                value: newVal,
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const item = data.item;
+                const row = cell.closest('tr');
+                
+                // Update row values
+                if (field === 'customer_name') cell.innerText = item.customer_name;
+                else if (field === 'item_description') cell.innerText = item.item_description;
+                else if (field === 'quantity') cell.innerText = item.quantity;
+                else if (field === 'uom') cell.innerText = item.uom;
+                else if (field === 'probable_order_value') cell.innerText = '₹' + item.probable_order_value.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                else if (field === 'order_status') {
+                    cell.innerHTML = (item.is_supplied ? '<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>' : '') + item.order_status;
+                    if (item.is_supplied) {
+                        row.classList.add('bg-emerald-100/70', 'text-emerald-950', 'font-semibold');
+                    } else {
+                        row.classList.remove('bg-emerald-100/70', 'text-emerald-950', 'font-semibold');
+                    }
+                }
+
+                // Update auto-calculated total cells in this row
+                const totEl = row.querySelector('.row-tot-val');
+                const incGstEl = row.querySelector('.row-inc-gst');
+                if (totEl) totEl.innerText = item.total_order_value.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                if (incGstEl) incGstEl.innerText = item.including_gst_amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                // Update section banner totals
+                const planType = row.closest('table').closest('.bg-white').querySelector('#booking-banner-base') ? 'booking' : 'sales';
+                const baseBanner = document.getElementById(planType + '-banner-base');
+                const gstBanner = document.getElementById(planType + '-banner-gst');
+                if (baseBanner) baseBanner.innerText = data.section_totals.total_val.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                if (gstBanner) gstBanner.innerText = data.section_totals.including_gst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                // Flash success ring
+                cell.classList.add('bg-emerald-100');
+                setTimeout(() => cell.classList.remove('bg-emerald-100'), 600);
+            } else {
+                cell.innerText = originalText;
+                alert(data.error || 'Failed to update cell.');
+            }
+        })
+        .catch(err => {
+            cell.innerText = originalText;
+            alert('Network error while saving: ' + err);
+        });
+    }
+
+    input.addEventListener('blur', saveValue);
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            input.blur();
+        } else if (e.key === 'Escape') {
+            cell.innerText = originalText;
         }
-    });
-    updateSelectedCount(checkboxClass, countId);
-}
-
-function updateSelectedCount(checkboxClass, countId) {
-    const count = document.querySelectorAll('.' + checkboxClass + ':checked').length;
-    const label = document.getElementById(countId);
-    if (label) label.innerText = count + ' selected';
-}
-
-function filterModalRows(inputId, containerId) {
-    const query = document.getElementById(inputId).value.toLowerCase();
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const items = container.querySelectorAll('.order-candidate-item, .purchase-candidate-item');
-    items.forEach(item => {
-        const text = item.innerText.toLowerCase();
-        item.style.display = text.includes(query) ? '' : 'none';
     });
 }
 </script>
-
 {% endblock %}
