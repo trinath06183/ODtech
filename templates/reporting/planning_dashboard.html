@@ -242,14 +242,14 @@
                     {% for group in booking_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row border-t-2 border-slate-300 {% if group.is_supplied %}bg-emerald-50/50{% else %}hover:bg-slate-50/60{% endif %} transition-colors" data-item-id="{{ first_item.id }}">
+                        <tr class="order-group-row border-t-2 border-slate-300 {% if group.is_supplied %}bg-emerald-50/50 hover:bg-emerald-100/50{% elif forloop.counter|divisibleby:2 %}bg-indigo-50/40 hover:bg-indigo-100/40{% else %}bg-white hover:bg-slate-50/80{% endif %} transition-colors" data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
-                            <td rowspan="{{ group.row_span }}" class="py-3 px-3 border-r border-slate-200 text-center font-bold text-slate-500 bg-slate-50/70 align-top select-none">
+                            <td rowspan="{{ group.row_span }}" class="py-3 px-3 border-r border-slate-200 text-center font-bold align-top select-none {% if group.is_supplied %}bg-emerald-100/80 text-emerald-900 border-l-4 border-l-emerald-500{% elif forloop.counter|divisibleby:2 %}bg-indigo-100/80 text-indigo-900 border-l-4 border-l-indigo-500{% else %}bg-slate-100 text-slate-700 border-l-4 border-l-slate-400{% endif %}">
                                 {{ forloop.counter }}
                             </td>
 
                             {# Customer & Document No. Spanning entire order #}
-                            <td rowspan="{{ group.row_span }}" class="py-3 px-4 border-r border-slate-200 bg-white align-top">
+                            <td rowspan="{{ group.row_span }}" class="py-3 px-4 border-r border-slate-200 align-top {% if group.is_supplied %}bg-emerald-50/70{% elif forloop.counter|divisibleby:2 %}bg-indigo-50/60{% else %}bg-white{% endif %}">
                                 <div class="font-bold text-slate-900 text-xs sm:text-sm leading-snug cursor-pointer hover:text-indigo-600 transition-colors"
                                      onclick="enableCellEdit(this, 'customer_name', '{{ first_item.id }}')" title="Click to edit customer name">
                                     {{ group.customer_name }}
@@ -262,7 +262,7 @@
                                     </a>
                                     {% endif %}
                                     {% if group.item_count > 1 %}
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-slate-700 border border-slate-300 shadow-2xs">
                                         {{ group.item_count }} Items
                                     </span>
                                     {% endif %}
@@ -275,29 +275,29 @@
                             </td>
 
                             {# First Item Description #}
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-medium text-slate-600 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ first_item.id }}')" title="Click to edit">
                                 ₹{{ first_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-slate-900">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ first_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-indigo-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-indigo-950">
                                 ₹<span class="row-inc-gst">{{ first_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'order_status', '{{ first_item.id }}')" title="Click to edit">
                                 {% if first_item.is_supplied %}
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -339,30 +339,30 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t border-slate-100 {% if sub_item.is_supplied %}bg-emerald-50/40{% else %}hover:bg-slate-50/60{% endif %} transition-colors" data-item-id="{{ sub_item.id }}">
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                        <tr class="border-t border-slate-200/60 {% if group.is_supplied %}bg-emerald-50/40 hover:bg-emerald-100/40{% elif forloop.parentloop.counter|divisibleby:2 %}bg-indigo-50/30 hover:bg-indigo-100/35{% else %}bg-white hover:bg-slate-50/80{% endif %} transition-colors" data-item-id="{{ sub_item.id }}">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-medium text-slate-600 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-indigo-600 hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ sub_item.id }}')" title="Click to edit">
                                 ₹{{ sub_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-slate-900">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ sub_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-indigo-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-indigo-950">
                                 ₹<span class="row-inc-gst">{{ sub_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:bg-indigo-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'order_status', '{{ sub_item.id }}')" title="Click to edit">
                                 {% if sub_item.is_supplied %}
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -404,17 +404,17 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="bg-indigo-50/50 border-t border-indigo-100 font-semibold text-xs text-indigo-950 select-none">
-                            <td colspan="4" class="py-2 px-4 text-right border-r border-indigo-100 text-indigo-900 font-bold uppercase tracking-wider text-[11px]">
+                        <tr class="{% if group.is_supplied %}bg-emerald-100/80 border-t-2 border-emerald-300 text-emerald-950{% elif forloop.counter|divisibleby:2 %}bg-indigo-100/70 border-t-2 border-indigo-200 text-indigo-950{% else %}bg-slate-100 border-t-2 border-slate-200 text-slate-900{% endif %} font-semibold text-xs select-none">
+                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] {% if group.is_supplied %}text-emerald-900{% elif forloop.counter|divisibleby:2 %}text-indigo-900{% else %}text-slate-700{% endif %}">
                                 Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
                             </td>
-                            <td class="py-2 px-4 text-right font-mono font-bold text-slate-900 border-r border-indigo-100">
+                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-950 border-r border-slate-200">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2 px-4 text-right font-mono font-bold text-indigo-900 border-r border-indigo-100">
+                            <td class="py-2.5 px-4 text-right font-mono font-black border-r border-slate-200 {% if group.is_supplied %}text-emerald-900{% elif forloop.counter|divisibleby:2 %}text-indigo-900{% else %}text-slate-900{% endif %}">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
-                            <td colspan="2" class="py-2 px-4 text-xs font-semibold text-indigo-700 bg-indigo-50/70 border-r border-indigo-100 italic">
+                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold italic {% if group.is_supplied %}text-emerald-800 bg-emerald-100/90{% elif forloop.counter|divisibleby:2 %}text-indigo-800 bg-indigo-100/80{% else %}text-slate-600 bg-slate-100{% endif %}">
                                 Order Subtotal
                             </td>
                         </tr>
@@ -517,14 +517,14 @@
                     {% for group in sales_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row border-t-2 border-slate-300 {% if group.is_supplied %}bg-emerald-50/50{% else %}hover:bg-slate-50/60{% endif %} transition-colors" data-item-id="{{ first_item.id }}">
+                        <tr class="order-group-row border-t-2 border-slate-300 {% if group.is_supplied %}bg-emerald-50/50 hover:bg-emerald-100/50{% elif forloop.counter|divisibleby:2 %}bg-teal-50/40 hover:bg-teal-100/40{% else %}bg-white hover:bg-slate-50/80{% endif %} transition-colors" data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
-                            <td rowspan="{{ group.row_span }}" class="py-3 px-3 border-r border-slate-200 text-center font-bold text-slate-500 bg-slate-50/70 align-top select-none">
+                            <td rowspan="{{ group.row_span }}" class="py-3 px-3 border-r border-slate-200 text-center font-bold align-top select-none {% if group.is_supplied %}bg-emerald-100/80 text-emerald-900 border-l-4 border-l-emerald-500{% elif forloop.counter|divisibleby:2 %}bg-teal-100/80 text-teal-900 border-l-4 border-l-teal-500{% else %}bg-slate-100 text-slate-700 border-l-4 border-l-slate-400{% endif %}">
                                 {{ forloop.counter }}
                             </td>
 
                             {# Customer & Document No. Spanning entire order #}
-                            <td rowspan="{{ group.row_span }}" class="py-3 px-4 border-r border-slate-200 bg-white align-top">
+                            <td rowspan="{{ group.row_span }}" class="py-3 px-4 border-r border-slate-200 align-top {% if group.is_supplied %}bg-emerald-50/70{% elif forloop.counter|divisibleby:2 %}bg-teal-50/60{% else %}bg-white{% endif %}">
                                 <div class="font-bold text-slate-900 text-xs sm:text-sm leading-snug cursor-pointer hover:text-teal-600 transition-colors"
                                      onclick="enableCellEdit(this, 'customer_name', '{{ first_item.id }}')" title="Click to edit customer name">
                                     {{ group.customer_name }}
@@ -537,7 +537,7 @@
                                     </a>
                                     {% endif %}
                                     {% if group.item_count > 1 %}
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-slate-700 border border-slate-300 shadow-2xs">
                                         {{ group.item_count }} Items
                                     </span>
                                     {% endif %}
@@ -550,29 +550,29 @@
                             </td>
 
                             {# First Item Description #}
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-medium text-slate-600 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ first_item.id }}')" title="Click to edit">
                                 ₹{{ first_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-slate-900">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ first_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-teal-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-teal-950">
                                 ₹<span class="row-inc-gst">{{ first_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'order_status', '{{ first_item.id }}')" title="Click to edit">
                                 {% if first_item.is_supplied %}
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -614,30 +614,30 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t border-slate-100 {% if sub_item.is_supplied %}bg-emerald-50/40{% else %}hover:bg-slate-50/60{% endif %} transition-colors" data-item-id="{{ sub_item.id }}">
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                        <tr class="border-t border-slate-200/60 {% if group.is_supplied %}bg-emerald-50/40 hover:bg-emerald-100/40{% elif forloop.parentloop.counter|divisibleby:2 %}bg-teal-50/30 hover:bg-teal-100/35{% else %}bg-white hover:bg-slate-50/80{% endif %} transition-colors" data-item-id="{{ sub_item.id }}">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-100 text-center font-medium text-slate-600 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-teal-600 hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ sub_item.id }}')" title="Click to edit">
                                 ₹{{ sub_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-slate-900">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-slate-900">
                                 ₹<span class="row-tot-val">{{ sub_item.total_order_value|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 text-right font-mono font-bold text-teal-950">
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono font-bold text-teal-950">
                                 ₹<span class="row-inc-gst">{{ sub_item.including_gst_amount|floatformat:2|intcomma }}</span>
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-100 cursor-pointer hover:bg-teal-50/40 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:bg-teal-50/40 transition-colors"
                                 onclick="enableCellEdit(this, 'order_status', '{{ sub_item.id }}')" title="Click to edit">
                                 {% if sub_item.is_supplied %}
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -679,17 +679,17 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="bg-teal-50/50 border-t border-teal-100 font-semibold text-xs text-teal-950 select-none">
-                            <td colspan="4" class="py-2 px-4 text-right border-r border-teal-100 text-teal-900 font-bold uppercase tracking-wider text-[11px]">
+                        <tr class="{% if group.is_supplied %}bg-emerald-100/80 border-t-2 border-emerald-300 text-emerald-950{% elif forloop.counter|divisibleby:2 %}bg-teal-100/70 border-t-2 border-teal-200 text-teal-950{% else %}bg-slate-100 border-t-2 border-slate-200 text-slate-900{% endif %} font-semibold text-xs select-none">
+                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] {% if group.is_supplied %}text-emerald-900{% elif forloop.counter|divisibleby:2 %}text-teal-900{% else %}text-slate-700{% endif %}">
                                 Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
                             </td>
-                            <td class="py-2 px-4 text-right font-mono font-bold text-slate-900 border-r border-teal-100">
+                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-950 border-r border-slate-200">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2 px-4 text-right font-mono font-bold text-teal-900 border-r border-teal-100">
+                            <td class="py-2.5 px-4 text-right font-mono font-black border-r border-slate-200 {% if group.is_supplied %}text-emerald-900{% elif forloop.counter|divisibleby:2 %}text-teal-900{% else %}text-slate-900{% endif %}">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
-                            <td colspan="2" class="py-2 px-4 text-xs font-semibold text-teal-700 bg-teal-50/70 border-r border-teal-100 italic">
+                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold italic {% if group.is_supplied %}text-emerald-800 bg-emerald-100/90{% elif forloop.counter|divisibleby:2 %}text-teal-800 bg-teal-100/80{% else %}text-slate-600 bg-slate-100{% endif %}">
                                 Order Subtotal
                             </td>
                         </tr>
