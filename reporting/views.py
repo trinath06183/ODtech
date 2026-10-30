@@ -1048,6 +1048,10 @@ def business_planning_dashboard(request):
     except Exception:
         customer_names = []
 
+    grand_total_val = (booking_total_val or Decimal('0')) + (sales_total_val or Decimal('0'))
+    grand_total_gst = (booking_total_gst or Decimal('0')) + (sales_total_gst or Decimal('0'))
+    grand_total_prob = (booking_total_prob or Decimal('0')) + (sales_total_prob or Decimal('0'))
+
     # Months list for dropdown
     months_list = [(i, calendar.month_name[i]) for i in range(1, 13)]
     years_list = range(2024, 2030)
@@ -1074,6 +1078,10 @@ def business_planning_dashboard(request):
         'sales_total_prob': sales_total_prob,
 
         'customer_names': customer_names,
+        'grand_total_val': grand_total_val,
+        'grand_total_gst': grand_total_gst,
+        'grand_total_prob': grand_total_prob,
+        'grand_items_count': len(booking_items) + len(sales_items),
     }
 
     return render(request, 'reporting/planning_dashboard.html', context)
