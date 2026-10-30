@@ -202,6 +202,10 @@
                 <span class="text-xs bg-amber-100/80 text-amber-900 font-semibold px-2.5 py-0.5 rounded-full border border-amber-200">
                     {{ booking_groups|length }} Orders &bull; {{ booking_items|length }} Items
                 </span>
+                <button type="button" onclick="toggleSectionGroups('booking')" id="booking-toggle-all-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all shadow-2xs cursor-pointer ml-1">
+                    <span id="booking-toggle-all-icon">⇲</span>
+                    <span id="booking-toggle-all-text">Collapse Multi-Items</span>
+                </button>
             </div>
 
             <div class="flex items-center gap-4">
@@ -242,7 +246,7 @@
                     {% for group in booking_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-amber-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
+                        <tr class="order-group-row {% if group.item_count > 1 %}booking-grp-{{ forloop.counter }}-expanded{% endif %} {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-amber-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
                             style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#FCD34D{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
@@ -272,9 +276,12 @@
                                     </a>
                                     {% endif %}
                                     {% if group.item_count > 1 %}
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                                        {{ group.item_count }} items
-                                    </span>
+                                    <button type="button" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" 
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors cursor-pointer shadow-2xs"
+                                            title="Click to collapse items and show only total">
+                                        <svg class="w-3 h-3 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <span>{{ group.item_count }} items (Collapse)</span>
+                                    </button>
                                     {% endif %}
                                     {% if group.project_name %}
                                     <span class="text-[11px] text-slate-500 italic block w-full mt-0.5">
@@ -349,7 +356,7 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t {% if forloop.parentloop.counter|divisibleby:2 %}border-amber-200/60 hover:bg-amber-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
+                        <tr class="border-t booking-grp-{{ forloop.parentloop.counter }}-expanded {% if forloop.parentloop.counter|divisibleby:2 %}border-amber-200/60 hover:bg-amber-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
                             style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ sub_item.id }}">
                             <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-amber-700 transition-colors"
@@ -416,7 +423,7 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="border-t border-amber-300 font-semibold text-xs select-none shadow-2xs"
+                        <tr class="booking-grp-{{ forloop.counter }}-expanded border-t border-amber-300 font-semibold text-xs select-none shadow-2xs"
                             style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FDE68A{% else %}#EDF2F7{% endif %} !important;">
                             <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] text-amber-950">
                                 Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
@@ -429,6 +436,112 @@
                             </td>
                             <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-amber-800 italic">
                                 Order Subtotal
+                            </td>
+                        </tr>
+
+                        {# Collapsed Summary Row (shows ONLY the total when collapsed) #}
+                        <tr id="booking-grp-{{ forloop.counter }}-collapsed" class="hidden order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-amber-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#FCD34D{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;">
+                            
+                            {# Sl. No. #}
+                            <td class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-amber-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
+                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FEF08A{% else %}#F8FAFC{% endif %} !important;">
+                                <div class="flex items-center justify-center">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-amber-500 text-amber-950 font-black border border-amber-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            {# Customer & Document No. with Expand button #}
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle">
+                                <div class="font-bold text-slate-900 text-sm leading-snug">
+                                    {{ group.customer_name }}
+                                </div>
+                                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                    {% if group.document %}
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        {{ group.doc_number }}
+                                    </a>
+                                    {% endif %}
+                                    <button type="button" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" 
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-950 hover:bg-amber-300 border border-amber-400 transition-colors cursor-pointer shadow-2xs"
+                                            title="Click to expand {{ group.item_count }} items">
+                                        <svg class="w-3 h-3 text-amber-900 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <span>{{ group.item_count }} items (Expand)</span>
+                                    </button>
+                                </div>
+                                {% if group.project_name %}
+                                <span class="text-[11px] text-slate-500 italic block w-full mt-0.5">
+                                    Project: {{ group.project_name }}
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            {# Item Description / Project Name #}
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle cursor-pointer hover:bg-amber-100/30" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" title="Click to expand items">
+                                <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                    <span>📦 {{ group.item_count }} Items bundled</span>
+                                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">Total Shown</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 truncate max-w-xs mt-0.5" title="{{ group.items_summary }}">
+                                    {{ group.items_summary }}
+                                </div>
+                            </td>
+
+                            {# Qty #}
+                            <td class="py-3 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-700 align-middle">
+                                {{ group.total_quantity|floatformat:2 }}
+                            </td>
+
+                            {# UoM #}
+                            <td class="py-3 px-3 border-r border-slate-200 text-center font-medium text-slate-400 align-middle">
+                                —
+                            </td>
+
+                            {# Probable Order Value #}
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-semibold text-slate-700 align-middle">
+                                ₹{{ group.total_probable_value|floatformat:2|intcomma }}
+                            </td>
+
+                            {# Total Order Value #}
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-slate-950 align-middle bg-amber-100/30">
+                                ₹{{ group.total_order_value|floatformat:2|intcomma }}
+                            </td>
+
+                            {# Including GST Amount #}
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-amber-950 align-middle bg-amber-200/30">
+                                ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
+                            </td>
+
+                            {# Order Status #}
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle">
+                                {% if group.is_supplied %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                    <span>Supplied</span>
+                                </span>
+                                {% elif group.items.0.order_status %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                    <span>{{ group.items.0.order_status }}</span>
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-white text-slate-700 border border-slate-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                    <span>Pending</span>
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            {# Actions #}
+                            <td class="py-3 px-2 text-center whitespace-nowrap align-middle">
+                                <button type="button" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" 
+                                        class="inline-flex items-center justify-center px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors shadow-2xs text-[11px] font-bold cursor-pointer" 
+                                        title="Click to expand items">
+                                    ▼ Expand
+                                </button>
                             </td>
                         </tr>
                         {% endif %}
@@ -490,6 +603,10 @@
                 <span class="text-xs bg-pink-100/80 text-pink-900 font-semibold px-2.5 py-0.5 rounded-full border border-pink-200">
                     {{ sales_groups|length }} Orders &bull; {{ sales_items|length }} Items
                 </span>
+                <button type="button" onclick="toggleSectionGroups('sales')" id="sales-toggle-all-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-white text-pink-900 border border-pink-300 hover:bg-pink-100 transition-all shadow-2xs cursor-pointer ml-1">
+                    <span id="sales-toggle-all-icon">⇲</span>
+                    <span id="sales-toggle-all-text">Collapse Multi-Items</span>
+                </button>
             </div>
 
             <div class="flex items-center gap-4">
@@ -530,7 +647,7 @@
                     {% for group in sales_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-pink-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
+                        <tr class="order-group-row {% if group.item_count > 1 %}sales-grp-{{ forloop.counter }}-expanded{% endif %} {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-pink-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
                             style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#F472B6{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
@@ -560,9 +677,12 @@
                                     </a>
                                     {% endif %}
                                     {% if group.item_count > 1 %}
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-pink-100 text-pink-800 border border-pink-300">
-                                        {{ group.item_count }} items
-                                    </span>
+                                    <button type="button" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" 
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 text-pink-900 border border-pink-300 hover:bg-pink-200 transition-colors cursor-pointer shadow-2xs"
+                                            title="Click to collapse items and show only total">
+                                        <svg class="w-3 h-3 text-pink-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <span>{{ group.item_count }} items (Collapse)</span>
+                                    </button>
                                     {% endif %}
                                     {% if group.project_name %}
                                     <span class="text-[11px] text-slate-500 italic block w-full mt-0.5">
@@ -637,7 +757,7 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t {% if forloop.parentloop.counter|divisibleby:2 %}border-pink-200/60 hover:bg-pink-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
+                        <tr class="border-t sales-grp-{{ forloop.parentloop.counter }}-expanded {% if forloop.parentloop.counter|divisibleby:2 %}border-pink-200/60 hover:bg-pink-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
                             style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ sub_item.id }}">
                             <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-pink-700 transition-colors"
@@ -704,7 +824,7 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="border-t border-pink-300 font-semibold text-xs select-none shadow-2xs"
+                        <tr class="sales-grp-{{ forloop.counter }}-expanded border-t border-pink-300 font-semibold text-xs select-none shadow-2xs"
                             style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FBCFE8{% else %}#EDF2F7{% endif %} !important;">
                             <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] text-pink-950">
                                 Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
@@ -717,6 +837,112 @@
                             </td>
                             <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-pink-800 italic">
                                 Order Subtotal
+                            </td>
+                        </tr>
+
+                        {# Collapsed Summary Row (shows ONLY the total when collapsed) #}
+                        <tr id="sales-grp-{{ forloop.counter }}-collapsed" class="hidden order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-pink-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#F472B6{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;">
+                            
+                            {# Sl. No. #}
+                            <td class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-pink-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
+                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FCE7F3{% else %}#F8FAFC{% endif %} !important;">
+                                <div class="flex items-center justify-center">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-pink-500 text-white font-black border border-pink-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            {# Customer & Document No. with Expand button #}
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle">
+                                <div class="font-bold text-slate-900 text-sm leading-snug">
+                                    {{ group.customer_name }}
+                                </div>
+                                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                    {% if group.document %}
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-pink-700 hover:bg-pink-100 border border-pink-300 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        {{ group.doc_number }}
+                                    </a>
+                                    {% endif %}
+                                    <button type="button" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" 
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-pink-200 text-pink-950 hover:bg-pink-300 border border-pink-400 transition-colors cursor-pointer shadow-2xs"
+                                            title="Click to expand {{ group.item_count }} items">
+                                        <svg class="w-3 h-3 text-pink-900 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <span>{{ group.item_count }} items (Expand)</span>
+                                    </button>
+                                </div>
+                                {% if group.project_name %}
+                                <span class="text-[11px] text-slate-500 italic block w-full mt-0.5">
+                                    Project: {{ group.project_name }}
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            {# Item Description / Project Name #}
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle cursor-pointer hover:bg-pink-100/30" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" title="Click to expand items">
+                                <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                    <span>📦 {{ group.item_count }} Items bundled</span>
+                                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-pink-100 text-pink-800 border border-pink-300">Total Shown</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 truncate max-w-xs mt-0.5" title="{{ group.items_summary }}">
+                                    {{ group.items_summary }}
+                                </div>
+                            </td>
+
+                            {# Qty #}
+                            <td class="py-3 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-700 align-middle">
+                                {{ group.total_quantity|floatformat:2 }}
+                            </td>
+
+                            {# UoM #}
+                            <td class="py-3 px-3 border-r border-slate-200 text-center font-medium text-slate-400 align-middle">
+                                —
+                            </td>
+
+                            {# Probable Order Value #}
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-semibold text-slate-700 align-middle">
+                                ₹{{ group.total_probable_value|floatformat:2|intcomma }}
+                            </td>
+
+                            {# Total Order Value #}
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-slate-950 align-middle bg-pink-100/30">
+                                ₹{{ group.total_order_value|floatformat:2|intcomma }}
+                            </td>
+
+                            {# Including GST Amount #}
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-pink-950 align-middle bg-pink-200/30">
+                                ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
+                            </td>
+
+                            {# Order Status #}
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle">
+                                {% if group.is_supplied %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                    <span>Supplied</span>
+                                </span>
+                                {% elif group.items.0.order_status %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                    <span>{{ group.items.0.order_status }}</span>
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-white text-slate-700 border border-slate-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                    <span>Pending</span>
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            {# Actions #}
+                            <td class="py-3 px-2 text-center whitespace-nowrap align-middle">
+                                <button type="button" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" 
+                                        class="inline-flex items-center justify-center px-2 py-1 rounded bg-pink-100 hover:bg-pink-200 text-pink-900 border border-pink-300 transition-colors shadow-2xs text-[11px] font-bold cursor-pointer" 
+                                        title="Click to expand items">
+                                    ▼ Expand
+                                </button>
                             </td>
                         </tr>
                         {% endif %}
@@ -1060,6 +1286,58 @@ function enableCellEdit(cell, field, itemId) {
             cell.innerText = originalText;
         }
     });
+}
+
+// ── Expandable / Collapsible Multi-Item Order Groups ──
+function toggleOrderGroup(planType, groupIndex) {
+    const expandedRows = document.querySelectorAll(`.${planType}-grp-${groupIndex}-expanded`);
+    const collapsedRow = document.getElementById(`${planType}-grp-${groupIndex}-collapsed`);
+    if (!collapsedRow) return;
+
+    const isCurrentlyCollapsed = !collapsedRow.classList.contains('hidden');
+    if (isCurrentlyCollapsed) {
+        // Expand
+        collapsedRow.classList.add('hidden');
+        expandedRows.forEach(r => r.classList.remove('hidden'));
+    } else {
+        // Collapse
+        collapsedRow.classList.remove('hidden');
+        expandedRows.forEach(r => r.classList.add('hidden'));
+    }
+}
+
+function toggleSectionGroups(planType) {
+    const textEl = document.getElementById(`${planType}-toggle-all-text`);
+    const iconEl = document.getElementById(`${planType}-toggle-all-icon`);
+    const allCollapsedRows = document.querySelectorAll(`tr[id^="${planType}-grp-"][id$="-collapsed"]`);
+    if (!allCollapsedRows.length) return;
+
+    // Check if any group is currently expanded
+    const anyExpanded = Array.from(allCollapsedRows).some(r => r.classList.contains('hidden'));
+
+    allCollapsedRows.forEach(collapsedRow => {
+        const match = collapsedRow.id.match(new RegExp(`${planType}-grp-(\\d+)-collapsed`));
+        if (match) {
+            const groupIndex = match[1];
+            const expandedRows = document.querySelectorAll(`.${planType}-grp-${groupIndex}-expanded`);
+            if (anyExpanded) {
+                // Collapse all multi-item orders
+                collapsedRow.classList.remove('hidden');
+                expandedRows.forEach(r => r.classList.add('hidden'));
+            } else {
+                // Expand all multi-item orders
+                collapsedRow.classList.add('hidden');
+                expandedRows.forEach(r => r.classList.remove('hidden'));
+            }
+        }
+    });
+
+    if (textEl) {
+        textEl.innerText = anyExpanded ? 'Expand Multi-Items' : 'Collapse Multi-Items';
+    }
+    if (iconEl) {
+        iconEl.innerText = anyExpanded ? '⇱' : '⇲';
+    }
 }
 </script>
 {% endblock %}

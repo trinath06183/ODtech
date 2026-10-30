@@ -1089,12 +1089,16 @@ def business_planning_dashboard(request):
                     'items': [],
                     'total_order_value': Decimal('0.00'),
                     'including_gst_amount': Decimal('0.00'),
+                    'total_probable_value': Decimal('0.00'),
+                    'total_quantity': Decimal('0.00'),
                     'is_supplied': False,
                 }
             g = groups_dict[key]
             g['items'].append(item)
             g['total_order_value'] += (item.total_order_value or Decimal('0.00'))
             g['including_gst_amount'] += (item.including_gst_amount or Decimal('0.00'))
+            g['total_probable_value'] += (item.probable_order_value or Decimal('0.00'))
+            g['total_quantity'] += (item.quantity or Decimal('0.00'))
             if item.is_supplied:
                 g['is_supplied'] = True
 
@@ -1103,6 +1107,8 @@ def business_planning_dashboard(request):
             item_count = len(g['items'])
             g['item_count'] = item_count
             g['row_span'] = item_count + (1 if item_count > 1 else 0)
+            desc_list = [it.item_description for it in g['items'] if it.item_description]
+            g['items_summary'] = ", ".join(desc_list[:3]) + ("..." if len(desc_list) > 3 else "")
         return groups_list
 
     booking_groups = build_plan_groups(booking_items)
