@@ -493,14 +493,15 @@ def attendance_report(request):
     form  = AttendanceFilterForm(request.GET or None)
     year  = today.year
     month = today.month
-    employee_id = None
+    employee_ids = [int(x) for x in request.GET.getlist('employee') if x and str(x).isdigit()]
 
     if form.is_valid() or not request.GET:
         if form.is_valid():
             year  = int(form.cleaned_data['year'])
             month = int(form.cleaned_data['month'])
-            emp   = form.cleaned_data.get('employee')
-            employee_id = emp.id if emp else None
+            selected_emps = form.cleaned_data.get('employee')
+            if selected_emps is not None and len(selected_emps) > 0:
+                employee_ids = list(selected_emps.values_list('id', flat=True))
 
     holidays = set(Holiday.objects.filter(date__year=year, date__month=month).values_list('date', flat=True))
     _, days_in_month = calendar.monthrange(year, month)
@@ -510,8 +511,8 @@ def attendance_report(request):
     records = AttendanceRecord.objects.filter(
         date__year=year, date__month=month
     )
-    if employee_id:
-        records = records.filter(employee_id=employee_id)
+    if employee_ids:
+        records = records.filter(employee_id__in=employee_ids)
 
     records_map = {}
     for r in records.select_related('employee'):
@@ -519,8 +520,8 @@ def attendance_report(request):
 
     month_emp_ids = set(records_map.keys())
 
-    if employee_id:
-        employees = User.objects.filter(id=employee_id)
+    if employee_ids:
+        employees = User.objects.filter(id__in=employee_ids).order_by('empid', 'first_name', 'last_name')
     else:
         # Show all users (active, deactive, or deleted) that have at least 1 record entered
         # in this month or in total, plus active users
@@ -532,8 +533,8 @@ def attendance_report(request):
     for user in employees:
         emp_records = records_map.get(user.id, {})
         # If user is inactive/deactive and has NO records in this month, skip from monthly report
-        # unless specifically filtered by employee_id
-        if not user.is_active and not emp_records and not employee_id:
+        # unless specifically filtered by employee_ids
+        if not user.is_active and not emp_records and not employee_ids:
             continue
 
         present = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status in ['PRESENT', 'WFH'])
@@ -581,6 +582,10 @@ def attendance_report(request):
             ] + cells + [row['present'], row['half_day'], row['on_leave'], row['absent']])
         return response
 
+    all_filter_employees = list(User.objects.filter(
+        Q(is_active=True) | Q(attendance_records__isnull=False)
+    ).distinct().order_by('empid', 'first_name'))
+
     context = {
         'form': form,
         'report_data': report_data,
@@ -592,7 +597,8 @@ def attendance_report(request):
         'holidays': holidays,
         'is_hr_admin': _is_hr_admin(request.user),
         'can_edit': _is_hr_admin(request.user) or request.user.has_section_perm('HR_ATTENDANCE', 'write'),
-        'employee_id': employee_id,
+        'employee_ids': employee_ids,
+        'all_filter_employees': all_filter_employees,
     }
     return render(request, 'hr/report.html', context)
 

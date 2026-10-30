@@ -103,12 +103,19 @@ class AttendanceFilterForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'rounded-xl border-slate-200 px-3 py-2 text-sm w-28'}))
     month = forms.ChoiceField(choices=MONTH_CHOICES,
         widget=forms.Select(attrs={'class': 'rounded-xl border-slate-200 px-3 py-2 text-sm'}))
-    employee = forms.ModelChoiceField(queryset=User.objects.none(), required=False, empty_label='All Employees',
-        widget=forms.Select(attrs={'class': 'rounded-xl border-slate-200 px-3 py-2 text-sm'}))
+    employee = forms.ModelMultipleChoiceField(
+        queryset=User.objects.none(),
+        required=False,
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data=None, *args, **kwargs):
+        if data is not None:
+            data = data.copy()
+            if hasattr(data, 'getlist'):
+                vals = [v for v in data.getlist('employee') if v and v != '']
+                data.setlist('employee', vals)
+        super().__init__(data, *args, **kwargs)
         from django.utils import timezone as tz
-        super().__init__(*args, **kwargs)
         now = tz.now()
         if not self.data.get('year'):
             self.fields['year'].initial = now.year

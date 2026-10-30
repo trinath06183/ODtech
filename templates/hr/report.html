@@ -36,12 +36,77 @@
       {{ form.month }}
     </div>
     {% if is_hr_admin %}
-    <div>
-      <label class="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Employee</label>
-      {{ form.employee }}
+    <div class="relative" id="employee-multiselect-container">
+      <label class="block text-xs font-semibold text-slate-600 mb-1 uppercase tracking-wide">Employees</label>
+      
+      <!-- Trigger Button -->
+      <button type="button" id="employee-dropdown-btn"
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm flex items-center justify-between gap-3 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 min-w-[240px] max-w-xs transition-all">
+        <span id="employee-btn-label" class="truncate font-medium text-slate-700">
+          {% if employee_ids|length == 0 %}
+            All Employees
+          {% elif employee_ids|length == 1 %}
+            {% for u in all_filter_employees %}
+              {% if u.id in employee_ids %}
+                {{ u.empid|default:u.username }} — {{ u.get_full_name|default:u.username }}
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            {{ employee_ids|length }} Employees Selected
+          {% endif %}
+        </span>
+        <svg id="employee-chevron" class="w-4 h-4 text-slate-400 transition-transform duration-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <!-- Dropdown Panel -->
+      <div id="employee-dropdown-menu"
+           class="hidden absolute left-0 top-full mt-1.5 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 p-2.5 space-y-2">
+        
+        <!-- Search bar -->
+        <div class="relative">
+          <input type="text" id="employee-search-input" placeholder="Search employee..."
+                 class="w-full text-xs px-2.5 py-1.5 pl-7 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-violet-500 bg-slate-50/60 placeholder-slate-400">
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-2.85z"/>
+          </svg>
+        </div>
+
+        <!-- Action bar: Select All / Clear All -->
+        <div class="flex items-center justify-between text-[11px] px-1 py-1 border-b border-slate-100 text-slate-500">
+          <button type="button" id="btn-select-all" class="text-violet-600 hover:text-violet-800 font-semibold transition-colors">Select All</button>
+          <span class="text-slate-300">|</span>
+          <button type="button" id="btn-clear-all" class="text-slate-500 hover:text-rose-600 font-medium transition-colors">Clear All (All Employees)</button>
+        </div>
+
+        <!-- Scrollable Employee Options List -->
+        <div id="employee-options-list" class="max-h-60 overflow-y-auto space-y-0.5 divide-y divide-slate-50 pr-1">
+          {% for u in all_filter_employees %}
+          <label class="emp-option-item flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-violet-50/70 cursor-pointer text-xs select-none transition-colors"
+                 data-search="{{ u.empid|default:''|lower }} {{ u.username|lower }} {{ u.get_full_name|lower }}">
+            <input type="checkbox" name="employee" value="{{ u.id }}"
+                   {% if u.id in employee_ids %}checked{% endif %}
+                   class="emp-checkbox rounded border-slate-300 text-violet-600 focus:ring-violet-500 w-3.5 h-3.5 cursor-pointer"
+                   data-name="{{ u.empid|default:u.username }} — {{ u.get_full_name|default:u.username }}">
+            <span class="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-semibold flex-shrink-0">
+              {{ u.empid|default:u.username }}
+            </span>
+            <span class="font-medium text-slate-700 truncate flex-1">
+              {{ u.get_full_name|default:u.username }}
+            </span>
+            {% if not u.is_active %}
+            <span class="text-[9px] px-1 py-0.5 bg-slate-100 text-slate-500 rounded font-normal border border-slate-200 flex-shrink-0">
+              Inactive
+            </span>
+            {% endif %}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
     </div>
     {% endif %}
-    <button type="submit" class="px-5 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors">Apply</button>
+    <button type="submit" class="px-5 py-2 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors shadow-sm">Apply</button>
   </form>
 
   <!-- Report Table -->
@@ -494,5 +559,99 @@
 })();
 </script>
 {% endif %}
+
+<script>
+(function() {
+  const container = document.getElementById('employee-multiselect-container');
+  if (!container) return;
+
+  const btn = document.getElementById('employee-dropdown-btn');
+  const menu = document.getElementById('employee-dropdown-menu');
+  const chevron = document.getElementById('employee-chevron');
+  const label = document.getElementById('employee-btn-label');
+  const searchInput = document.getElementById('employee-search-input');
+  const checkboxes = Array.from(container.querySelectorAll('.emp-checkbox'));
+  const optionItems = Array.from(container.querySelectorAll('.emp-option-item'));
+  const btnSelectAll = document.getElementById('btn-select-all');
+  const btnClearAll = document.getElementById('btn-clear-all');
+
+  function updateLabel() {
+    const checked = checkboxes.filter(cb => cb.checked);
+    if (checked.length === 0) {
+      label.textContent = 'All Employees';
+    } else if (checked.length === 1) {
+      label.textContent = checked[0].dataset.name || '1 Employee Selected';
+    } else {
+      label.textContent = `${checked.length} Employees Selected`;
+    }
+  }
+
+  // Toggle dropdown
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+      menu.classList.remove('hidden');
+      chevron.classList.add('rotate-180');
+      if (searchInput) {
+        setTimeout(() => searchInput.focus(), 50);
+      }
+    } else {
+      menu.classList.add('hidden');
+      chevron.classList.remove('rotate-180');
+    }
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!container.contains(e.target)) {
+      menu.classList.add('hidden');
+      chevron.classList.remove('rotate-180');
+    }
+  });
+
+  // Prevent clicks inside menu from closing the dropdown
+  menu.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+
+  // Checkbox change listener
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', updateLabel);
+  });
+
+  // Search filter
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      const q = e.target.value.toLowerCase().trim();
+      optionItems.forEach(item => {
+        const text = (item.dataset.search || '').toLowerCase();
+        item.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+      });
+    });
+  }
+
+  // Select All button
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', function() {
+      optionItems.forEach(item => {
+        if (item.style.display !== 'none') {
+          const cb = item.querySelector('.emp-checkbox');
+          if (cb) cb.checked = true;
+        }
+      });
+      updateLabel();
+    });
+  }
+
+  // Clear All button
+  if (btnClearAll) {
+    btnClearAll.addEventListener('click', function() {
+      checkboxes.forEach(cb => cb.checked = false);
+      updateLabel();
+    });
+  }
+})();
+</script>
 
 {% endblock %}
