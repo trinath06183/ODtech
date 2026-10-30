@@ -704,42 +704,19 @@
 
                 <!-- Material Tracker -->
                 {% if request.user|has_read_perm:'TRACKER' %}
-                <div x-data="{ open: {% if 'tracker' in request.path %}true{% else %}false{% endif %} }" class="mb-1 rounded-xl transition-all duration-200 nav-dropdown-group"
-                     :class="open && sidebarOpen ? 'is-open group-blue' : ''">
-                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link nav-blue w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none relative group"
-                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Material Tracker">
-                        <div class="nav-icon-tile">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </div>
-                        <div x-show="sidebarOpen" style="display: none;"
-                            class="flex-1 flex items-center justify-between ml-3">
-                            <span class="whitespace-nowrap font-semibold text-slate-700 text-sm">Material Tracker</span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <span class="sidebar-tooltip">Material Tracker</span>
-                    </button>
-                    <!-- Submenu list INSIDE that section container -->
-                    <div x-show="open && sidebarOpen" x-collapse class="mt-1 pl-3 pr-1 py-1 space-y-1 border-l-2 border-blue-300 ml-5">
-                        <a href="{% url 'tracker:dashboard' %}" title="Tracker Dashboard"
-                            class="nav-sublink {% if request.resolver_match.url_name == 'dashboard' and 'tracker' in request.path %}active-sublink{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 sublink-dot flex-shrink-0 transition-transform"></span>
-                            <span class="truncate">Tracker Dashboard</span>
-                        </a>
-                        <a href="{% url 'tracker:individual_products' %}" title="All Products"
-                            class="nav-sublink {% if 'individual_products' in request.path %}active-sublink{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 sublink-dot flex-shrink-0 transition-transform"></span>
-                            <span class="truncate">All Products</span>
-                        </a>
+                <a href="{% url 'tracker:dashboard' %}"
+                    class="nav-link nav-blue group relative rounded-xl px-2.5 py-2 flex items-center transition-all mb-1 {% if 'tracker' in request.path %}active-nav{% endif %}"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Material Tracker">
+                    <div class="nav-icon-tile">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
                     </div>
-                </div>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Material Tracker</span>
+                    <span class="sidebar-tooltip">Material Tracker</span>
+                </a>
                 {% endif %}
 
                 <!-- EDMS — Enterprise Document Management -->
@@ -761,84 +738,36 @@
 
                 <!-- Expense Management -->
                 {% if request.user|has_read_perm:'PAYMENTS' %}
-                <div x-data="{ open: {% if 'expense' in request.path %}true{% else %}false{% endif %} }" class="mb-1 rounded-xl transition-all duration-200 nav-dropdown-group"
-                     :class="open && sidebarOpen ? 'is-open group-amber' : ''">
-                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link nav-amber w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none relative group"
-                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Expense Management">
-                        <div class="nav-icon-tile">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div x-show="sidebarOpen" style="display: none;"
-                            class="flex-1 flex items-center justify-between ml-3">
-                            <span class="whitespace-nowrap font-semibold text-slate-700 text-sm">Expense Mgt.</span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <span class="sidebar-tooltip">Expense Management</span>
-                    </button>
-                    <!-- Submenu list INSIDE that section container -->
-                    <div x-show="open && sidebarOpen" x-collapse class="mt-1 pl-3 pr-1 py-1 space-y-1 border-l-2 border-amber-300 ml-5">
-                        <a href="{% url 'expense_list' %}" title="Expenses"
-                            class="nav-sublink {% if 'expense' in request.path %}active-sublink{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 sublink-dot flex-shrink-0 transition-transform"></span>
-                            <span class="truncate">Expenses</span>
-                        </a>
+                <a href="{% url 'expense_list' %}"
+                    class="nav-link nav-amber group relative rounded-xl px-2.5 py-2 flex items-center transition-all mb-1 {% if 'expense' in request.path %}active-nav{% endif %}"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Expense Management">
+                    <div class="nav-icon-tile">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                     </div>
-                </div>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Expense Mgt.</span>
+                    <span class="sidebar-tooltip">Expense Mgt.</span>
+                </a>
                 {% endif %}
 
                 <!-- Generated Documents (Invoices/POs/QTNs) -->
                 {% if request.user|has_read_perm:'DOCUMENTS' %}
-                <div x-data="{ open: {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}true{% else %}false{% endif %} }" class="mb-1 rounded-xl transition-all duration-200 nav-dropdown-group"
-                     :class="open && sidebarOpen ? 'is-open group-emerald' : ''">
-                    <button @click="if(sidebarOpen) open = !open; else { sidebarOpen = true; open = true; }"
-                        class="nav-link nav-emerald w-full rounded-xl px-2.5 py-2 flex items-center transition-all focus:outline-none relative group {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}active-nav{% endif %}"
-                        :class="!sidebarOpen ? 'md:justify-center' : ''" title="Commercial Docs">
-                        <div class="nav-icon-tile">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <div x-show="sidebarOpen" style="display: none;"
-                            class="flex-1 flex items-center justify-between ml-3">
-                            <span class="whitespace-nowrap font-semibold text-slate-700 text-sm">Commercial Docs</span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <span class="sidebar-tooltip">Commercial Docs</span>
-                    </button>
-                    <!-- Submenu list INSIDE that section container -->
-                    <div x-show="open && sidebarOpen" x-collapse class="mt-1 pl-3 pr-1 py-1 space-y-1 border-l-2 border-emerald-300 ml-5">
-                        <a href="{% url 'document_list' %}" title="All Documents"
-                            class="nav-sublink {% if 'documents' in request.path and not 'create' in request.path %}active-sublink{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 sublink-dot flex-shrink-0 transition-transform"></span>
-                            <span class="truncate">All Documents</span>
-                        </a>
-                        {% if request.user|has_write_perm:'DOCUMENTS' %}
-                        <a href="{% url 'create_invoice' %}" title="New Invoice"
-                            class="nav-sublink {% if 'invoice/create' in request.path or 'create_invoice' in request.resolver_match.url_name %}active-sublink{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 sublink-dot flex-shrink-0 transition-transform"></span>
-                            <span class="truncate">+ New Invoice</span>
-                        </a>
-                        <a href="{% url 'create_quotation' %}" title="New Quotation"
-                            class="nav-sublink {% if 'quotation/create' in request.path or 'create_quotation' in request.resolver_match.url_name %}active-sublink{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 sublink-dot flex-shrink-0 transition-transform"></span>
-                            <span class="truncate">+ New Quotation</span>
-                        </a>
-                        {% endif %}
+                <a href="{% url 'document_list' %}"
+                    class="nav-link nav-emerald group relative rounded-xl px-2.5 py-2 flex items-center transition-all mb-1 {% if 'documents' in request.path or 'document' in request.resolver_match.url_name %}active-nav{% endif %}"
+                    :class="!sidebarOpen ? 'md:justify-center' : ''" title="Commercial Docs">
+                    <div class="nav-icon-tile">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                     </div>
-                </div>
+                    <span x-show="sidebarOpen" style="display: none;" x-transition.opacity.duration.300ms
+                        class="whitespace-nowrap ml-3 font-semibold text-slate-700 text-sm">Commercial Docs</span>
+                    <span class="sidebar-tooltip">Commercial Docs</span>
+                </a>
                 {% endif %}
 
                 {% if request.user|has_read_perm:'INVENTORY' and show_inventory %}
