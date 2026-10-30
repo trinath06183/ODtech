@@ -63,11 +63,13 @@ class HRPermissionTests(TestCase):
         )
 
         # Leave types
-        self.casual_leave = LeaveType.objects.create(
-            name='Casual Leave',
+        self.casual_leave, _ = LeaveType.objects.get_or_create(
             code='CL',
-            default_days=12,
-            is_active=True,
+            defaults={
+                'name': 'Casual Leave',
+                'default_days': 12,
+                'is_active': True,
+            }
         )
 
     def test_regular_user_cannot_view_hr_dashboard(self):

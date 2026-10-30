@@ -165,12 +165,26 @@ def mark_attendance(request):
         return redirect('hr:my_attendance')
 
     selected_date = date.today()
-    employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    if request.method == 'GET' and request.GET.get('date'):
+        try:
+            from datetime import datetime
+            selected_date = datetime.strptime(request.GET['date'], '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    existing_user_ids = set(AttendanceRecord.objects.filter(date=selected_date).values_list('employee_id', flat=True))
+    employees = User.objects.filter(
+        Q(is_active=True) | Q(id__in=existing_user_ids)
+    ).distinct().order_by('first_name', 'last_name')
 
     if request.method == 'POST':
         form = BulkAttendanceForm(request.POST)
         if form.is_valid():
             selected_date = form.cleaned_data['date']
+            post_user_ids = set(AttendanceRecord.objects.filter(date=selected_date).values_list('employee_id', flat=True))
+            employees = User.objects.filter(
+                Q(is_active=True) | Q(id__in=post_user_ids)
+            ).distinct().order_by('first_name', 'last_name')
             updated = 0
             for user in employees:
                 field_name = f'status_{user.id}'
@@ -196,13 +210,6 @@ def mark_attendance(request):
             return redirect('hr:mark_attendance')
     else:
         form = BulkAttendanceForm(initial={'date': selected_date})
-        if request.GET.get('date'):
-            try:
-                from datetime import datetime
-                selected_date = datetime.strptime(request.GET['date'], '%Y-%m-%d').date()
-                form = BulkAttendanceForm(initial={'date': selected_date})
-            except ValueError:
-                pass
 
     # Existing records for selected_date
     existing = {r.employee_id: r for r in AttendanceRecord.objects.filter(date=selected_date)}
@@ -276,7 +283,9 @@ def attendance_history(request, user_id=None):
         from_date__month=month
     ).select_related('leave_type').order_by('from_date')
 
-    all_employees = User.objects.filter(is_active=True).order_by('first_name') if _is_hr_admin(request.user) else []
+    all_employees = User.objects.filter(
+        Q(is_active=True) | Q(attendance_records__isnull=False)
+    ).distinct().order_by('empid', 'first_name') if _is_hr_admin(request.user) else []
 
     month_name  = calendar.month_name[month]
     prev_month  = date(year, month, 1) - timedelta(days=1)
@@ -493,10 +502,6 @@ def attendance_report(request):
             emp   = form.cleaned_data.get('employee')
             employee_id = emp.id if emp else None
 
-    employees = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
-    if employee_id:
-        employees = employees.filter(id=employee_id)
-
     holidays = set(Holiday.objects.filter(date__year=year, date__month=month).values_list('date', flat=True))
     _, days_in_month = calendar.monthrange(year, month)
     all_dates = [date(year, month, d) for d in range(1, days_in_month + 1)]
@@ -512,13 +517,32 @@ def attendance_report(request):
     for r in records.select_related('employee'):
         records_map.setdefault(r.employee_id, {})[r.date] = r
 
+    month_emp_ids = set(records_map.keys())
+
+    if employee_id:
+        employees = User.objects.filter(id=employee_id)
+    else:
+        # Show all users (active, deactive, or deleted) that have at least 1 record entered
+        # in this month or in total, plus active users
+        employees = User.objects.filter(
+            Q(is_active=True) | Q(id__in=month_emp_ids) | Q(attendance_records__isnull=False)
+        ).distinct().order_by('empid', 'first_name', 'last_name')
+
     report_data = []
     for user in employees:
         emp_records = records_map.get(user.id, {})
+        # If user is inactive/deactive and has NO records in this month, skip from monthly report
+        # unless specifically filtered by employee_id
+        if not user.is_active and not emp_records and not employee_id:
+            continue
+
         present = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status in ['PRESENT', 'WFH'])
         half_day = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status == 'HALF_DAY')
         on_leave = sum(1 for d in working_dates if emp_records.get(d) and emp_records[d].status == 'ON_LEAVE')
-        absent   = sum(1 for d in working_dates if not emp_records.get(d) or emp_records[d].status == 'ABSENT')
+        if not emp_records and not user.is_active:
+            absent = 0
+        else:
+            absent   = sum(1 for d in working_dates if not emp_records.get(d) or emp_records[d].status == 'ABSENT')
         report_data.append({
             'user': user,
             'records': emp_records,

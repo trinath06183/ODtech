@@ -4,9 +4,12 @@ from django.db import migrations
 
 
 def repair_corrupt_links(apps, schema_editor):
-    DocumentLink = apps.get_model('core', 'DocumentLink')
-    ContentType = apps.get_model('contenttypes', 'ContentType')
-    Document = apps.get_model('documents', 'Document')
+    try:
+        DocumentLink = apps.get_model('core', 'DocumentLink')
+        ContentType = apps.get_model('contenttypes', 'ContentType')
+        Document = apps.get_model('documents', 'Document')
+    except (LookupError, Exception):
+        return
 
     try:
         doc_ct = ContentType.objects.get(app_label='documents', model='document')

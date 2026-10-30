@@ -114,7 +114,12 @@ class AttendanceFilterForm(forms.Form):
             self.fields['year'].initial = now.year
         if not self.data.get('month'):
             self.fields['month'].initial = now.month
-        self.fields['employee'].queryset = User.objects.filter(is_active=True).order_by('empid', 'first_name')
+        from django.db.models import Q
+        self.fields['employee'].queryset = User.objects.filter(
+            Q(is_active=True) | Q(attendance_records__isnull=False)
+        ).distinct().order_by('empid', 'first_name')
         self.fields['employee'].label_from_instance = lambda obj: (
-            f"{obj.empid or obj.username} — {obj.get_full_name()}" if obj.get_full_name() else (obj.empid or obj.username)
+            f"{obj.empid or obj.username} — {obj.get_full_name()}{' (Inactive)' if not obj.is_active else ''}"
+            if obj.get_full_name()
+            else f"{obj.empid or obj.username}{' (Inactive)' if not obj.is_active else ''}"
         )

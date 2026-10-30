@@ -22,7 +22,7 @@
               class="rounded-xl border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500">
         {% for u in all_employees %}
         <option value="{{ u.id }}" {% if u.id == employee.id %}selected{% endif %}>
-          {{ u.empid|default:u.username }}{% if u.get_full_name %} — {{ u.get_full_name }}{% endif %}
+          {{ u.empid|default:u.username }}{% if u.get_full_name %} — {{ u.get_full_name }}{% endif %}{% if not u.is_active %} (Inactive){% endif %}
         </option>
         {% endfor %}
       </select>
