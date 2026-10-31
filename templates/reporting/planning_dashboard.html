@@ -185,24 +185,24 @@
     {# ════════════════════════════════════════════════════════════════════════════ #}
     {# SECTION 1: ORDER BOOKING PLAN                                               #}
     {# ════════════════════════════════════════════════════════════════════════════ #}
-    <div class="bg-white rounded-xl border border-amber-200/70 overflow-hidden" style="box-shadow: 0 10px 30px -5px rgba(245, 158, 11, 0.16), 0 4px 12px -2px rgba(245, 158, 11, 0.08);">
+    <div class="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
         
-        {# Decorative Top Accent Line with Warm Amber Glow #}
-        <div class="h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400"></div>
+        {# Decorative Top Accent Line #}
+        <div class="h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-500"></div>
 
         {# Light, Crisp, High-Contrast Section Header Banner #}
-        <div class="bg-amber-50/40 border-b border-amber-200/60 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div class="bg-slate-50/70 border-b border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
                     Order Booking Plan
                 </span>
                 <span class="text-base font-bold text-slate-900 tracking-tight">
                     {{ month_name }} {{ selected_year }}
                 </span>
-                <span class="text-xs bg-amber-100/80 text-amber-900 font-semibold px-2.5 py-0.5 rounded-full border border-amber-200">
+                <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2.5 py-0.5 rounded-full border border-slate-200">
                     {{ booking_groups|length }} Orders &bull; {{ booking_items|length }} Items
                 </span>
-                <button type="button" onclick="toggleSectionGroups('booking')" id="booking-toggle-all-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-white text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all shadow-2xs cursor-pointer ml-1">
+                <button type="button" onclick="toggleSectionGroups('booking')" id="booking-toggle-all-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-2xs cursor-pointer ml-1">
                     <span id="booking-toggle-all-icon">⇲</span>
                     <span id="booking-toggle-all-text">Collapse Multi-Items</span>
                 </button>
@@ -216,9 +216,9 @@
                     </div>
                 </div>
 
-                <div class="bg-amber-50 border border-amber-300 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
-                    <div class="text-[10px] text-amber-700 uppercase tracking-wider font-bold">Total Inc. GST</div>
-                    <div class="font-mono font-black text-sm text-amber-900">
+                <div class="bg-blue-50/60 border border-blue-200 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
+                    <div class="text-[10px] text-blue-700 uppercase tracking-wider font-bold">Total Inc. GST</div>
+                    <div class="font-mono font-black text-sm text-blue-900">
                         ₹<span id="booking-banner-gst">{{ booking_total_gst|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
@@ -228,7 +228,7 @@
         {# Table Container with Clean Enterprise Borders #}
         <div class="overflow-x-auto">
             <table class="w-full text-xs text-left border-collapse">
-                <thead class="bg-slate-100/90 text-slate-700 uppercase font-bold tracking-wider border-b border-slate-200 select-none">
+                <thead class="bg-slate-100/80 text-slate-700 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-200 select-none">
                     <tr>
                         <th class="py-3 px-3 text-center w-14 border-r border-slate-200">Sl. No.</th>
                         <th class="py-3 px-4 min-w-[220px] border-r border-slate-200">Customer &amp; Document No.</th>
@@ -246,15 +246,15 @@
                     {% for group in booking_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row {% if group.item_count > 1 %}booking-grp-{{ forloop.counter }}-expanded{% endif %} {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-amber-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
-                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#FCD34D{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="order-group-row {% if group.item_count > 1 %}booking-grp-{{ forloop.counter }}-expanded{% endif %} hover:bg-slate-50 transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% else %}#E2E8F0{% endif %} !important; background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
-                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-amber-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
-                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FEF08A{% else %}#F8FAFC{% endif %} !important;">
+                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% else %}border-l-[3px] border-l-blue-600{% endif %}"
+                                style="background-color: {% if group.is_supplied %}#DCFCE7{% else %}#F1F5F9{% endif %} !important;">
                                 <div class="flex items-center justify-center">
-                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-amber-500 text-amber-950 font-black border border-amber-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% else %}bg-white text-slate-800 border border-slate-300{% endif %}">
                                         {{ forloop.counter }}
                                     </span>
                                 </div>
@@ -263,23 +263,23 @@
                             {# Customer & Document No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
                                 class="py-3 px-4 border-r border-slate-200 align-top"
-                                style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;">
-                                <div class="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-amber-700 transition-colors"
+                                style="background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;">
+                                <div class="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-blue-600 transition-colors"
                                      onclick="enableCellEdit(this, 'customer_name', '{{ first_item.id }}')" title="Click to edit customer name">
                                     {{ group.customer_name }}
                                 </div>
                                 <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     {% if group.document %}
-                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
-                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         {{ group.doc_number }}
                                     </a>
                                     {% endif %}
                                     {% if group.item_count > 1 %}
                                     <button type="button" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" 
-                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors cursor-pointer shadow-2xs"
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition-colors cursor-pointer shadow-2xs"
                                             title="Click to collapse items and show only total">
-                                        <svg class="w-3 h-3 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                         <span>{{ group.item_count }} items (Collapse)</span>
                                     </button>
                                     {% endif %}
@@ -292,19 +292,19 @@
                             </td>
 
                             {# First Item Description #}
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ first_item.id }}')" title="Click to edit">
                                 ₹{{ first_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
@@ -322,13 +322,13 @@
                                     <span class="status-text">{{ first_item.order_status }}</span>
                                 </span>
                                 {% elif 'progress' in first_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                     <span class="status-text">{{ first_item.order_status }}</span>
                                 </span>
                                 {% elif 'confirm' in first_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span class="status-text">{{ first_item.order_status }}</span>
                                 </span>
                                 {% else %}
@@ -339,14 +339,14 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-500 hover:text-amber-700 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-400 hover:text-blue-600 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Order Booking Plan?')">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="delete_plan_item">
                                     <input type="hidden" name="id" value="{{ first_item.id }}">
-                                    <button type="submit" class="text-slate-500 hover:text-red-600 p-1 transition-colors" title="Delete row">
+                                    <button type="submit" class="text-slate-400 hover:text-red-600 p-1 transition-colors" title="Delete row">
                                         🗑️
                                     </button>
                                 </form>
@@ -356,22 +356,22 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t booking-grp-{{ forloop.parentloop.counter }}-expanded {% if forloop.parentloop.counter|divisibleby:2 %}border-amber-200/60 hover:bg-amber-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
-                            style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="border-t booking-grp-{{ forloop.parentloop.counter }}-expanded hover:bg-slate-50 transition-colors"
+                            style="background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.parentloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ sub_item.id }}">
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-amber-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-blue-600 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ sub_item.id }}')" title="Click to edit">
                                 ₹{{ sub_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
@@ -389,13 +389,13 @@
                                     <span class="status-text">{{ sub_item.order_status }}</span>
                                 </span>
                                 {% elif 'progress' in sub_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                     <span class="status-text">{{ sub_item.order_status }}</span>
                                 </span>
                                 {% elif 'confirm' in sub_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span class="status-text">{{ sub_item.order_status }}</span>
                                 </span>
                                 {% else %}
@@ -406,14 +406,14 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ sub_item.id }}, '{{ sub_item.customer_name|escapejs }}', '{{ sub_item.item_description|escapejs }}', '{{ sub_item.quantity }}', '{{ sub_item.uom|escapejs }}', '{{ sub_item.probable_order_value }}', '{{ sub_item.gst_rate }}', '{{ sub_item.order_status|escapejs }}')" class="text-slate-500 hover:text-amber-700 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ sub_item.id }}, '{{ sub_item.customer_name|escapejs }}', '{{ sub_item.item_description|escapejs }}', '{{ sub_item.quantity }}', '{{ sub_item.uom|escapejs }}', '{{ sub_item.probable_order_value }}', '{{ sub_item.gst_rate }}', '{{ sub_item.order_status|escapejs }}')" class="text-slate-400 hover:text-blue-600 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Order Booking Plan?')">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="delete_plan_item">
                                     <input type="hidden" name="id" value="{{ sub_item.id }}">
-                                    <button type="submit" class="text-slate-500 hover:text-red-600 p-1 transition-colors" title="Delete row">
+                                    <button type="submit" class="text-slate-400 hover:text-red-600 p-1 transition-colors" title="Delete row">
                                         🗑️
                                     </button>
                                 </form>
@@ -423,31 +423,31 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="booking-grp-{{ forloop.counter }}-expanded border-t border-amber-300 font-semibold text-xs select-none shadow-2xs"
-                            style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FDE68A{% else %}#EDF2F7{% endif %} !important;">
-                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] text-amber-950">
+                        <tr class="booking-grp-{{ forloop.counter }}-expanded border-t border-b border-slate-300 font-semibold text-xs select-none"
+                            style="background-color: {% if group.is_supplied %}#DCFCE7{% else %}#F1F5F9{% endif %} !important;">
+                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-300 font-bold uppercase tracking-wider text-[11px] text-slate-700">
                                 Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900 border-r border-slate-200">
+                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900 border-r border-slate-300">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-black text-amber-950 border-r border-slate-200">
+                            <td class="py-2.5 px-4 text-right font-mono font-black text-blue-900 border-r border-slate-300">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
-                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-amber-800 italic">
+                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-slate-500 italic">
                                 Order Subtotal
                             </td>
                         </tr>
 
                         {# Collapsed Summary Row (shows ONLY the total when collapsed) #}
-                        <tr id="booking-grp-{{ forloop.counter }}-collapsed" class="hidden order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-amber-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
-                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#FCD34D{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FEFCE8{% else %}#FFFFFF{% endif %} !important;">
+                        <tr id="booking-grp-{{ forloop.counter }}-collapsed" class="hidden order-group-row hover:bg-slate-50 transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% else %}#E2E8F0{% endif %} !important; background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;">
                             
                             {# Sl. No. #}
-                            <td class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-amber-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
-                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FEF08A{% else %}#F8FAFC{% endif %} !important;">
+                            <td class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% else %}border-l-[3px] border-l-blue-600{% endif %}"
+                                style="background-color: {% if group.is_supplied %}#DCFCE7{% else %}#F1F5F9{% endif %} !important;">
                                 <div class="flex items-center justify-center">
-                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-amber-500 text-amber-950 font-black border border-amber-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% else %}bg-white text-slate-800 border border-slate-300{% endif %}">
                                         {{ forloop.counter }}
                                     </span>
                                 </div>
@@ -460,15 +460,15 @@
                                 </div>
                                 <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     {% if group.document %}
-                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
-                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 transition-colors shadow-2xs" title="View ERP Quotation {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         {{ group.doc_number }}
                                     </a>
                                     {% endif %}
                                     <button type="button" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" 
-                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-950 hover:bg-amber-300 border border-amber-400 transition-colors cursor-pointer shadow-2xs"
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/80 transition-colors cursor-pointer shadow-2xs"
                                             title="Click to expand {{ group.item_count }} items">
-                                        <svg class="w-3 h-3 text-amber-900 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <svg class="w-3 h-3 text-blue-600 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                         <span>{{ group.item_count }} items (Expand)</span>
                                     </button>
                                 </div>
@@ -480,10 +480,10 @@
                             </td>
 
                             {# Item Description / Project Name #}
-                            <td class="py-3 px-4 border-r border-slate-200 align-middle cursor-pointer hover:bg-amber-100/30" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" title="Click to expand items">
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle cursor-pointer hover:bg-blue-50/30" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" title="Click to expand items">
                                 <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                                     <span>📦 {{ group.item_count }} Items bundled</span>
-                                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">Total Shown</span>
+                                    <span class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Total Shown</span>
                                 </div>
                                 <div class="text-[11px] text-slate-500 truncate max-w-xs mt-0.5" title="{{ group.items_summary }}">
                                     {{ group.items_summary }}
@@ -491,7 +491,7 @@
                             </td>
 
                             {# Qty #}
-                            <td class="py-3 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-700 align-middle">
+                            <td class="py-3 px-3 border-r border-slate-200 text-center font-mono font-semibold text-slate-700 align-middle">
                                 {{ group.total_quantity|floatformat:2 }}
                             </td>
 
@@ -501,17 +501,17 @@
                             </td>
 
                             {# Probable Order Value #}
-                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-semibold text-slate-700 align-middle">
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-medium text-slate-600 align-middle">
                                 ₹{{ group.total_probable_value|floatformat:2|intcomma }}
                             </td>
 
                             {# Total Order Value #}
-                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-slate-950 align-middle bg-amber-100/30">
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-bold text-slate-900 align-middle">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
 
                             {# Including GST Amount #}
-                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-amber-950 align-middle bg-amber-200/30">
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-blue-900 align-middle">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
 
@@ -523,8 +523,8 @@
                                     <span>Supplied</span>
                                 </span>
                                 {% elif group.items.0.order_status %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span>{{ group.items.0.order_status }}</span>
                                 </span>
                                 {% else %}
@@ -538,7 +538,7 @@
                             {# Actions #}
                             <td class="py-3 px-2 text-center whitespace-nowrap align-middle">
                                 <button type="button" onclick="toggleOrderGroup('booking', {{ forloop.counter }})" 
-                                        class="inline-flex items-center justify-center px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors shadow-2xs text-[11px] font-bold cursor-pointer" 
+                                        class="inline-flex items-center justify-center px-2 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors shadow-2xs text-[11px] font-semibold cursor-pointer" 
                                         title="Click to expand items">
                                     ▼ Expand
                                 </button>
@@ -586,24 +586,24 @@
     {# ════════════════════════════════════════════════════════════════════════════ #}
     {# SECTION 2: SALES PLAN                                                       #}
     {# ════════════════════════════════════════════════════════════════════════════ #}
-    <div class="bg-white rounded-xl border border-pink-200/70 overflow-hidden" style="box-shadow: 0 10px 30px -5px rgba(244, 114, 182, 0.16), 0 4px 12px -2px rgba(244, 114, 182, 0.08);">
+    <div class="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
         
-        {# Decorative Top Accent Line with Soft Rose Pink Glow #}
-        <div class="h-1 bg-gradient-to-r from-pink-400 via-rose-500 to-pink-500"></div>
+        {# Decorative Top Accent Line #}
+        <div class="h-1 bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600"></div>
 
         {# Light, Crisp, High-Contrast Section Header Banner #}
-        <div class="bg-pink-50/40 border-b border-pink-200/60 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        <div class="bg-slate-50/70 border-b border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-pink-100 text-pink-900 border border-pink-300 shadow-2xs">
+                <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
                     Sales Plan
                 </span>
                 <span class="text-base font-bold text-slate-900 tracking-tight">
                     {{ month_name }} {{ selected_year }}
                 </span>
-                <span class="text-xs bg-pink-100/80 text-pink-900 font-semibold px-2.5 py-0.5 rounded-full border border-pink-200">
+                <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2.5 py-0.5 rounded-full border border-slate-200">
                     {{ sales_groups|length }} Orders &bull; {{ sales_items|length }} Items
                 </span>
-                <button type="button" onclick="toggleSectionGroups('sales')" id="sales-toggle-all-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-white text-pink-900 border border-pink-300 hover:bg-pink-100 transition-all shadow-2xs cursor-pointer ml-1">
+                <button type="button" onclick="toggleSectionGroups('sales')" id="sales-toggle-all-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-2xs cursor-pointer ml-1">
                     <span id="sales-toggle-all-icon">⇲</span>
                     <span id="sales-toggle-all-text">Collapse Multi-Items</span>
                 </button>
@@ -617,9 +617,9 @@
                     </div>
                 </div>
 
-                <div class="bg-pink-50 border border-pink-300 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
-                    <div class="text-[10px] text-pink-700 uppercase tracking-wider font-bold">Total Inc. GST</div>
-                    <div class="font-mono font-black text-sm text-pink-900">
+                <div class="bg-emerald-50/60 border border-emerald-200 px-3.5 py-1.5 rounded-lg shadow-2xs text-right">
+                    <div class="text-[10px] text-emerald-700 uppercase tracking-wider font-bold">Total Inc. GST</div>
+                    <div class="font-mono font-black text-sm text-emerald-900">
                         ₹<span id="sales-banner-gst">{{ sales_total_gst|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
@@ -629,7 +629,7 @@
         {# Table Container with Clean Enterprise Borders #}
         <div class="overflow-x-auto">
             <table class="w-full text-xs text-left border-collapse">
-                <thead class="bg-slate-100/90 text-slate-700 uppercase font-bold tracking-wider border-b border-slate-200 select-none">
+                <thead class="bg-slate-100/80 text-slate-700 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-200 select-none">
                     <tr>
                         <th class="py-3 px-3 text-center w-14 border-r border-slate-200">Sl. No.</th>
                         <th class="py-3 px-4 min-w-[220px] border-r border-slate-200">Customer &amp; Document No.</th>
@@ -647,15 +647,15 @@
                     {% for group in sales_groups %}
                         {% with first_item=group.items.0 %}
                         {# Main First Item Row of this Order Group #}
-                        <tr class="order-group-row {% if group.item_count > 1 %}sales-grp-{{ forloop.counter }}-expanded{% endif %} {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-pink-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
-                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#F472B6{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="order-group-row {% if group.item_count > 1 %}sales-grp-{{ forloop.counter }}-expanded{% endif %} hover:bg-slate-50 transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% else %}#E2E8F0{% endif %} !important; background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ first_item.id }}">
                             {# Sl. No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
-                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-pink-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
-                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FCE7F3{% else %}#F8FAFC{% endif %} !important;">
+                                class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none border-l-[3px] border-l-emerald-600"
+                                style="background-color: {% if group.is_supplied %}#DCFCE7{% else %}#F1F5F9{% endif %} !important;">
                                 <div class="flex items-center justify-center">
-                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-pink-500 text-white font-black border border-pink-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% else %}bg-white text-slate-800 border border-slate-300{% endif %}">
                                         {{ forloop.counter }}
                                     </span>
                                 </div>
@@ -664,23 +664,23 @@
                             {# Customer & Document No. Spanning entire order #}
                             <td rowspan="{{ group.row_span }}" 
                                 class="py-3 px-4 border-r border-slate-200 align-top"
-                                style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;">
-                                <div class="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-pink-700 transition-colors"
+                                style="background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;">
+                                <div class="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-emerald-700 transition-colors"
                                      onclick="enableCellEdit(this, 'customer_name', '{{ first_item.id }}')" title="Click to edit customer name">
                                     {{ group.customer_name }}
                                 </div>
                                 <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     {% if group.document %}
-                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-pink-700 hover:bg-pink-100 border border-pink-300 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
-                                        <svg class="w-3.5 h-3.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" onclick="event.stopPropagation();" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         {{ group.doc_number }}
                                     </a>
                                     {% endif %}
                                     {% if group.item_count > 1 %}
                                     <button type="button" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" 
-                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 text-pink-900 border border-pink-300 hover:bg-pink-200 transition-colors cursor-pointer shadow-2xs"
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition-colors cursor-pointer shadow-2xs"
                                             title="Click to collapse items and show only total">
-                                        <svg class="w-3 h-3 text-pink-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                         <span>{{ group.item_count }} items (Collapse)</span>
                                     </button>
                                     {% endif %}
@@ -693,19 +693,19 @@
                             </td>
 
                             {# First Item Description #}
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ first_item.id }}')" title="Click to edit">
                                 {{ first_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ first_item.id }}')" title="Click to edit">
                                 ₹{{ first_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
@@ -723,13 +723,13 @@
                                     <span class="status-text">{{ first_item.order_status }}</span>
                                 </span>
                                 {% elif 'progress' in first_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                     <span class="status-text">{{ first_item.order_status }}</span>
                                 </span>
                                 {% elif 'confirm' in first_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span class="status-text">{{ first_item.order_status }}</span>
                                 </span>
                                 {% else %}
@@ -740,14 +740,14 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-500 hover:text-pink-700 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ first_item.id }}, '{{ first_item.customer_name|escapejs }}', '{{ first_item.item_description|escapejs }}', '{{ first_item.quantity }}', '{{ first_item.uom|escapejs }}', '{{ first_item.probable_order_value }}', '{{ first_item.gst_rate }}', '{{ first_item.order_status|escapejs }}')" class="text-slate-400 hover:text-emerald-700 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Sales Plan?')">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="delete_plan_item">
                                     <input type="hidden" name="id" value="{{ first_item.id }}">
-                                    <button type="submit" class="text-slate-500 hover:text-red-600 p-1 transition-colors" title="Delete row">
+                                    <button type="submit" class="text-slate-400 hover:text-red-600 p-1 transition-colors" title="Delete row">
                                         🗑️
                                     </button>
                                 </form>
@@ -757,22 +757,22 @@
 
                         {# Subsequent items of this Order Group #}
                         {% for sub_item in group.items|slice:"1:" %}
-                        <tr class="border-t sales-grp-{{ forloop.parentloop.counter }}-expanded {% if forloop.parentloop.counter|divisibleby:2 %}border-pink-200/60 hover:bg-pink-100/50{% elif group.is_supplied %}border-emerald-200/80 hover:bg-emerald-100/40{% else %}border-slate-200 hover:bg-slate-50{% endif %} transition-colors"
-                            style="background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.parentloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;"
+                        <tr class="border-t sales-grp-{{ forloop.parentloop.counter }}-expanded hover:bg-slate-50 transition-colors"
+                            style="background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.parentloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;"
                             data-item-id="{{ sub_item.id }}">
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'item_description', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.item_description }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-mono cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'quantity', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.quantity }}
                             </td>
-                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-3 border-r border-slate-200/80 text-center font-medium text-slate-600 cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'uom', '{{ sub_item.id }}')" title="Click to edit">
                                 {{ sub_item.uom }}
                             </td>
-                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-pink-700 transition-colors"
+                            <td class="py-2.5 px-4 border-r border-slate-200/80 text-right font-mono cursor-pointer hover:text-emerald-700 transition-colors"
                                 onclick="enableCellEdit(this, 'probable_order_value', '{{ sub_item.id }}')" title="Click to edit">
                                 ₹{{ sub_item.probable_order_value|floatformat:2|intcomma }}
                             </td>
@@ -790,13 +790,13 @@
                                     <span class="status-text">{{ sub_item.order_status }}</span>
                                 </span>
                                 {% elif 'progress' in sub_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                     <span class="status-text">{{ sub_item.order_status }}</span>
                                 </span>
                                 {% elif 'confirm' in sub_item.order_status|lower %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span class="status-text">{{ sub_item.order_status }}</span>
                                 </span>
                                 {% else %}
@@ -807,14 +807,14 @@
                                 {% endif %}
                             </td>
                             <td class="py-2.5 px-2 text-center whitespace-nowrap">
-                                <button type="button" onclick="openEditModal({{ sub_item.id }}, '{{ sub_item.customer_name|escapejs }}', '{{ sub_item.item_description|escapejs }}', '{{ sub_item.quantity }}', '{{ sub_item.uom|escapejs }}', '{{ sub_item.probable_order_value }}', '{{ sub_item.gst_rate }}', '{{ sub_item.order_status|escapejs }}')" class="text-slate-500 hover:text-teal-600 p-1 transition-colors" title="Edit row">
+                                <button type="button" onclick="openEditModal({{ sub_item.id }}, '{{ sub_item.customer_name|escapejs }}', '{{ sub_item.item_description|escapejs }}', '{{ sub_item.quantity }}', '{{ sub_item.uom|escapejs }}', '{{ sub_item.probable_order_value }}', '{{ sub_item.gst_rate }}', '{{ sub_item.order_status|escapejs }}')" class="text-slate-400 hover:text-emerald-700 p-1 transition-colors" title="Edit row">
                                     ✏️
                                 </button>
                                 <form method="POST" class="inline" onsubmit="return confirm('Delete this item from Sales Plan?')">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="delete_plan_item">
                                     <input type="hidden" name="id" value="{{ sub_item.id }}">
-                                    <button type="submit" class="text-slate-500 hover:text-red-600 p-1 transition-colors" title="Delete row">
+                                    <button type="submit" class="text-slate-400 hover:text-red-600 p-1 transition-colors" title="Delete row">
                                         🗑️
                                     </button>
                                 </form>
@@ -824,31 +824,31 @@
 
                         {# Order Subtotal Row (only if order has multiple items) #}
                         {% if group.item_count > 1 %}
-                        <tr class="sales-grp-{{ forloop.counter }}-expanded border-t border-pink-300 font-semibold text-xs select-none shadow-2xs"
-                            style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FBCFE8{% else %}#EDF2F7{% endif %} !important;">
-                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-200 font-bold uppercase tracking-wider text-[11px] text-pink-950">
+                        <tr class="sales-grp-{{ forloop.counter }}-expanded border-t border-b border-slate-300 font-semibold text-xs select-none"
+                            style="background-color: {% if group.is_supplied %}#DCFCE7{% else %}#F1F5F9{% endif %} !important;">
+                            <td colspan="4" class="py-2.5 px-4 text-right border-r border-slate-300 font-bold uppercase tracking-wider text-[11px] text-slate-700">
                                 Subtotal for {{ group.doc_number|default:group.customer_name }} ({{ group.item_count }} Items):
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900 border-r border-slate-200">
+                            <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-900 border-r border-slate-300">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
-                            <td class="py-2.5 px-4 text-right font-mono font-black text-pink-950 border-r border-slate-200">
+                            <td class="py-2.5 px-4 text-right font-mono font-black text-emerald-900 border-r border-slate-300">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
-                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-pink-800 italic">
+                            <td colspan="2" class="py-2.5 px-4 text-xs font-semibold text-slate-500 italic">
                                 Order Subtotal
                             </td>
                         </tr>
 
                         {# Collapsed Summary Row (shows ONLY the total when collapsed) #}
-                        <tr id="sales-grp-{{ forloop.counter }}-collapsed" class="hidden order-group-row {% if group.is_supplied %}hover:bg-emerald-100/40{% elif forloop.counter|divisibleby:2 %}hover:bg-pink-100/50{% else %}hover:bg-slate-50{% endif %} transition-colors"
-                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% elif forloop.counter|divisibleby:2 %}#F472B6{% else %}#CBD5E1{% endif %} !important; background-color: {% if group.is_supplied %}#ECFDF5{% elif forloop.counter|divisibleby:2 %}#FFF1F2{% else %}#FFFFFF{% endif %} !important;">
+                        <tr id="sales-grp-{{ forloop.counter }}-collapsed" class="hidden order-group-row hover:bg-slate-50 transition-colors"
+                            style="border-top: 2px solid {% if group.is_supplied %}#10B981{% else %}#E2E8F0{% endif %} !important; background-color: {% if group.is_supplied %}#F0FDF4{% elif forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %} !important;">
                             
                             {# Sl. No. #}
-                            <td class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none {% if group.is_supplied %}border-l-[3px] border-l-emerald-600{% elif forloop.counter|divisibleby:2 %}border-l-[3px] border-l-pink-500{% else %}border-l-[3px] border-l-slate-400{% endif %}"
-                                style="background-color: {% if group.is_supplied %}#D1FAE5{% elif forloop.counter|divisibleby:2 %}#FCE7F3{% else %}#F8FAFC{% endif %} !important;">
+                            <td class="py-3 px-2 border-r border-slate-200 text-center font-bold align-middle select-none border-l-[3px] border-l-emerald-600"
+                                style="background-color: {% if group.is_supplied %}#DCFCE7{% else %}#F1F5F9{% endif %} !important;">
                                 <div class="flex items-center justify-center">
-                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% elif forloop.counter|divisibleby:2 %}bg-pink-500 text-white font-black border border-pink-600/30{% else %}bg-slate-200 text-slate-800 border border-slate-300{% endif %}">
+                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-mono font-bold text-xs shadow-2xs {% if group.is_supplied %}bg-emerald-600 text-white{% else %}bg-white text-slate-800 border border-slate-300{% endif %}">
                                         {{ forloop.counter }}
                                     </span>
                                 </div>
@@ -861,15 +861,15 @@
                                 </div>
                                 <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                                     {% if group.document %}
-                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white text-pink-700 hover:bg-pink-100 border border-pink-300 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
-                                        <svg class="w-3.5 h-3.5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{% url 'document_preview' group.document.id %}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 transition-colors shadow-2xs" title="View ERP Invoice {{ group.doc_number }}">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         {{ group.doc_number }}
                                     </a>
                                     {% endif %}
                                     <button type="button" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" 
-                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-pink-200 text-pink-950 hover:bg-pink-300 border border-pink-400 transition-colors cursor-pointer shadow-2xs"
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition-colors cursor-pointer shadow-2xs"
                                             title="Click to expand {{ group.item_count }} items">
-                                        <svg class="w-3 h-3 text-pink-900 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        <svg class="w-3 h-3 text-emerald-600 transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                                         <span>{{ group.item_count }} items (Expand)</span>
                                     </button>
                                 </div>
@@ -881,10 +881,10 @@
                             </td>
 
                             {# Item Description / Project Name #}
-                            <td class="py-3 px-4 border-r border-slate-200 align-middle cursor-pointer hover:bg-pink-100/30" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" title="Click to expand items">
+                            <td class="py-3 px-4 border-r border-slate-200 align-middle cursor-pointer hover:bg-emerald-50/30" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" title="Click to expand items">
                                 <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                                     <span>📦 {{ group.item_count }} Items bundled</span>
-                                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-pink-100 text-pink-800 border border-pink-300">Total Shown</span>
+                                    <span class="text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">Total Shown</span>
                                 </div>
                                 <div class="text-[11px] text-slate-500 truncate max-w-xs mt-0.5" title="{{ group.items_summary }}">
                                     {{ group.items_summary }}
@@ -892,7 +892,7 @@
                             </td>
 
                             {# Qty #}
-                            <td class="py-3 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-700 align-middle">
+                            <td class="py-3 px-3 border-r border-slate-200 text-center font-mono font-semibold text-slate-700 align-middle">
                                 {{ group.total_quantity|floatformat:2 }}
                             </td>
 
@@ -902,17 +902,17 @@
                             </td>
 
                             {# Probable Order Value #}
-                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-semibold text-slate-700 align-middle">
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-medium text-slate-600 align-middle">
                                 ₹{{ group.total_probable_value|floatformat:2|intcomma }}
                             </td>
 
                             {# Total Order Value #}
-                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-slate-950 align-middle bg-pink-100/30">
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-bold text-slate-900 align-middle">
                                 ₹{{ group.total_order_value|floatformat:2|intcomma }}
                             </td>
 
                             {# Including GST Amount #}
-                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-pink-950 align-middle bg-pink-200/30">
+                            <td class="py-3 px-4 border-r border-slate-200 text-right font-mono font-black text-emerald-900 align-middle">
                                 ₹{{ group.including_gst_amount|floatformat:2|intcomma }}
                             </td>
 
@@ -924,8 +924,8 @@
                                     <span>Supplied</span>
                                 </span>
                                 {% elif group.items.0.order_status %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span>{{ group.items.0.order_status }}</span>
                                 </span>
                                 {% else %}
@@ -939,7 +939,7 @@
                             {# Actions #}
                             <td class="py-3 px-2 text-center whitespace-nowrap align-middle">
                                 <button type="button" onclick="toggleOrderGroup('sales', {{ forloop.counter }})" 
-                                        class="inline-flex items-center justify-center px-2 py-1 rounded bg-pink-100 hover:bg-pink-200 text-pink-900 border border-pink-300 transition-colors shadow-2xs text-[11px] font-bold cursor-pointer" 
+                                        class="inline-flex items-center justify-center px-2 py-1 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors shadow-2xs text-[11px] font-semibold cursor-pointer" 
                                         title="Click to expand items">
                                     ▼ Expand
                                 </button>
