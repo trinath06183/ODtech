@@ -1,12 +1,13 @@
 <!-- ═══════════════════════════════════════════════════════ -->
 <!-- Partial Dispatch & Split Bill / Challan Modal            -->
 <!-- ═══════════════════════════════════════════════════════ -->
-<div id="partialDispatchModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closePartialDispatchModal()"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+<div id="partialDispatchModal" class="fixed inset-0 z-[9999] overflow-y-auto hidden" style="display: none;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm transition-opacity" onclick="closePartialDispatchModal()"></div>
 
-        <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-100">
+    <!-- Modal Card Wrapper -->
+    <div class="relative z-10 flex min-h-screen items-center justify-center p-4 text-center sm:p-0 pointer-events-none">
+        <div class="pointer-events-auto relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-3xl border border-gray-100" onclick="event.stopPropagation()">
             
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-6 py-4 flex items-center justify-between text-white">
@@ -125,14 +126,27 @@
 </div>
 
 <script>
-function openPartialDispatchModal() {
-    document.getElementById('partialDispatchModal').classList.remove('hidden');
+window.openPartialDispatchModal = function() {
+    const modal = document.getElementById('partialDispatchModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        document.body.classList.add('overflow-hidden');
+    }
     updateDispatchSummary();
-}
+};
 
-function closePartialDispatchModal() {
-    document.getElementById('partialDispatchModal').classList.add('hidden');
-}
+window.closePartialDispatchModal = function() {
+    const modal = document.getElementById('partialDispatchModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        document.body.classList.remove('overflow-hidden');
+    }
+};
+
+function openPartialDispatchModal() { window.openPartialDispatchModal(); }
+function closePartialDispatchModal() { window.closePartialDispatchModal(); }
 
 function toggleAllDispatchItems(check) {
     document.querySelectorAll('.dispatch-product-checkbox').forEach(cb => cb.checked = check);
@@ -154,7 +168,8 @@ function proceedPartialDispatch() {
         return;
     }
 
-    const docType = document.querySelector('input[name="dispatch_doc_type"]:checked').value || 'INV';
+    const docTypeInput = document.querySelector('input[name="dispatch_doc_type"]:checked');
+    const docType = docTypeInput ? docTypeInput.value : 'INV';
     const prodIds = selectedCheckboxes.map(cb => cb.value).join(',');
     
     // Build query params including custom quantities
