@@ -895,17 +895,22 @@
                 {# ──────── TAB: MILESTONES ──────── #}
                 <div class="tab-pane" :class="activeTab==='milestones'?'active':''">
                     <div class="glass p-5 rounded-2xl space-y-4">
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-700/60">
                             <div>
                                 <h4 class="text-xs font-bold text-gray-200">Payment Stages</h4>
-                                <p class="text-[11px] text-gray-400">Enter either Amount (₹) or Percentage (%) for each stage.</p>
+                                <p class="text-[11px] text-gray-400">Specify stage amounts or calculate percentages for Proforma Invoice.</p>
                             </div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer bg-slate-800/90 hover:bg-slate-700/80 px-2.5 py-1.5 rounded-lg border border-slate-600/80 transition text-xs select-none">
+                                    <input type="checkbox" x-model="showMilestonePercentages" @change="onToggleMilestonePercentages()"
+                                        class="rounded bg-slate-900 border-slate-500 text-blue-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer">
+                                    <span class="text-gray-200 font-medium text-[11px]">Calculate &amp; Show Percentage (%)</span>
+                                </label>
                                 <button type="button" @click="splitMilestonesEvenly()"
-                                    class="text-[11px] text-slate-300 hover:text-white font-medium px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-600 transition"
+                                    class="text-[11px] text-slate-300 hover:text-white font-medium px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-600 transition"
                                     title="Split grand total evenly across all stages">Split Evenly</button>
                                 <button type="button" @click="addMilestone()"
-                                    class="text-xs text-blue-400 hover:text-blue-300 font-semibold px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition border border-blue-500/30">+ Add Stage</button>
+                                    class="text-xs text-blue-400 hover:text-blue-300 font-semibold px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition border border-blue-500/30">+ Add Stage</button>
                             </div>
                         </div>
                         <template x-for="(m, idx) in milestones" :key="idx">
@@ -916,7 +921,7 @@
                                 <label class="block text-[10px] text-gray-400 mb-0.5">Stage Label</label>
                                 <input type="text" x-model="m.label" @input="autoUpdateTerms()" placeholder="e.g. Advance with PO"
                                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs mb-2 focus:border-blue-500 focus:outline-none">
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid gap-2" :class="showMilestonePercentages ? 'grid-cols-2' : 'grid-cols-1'">
                                     <div>
                                         <label class="block text-[10px] text-gray-400 mb-0.5 font-medium">Amount (₹)</label>
                                         <div class="relative">
@@ -927,7 +932,7 @@
                                                 class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-6 pr-2 py-1.5 text-white text-xs font-mono font-semibold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none">
                                         </div>
                                     </div>
-                                    <div>
+                                    <div x-show="showMilestonePercentages">
                                         <label class="block text-[10px] text-gray-400 mb-0.5 font-medium">Percentage (%)</label>
                                         <div class="relative">
                                             <input type="number" step="any" min="0" max="100" x-model.number="m.percentage"
@@ -952,7 +957,7 @@
                                     <span class="text-gray-400 text-[11px]"> / ₹ <span x-text="fmtNum(grandTotal)"></span></span>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center justify-between text-xs" x-show="showMilestonePercentages">
                                 <span class="text-gray-400 font-medium">Total Percentage:</span>
                                 <span class="font-mono font-semibold"
                                     :class="isMilestonesBalanced() ? 'text-emerald-400' : 'text-amber-400'"
@@ -964,7 +969,7 @@
                                 <template x-if="isMilestonesBalanced()">
                                     <div class="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-medium">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        <span>Matched 100% of Document Total</span>
+                                        <span x-text="showMilestonePercentages ? 'Matched 100% of Document Total' : 'Total Amount Matches Document Total'"></span>
                                     </div>
                                 </template>
                                 <template x-if="!isMilestonesBalanced()">
@@ -1318,7 +1323,7 @@
                             <div class="totals-box mt-2">
                                 <template x-for="(m, idx) in milestones" :key="idx">
                                     <div class="tot-row">
-                                        <span class="tot-label text-xs" x-text="m.label + ' @ ' + m.percentage + '%'"></span>
+                                        <span class="tot-label text-xs" x-text="m.label + (showMilestonePercentages && m.percentage ? (' @ ' + m.percentage + '%') : '')"></span>
                                         <span class="tot-val text-xs"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(m.amount)"></span></span>
                                     </div>
                                 </template>
@@ -2490,6 +2495,7 @@ function documentForm() {
         dropdownPos: { bottom: 0, left: 0, width: 280 },
 
         milestones: {{ milestones_json|safe }},
+        showMilestonePercentages: true,
 
         // ── init ────────────────────────────────────────────────────
         init() {
@@ -2680,8 +2686,14 @@ function documentForm() {
                 }
             });
 
-            if (this.docType === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
-            else if (this.milestones.length > 0) this.updateMilestoneAmounts();
+            if (this.docType === 'PRO' && this.milestones.length === 0) {
+                this.loadDefaultMilestones();
+            } else if (this.milestones.length > 0) {
+                const hasFalse = this.milestones.some(m => m.show_percentage === false);
+                const hasTrue = this.milestones.some(m => m.show_percentage === true || (m.percentage && parseFloat(m.percentage) > 0));
+                this.showMilestonePercentages = !(hasFalse && !hasTrue);
+                this.updateMilestoneAmounts();
+            }
 
             // Load all products once for client-side autocomplete
             this.initProducts();
@@ -3094,7 +3106,15 @@ function documentForm() {
             if (paymentTerm) {
                 if (this.docType === 'PRO' && this.milestones && this.milestones.length > 0) {
                     let summary = this.milestones
-                        .map(m => `${m.percentage}% ${m.label}`)
+                        .map(m => {
+                            if (this.showMilestonePercentages && m.percentage) {
+                                return `${m.percentage}% ${m.label}`;
+                            } else if (m.amount) {
+                                return `${m.label}: ${this.currencySymbol()} ${this.fmtNum(m.amount)}`;
+                            } else {
+                                return m.label;
+                            }
+                        })
                         .join(', ');
                     if (paymentTerm.value !== summary) {
                         paymentTerm.value = summary;
@@ -3583,12 +3603,24 @@ function documentForm() {
 
                 // ── milestones ──────────────────────────────────────────────
         _lastMilestoneGrandTotal: null,
+        onToggleMilestonePercentages() {
+            this.milestones.forEach(m => {
+                m.show_percentage = this.showMilestonePercentages;
+                if (this.showMilestonePercentages) {
+                    const amt = parseFloat(m.amount) || 0;
+                    if ((!m.percentage || m.percentage === 0) && amt > 0 && this.grandTotal > 0) {
+                        m.percentage = parseFloat(((amt / this.grandTotal) * 100).toFixed(4));
+                    }
+                }
+            });
+            this.autoUpdateTerms();
+        },
         loadDefaultMilestones() {
             this.milestones = [
-                { label: 'Advance with Po amount', percentage: 40, amount: 0 },
-                { label: 'After Receipt of Good', percentage: 30, amount: 0 },
-                { label: 'After Machine installation, Commissioning', percentage: 20, amount: 0 },
-                { label: 'After Training & Project Handover', percentage: 10, amount: 0 }
+                { label: 'Advance with Po amount', percentage: 40, amount: 0, show_percentage: this.showMilestonePercentages },
+                { label: 'After Receipt of Good', percentage: 30, amount: 0, show_percentage: this.showMilestonePercentages },
+                { label: 'After Machine installation, Commissioning', percentage: 20, amount: 0, show_percentage: this.showMilestonePercentages },
+                { label: 'After Training & Project Handover', percentage: 10, amount: 0, show_percentage: this.showMilestonePercentages }
             ];
             this.updateMilestoneAmounts(true);
         },
@@ -3598,11 +3630,12 @@ function documentForm() {
                 const curTotal = this.milestones.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
                 remAmt = Math.max(0, Math.round((this.grandTotal - curTotal) * 100) / 100);
             }
-            const remPct = this.grandTotal > 0 ? parseFloat(((remAmt / this.grandTotal) * 100).toFixed(4)) : 0;
+            const remPct = (this.showMilestonePercentages && this.grandTotal > 0) ? parseFloat(((remAmt / this.grandTotal) * 100).toFixed(4)) : 0;
             this.milestones.push({
                 label: 'New Stage',
                 percentage: remPct,
-                amount: remAmt
+                amount: remAmt,
+                show_percentage: this.showMilestonePercentages
             });
             this.autoUpdateTerms();
         },
@@ -3611,15 +3644,19 @@ function documentForm() {
             this.autoUpdateTerms();
         },
         onMilestoneAmountChange(m) {
+            m.show_percentage = this.showMilestonePercentages;
             const amt = parseFloat(m.amount) || 0;
-            if (this.grandTotal > 0) {
-                m.percentage = parseFloat(((amt / this.grandTotal) * 100).toFixed(4));
-            } else {
-                m.percentage = 0;
+            if (this.showMilestonePercentages) {
+                if (this.grandTotal > 0) {
+                    m.percentage = parseFloat(((amt / this.grandTotal) * 100).toFixed(4));
+                } else {
+                    m.percentage = 0;
+                }
             }
             this.autoUpdateTerms();
         },
         onMilestonePercentageChange(m) {
+            m.show_percentage = this.showMilestonePercentages;
             const pct = parseFloat(m.percentage) || 0;
             if (this.grandTotal > 0) {
                 m.amount = Math.round(((pct / 100) * this.grandTotal) * 100) / 100;
@@ -3632,15 +3669,18 @@ function documentForm() {
             if (!this.milestones || this.milestones.length === 0) return;
             const grandTotalChanged = this._lastMilestoneGrandTotal !== null && this._lastMilestoneGrandTotal !== this.grandTotal;
             this.milestones.forEach(m => {
+                if (m.show_percentage === undefined) {
+                    m.show_percentage = this.showMilestonePercentages;
+                }
                 const pct = parseFloat(m.percentage) || 0;
                 const amt = parseFloat(m.amount) || 0;
                 if ((amt === 0 && pct > 0) || grandTotalChanged || force) {
                     if (pct > 0) {
                         m.amount = Math.round(((pct / 100) * this.grandTotal) * 100) / 100;
-                    } else if (amt > 0 && this.grandTotal > 0) {
+                    } else if (amt > 0 && this.grandTotal > 0 && this.showMilestonePercentages) {
                         m.percentage = parseFloat(((amt / this.grandTotal) * 100).toFixed(4));
                     }
-                } else if (pct === 0 && amt > 0 && this.grandTotal > 0) {
+                } else if (pct === 0 && amt > 0 && this.grandTotal > 0 && this.showMilestonePercentages) {
                     m.percentage = parseFloat(((amt / this.grandTotal) * 100).toFixed(4));
                 }
             });
@@ -3658,8 +3698,11 @@ function documentForm() {
         isMilestonesBalanced() {
             if (!this.milestones || this.milestones.length === 0) return true;
             const diffAmt = Math.abs(this.grandTotal - this.totalMilestoneAmount());
-            const diffPct = Math.abs(100 - this.totalMilestonePercentage());
-            return diffAmt <= 0.50 || diffPct <= 0.05;
+            if (this.showMilestonePercentages) {
+                const diffPct = Math.abs(100 - this.totalMilestonePercentage());
+                return diffAmt <= 0.50 || diffPct <= 0.05;
+            }
+            return diffAmt <= 0.50;
         },
         autoBalanceMilestones() {
             if (!this.milestones || this.milestones.length === 0 || this.grandTotal <= 0) return;
@@ -3670,8 +3713,11 @@ function documentForm() {
             }
             const remAmount = Math.max(0, Math.round((this.grandTotal - sumOtherAmounts) * 100) / 100);
             this.milestones[lastIdx].amount = remAmount;
-            const pct = (remAmount / this.grandTotal) * 100;
-            this.milestones[lastIdx].percentage = parseFloat(pct.toFixed(4));
+            if (this.showMilestonePercentages) {
+                const pct = (remAmount / this.grandTotal) * 100;
+                this.milestones[lastIdx].percentage = parseFloat(pct.toFixed(4));
+            }
+            this.milestones[lastIdx].show_percentage = this.showMilestonePercentages;
             this.autoUpdateTerms();
         },
         splitMilestonesEvenly() {
@@ -3685,7 +3731,10 @@ function documentForm() {
                     m.amount = Math.round((this.grandTotal / count) * 100) / 100;
                     allocatedAmt += m.amount;
                 }
-                m.percentage = parseFloat(((m.amount / this.grandTotal) * 100).toFixed(4));
+                if (this.showMilestonePercentages) {
+                    m.percentage = parseFloat(((m.amount / this.grandTotal) * 100).toFixed(4));
+                }
+                m.show_percentage = this.showMilestonePercentages;
             });
             this.autoUpdateTerms();
         },
