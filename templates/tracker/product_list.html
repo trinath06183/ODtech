@@ -9,6 +9,45 @@
     }
 </style>
 
+<script>
+    // Early global modal helpers to guarantee immediate button responsiveness
+    window.openVendorRfqModal = function() {
+        const modal = document.getElementById('vendorRfqModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.classList.add('overflow-hidden');
+        }
+        if (typeof loadOrderRfqs === 'function') {
+            try { loadOrderRfqs(); } catch(e) { console.warn(e); }
+        }
+    };
+    window.closeVendorRfqModal = function() {
+        const modal = document.getElementById('vendorRfqModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+    window.openPartialDispatchModal = function() {
+        const modal = document.getElementById('partialDispatchModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'block';
+            document.body.classList.add('overflow-hidden');
+        }
+    };
+    window.closePartialDispatchModal = function() {
+        const modal = document.getElementById('partialDispatchModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+</script>
+
 <div id="product-list-app" x-data="productListApp()"
     @refresh-product-modal.window="openProductModal($event.detail.productId)"
     @keydown.left.window="if (productModalOpen) navigateProduct('prev')"
@@ -29,7 +68,15 @@
                             d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
                 </a>
-                {% if lot %}Lot: {{ lot.lot_name }}{% else %}Order: {{ order.order_number }}{% endif %}
+                {% if lot %}
+            <button type="button" onclick="window.openSharePreview && window.openSharePreview()"
+                class="inline-flex items-center px-3 py-2 border border-indigo-200 shadow-xs text-xs font-semibold rounded-lg text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors cursor-pointer"
+                title="Share product details & export JPG">
+                <svg class="h-4 w-4 mr-1.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share Details (JPG)
+            </button>Lot: {{ lot.lot_name }}{% else %}Order: {{ order.order_number }}{% endif %}
                 {% if linked_documents %}
                 <a href="#linked-documents-section" class="ml-2 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-300/80 rounded-full text-xs font-bold hover:bg-indigo-100 hover:border-indigo-400 transition-all shadow-sm">
                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
@@ -89,6 +136,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
                 Generate Bill / DC
+            </button>
+            <button type="button" onclick="window.openSharePreview && window.openSharePreview()"
+                class="inline-flex items-center px-3 py-2 border border-indigo-200 shadow-xs text-xs font-semibold rounded-lg text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors cursor-pointer"
+                title="Share product details & export JPG">
+                <svg class="h-4 w-4 mr-1.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share Details (JPG)
             </button>
             <a href="{% url 'tracker:lot_create' order.id %}"
                 class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-xs text-xs font-semibold rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
@@ -863,7 +918,7 @@
                             data-selling-price-inc="{{ product.selling_price_inc_gst|default:0 }}"
                             data-has-price="{% if product.cached_selected_supplier and product.cached_selected_supplier.base_price > 0 %}true{% elif product.buying_price_ex_gst and product.buying_price_ex_gst > 0 %}true{% else %}false{% endif %}"
                             data-purchased="{% if product.is_purchased %}true{% else %}false{% endif %}"
-                            data-status="{{ product.status }}" data-product-id="{{ product.id }}"
+                            data-status="{{ product.status }}" data-product-id="{{ product.id }}" data-image="{% if product.photo_or_document %}{{ product.photo_or_document.url }}{% endif %}"
                             data-stage="{{ product.product_stage|default:'' }}">
 
                             <!-- Bulk checkbox -->
@@ -2128,22 +2183,20 @@
                     <table class="min-w-full border-collapse" id="share-preview-table">
                         <thead>
                             <tr class="bg-gradient-to-r from-sky-600 to-indigo-600">
-                                <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tl-lg">
-                                    Sl. No.</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                <th class="px-3 py-3 text-center text-xs font-bold text-white uppercase tracking-wider rounded-tl-lg" style="width:55px;">
+                                    #</th>
+                                <th class="px-3 py-3 text-center text-xs font-bold text-white uppercase tracking-wider" style="width:70px;">
+                                    Image</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider" style="min-width:140px;">
                                     Product Name</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                                    Make/Model</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                                    Description</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
-                                    Remark</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider" style="min-width:200px;">
+                                    Specifications</th>
+                                <th class="px-3 py-3 text-left text-xs font-bold text-white uppercase tracking-wider" style="width:80px;">
                                     Quantity</th>
-                                <th
-                                    class="px-4 py-3 text-center text-xs font-bold text-white uppercase tracking-wider rounded-tr-lg">
+                                <th class="px-3 py-3 text-center text-xs font-bold text-white uppercase tracking-wider" style="width:70px;">
                                     UOM</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider rounded-tr-lg" style="min-width:120px;">
+                                    Remark</th>
                             </tr>
                         </thead>
                         <tbody id="share-preview-tbody" class="divide-y divide-gray-100">
@@ -2175,6 +2228,15 @@
                             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm">
                             Close
                         </button>
+                        <button type="button" onclick="downloadShareAsJPG()" id="share-btn-jpg"
+                            class="share-dl-btn inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm"
+                            title="Download formatted product catalog specification sheet as high quality JPG">
+                            <svg id="share-btn-jpg-icon" class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span id="share-btn-jpg-label">Download JPG</span>
+                        </button>
                         <button type="button" onclick="downloadShareAsImage()" id="share-btn-image"
                             class="share-dl-btn inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 transition-colors shadow-sm">
                             <svg id="share-btn-image-icon" class="h-4 w-4 flex-shrink-0" fill="none"
@@ -2182,7 +2244,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span id="share-btn-image-label">Download Image</span>
+                            <span id="share-btn-image-label">Download PNG</span>
                         </button>
                         <button type="button" onclick="downloadShareAsExcel()" id="share-btn-excel"
                             class="share-dl-btn inline-flex items-center gap-2 px-4 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm">
@@ -4456,9 +4518,35 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script>
     (function () {
-        // ── Collect data from selected checkboxes ──
+        // ── Convert image URL to Base64 to avoid canvas tainting ──
+        async function toBase64Image(src) {
+            if (!src) return '';
+            if (src.startsWith('data:')) return src;
+            try {
+                const resp = await fetch(src);
+                const blob = await resp.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = () => resolve(src);
+                    reader.readAsDataURL(blob);
+                });
+            } catch(e) {
+                return src;
+            }
+        }
+
+        // ── Collect data from selected checkboxes (auto-select all if none checked) ──
         function getSelectedProductsData() {
-            const checked = Array.from(document.querySelectorAll('.product-checkbox:checked'));
+            let checked = Array.from(document.querySelectorAll('.product-checkbox:checked'));
+            if (checked.length === 0) {
+                // Auto-select all products if none are explicitly ticked
+                const allCbs = Array.from(document.querySelectorAll('.product-checkbox'));
+                if (allCbs.length > 0) {
+                    allCbs.forEach(cb => cb.checked = true);
+                    checked = allCbs;
+                }
+            }
             if (checked.length === 0) return [];
 
             return checked.map(cb => {
@@ -4473,6 +4561,13 @@
                 const nameLink = row.querySelector('a[href="javascript:void(0)"]');
                 const itemName = nameLink ? nameLink.textContent.trim() : (row.dataset.name || '');
 
+                // Image URL
+                let imageUrl = row.dataset.image || '';
+                if (!imageUrl) {
+                    const imgEl = row.querySelector('td img');
+                    if (imgEl && imgEl.src) imageUrl = imgEl.src;
+                }
+
                 return {
                     slNo: slNo,
                     itemName: itemName,
@@ -4481,11 +4576,12 @@
                     remark: row.dataset.remark || '',
                     quantity: row.dataset.qty || '',
                     uom: row.dataset.uom || '',
+                    imageUrl: imageUrl,
                 };
             }).filter(Boolean);
         }
 
-        // ── Render table rows ──
+        // ── Render table rows with image & rich specs ──
         function renderShareTable(products) {
             const tbody = document.getElementById('share-preview-tbody');
             const tfoot = document.getElementById('share-preview-tfoot');
@@ -4518,15 +4614,31 @@
                 const isEven = idx % 2 === 0;
                 const tr = document.createElement('tr');
                 tr.className = isEven ? 'bg-white hover:bg-sky-50/40 transition-colors' : 'bg-slate-50/60 hover:bg-sky-50/40 transition-colors';
+
+                const imgCell = p.imageUrl
+                    ? `<img src="${p.imageUrl}" alt="${escHtml(p.itemName)}" crossOrigin="anonymous" class="h-12 w-12 rounded-lg object-cover border border-gray-200 shadow-xs mx-auto" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block;" />`
+                    : `<div class="h-12 w-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center text-[10px] text-gray-400 font-medium mx-auto" style="width:48px;height:48px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;">No Image</div>`;
+
+                const specsParts = [];
+                if (p.makeOrModel) {
+                    specsParts.push(`<div class="mb-1"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">${escHtml(p.makeOrModel)}</span></div>`);
+                }
+                if (p.description) {
+                    specsParts.push(`<div class="text-xs text-gray-600 leading-relaxed">${escHtml(p.description)}</div>`);
+                }
+                const specsHtml = specsParts.join('') || '<span class="text-gray-300 italic text-xs">&mdash;</span>';
+
                 tr.innerHTML = `
-                <td class="px-4 py-3 text-sm font-semibold text-gray-700 align-top">${escHtml(p.slNo)}</td>
-                <td class="px-4 py-3 text-sm font-medium text-gray-900 align-top break-words" style="min-width:120px;max-width:220px;white-space:normal;word-break:break-word">${escHtml(p.itemName)}</td>
-                <td class="px-4 py-3 text-sm text-gray-600 align-top break-words" style="min-width:120px;max-width:200px;white-space:normal;word-break:break-word">${escHtml(p.makeOrModel) || '<span class="text-gray-300 italic text-xs">&mdash;</span>'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600 align-top break-words" style="min-width:160px;max-width:300px;white-space:normal;word-break:break-word">${escHtml(p.description) || '<span class="text-gray-300 italic text-xs">&mdash;</span>'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600 align-top break-words" style="min-width:140px;max-width:260px;white-space:normal;word-break:break-word">${escHtml(p.remark) || '<span class="text-gray-300 italic text-xs">&mdash;</span>'}</td>
-                <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-left align-top">${escHtml(p.quantity)}</td>
-                <td class="px-4 py-3 text-sm font-medium text-sky-700 align-top text-center">${escHtml(p.uom) || '&mdash;'}</td>
-            `;
+                    <td class="px-3 py-3 text-xs font-bold text-gray-700 align-middle text-center">${escHtml(p.slNo)}</td>
+                    <td class="px-2 py-3 align-middle text-center">${imgCell}</td>
+                    <td class="px-4 py-3 text-sm font-bold text-gray-900 align-middle break-words" style="min-width:140px;max-width:240px;white-space:normal;word-break:break-word">${escHtml(p.itemName)}</td>
+                    <td class="px-4 py-3 text-xs text-gray-600 align-middle break-words" style="min-width:180px;max-width:320px;white-space:normal;word-break:break-word">${specsHtml}</td>
+                    <td class="px-3 py-3 text-sm font-bold text-gray-900 align-middle text-left">${escHtml(p.quantity)}</td>
+                    <td class="px-3 py-3 text-xs font-bold text-sky-700 align-middle text-center">
+                        <span class="inline-block px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 text-[11px] font-semibold">${escHtml(p.uom) || '&mdash;'}</span>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-gray-500 align-middle break-words" style="min-width:110px;max-width:200px;white-space:normal;word-break:break-word">${escHtml(p.remark) || '<span class="text-gray-300 italic text-xs">&mdash;</span>'}</td>
+                `;
                 tbody.appendChild(tr);
             });
 
@@ -4535,10 +4647,10 @@
             tfootTr.className = 'border-t-2 border-sky-300';
             tfootTr.style.background = 'linear-gradient(to right, rgba(14,165,233,0.12), rgba(99,102,241,0.12))';
             tfootTr.innerHTML = `
-            <td colspan="5" class="px-4 py-3 text-sm font-bold text-sky-800">Total (${products.length} item${products.length > 1 ? 's' : ''})</td>
-            <td class="px-4 py-3 text-sm font-bold text-gray-900 text-left">${totalQty}</td>
-            <td class="px-4 py-3 text-sm text-gray-500 text-center text-xs">&mdash;</td>
-        `;
+                <td colspan="4" class="px-4 py-3 text-sm font-bold text-sky-800">Total (${products.length} item${products.length > 1 ? 's' : ''})</td>
+                <td class="px-3 py-3 text-sm font-bold text-gray-900 text-left">${totalQty}</td>
+                <td colspan="2" class="px-4 py-3 text-sm text-gray-500 text-center text-xs">&mdash;</td>
+            `;
             tfoot.appendChild(tfootTr);
         }
 
@@ -4599,12 +4711,14 @@
         // ── Button loading state helpers ──
         const _SPIN_SVG = `<svg class="animate-spin h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>`;
         const _BTN_META = {
-            image: { id: 'share-btn-image', label: 'Generating…' },
+            jpg: { id: 'share-btn-jpg', label: 'Generating JPG…' },
+            image: { id: 'share-btn-image', label: 'Generating PNG…' },
             excel: { id: 'share-btn-excel', label: 'Generating…' },
             pdf: { id: 'share-btn-pdf', label: 'Generating…' },
         };
         const _BTN_DEFAULTS = {
-            image: { iconId: 'share-btn-image-icon', labelId: 'share-btn-image-label', labelText: 'Download Image' },
+            jpg: { iconId: 'share-btn-jpg-icon', labelId: 'share-btn-jpg-label', labelText: 'Download JPG' },
+            image: { iconId: 'share-btn-image-icon', labelId: 'share-btn-image-label', labelText: 'Download PNG' },
             excel: { iconId: 'share-btn-excel-icon', labelId: 'share-btn-excel-label', labelText: 'Download Excel' },
             pdf: { iconId: 'share-btn-pdf-icon', labelId: 'share-btn-pdf-label', labelText: 'Download PDF' },
         };
@@ -4644,6 +4758,7 @@
 
         function _getOriginalIcon(type) {
             const icons = {
+                jpg: `<svg id="share-btn-jpg-icon" class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
                 image: `<svg id="share-btn-image-icon" class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
                 excel: `<svg id="share-btn-excel-icon" class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
                 pdf: `<svg id="share-btn-pdf-icon" class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
@@ -4757,6 +4872,150 @@
             } catch (e) {
                 console.error('PDF export error:', e);
                 alert('Failed to generate PDF. Please try again.');
+            } finally {
+                hideExportOverlay(success);
+                setTimeout(() => setShareButtonsLoading(false), success ? 900 : 0);
+            }
+        };
+
+        // ── Download as JPG via html2canvas ──
+        window.downloadShareAsJPG = async function () {
+            const table = document.getElementById('share-preview-table');
+            if (!table || table.classList.contains('hidden')) {
+                if (window.showGlobalNotification) window.showGlobalNotification('No products to export.', 'warning');
+                else alert('No products to export.');
+                return;
+            }
+
+            setShareButtonsLoading(true, 'jpg');
+            showExportOverlay('Preparing JPG specification sheet…', 'image');
+            let success = false;
+            try {
+                await loadScript('{% static "vendor/js/html2canvas.min.js" %}');
+                advanceExportStep('Processing image assets…');
+
+                const dateStr = new Date().toLocaleString();
+
+                // Build off-screen render element with high aesthetic quality
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = [
+                    'position:absolute', 'top:-99999px', 'left:-99999px',
+                    'background:#ffffff',
+                    'font-family:ui-sans-serif,system-ui,-apple-system,sans-serif',
+                    'padding:36px', 'width:1080px', 'box-sizing:border-box',
+                ].join(';');
+
+                const headerBar = document.createElement('div');
+                headerBar.style.cssText = [
+                    'background:linear-gradient(135deg,#1e1b4b,#4338ca)',
+                    'border-radius:14px 14px 0 0',
+                    'padding:20px 24px',
+                    'display:flex', 'align-items:center', 'justify-content:space-between',
+                ].join(';');
+                headerBar.innerHTML = `
+                    <div>
+                        <div style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:-0.02em;">ODtech &bull; Product Details</div>
+                        <div style="color:#c7d2fe;font-size:12px;margin-top:3px;font-weight:500;">
+                            {% if order %}Order: <strong>{{ order.order_number }}</strong>{% if order.project_name %} &bull; Project: {{ order.project_name }}{% endif %}{% endif %}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="display:inline-block;padding:4px 12px;background:rgba(255,255,255,0.18);color:#ffffff;border-radius:9999px;font-size:11px;font-weight:700;">
+                            Specification Sheet
+                        </div>
+                        <div style="color:#a5b4fc;font-size:11px;margin-top:4px;">${escHtml(dateStr)}</div>
+                    </div>
+                `;
+
+                const clonedTable = table.cloneNode(true);
+                clonedTable.style.cssText = [
+                    'width:100%', 'border-collapse:collapse',
+                    'font-size:12px', 'table-layout:fixed',
+                ].join(';');
+
+                // In-line all images as base64 to prevent canvas taint issues
+                const imgElements = clonedTable.querySelectorAll('img');
+                for (let img of imgElements) {
+                    if (img.src) {
+                        try {
+                            const b64 = await toBase64Image(img.src);
+                            if (b64) img.src = b64;
+                        } catch(e) {
+                            console.warn('Image convert failed', e);
+                        }
+                    }
+                }
+
+                clonedTable.querySelectorAll('td, th').forEach(cell => {
+                    cell.style.whiteSpace = 'normal';
+                    cell.style.wordBreak = 'break-word';
+                    cell.style.overflow = 'visible';
+                    cell.style.textOverflow = 'unset';
+                    cell.style.maxWidth = 'none';
+                    cell.classList.remove('truncate', 'line-clamp-1', 'line-clamp-2', 'line-clamp-3', 'whitespace-nowrap');
+                });
+
+                // Style thead
+                const theadTr = clonedTable.querySelector('thead tr');
+                if (theadTr) {
+                    theadTr.style.background = 'linear-gradient(135deg,#312e81,#4f46e5)';
+                    theadTr.querySelectorAll('th').forEach(th => {
+                        th.style.cssText = 'padding:12px 10px;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;border:none;text-align:left;';
+                    });
+                }
+
+                // Style tbody
+                clonedTable.querySelectorAll('tbody tr').forEach((tr, idx) => {
+                    tr.style.background = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    tr.querySelectorAll('td').forEach(td => {
+                        td.style.cssText = 'padding:10px;border-bottom:1px solid #e2e8f0;vertical-align:middle;color:#1e293b;font-size:12px;';
+                    });
+                });
+
+                // Style tfoot
+                clonedTable.querySelectorAll('tfoot tr').forEach(tr => {
+                    tr.style.background = 'rgba(79,70,229,0.08)';
+                    tr.querySelectorAll('td').forEach(td => {
+                        td.style.cssText = 'padding:12px 10px;font-weight:700;color:#3730a3;border-top:2px solid #818cf8;font-size:12px;';
+                    });
+                });
+
+                const tableWrap = document.createElement('div');
+                tableWrap.style.cssText = 'border-radius:0 0 14px 14px;overflow:hidden;border:1px solid #e2e8f0;border-top:none;';
+                tableWrap.appendChild(clonedTable);
+                wrapper.appendChild(headerBar);
+                wrapper.appendChild(tableWrap);
+                document.body.appendChild(wrapper);
+
+                advanceExportStep('Rendering high-res JPG…');
+
+                const canvas = await html2canvas(wrapper, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    windowWidth: 1200,
+                });
+
+                document.body.removeChild(wrapper);
+                advanceExportStep('Saving JPG…');
+
+                const cleanOrder = ('{{ order.order_number|default:"Export" }}').replace(/[^a-zA-Z0-9_-]/g, '_');
+                const filename = `Product_Details_${cleanOrder}_${new Date().toISOString().slice(0, 10)}.jpg`;
+
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+                success = true;
+
+                if (window.showGlobalNotification) {
+                    window.showGlobalNotification('JPG downloaded successfully!', 'success');
+                }
+            } catch (e) {
+                console.error('JPG export error:', e);
+                alert('Failed to generate JPG. Please try again.');
             } finally {
                 hideExportOverlay(success);
                 setTimeout(() => setShareButtonsLoading(false), success ? 900 : 0);
