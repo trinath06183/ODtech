@@ -243,15 +243,15 @@
         <!-- Header -->
         <div class="header-banner">
             <h1>{{ company_name|default:"ODtech Solutions" }}</h1>
-            <div class="tagline">Daily Expense Updates &amp; Status Digest</div>
-            <div class="date-badge">Summary Date: {{ report_date }} (4:00 AM IST Digest)</div>
+            <div class="tagline">Your Personal Daily Expense Digest</div>
+            <div class="date-badge">Your Expense Status Updates for {{ report_date }} (4:00 AM IST)</div>
         </div>
 
         <!-- Content -->
         <div class="content-body">
             <div class="greeting">Hello <strong>{{ recipient_name }}</strong>,</div>
             <div class="intro-text">
-                Here is the consolidated daily summary of your expenses that were entered, approved, or updated on <strong>{{ report_date }}</strong>:
+                Here is the consolidated daily summary of <strong>your personal expense claims</strong> that were entered, approved, or marked as paid on <strong>{{ report_date }}</strong>:
             </div>
 
             <!-- Mini KPI Summary -->
@@ -363,3 +363,4 @@
 </div>
 </body>
 </html>
+

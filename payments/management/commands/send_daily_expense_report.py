@@ -234,6 +234,8 @@ class Command(BaseCommand):
             )
 
             activity_expenses = Expense.objects.select_related('submitted_by', 'approved_by').filter(user_activity_q).distinct()
+            if not activity_expenses.exists() and include_all:
+                activity_expenses = expenses_qs
             
             # Group by user (submitted_by)
             user_map = {}
