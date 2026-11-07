@@ -58,6 +58,20 @@
                 </div>
 
                 <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Daily Expense Report Email (4:00 AM)</label>
+                    <div class="flex gap-2.5">
+                        <input type="email" id="expense_report_email_input" name="expense_report_email" value="{{ company.expense_report_email|default:'' }}" placeholder="accounts@odtechsolutions.com"
+                               class="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
+                        <button type="button" id="btnSendTestExpenseReport" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            <span>Send Test Report</span>
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">Every day at 4:00 AM IST, a detailed summary of all expense entries with an attached CSV spreadsheet will be sent to this email address. If left blank, it will automatically fall back to the Admin Backup Email.</p>
+                    <div id="expense-report-test-feedback" class="mt-2 text-xs font-medium hidden"></div>
+                </div>
+
+                <div class="sm:col-span-2">
                     <label class="block text-sm font-medium text-gray-300 mb-2">GST API Key (RapidAPI)</label>
                     <input type="text" name="gst_api_key" value="{{ company.gst_api_key|default:'' }}" placeholder="Enter RapidAPI Key (e.g. for GST Insights API)"
                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-mono placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 shadow-sm transition">
@@ -322,6 +336,59 @@ Reg. Ofc: Plot No. 3551, At-Talua, Po-Saudia, Dist- Jajpur, Odisha, India -75429
         if (checked) {
             document.getElementById('fmt-preview').textContent = buildPreview(checked.value);
             highlightSelected(checked.value);
+        }
+
+        // Send Test Expense Report handler
+        const btnTestReport = document.getElementById('btnSendTestExpenseReport');
+        const feedbackDiv = document.getElementById('expense-report-test-feedback');
+        if (btnTestReport) {
+            btnTestReport.addEventListener('click', function () {
+                const emailInput = document.getElementById('expense_report_email_input');
+                const emailVal = emailInput ? emailInput.value.trim() : '';
+                
+                btnTestReport.disabled = true;
+                const origHtml = btnTestReport.innerHTML;
+                btnTestReport.innerHTML = `<svg class="animate-spin w-4 h-4 text-white inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Sending...</span>`;
+                
+                if (feedbackDiv) {
+                    feedbackDiv.className = 'mt-2 text-xs font-medium text-blue-400 block';
+                    feedbackDiv.textContent = 'Generating report and sending email...';
+                }
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+                const formData = new FormData();
+                if (emailVal) formData.append('email', emailVal);
+
+                fetch("{% url 'send_test_expense_report' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btnTestReport.disabled = false;
+                    btnTestReport.innerHTML = origHtml;
+                    if (feedbackDiv) {
+                        if (data.status === 'success') {
+                            feedbackDiv.className = 'mt-2 text-xs font-semibold text-emerald-400 block';
+                            feedbackDiv.textContent = '✓ ' + (data.message || 'Report email sent successfully!');
+                        } else {
+                            feedbackDiv.className = 'mt-2 text-xs font-semibold text-rose-400 block';
+                            feedbackDiv.textContent = '✕ ' + (data.message || 'Failed to send report.');
+                        }
+                    }
+                })
+                .catch(err => {
+                    btnTestReport.disabled = false;
+                    btnTestReport.innerHTML = origHtml;
+                    if (feedbackDiv) {
+                        feedbackDiv.className = 'mt-2 text-xs font-semibold text-rose-400 block';
+                        feedbackDiv.textContent = '✕ Error: ' + err.message;
+                    }
+                });
+            });
         }
     });
 })();

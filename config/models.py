@@ -56,6 +56,11 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="Admin Backup Email",
         help_text="Email address to receive daily database backups."
     )
+    expense_report_email = models.EmailField(
+        blank=True, null=True,
+        verbose_name="Daily Expense Report Email",
+        help_text="Email address to receive daily reports of all expenses at 4:00 AM."
+    )
     gst_api_key = models.CharField(
         max_length=255, blank=True, null=True,
         verbose_name="GST API Key (RapidAPI)",

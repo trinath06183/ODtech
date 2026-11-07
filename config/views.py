@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.http import JsonResponse
 
 from core.decorators import role_required
 from .models import CompanyProfile
@@ -22,6 +23,7 @@ def settings_view(request):
         allow_document_deletion = request.POST.get('allow_document_deletion') == 'on'
         header_address    = request.POST.get('header_address', '').strip()
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
+        expense_report_email = request.POST.get('expense_report_email', '').strip()
         gst_api_key       = request.POST.get('gst_api_key', '').strip()
         default_currency  = request.POST.get('default_currency', 'INR').strip()
         gst_enabled       = request.POST.get('gst_enabled') == 'on'
@@ -56,6 +58,12 @@ def settings_view(request):
             elif 'admin_backup_email' in request.POST and request.POST['admin_backup_email'].strip() == '':
                 # User explicitly cleared the field
                 company.admin_backup_email = None
+
+            if expense_report_email:
+                company.expense_report_email = expense_report_email
+            elif 'expense_report_email' in request.POST and request.POST['expense_report_email'].strip() == '':
+                # User explicitly cleared the field
+                company.expense_report_email = None
 
             if gst_api_key:
                 company.gst_api_key = gst_api_key
@@ -196,3 +204,30 @@ def company_docs_delete(request, pk):
         doc.delete()
         messages.success(request, 'Document deleted.')
     return redirect('company_folder_view', pk=folder_pk) if folder_pk else redirect('company_docs_list')
+
+
+@role_required('Admin')
+def send_test_expense_report(request):
+    """Trigger an immediate test daily expense report email to the configured email."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+    
+    from django.core.management import call_command
+    import io
+    
+    email_override = request.POST.get('email', '').strip()
+    out = io.StringIO()
+    err = io.StringIO()
+    
+    try:
+        kwargs = {}
+        if email_override:
+            kwargs['email'] = email_override
+        call_command('send_daily_expense_report', stdout=out, stderr=err, **kwargs)
+        output_msg = out.getvalue()
+        if 'ERROR' in output_msg.upper() or 'FAIL' in output_msg.upper():
+            return JsonResponse({'status': 'error', 'message': output_msg.strip() or err.getvalue().strip()})
+        return JsonResponse({'status': 'success', 'message': output_msg.strip() or 'Daily expense report sent successfully!'})
+    except Exception as exc:
+        return JsonResponse({'status': 'error', 'message': str(exc)}, status=500)
+

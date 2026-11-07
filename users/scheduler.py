@@ -46,6 +46,18 @@ def backup_db_job():
         logger.error(f"APScheduler: backup_db failed: {exc}", exc_info=True)
 
 
+def daily_expense_report_job():
+    """APScheduler wrapper for the send_daily_expense_report management command."""
+    from django.core.management import call_command
+    try:
+        logger.info("APScheduler: Running send_daily_expense_report...")
+        call_command('send_daily_expense_report')
+        logger.info("APScheduler: send_daily_expense_report complete.")
+    except Exception as exc:
+        logger.error(f"APScheduler: send_daily_expense_report failed: {exc}", exc_info=True)
+
+
+
 def cleanup_expired_otps_job():
     """Remove expired/used OTP tokens to keep the table clean."""
     from django.utils import timezone
@@ -170,6 +182,17 @@ def start():
         name="Daily system log pruning (older than 90 days)",
         replace_existing=True,
         max_instances=1,
+    )
+
+    # Daily expense report to configured email (at 04:00 AM IST)
+    _scheduler.add_job(
+        daily_expense_report_job,
+        trigger=CronTrigger(hour=4, minute=0, timezone=timezone_str),
+        id="daily_expense_report_job",
+        name="Daily expense entries report to configured email",
+        replace_existing=True,
+        max_instances=1,
+        misfire_grace_time=600,
     )
 
     # Annual FY sequence rollover (April 1st at 00:01 AM IST)

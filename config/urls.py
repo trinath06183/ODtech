@@ -11,6 +11,7 @@ urlpatterns = [
     path('documents/upload/', views.company_docs_upload, name='company_docs_upload_root'),
     path('documents/folder/<int:folder_pk>/upload/', views.company_docs_upload, name='company_docs_upload'),
     path('documents/<int:pk>/delete/', views.company_docs_delete, name='company_docs_delete'),
+    path('send-test-expense-report/', views.send_test_expense_report, name='send_test_expense_report'),
 
     # Backup & Restore Routes
     path('backup/', __import__('config.views_backup', fromlist=['']).backup_manager_view, name='backup_manager'),

@@ -6,7 +6,7 @@ class CompanyProfileForm(forms.ModelForm):
         model = CompanyProfile
         fields = ['name', 'gstin', 'pan', 'logo', 'signature', 'terms_conditions',
                   'invoice_prefix', 'quotation_prefix', 'po_prefix', 'challan_prefix',
-                  'allow_document_deletion', 'admin_backup_email']
+                  'allow_document_deletion', 'admin_backup_email', 'expense_report_email']
 
 from .models import DocumentFolder
 
