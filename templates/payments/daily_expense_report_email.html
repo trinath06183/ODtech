@@ -8,44 +8,43 @@
     body {
         margin: 0;
         padding: 0;
-        background-color: #f4f6f9;
+        background-color: #f1f5f9;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         color: #1e293b;
         -webkit-font-smoothing: antialiased;
     }
-    .wrapper {
+    .email-wrapper {
         width: 100%;
-        background-color: #f4f6f9;
-        padding: 24px 0;
+        background-color: #f1f5f9;
+        padding: 28px 12px;
     }
-    .container {
-        max-width: 720px;
+    .email-card {
+        max-width: 760px;
         margin: 0 auto;
         background: #ffffff;
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         border: 1px solid #e2e8f0;
     }
-    .header {
+    .header-banner {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        padding: 28px 32px;
-        color: #ffffff;
-        border-bottom: 3px solid #00A450;
+        padding: 26px 32px;
+        border-bottom: 4px solid #00A450;
     }
-    .header h1 {
+    .header-banner h1 {
         margin: 0;
         font-size: 22px;
         font-weight: 700;
-        letter-spacing: -0.5px;
         color: #ffffff;
+        letter-spacing: -0.3px;
     }
-    .header .subtitle {
-        margin: 6px 0 0 0;
+    .header-banner .tagline {
+        margin: 4px 0 0 0;
         font-size: 13px;
         color: #94a3b8;
     }
-    .badge-report-date {
+    .date-badge {
         display: inline-block;
         background: rgba(0, 164, 80, 0.2);
         color: #4ade80;
@@ -53,330 +52,325 @@
         font-size: 11px;
         padding: 3px 10px;
         border-radius: 9999px;
-        margin-top: 8px;
+        margin-top: 10px;
         border: 1px solid rgba(74, 222, 128, 0.3);
     }
-    .content {
+    .content-body {
         padding: 28px 32px;
     }
-    /* Summary KPI Grid */
-    .kpi-grid {
+    /* Summary Cards */
+    .kpi-row {
         display: table;
         width: 100%;
         margin-bottom: 24px;
         table-layout: fixed;
     }
-    .kpi-col {
+    .kpi-cell {
         display: table-cell;
         padding: 0 6px;
     }
-    .kpi-col:first-child { padding-left: 0; }
-    .kpi-col:last-child { padding-right: 0; }
-    .kpi-card {
+    .kpi-cell:first-child { padding-left: 0; }
+    .kpi-cell:last-child { padding-right: 0; }
+    .kpi-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 10px;
-        padding: 14px 16px;
+        padding: 12px 14px;
         text-align: center;
     }
-    .kpi-card.highlight {
+    .kpi-box.total {
         background: #f0fdf4;
         border-color: #86efac;
     }
-    .kpi-card.pending {
+    .kpi-box.pending {
         background: #fffbeb;
         border-color: #fde68a;
     }
-    .kpi-label {
-        font-size: 11px;
-        font-weight: 600;
+    .kpi-title {
+        font-size: 10px;
+        font-weight: 700;
         text-transform: uppercase;
         color: #64748b;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
     }
-    .kpi-value {
-        font-size: 18px;
+    .kpi-num {
+        font-size: 17px;
         font-weight: 800;
         color: #0f172a;
     }
-    .kpi-card.highlight .kpi-value {
-        color: #15803d;
-    }
-    .kpi-card.pending .kpi-value {
-        color: #b45309;
-    }
-    .kpi-sub {
-        font-size: 11px;
+    .kpi-box.total .kpi-num { color: #15803d; }
+    .kpi-box.pending .kpi-num { color: #b45309; }
+    .kpi-desc {
+        font-size: 10px;
         color: #64748b;
         margin-top: 2px;
     }
-    /* Section Headings */
-    .section-title {
+
+    /* Table */
+    .table-title {
         font-size: 14px;
         font-weight: 700;
         color: #0f172a;
-        margin: 24px 0 12px 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 8px;
+        margin: 20px 0 10px 0;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #e2e8f0;
     }
-    /* Tables */
-    .table-container {
+    .table-wrap {
         width: 100%;
         overflow-x: auto;
-        margin-bottom: 20px;
     }
-    table.data-table {
+    table.expense-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 12px;
+        margin-bottom: 8px;
     }
-    table.data-table th {
+    table.expense-table th {
         background: #f1f5f9;
-        color: #475569;
-        font-weight: 600;
+        color: #334155;
+        font-weight: 700;
         text-align: left;
-        padding: 8px 10px;
+        padding: 10px 10px;
         border-bottom: 2px solid #cbd5e1;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
         white-space: nowrap;
     }
-    table.data-table td {
-        padding: 9px 10px;
+    table.expense-table td {
+        padding: 11px 10px;
         border-bottom: 1px solid #e2e8f0;
-        color: #334155;
+        color: #1e293b;
         vertical-align: middle;
     }
-    table.data-table tr:last-child td {
-        border-bottom: none;
+    table.expense-table tr:nth-child(even) td {
+        background-color: #f8fafc;
     }
-    table.data-table tr:nth-child(even) {
-        background-color: #fafbfc;
+    table.expense-table tfoot td {
+        background: #f8fafc;
+        border-top: 2px solid #cbd5e1;
+        font-weight: 700;
+        padding: 12px 10px;
+        font-size: 13px;
+        color: #0f172a;
     }
     .text-right { text-align: right; }
     .text-center { text-align: center; }
-    .font-semibold { font-weight: 600; }
-    .font-bold { font-weight: 700; }
-    
-    /* Badges */
-    .badge {
-        display: inline-block;
-        padding: 2px 7px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-    .badge-approved { background: #dcfce7; color: #166534; }
-    .badge-pending { background: #fef3c7; color: #92400e; }
-    .badge-clarification { background: #fed7aa; color: #9a3412; }
-    .badge-rejected { background: #fee2e2; color: #991b1b; }
-    .badge-paid { background: #e0e7ff; color: #3730a3; }
-    .badge-unpaid { background: #f1f5f9; color: #64748b; }
-
-    /* Action Notice Box */
-    .alert-box {
-        background: #fffbeb;
-        border-left: 4px solid #f59e0b;
-        padding: 12px 16px;
-        border-radius: 6px;
-        margin: 16px 0;
-        font-size: 12px;
-        color: #92400e;
-    }
-    .alert-box strong { color: #78350f; }
-
-    /* Footer */
-    .footer {
-        background: #f8fafc;
-        padding: 20px 32px;
-        border-top: 1px solid #e2e8f0;
+    .exp-id {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 11px;
-        color: #64748b;
-        text-align: center;
-        line-height: 1.6;
+        font-weight: 700;
+        color: #3b82f6;
+        background: #eff6ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #bfdbfe;
+        white-space: nowrap;
     }
-    .footer a {
-        color: #00A450;
-        text-decoration: none;
+    .exp-title {
         font-weight: 600;
+        color: #0f172a;
+    }
+    .exp-submitter {
+        font-size: 10px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+    .exp-category {
+        font-size: 11px;
+        color: #475569;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .exp-amount {
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    /* Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
+    }
+    .status-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-pending { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .status-clarification { background: #fed7aa; color: #c2410c; border: 1px solid #ffedd5; }
+    .status-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    /* Empty state */
+    .empty-state {
+        background: #f8fafc;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: 24px;
+        text-align: center;
+        color: #64748b;
+        font-size: 13px;
+        margin: 16px 0;
+    }
+
+    /* Footer & CTA */
+    .cta-row {
+        text-align: center;
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 1px solid #e2e8f0;
     }
     .btn-portal {
         display: inline-block;
         background: #00A450;
         color: #ffffff !important;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 13px;
-        padding: 10px 22px;
-        border-radius: 6px;
+        padding: 11px 26px;
+        border-radius: 8px;
         text-decoration: none;
-        margin-top: 16px;
+        box-shadow: 0 2px 6px rgba(0, 164, 80, 0.3);
+    }
+    .footer-bar {
+        background: #f8fafc;
+        padding: 16px 32px;
+        border-top: 1px solid #e2e8f0;
         text-align: center;
+        font-size: 11px;
+        color: #64748b;
+        line-height: 1.5;
     }
 </style>
 </head>
 <body>
-<div class="wrapper">
-    <div class="container">
+<div class="email-wrapper">
+    <div class="email-card">
         
         <!-- Header -->
-        <div class="header">
+        <div class="header-banner">
             <h1>{{ company_name|default:"ODtech Solutions" }}</h1>
-            <div class="subtitle">Daily Automated Expense Summary &amp; Audit Report</div>
-            <div class="badge-report-date">Target Date: {{ report_date }} (Executed at 04:00 AM IST)</div>
+            <div class="tagline">Daily Expense Summary Report</div>
+            <div class="date-badge">Target Date: {{ report_date }} (Executed at 04:00 AM IST)</div>
         </div>
 
-        <!-- Main Body -->
-        <div class="content">
+        <!-- Content -->
+        <div class="content-body">
 
-            <!-- KPI Row -->
-            <div class="kpi-grid">
-                <div class="kpi-col">
-                    <div class="kpi-card highlight">
-                        <div class="kpi-label">Total Logged</div>
-                        <div class="kpi-value">&#8377;{{ total_amount|floatformat:2 }}</div>
-                        <div class="kpi-sub">{{ total_count }} entries (Excl. GST: &#8377;{{ total_ex_gst|floatformat:2 }})</div>
+            <!-- Summary KPI Grid -->
+            <div class="kpi-row">
+                <div class="kpi-cell">
+                    <div class="kpi-box total">
+                        <div class="kpi-title">Total Expenses Logged</div>
+                        <div class="kpi-num">&#8377;{{ total_amount|floatformat:2 }}</div>
+                        <div class="kpi-desc">{{ total_count }} total entries</div>
                     </div>
                 </div>
-                <div class="kpi-col">
-                    <div class="kpi-card">
-                        <div class="kpi-label">Approved</div>
-                        <div class="kpi-value">&#8377;{{ approved_amount|floatformat:2 }}</div>
-                        <div class="kpi-sub">{{ approved_count }} entries approved</div>
+                <div class="kpi-cell">
+                    <div class="kpi-box">
+                        <div class="kpi-title">Approved</div>
+                        <div class="kpi-num">&#8377;{{ approved_amount|floatformat:2 }}</div>
+                        <div class="kpi-desc">{{ approved_count }} approved</div>
                     </div>
                 </div>
-                <div class="kpi-col">
-                    <div class="kpi-card {% if pending_count > 0 %}pending{% endif %}">
-                        <div class="kpi-label">Action Pending</div>
-                        <div class="kpi-value">{{ pending_count }}</div>
-                        <div class="kpi-sub">&#8377;{{ pending_amount|floatformat:2 }} awaiting review</div>
+                <div class="kpi-cell">
+                    <div class="kpi-box {% if pending_count > 0 %}pending{% endif %}">
+                        <div class="kpi-title">Action Pending</div>
+                        <div class="kpi-num">{{ pending_count }}</div>
+                        <div class="kpi-desc">&#8377;{{ pending_amount|floatformat:2 }} pending review</div>
                     </div>
                 </div>
             </div>
 
-            {% if pending_count > 0 %}
-            <div class="alert-box">
-                <strong>Notice:</strong> There are <strong>{{ pending_count }} pending or clarification-requested</strong> expense entries (Total: &#8377;{{ pending_amount|floatformat:2 }}) requiring review in the portal.
-            </div>
-            {% endif %}
-
-            <!-- Category Breakdown -->
-            {% if category_summary %}
-            <div class="section-title">Expense Breakdown by Category</div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th class="text-center">Count</th>
-                            <th class="text-right">Amount (&#8377;)</th>
-                            <th class="text-right">% of Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cat in category_summary %}
-                        <tr>
-                            <td class="font-semibold">{{ cat.category }}</td>
-                            <td class="text-center">{{ cat.count }}</td>
-                            <td class="text-right font-semibold">&#8377;{{ cat.amount|floatformat:2 }}</td>
-                            <td class="text-right text-muted">{{ cat.percentage }}%</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-
-            <!-- Itemized Entries Table -->
-            <div class="section-title">Itemized Entries Logged for {{ report_date }}</div>
+            <!-- Main Itemized Table containing: Exp ID, Date, Title, Category, Amount, Approval Status -->
+            <div class="table-title">Expense Entries</div>
+            
             {% if expenses %}
-            <div class="table-container">
-                <table class="data-table">
+            <div class="table-wrap">
+                <table class="expense-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Submitted By</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th class="text-right">Amount (&#8377;)</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Payment</th>
+                            <th style="width: 12%;">Exp ID</th>
+                            <th style="width: 14%;">Date</th>
+                            <th style="width: 30%;">Title</th>
+                            <th style="width: 18%;">Category</th>
+                            <th class="text-right" style="width: 14%;">Amount</th>
+                            <th class="text-center" style="width: 12%;">Approval Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for exp in expenses %}
                         <tr>
-                            <td><code style="font-size: 11px; background: #e2e8f0; padding: 1px 4px; border-radius: 3px;">{{ exp.expense_id }}</code></td>
                             <td>
-                                <div class="font-semibold">{{ exp.submitted_by.get_full_name|default:exp.submitted_by.username }}</div>
-                                {% if exp.employee_code %}<div style="font-size: 10px; color: #64748b;">Code: {{ exp.employee_code }}</div>{% endif %}
+                                <span class="exp-id">{{ exp.expense_id }}</span>
                             </td>
-                            <td><span style="font-size: 11px; color: #475569;">{{ exp.expense_type }}</span></td>
-                            <td>{{ exp.title }}</td>
-                            <td class="text-right font-bold">&#8377;{{ exp.amount|floatformat:2 }}</td>
-                            <td class="text-center">
-                                {% if exp.status == 'Approved' %}
-                                    <span class="badge badge-approved">Approved</span>
-                                {% elif exp.status == 'Clarification' or exp.status == 'Clarification Provided' %}
-                                    <span class="badge badge-clarification">Clarification</span>
-                                {% elif exp.status == 'Rejected' %}
-                                    <span class="badge badge-rejected">Rejected</span>
-                                {% else %}
-                                    <span class="badge badge-pending">Pending</span>
+                            <td style="color: #475569; font-weight: 500;">
+                                {{ exp.date|date:"d M Y" }}
+                            </td>
+                            <td>
+                                <div class="exp-title">{{ exp.title }}</div>
+                                <div class="exp-submitter">By: {{ exp.submitted_by.get_full_name|default:exp.submitted_by.username }}{% if exp.employee_code %} ({{ exp.employee_code }}){% endif %}</div>
+                            </td>
+                            <td>
+                                <span class="exp-category">{{ exp.expense_type }}</span>
+                            </td>
+                            <td class="text-right">
+                                <span class="exp-amount">&#8377;{{ exp.amount|floatformat:2 }}</span>
+                                {% if exp.gst_amount and exp.gst_amount > 0 %}
+                                <div style="font-size: 10px; color: #64748b;">+&#8377;{{ exp.gst_amount|floatformat:2 }} GST</div>
                                 {% endif %}
                             </td>
                             <td class="text-center">
-                                {% if exp.is_paid %}
-                                    <span class="badge badge-paid">Paid</span>
+                                {% if exp.status == 'Approved' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif exp.status == 'Clarification' or exp.status == 'Clarification Provided' %}
+                                    <span class="status-badge status-clarification">Clarification</span>
+                                {% elif exp.status == 'Rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
                                 {% else %}
-                                    <span class="badge badge-unpaid">Unpaid</span>
+                                    <span class="status-badge status-pending">Pending</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-right" style="font-weight: 700; color: #334155;">TOTAL:</td>
+                            <td class="text-right" style="color: #00A450; font-size: 14px; font-weight: 800;">&#8377;{{ total_amount|floatformat:2 }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
             {% else %}
-            <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; color: #64748b; font-size: 12px; margin-bottom: 20px;">
-                No new expense entries were logged for this date.
+            <div class="empty-state">
+                No expense entries were recorded for {{ report_date }}.
             </div>
             {% endif %}
 
-            <!-- Month to Date (MTD) Snapshot -->
-            <div class="section-title">Current Month-to-Date (MTD) Overview ({{ mtd_month_name }})</div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
-                <div style="display: table; width: 100%;">
-                    <div style="display: table-cell; vertical-align: middle;">
-                        <span style="font-size: 12px; color: #64748b;">Total Expenses This Month ({{ mtd_month_name }}):</span>
-                    </div>
-                    <div style="display: table-cell; vertical-align: middle; text-align: right;">
-                        <span style="font-size: 16px; font-weight: 800; color: #0f172a;">&#8377;{{ mtd_total_amount|floatformat:2 }}</span>
-                        <span style="font-size: 11px; color: #64748b; margin-left: 6px;">({{ mtd_total_count }} entries)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Portal Button -->
-            <div style="text-align: center; margin-top: 24px;">
+            <!-- View in Portal CTA -->
+            <div class="cta-row">
                 <a href="{{ portal_url|default:'#' }}" class="btn-portal">
-                    Open Expenses Portal &rarr;
+                    View All Expenses in Portal &rarr;
                 </a>
             </div>
 
         </div>
 
         <!-- Footer -->
-        <div class="footer">
-            <p style="margin: 0 0 6px 0;"><strong>Attached File:</strong> A complete CSV spreadsheet (<code>Expense_Report_{{ report_date_slug }}.csv</code>) is attached to this email for detailed audit and spreadsheet analysis.</p>
-            <p style="margin: 0;">This is an automated notification scheduled daily at 04:00 AM IST by ODtech ERP.</p>
+        <div class="footer-bar">
+            <span>Automated Daily Report scheduled at 04:00 AM IST &bull; {{ company_name|default:"ODtech Solutions" }} ERP</span>
         </div>
 
     </div>
 </div>
 </body>
 </html>
-

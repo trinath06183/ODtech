@@ -155,59 +155,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Action Pending in System: {pending_count} entries (Total: Rs. {pending_amount:,.2f})")
         self.stdout.write(f"  MTD ({mtd_month_name}): {mtd_total_count} entries (Total: Rs. {mtd_total_amount:,.2f})")
 
-        # ── 6. Generate CSV Attachment ──────────────────────────────────────────────
-        csv_buffer = io.StringIO()
-        csv_writer = csv.writer(csv_buffer)
-        
-        # CSV Header
-        csv_writer.writerow([
-            'Expense ID',
-            'Date',
-            'Employee Code',
-            'Submitted By',
-            'Category',
-            'Description / Title',
-            'Amount Excl GST (INR)',
-            'GST Amount (INR)',
-            'Total Amount (INR)',
-            'Status',
-            'Payment Status',
-            'Paid At',
-            'Approved By',
-            'Approved At',
-            'Notes',
-        ])
-
-        # CSV Data Rows
-        # If there are expenses on target date, export them. If none on target date, export recent MTD entries
-        export_qs = expenses_qs if expenses_qs.exists() else mtd_qs.order_by('-date', '-id')
-        for exp in export_qs:
-            gross = (exp.amount or Decimal('0.00')) + (exp.gst_amount or Decimal('0.00'))
-            submitted_name = exp.submitted_by.get_full_name() or exp.submitted_by.username if exp.submitted_by else ''
-            approved_name = exp.approved_by.get_full_name() or exp.approved_by.username if exp.approved_by else ''
-            
-            csv_writer.writerow([
-                exp.expense_id,
-                exp.date.strftime('%Y-%m-%d') if exp.date else '',
-                exp.employee_code or '',
-                submitted_name,
-                exp.expense_type or '',
-                exp.title or '',
-                f"{(exp.amount or 0):.2f}",
-                f"{(exp.gst_amount or 0):.2f}",
-                f"{gross:.2f}",
-                exp.status or '',
-                'Paid' if exp.is_paid else 'Unpaid',
-                exp.paid_at.strftime('%Y-%m-%d %H:%M') if exp.paid_at else '',
-                approved_name,
-                exp.approved_at.strftime('%Y-%m-%d %H:%M') if exp.approved_at else '',
-                exp.notes or '',
-            ])
-
-        csv_content = csv_buffer.getvalue()
-        csv_buffer.close()
-
-        # ── 7. Render HTML & Text Email ─────────────────────────────────────────────
+        # ── 6. Render HTML & Text Email ─────────────────────────────────────────────
         company_name = profile.name if profile and profile.name else "ODtech Solutions"
         report_date_str = target_date.strftime('%d %B %Y')
         report_date_slug = target_date.strftime('%Y-%m-%d')
@@ -239,7 +187,7 @@ class Command(BaseCommand):
 
         subject = f"[{company_name}] Daily Expense Report - {report_date_str} (Rs. {total_amount:,.2f})"
 
-        # ── 8. Dispatch Email with CSV Attachment ────────────────────────────────────
+        # ── 7. Dispatch Email Directly as HTML/CSS Page (No CSV/Excel attachment) ───
         try:
             email_msg = EmailMultiAlternatives(
                 subject=subject,
@@ -248,14 +196,9 @@ class Command(BaseCommand):
                 to=[recipient_email],
             )
             email_msg.attach_alternative(html_content, "text/html")
-            
-            # Attach CSV
-            filename = f"Expense_Report_{report_date_slug}.csv"
-            email_msg.attach(filename, csv_content, 'text/csv')
-
             email_msg.send(fail_silently=False)
             self.stdout.write(self.style.SUCCESS(
-                f"  [SUCCESS] Daily Expense Report successfully sent to {recipient_email} (Attached: {filename})."
+                f"  [SUCCESS] Daily Expense Report email successfully sent to {recipient_email} as formatted HTML/CSS page."
             ))
         except Exception as exc:
             self.stderr.write(self.style.ERROR(
