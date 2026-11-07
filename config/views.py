@@ -219,8 +219,14 @@ def send_test_expense_report(request):
     out = io.StringIO()
     err = io.StringIO()
     
+    # Auto-save the email to CompanyProfile if provided
+    company = CompanyProfile.objects.first()
+    if email_override and company and company.expense_report_email != email_override:
+        company.expense_report_email = email_override
+        company.save(update_fields=['expense_report_email'])
+    
     try:
-        kwargs = {}
+        kwargs = {'include_all': True}
         if email_override:
             kwargs['email'] = email_override
         call_command('send_daily_expense_report', stdout=out, stderr=err, **kwargs)
@@ -229,5 +235,8 @@ def send_test_expense_report(request):
             return JsonResponse({'status': 'error', 'message': output_msg.strip() or err.getvalue().strip()})
         return JsonResponse({'status': 'success', 'message': output_msg.strip() or 'Daily expense report sent successfully!'})
     except Exception as exc:
-        return JsonResponse({'status': 'error', 'message': str(exc)}, status=500)
+        err_str = str(exc)
+        if 'Authentication Required' in err_str or '530' in err_str:
+            err_str = "SMTP Authentication Required (530): Please check the server's .env file and ensure EMAIL_HOST_USER and EMAIL_HOST_PASSWORD (Gmail App Password) are configured."
+        return JsonResponse({'status': 'error', 'message': err_str})
 
