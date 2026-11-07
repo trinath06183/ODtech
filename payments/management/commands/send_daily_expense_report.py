@@ -51,6 +51,18 @@ class Command(BaseCommand):
             default=False,
             help='Include all expenses if target date has zero entries',
         )
+        parser.add_argument(
+            '--skip-users',
+            action='store_true',
+            default=False,
+            help='Skip sending consolidated user digests (send only company admin report)',
+        )
+        parser.add_argument(
+            '--skip-admin',
+            action='store_true',
+            default=False,
+            help='Skip sending company admin report (send only consolidated user digests)',
+        )
 
     def handle(self, *args, **options):
         now = timezone.localtime()
@@ -188,20 +200,86 @@ class Command(BaseCommand):
         subject = f"[{company_name}] Daily Expense Report - {report_date_str} (Rs. {total_amount:,.2f})"
 
         # ── 7. Dispatch Email Directly as HTML/CSS Page (No CSV/Excel attachment) ───
-        try:
-            email_msg = EmailMultiAlternatives(
-                subject=subject,
-                body=text_content,
-                from_email=None,
-                to=[recipient_email],
+        skip_admin = options.get('skip_admin', False)
+        if not skip_admin:
+            try:
+                email_msg = EmailMultiAlternatives(
+                    subject=subject,
+                    body=text_content,
+                    from_email=None,
+                    to=[recipient_email],
+                )
+                email_msg.attach_alternative(html_content, "text/html")
+                email_msg.send(fail_silently=False)
+                self.stdout.write(self.style.SUCCESS(
+                    f"  [SUCCESS] Daily Expense Report email successfully sent to {recipient_email} as formatted HTML/CSS page."
+                ))
+            except Exception as exc:
+                self.stderr.write(self.style.ERROR(
+                    f"  [FAIL] Failed to send email to {recipient_email}: {exc}"
+                ))
+                raise
+
+        # ── 8. Dispatch Consolidated Daily Digest to Employees/Users ──────────────────
+        mode = getattr(profile, 'expense_email_mode', 'DAILY_DIGEST')
+        skip_users = options.get('skip_users', False)
+        if mode != 'OFF' and not skip_users:
+            self.stdout.write("  Preparing consolidated user daily expense digests (4:00 AM)...")
+            user_activity_q = (
+                Q(date=target_date) |
+                Q(created_at__date=target_date) |
+                Q(approved_at__date=target_date) |
+                Q(paid_at__date=target_date) |
+                Q(clarification_raised_at__date=target_date)
             )
-            email_msg.attach_alternative(html_content, "text/html")
-            email_msg.send(fail_silently=False)
-            self.stdout.write(self.style.SUCCESS(
-                f"  [SUCCESS] Daily Expense Report email successfully sent to {recipient_email} as formatted HTML/CSS page."
-            ))
-        except Exception as exc:
-            self.stderr.write(self.style.ERROR(
-                f"  [FAIL] Failed to send email to {recipient_email}: {exc}"
-            ))
-            raise
+
+            activity_expenses = Expense.objects.select_related('submitted_by', 'approved_by').filter(user_activity_q).distinct()
+            
+            # Group by user (submitted_by)
+            user_map = {}
+            for exp in activity_expenses:
+                u = exp.submitted_by
+                if u and u.email and '@' in u.email:
+                    user_map.setdefault(u, []).append(exp)
+
+            user_digest_count = 0
+            for user_obj, user_exp_list in user_map.items():
+                try:
+                    u_total = sum((e.amount or Decimal('0.00')) + (e.gst_amount or Decimal('0.00')) for e in user_exp_list)
+                    u_approved = sum((e.amount or Decimal('0.00')) + (e.gst_amount or Decimal('0.00')) for e in user_exp_list if e.status == 'Approved')
+                    u_paid = sum((e.amount or Decimal('0.00')) + (e.gst_amount or Decimal('0.00')) for e in user_exp_list if e.is_paid)
+                    has_clarification = any(e.status in ['Clarification', 'Clarification Provided'] for e in user_exp_list)
+
+                    u_context = {
+                        'company_name': company_name,
+                        'recipient_name': user_obj.get_full_name() or user_obj.username,
+                        'report_date': report_date_str,
+                        'expenses': user_exp_list,
+                        'total_amount': u_total,
+                        'approved_amount': u_approved,
+                        'paid_amount': u_paid,
+                        'has_clarification': has_clarification,
+                        'portal_url': 'http://192.168.1.106:8000/payments/expenses/',
+                    }
+
+                    u_html = render_to_string('payments/user_daily_expense_digest_email.html', u_context)
+                    u_clean = re.sub(r'(?is)<style.*?>.*?</style>', '', u_html)
+                    u_text = strip_tags(u_clean)
+
+                    u_subject = f"[{company_name}] Your Daily Expenses Digest - {report_date_str} ({len(user_exp_list)} entries)"
+
+                    u_msg = EmailMultiAlternatives(
+                        subject=u_subject,
+                        body=u_text,
+                        from_email=None,
+                        to=[user_obj.email],
+                    )
+                    u_msg.attach_alternative(u_html, "text/html")
+                    u_msg.send(fail_silently=False)
+                    user_digest_count += 1
+                    self.stdout.write(f"    [OK] Sent single consolidated digest to {user_obj.email} ({len(user_exp_list)} entries)")
+                except Exception as ex:
+                    self.stderr.write(f"    [WARN] Failed sending digest to {user_obj.email}: {ex}")
+
+            self.stdout.write(self.style.SUCCESS(f"  Dispatched {user_digest_count} consolidated user digest email(s)."))
+

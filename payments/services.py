@@ -28,6 +28,17 @@ class ExpenseNotificationService:
     def _send_email_async(subject, recipient_emails, html_content):
         def _send():
             try:
+                # Check notification mode setting: if DAILY_DIGEST (default) or OFF, suppress individual emails
+                try:
+                    from config.models import CompanyProfile
+                    company = CompanyProfile.objects.first()
+                    mode = getattr(company, 'expense_email_mode', 'DAILY_DIGEST')
+                    if mode != 'INSTANT':
+                        logger.info(f"[Expense Email] Instant notification suppressed (mode={mode}). Update will be sent in 4:00 AM daily digest.")
+                        return
+                except Exception as ex:
+                    logger.warning(f"[Expense Email] Could not check expense_email_mode setting: {ex}")
+
                 from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', '') or getattr(settings, 'EMAIL_HOST_USER', '') or 'noreply@odtech.in'
                 text_content = strip_tags(html_content)
                 for email in recipient_emails:

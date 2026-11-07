@@ -67,8 +67,24 @@
                             <span>Send Test Report</span>
                         </button>
                     </div>
-                    <p class="mt-1 text-xs text-gray-500">Every day at 4:00 AM IST, a detailed summary of all expense entries with an attached CSV spreadsheet will be sent to this email address. If left blank, it will automatically fall back to the Admin Backup Email.</p>
+                    <p class="mt-1 text-xs text-gray-500">Every day at 4:00 AM IST, a formatted HTML table of all expense entries is sent to this email address. If left blank, it will automatically fall back to the Admin Backup Email.</p>
                     <div id="expense-report-test-feedback" class="mt-2 text-xs font-medium hidden"></div>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Expense Email Notification Mode</label>
+                    <select name="expense_email_mode" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 shadow-sm transition">
+                        <option value="DAILY_DIGEST" {% if company.expense_email_mode == 'DAILY_DIGEST' or not company.expense_email_mode %}selected{% endif %}>
+                            Consolidated Daily 4:00 AM Digest (Recommended — Single consolidated email per user, no spam during the day)
+                        </option>
+                        <option value="INSTANT" {% if company.expense_email_mode == 'INSTANT' %}selected{% endif %}>
+                            Instant Emails on Every Event (Separate email immediately for every single expense action)
+                        </option>
+                        <option value="OFF" {% if company.expense_email_mode == 'OFF' %}selected{% endif %}>
+                            Disabled (Do not send automated expense emails to employees)
+                        </option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">When set to <strong>Consolidated Daily 4:00 AM Digest</strong>, individual emails are suppressed during the day, and all entered, approved, and marked-as-paid expenses are bundled into a single morning email per user.</p>
                 </div>
 
                 <div class="sm:col-span-2">

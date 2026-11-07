@@ -24,6 +24,7 @@ def settings_view(request):
         header_address    = request.POST.get('header_address', '').strip()
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
         expense_report_email = request.POST.get('expense_report_email', '').strip()
+        expense_email_mode = request.POST.get('expense_email_mode', 'DAILY_DIGEST').strip()
         gst_api_key       = request.POST.get('gst_api_key', '').strip()
         default_currency  = request.POST.get('default_currency', 'INR').strip()
         gst_enabled       = request.POST.get('gst_enabled') == 'on'
@@ -64,6 +65,10 @@ def settings_view(request):
             elif 'expense_report_email' in request.POST and request.POST['expense_report_email'].strip() == '':
                 # User explicitly cleared the field
                 company.expense_report_email = None
+
+            valid_modes = [c[0] for c in CompanyProfile.EXPENSE_EMAIL_MODE_CHOICES]
+            if expense_email_mode in valid_modes:
+                company.expense_email_mode = expense_email_mode
 
             if gst_api_key:
                 company.gst_api_key = gst_api_key

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Daily Expenses Digest - {{ company_name }}</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #f1f5f9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #1e293b;
+        -webkit-font-smoothing: antialiased;
+    }
+    .email-wrapper {
+        width: 100%;
+        background-color: #f1f5f9;
+        padding: 24px 12px;
+    }
+    .email-card {
+        max-width: 720px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0;
+    }
+    .header-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding: 24px 28px;
+        border-bottom: 4px solid #00A450;
+    }
+    .header-banner h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    .header-banner .tagline {
+        margin: 4px 0 0 0;
+        font-size: 13px;
+        color: #94a3b8;
+    }
+    .date-badge {
+        display: inline-block;
+        background: rgba(0, 164, 80, 0.2);
+        color: #4ade80;
+        font-weight: 600;
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        margin-top: 8px;
+        border: 1px solid rgba(74, 222, 128, 0.3);
+    }
+    .content-body {
+        padding: 24px 28px;
+    }
+    .greeting {
+        font-size: 15px;
+        color: #0f172a;
+        margin-bottom: 12px;
+    }
+    .greeting strong {
+        color: #00A450;
+    }
+    .intro-text {
+        font-size: 13px;
+        color: #475569;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    /* KPI Summary Row */
+    .kpi-row {
+        display: table;
+        width: 100%;
+        margin-bottom: 20px;
+        table-layout: fixed;
+    }
+    .kpi-cell {
+        display: table-cell;
+        padding: 0 5px;
+    }
+    .kpi-cell:first-child { padding-left: 0; }
+    .kpi-cell:last-child { padding-right: 0; }
+    .kpi-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        text-align: center;
+    }
+    .kpi-box.total { background: #f0fdf4; border-color: #86efac; }
+    .kpi-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 2px;
+    }
+    .kpi-num {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+    .kpi-box.total .kpi-num { color: #15803d; }
+
+    /* Clarification Alert Box */
+    .alert-clarification {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-left: 4px solid #f59e0b;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 12px;
+        color: #92400e;
+    }
+    .alert-clarification strong { color: #78350f; }
+
+    /* Table */
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+    table.expense-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+    table.expense-table th {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 700;
+        text-align: left;
+        padding: 9px 8px;
+        border-bottom: 2px solid #cbd5e1;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+    table.expense-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #1e293b;
+        vertical-align: middle;
+    }
+    table.expense-table tr:nth-child(even) td {
+        background-color: #f8fafc;
+    }
+    table.expense-table tfoot td {
+        background: #f8fafc;
+        border-top: 2px solid #cbd5e1;
+        font-weight: 700;
+        padding: 11px 8px;
+        font-size: 12.5px;
+        color: #0f172a;
+    }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .exp-id {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #3b82f6;
+        background: #eff6ff;
+        padding: 2px 5px;
+        border-radius: 4px;
+        border: 1px solid #bfdbfe;
+        white-space: nowrap;
+    }
+    .exp-amount {
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    /* Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 3px 7px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+    .status-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-pending { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .status-clarification { background: #fed7aa; color: #c2410c; border: 1px solid #ffedd5; }
+    .status-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .pay-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 9.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .pay-paid { background: #e0e7ff; color: #3730a3; }
+    .pay-unpaid { background: #f1f5f9; color: #64748b; }
+
+    /* CTA Button */
+    .cta-row {
+        text-align: center;
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+    }
+    .btn-portal {
+        display: inline-block;
+        background: #00A450;
+        color: #ffffff !important;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 10px 24px;
+        border-radius: 7px;
+        text-decoration: none;
+        box-shadow: 0 2px 6px rgba(0, 164, 80, 0.3);
+    }
+    .footer-bar {
+        background: #f8fafc;
+        padding: 14px 28px;
+        border-top: 1px solid #e2e8f0;
+        text-align: center;
+        font-size: 11px;
+        color: #64748b;
+    }
+</style>
+</head>
+<body>
+<div class="email-wrapper">
+    <div class="email-card">
+        
+        <!-- Header -->
+        <div class="header-banner">
+            <h1>{{ company_name|default:"ODtech Solutions" }}</h1>
+            <div class="tagline">Daily Expense Updates &amp; Status Digest</div>
+            <div class="date-badge">Summary Date: {{ report_date }} (4:00 AM IST Digest)</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content-body">
+            <div class="greeting">Hello <strong>{{ recipient_name }}</strong>,</div>
+            <div class="intro-text">
+                Here is the consolidated daily summary of your expenses that were entered, approved, or updated on <strong>{{ report_date }}</strong>:
+            </div>
+
+            <!-- Mini KPI Summary -->
+            <div class="kpi-row">
+                <div class="kpi-cell">
+                    <div class="kpi-box total">
+                        <div class="kpi-title">Total Updated</div>
+                        <div class="kpi-num">&#8377;{{ total_amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+                <div class="kpi-cell">
+                    <div class="kpi-box">
+                        <div class="kpi-title">Approved</div>
+                        <div class="kpi-num">&#8377;{{ approved_amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+                <div class="kpi-cell">
+                    <div class="kpi-box">
+                        <div class="kpi-title">Paid Amount</div>
+                        <div class="kpi-num">&#8377;{{ paid_amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if has_clarification %}
+            <div class="alert-clarification">
+                <strong>Action Needed:</strong> One or more of your expense submissions requires clarification from Admin before approval. Please click the button below to view details and update your response.
+            </div>
+            {% endif %}
+
+            <!-- Table of User's Expenses -->
+            <div class="table-wrap">
+                <table class="expense-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 13%;">Exp ID</th>
+                            <th style="width: 14%;">Date</th>
+                            <th style="width: 28%;">Title</th>
+                            <th style="width: 17%;">Category</th>
+                            <th class="text-right" style="width: 14%;">Amount</th>
+                            <th class="text-center" style="width: 14%;">Approval Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in expenses %}
+                        <tr>
+                            <td>
+                                <span class="exp-id">{{ exp.expense_id }}</span>
+                            </td>
+                            <td style="color: #475569; font-weight: 500;">
+                                {{ exp.date|date:"d M Y" }}
+                            </td>
+                            <td>
+                                <div style="font-weight: 600; color: #0f172a;">{{ exp.title }}</div>
+                                {% if exp.clarification_query and exp.status != 'Approved' %}
+                                <div style="font-size: 10px; color: #b45309; margin-top: 2px;">
+                                    <strong>Admin Query:</strong> {{ exp.clarification_query|truncatechars:65 }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span style="font-size: 11px; color: #475569; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ exp.expense_type }}</span>
+                            </td>
+                            <td class="text-right">
+                                <span class="exp-amount">&#8377;{{ exp.amount|floatformat:2 }}</span>
+                                {% if exp.is_paid %}
+                                <div style="margin-top: 2px;"><span class="pay-badge pay-paid">Paid</span></div>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if exp.status == 'Approved' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif exp.status == 'Clarification' or exp.status == 'Clarification Provided' %}
+                                    <span class="status-badge status-clarification">Clarification</span>
+                                {% elif exp.status == 'Rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% else %}
+                                    <span class="status-badge status-pending">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-right" style="font-weight: 700; color: #334155;">TOTAL:</td>
+                            <td class="text-right" style="color: #00A450; font-size: 13.5px; font-weight: 800;">&#8377;{{ total_amount|floatformat:2 }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- View Portal CTA -->
+            <div class="cta-row">
+                <a href="{{ portal_url|default:'#' }}" class="btn-portal">
+                    View My Expenses in Portal &rarr;
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-bar">
+            <span>Automated Daily Digest scheduled at 04:00 AM IST &bull; {{ company_name|default:"ODtech Solutions" }} ERP</span>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

@@ -61,6 +61,18 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="Daily Expense Report Email",
         help_text="Email address to receive daily reports of all expenses at 4:00 AM."
     )
+    EXPENSE_EMAIL_MODE_CHOICES = [
+        ('DAILY_DIGEST', 'Consolidated Daily 4:00 AM Digest (Recommended — 1 single email per user)'),
+        ('INSTANT', 'Instant Email on Every Event (Sends separate email for each expense entry/approval)'),
+        ('OFF', 'Disabled (Do not send automated expense emails to employees)'),
+    ]
+    expense_email_mode = models.CharField(
+        max_length=20,
+        choices=EXPENSE_EMAIL_MODE_CHOICES,
+        default='DAILY_DIGEST',
+        verbose_name="Expense Email Notification Mode",
+        help_text="Controls whether users receive a single daily digest at 4:00 AM or instant emails for every expense."
+    )
     gst_api_key = models.CharField(
         max_length=255, blank=True, null=True,
         verbose_name="GST API Key (RapidAPI)",
