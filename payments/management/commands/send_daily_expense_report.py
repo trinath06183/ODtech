@@ -172,9 +172,6 @@ class Command(BaseCommand):
             'pending_count': pending_count,
             'pending_amount': pending_amount,
             'category_summary': category_summary,
-            'mtd_month_name': mtd_month_name,
-            'mtd_total_count': mtd_total_count,
-            'mtd_total_amount': mtd_total_amount,
             'portal_url': 'http://192.168.1.106:8000/payments/expenses/',
         }
 
