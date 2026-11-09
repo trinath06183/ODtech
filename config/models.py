@@ -73,6 +73,14 @@ class CompanyProfile(TimeStampedModel):
         verbose_name="Expense Email Notification Mode",
         help_text="Controls whether users receive a single daily digest at 4:00 AM or instant emails for every expense."
     )
+    public_portal_url = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        default="https://collar-mammal-strike.ngrok-free.dev",
+        verbose_name="Public Portal / ngrok URL",
+        help_text="Public domain or ngrok link included in emails so users outside local network can open portal."
+    )
     gst_api_key = models.CharField(
         max_length=255, blank=True, null=True,
         verbose_name="GST API Key (RapidAPI)",

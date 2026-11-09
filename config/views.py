@@ -25,6 +25,7 @@ def settings_view(request):
         admin_backup_email = request.POST.get('admin_backup_email', '').strip()
         expense_report_email = request.POST.get('expense_report_email', '').strip()
         expense_email_mode = request.POST.get('expense_email_mode', 'DAILY_DIGEST').strip()
+        public_portal_url = request.POST.get('public_portal_url', '').strip()
         gst_api_key       = request.POST.get('gst_api_key', '').strip()
         default_currency  = request.POST.get('default_currency', 'INR').strip()
         gst_enabled       = request.POST.get('gst_enabled') == 'on'
@@ -69,6 +70,11 @@ def settings_view(request):
             valid_modes = [c[0] for c in CompanyProfile.EXPENSE_EMAIL_MODE_CHOICES]
             if expense_email_mode in valid_modes:
                 company.expense_email_mode = expense_email_mode
+
+            if public_portal_url:
+                company.public_portal_url = public_portal_url
+            elif 'public_portal_url' in request.POST and request.POST['public_portal_url'].strip() == '':
+                company.public_portal_url = None
 
             if gst_api_key:
                 company.gst_api_key = gst_api_key
@@ -244,11 +250,22 @@ def send_test_expense_report(request):
         chosen_date = str(yesterday)
     else:
         chosen_date = str(today)
+
+    current_origin = request.build_absolute_uri('/')[:-1]
+    # Auto-save public_portal_url if visiting via ngrok
+    if company and 'ngrok' in current_origin and (not company.public_portal_url or '192.168' in company.public_portal_url):
+        company.public_portal_url = current_origin
+        company.save(update_fields=['public_portal_url'])
+
+    portal_base = (company.public_portal_url if company and company.public_portal_url else current_origin).strip()
+    if '192.168' in portal_base and 'ngrok' in current_origin:
+        portal_base = current_origin
     
     try:
         kwargs = {
             'date': chosen_date,
             'skip_users': True,  # Test trigger sends only to the admin/configured email; does not blast employees
+            'base_url': portal_base,
         }
         if email_override:
             kwargs['email'] = email_override

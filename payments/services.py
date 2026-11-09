@@ -56,6 +56,21 @@ class ExpenseNotificationService:
         t.start()
 
     @classmethod
+    def get_base_url(cls, request=None):
+        try:
+            from config.models import CompanyProfile
+            profile = CompanyProfile.objects.first()
+            if profile and getattr(profile, 'public_portal_url', None):
+                return profile.public_portal_url.strip().rstrip('/')
+        except Exception:
+            pass
+        if request:
+            origin = request.build_absolute_uri('/')[:-1]
+            if 'ngrok' in origin or not getattr(settings, 'SITE_URL', None):
+                return origin.rstrip('/')
+        return getattr(settings, 'SITE_URL', 'https://collar-mammal-strike.ngrok-free.dev').rstrip('/')
+
+    @classmethod
     def notify_clarification_raised(cls, expense, admin_user, request=None):
         """Notify the uploaded user that admin has requested clarification before approval."""
         try:
@@ -63,7 +78,7 @@ class ExpenseNotificationService:
         except Exception:
             Notification = None
 
-        base_url = request.build_absolute_uri('/')[:-1] if request else getattr(settings, 'SITE_URL', 'http://localhost:8000')
+        base_url = cls.get_base_url(request)
         edit_url = f"{base_url}/payments/expenses/{expense.id}/edit/"
 
         recipients = []
@@ -153,7 +168,7 @@ class ExpenseNotificationService:
         except Exception:
             Notification = None
 
-        base_url = request.build_absolute_uri('/')[:-1] if request else getattr(settings, 'SITE_URL', 'http://localhost:8000')
+        base_url = cls.get_base_url(request)
         detail_url = f"{base_url}/payments/expenses/{expense.id}/"
 
         admin_recipients = []
@@ -237,7 +252,7 @@ class ExpenseNotificationService:
         except Exception:
             Notification = None
 
-        base_url = request.build_absolute_uri('/')[:-1] if request else getattr(settings, 'SITE_URL', 'http://localhost:8000')
+        base_url = cls.get_base_url(request)
         detail_url = f"{base_url}/payments/expenses/{expense.id}/"
 
         recipients = []

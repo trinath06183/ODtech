@@ -63,6 +63,12 @@ class Command(BaseCommand):
             default=False,
             help='Skip sending company admin report (send only consolidated user digests)',
         )
+        parser.add_argument(
+            '--base-url',
+            type=str,
+            default=None,
+            help='Base URL for portal links in email (defaults to Company Settings public_portal_url or ngrok URL)',
+        )
 
     def handle(self, *args, **options):
         now = timezone.localtime()
@@ -158,6 +164,19 @@ class Command(BaseCommand):
         report_date_str = target_date.strftime('%d %B %Y')
         report_date_slug = target_date.strftime('%Y-%m-%d')
 
+        # Determine portal base URL (prefer --base-url, then company.public_portal_url, then settings.SITE_URL, then ngrok default)
+        base_url = options.get('base_url')
+        if not base_url and profile:
+            base_url = getattr(profile, 'public_portal_url', None)
+        if not base_url:
+            from django.conf import settings
+            base_url = getattr(settings, 'SITE_URL', None) or os.environ.get('SITE_URL')
+        if not base_url:
+            base_url = "https://collar-mammal-strike.ngrok-free.dev"
+
+        base_url = str(base_url).strip().rstrip('/')
+        portal_expenses_url = f"{base_url}/payments/expenses/"
+
         context = {
             'company_name': company_name,
             'report_date': report_date_str,
@@ -172,7 +191,7 @@ class Command(BaseCommand):
             'pending_count': pending_count,
             'pending_amount': pending_amount,
             'category_summary': category_summary,
-            'portal_url': 'http://192.168.1.106:8000/payments/expenses/',
+            'portal_url': portal_expenses_url,
         }
 
         html_content = render_to_string('payments/daily_expense_report_email.html', context)
@@ -242,7 +261,7 @@ class Command(BaseCommand):
                         'approved_amount': u_approved,
                         'paid_amount': u_paid,
                         'has_clarification': has_clarification,
-                        'portal_url': 'http://192.168.1.106:8000/payments/expenses/',
+                        'portal_url': portal_expenses_url,
                     }
 
                     u_html = render_to_string('payments/user_daily_expense_digest_email.html', u_context)
