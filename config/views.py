@@ -219,6 +219,10 @@ def send_test_expense_report(request):
     
     from django.core.management import call_command
     import io
+    import datetime
+    from django.utils import timezone
+    from django.db.models import Q
+    from payments.models import Expense
     
     email_override = request.POST.get('email', '').strip()
     out = io.StringIO()
@@ -230,15 +234,32 @@ def send_test_expense_report(request):
         company.expense_report_email = email_override
         company.save(update_fields=['expense_report_email'])
     
+    # Determine which single day to test (strictly only 1 day, never all historical data):
+    today = timezone.localtime().date()
+    yesterday = today - datetime.timedelta(days=1)
+    
+    if Expense.objects.filter(Q(date=today) | Q(created_at__date=today)).exists():
+        chosen_date = str(today)
+    elif Expense.objects.filter(Q(date=yesterday) | Q(created_at__date=yesterday)).exists():
+        chosen_date = str(yesterday)
+    else:
+        chosen_date = str(today)
+    
     try:
-        kwargs = {'include_all': True}
+        kwargs = {
+            'date': chosen_date,
+            'skip_users': True,  # Test trigger sends only to the admin/configured email; does not blast employees
+        }
         if email_override:
             kwargs['email'] = email_override
         call_command('send_daily_expense_report', stdout=out, stderr=err, **kwargs)
         output_msg = out.getvalue()
         if 'ERROR' in output_msg.upper() or 'FAIL' in output_msg.upper():
             return JsonResponse({'status': 'error', 'message': output_msg.strip() or err.getvalue().strip()})
-        return JsonResponse({'status': 'success', 'message': output_msg.strip() or 'Daily expense report sent successfully!'})
+        return JsonResponse({
+            'status': 'success', 
+            'message': output_msg.strip() or f'Daily expense report for {chosen_date} sent successfully (only that day\'s entries).'
+        })
     except Exception as exc:
         err_str = str(exc)
         if 'Authentication Required' in err_str or '530' in err_str:

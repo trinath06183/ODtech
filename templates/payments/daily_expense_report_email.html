@@ -257,8 +257,8 @@
         <!-- Header -->
         <div class="header-banner">
             <h1>{{ company_name|default:"ODtech Solutions" }}</h1>
-            <div class="tagline">Master Company Expense Report (All Employees)</div>
-            <div class="date-badge">Summary of ALL Company Expenses for {{ report_date }} (4:00 AM IST)</div>
+            <div class="tagline">Daily Company Expense Report</div>
+            <div class="date-badge">Expenses for {{ report_date }}</div>
         </div>
 
         <!-- Content -->
@@ -268,7 +268,7 @@
             <div class="kpi-row">
                 <div class="kpi-cell">
                     <div class="kpi-box total">
-                        <div class="kpi-title">Total Expenses Logged</div>
+                        <div class="kpi-title">Total Logged ({{ report_date }})</div>
                         <div class="kpi-num">&#8377;{{ total_amount|floatformat:2 }}</div>
                         <div class="kpi-desc">{{ total_count }} total entries</div>
                     </div>
@@ -290,7 +290,7 @@
             </div>
 
             <!-- Main Itemized Table containing: Exp ID, Date, Title, Category, Amount, Approval Status -->
-            <div class="table-title">Expense Entries</div>
+            <div class="table-title">Expense Entries for {{ report_date }}</div>
             
             {% if expenses %}
             <div class="table-wrap">

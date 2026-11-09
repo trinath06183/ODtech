@@ -49,7 +49,7 @@ class Command(BaseCommand):
             '--include-all',
             action='store_true',
             default=False,
-            help='Include all expenses if target date has zero entries',
+            help='(Deprecated) Only that day expenses are sent',
         )
         parser.add_argument(
             '--skip-users',
@@ -101,24 +101,22 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Target Report Date: {target_date.strftime('%d %B %Y')}")
 
-        # ── 3. Query Expenses for Target Date ───────────────────────────────────────
-        expenses_qs = Expense.objects.select_related('submitted_by', 'approved_by').filter(date=target_date).order_by('-id')
-        
-        # If no expenses on target date and --include-all specified, fallback to last 7 days
-        include_all = options.get('include_all', False)
-        if not expenses_qs.exists() and include_all:
-            self.stdout.write(self.style.WARNING(f"  No expenses found for {target_date}. Including recent expenses..."))
-            expenses_qs = Expense.objects.select_related('submitted_by', 'approved_by').all().order_by('-date', '-id')[:50]
+        # ── 3. Query Expenses for Target Date ONLY ─────────────────────────────────
+        # Strictly include only expenses for this specific date (no historical entries)
+        day_q = Q(date=target_date) | Q(created_at__date=target_date)
+        expenses_qs = Expense.objects.select_related('submitted_by', 'approved_by').filter(day_q).distinct().order_by('-id')
 
         expenses_list = list(expenses_qs)
         total_count = len(expenses_list)
 
-        # Totals calculation
+        # Totals calculation strictly for that day
         total_ex_gst = Decimal('0.00')
         total_gst = Decimal('0.00')
         total_amount = Decimal('0.00')
         approved_count = 0
         approved_amount = Decimal('0.00')
+        pending_count = 0
+        pending_amount = Decimal('0.00')
 
         # Category mapping for breakdown
         category_map = {}
@@ -135,6 +133,9 @@ class Command(BaseCommand):
             if exp.status == 'Approved':
                 approved_count += 1
                 approved_amount += gross
+            elif exp.status in ['Pending', 'Clarification', 'Clarification Provided']:
+                pending_count += 1
+                pending_amount += gross
 
             cat = exp.expense_type or 'Other'
             if cat not in category_map:
@@ -149,23 +150,8 @@ class Command(BaseCommand):
             cat_data['percentage'] = pct
             category_summary.append(cat_data)
 
-        # ── 4. Query All Action Pending Expenses ────────────────────────────────────
-        pending_qs = Expense.objects.filter(status__in=['Pending', 'Clarification', 'Clarification Provided'])
-        pending_count = pending_qs.count()
-        pending_amount_data = pending_qs.aggregate(total=Sum('amount'), gst=Sum('gst_amount'))
-        pending_amount = (pending_amount_data['total'] or Decimal('0.00')) + (pending_amount_data['gst'] or Decimal('0.00'))
-
-        # ── 5. Query Month-to-Date (MTD) Totals ─────────────────────────────────────
-        first_day_of_month = target_date.replace(day=1)
-        mtd_qs = Expense.objects.filter(date__gte=first_day_of_month, date__lte=target_date)
-        mtd_total_count = mtd_qs.count()
-        mtd_data = mtd_qs.aggregate(total=Sum('amount'), gst=Sum('gst_amount'))
-        mtd_total_amount = (mtd_data['total'] or Decimal('0.00')) + (mtd_data['gst'] or Decimal('0.00'))
-        mtd_month_name = target_date.strftime('%B %Y')
-
-        self.stdout.write(f"  Summary: {total_count} entries for {target_date} (Total: Rs. {total_amount:,.2f})")
-        self.stdout.write(f"  Action Pending in System: {pending_count} entries (Total: Rs. {pending_amount:,.2f})")
-        self.stdout.write(f"  MTD ({mtd_month_name}): {mtd_total_count} entries (Total: Rs. {mtd_total_amount:,.2f})")
+        self.stdout.write(f"  Summary for {target_date}: {total_count} entries (Total: Rs. {total_amount:,.2f})")
+        self.stdout.write(f"  Approved: {approved_count} (Rs. {approved_amount:,.2f}) | Pending: {pending_count} (Rs. {pending_amount:,.2f})")
 
         # ── 6. Render HTML & Text Email ─────────────────────────────────────────────
         company_name = profile.name if profile and profile.name else "ODtech Solutions"
@@ -234,8 +220,6 @@ class Command(BaseCommand):
             )
 
             activity_expenses = Expense.objects.select_related('submitted_by', 'approved_by').filter(user_activity_q).distinct()
-            if not activity_expenses.exists() and include_all:
-                activity_expenses = expenses_qs
             
             # Group by user (submitted_by)
             user_map = {}
