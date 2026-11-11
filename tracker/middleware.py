@@ -36,6 +36,12 @@ class ErrorLoggingMiddleware(MiddlewareMixin):
         return ip
 
     def process_exception(self, request, exception):
+        from django.http import Http404
+        from django.core.exceptions import PermissionDenied
+        # Do not convert standard 404 Not Found or 403 Permission Denied into 500 Server Errors
+        if isinstance(exception, (Http404, PermissionDenied)):
+            return None
+
         # Scrub sensitive data
         sensitive_keys = ['password', 'csrfmiddlewaretoken', 'card_number', 'cvv', 'credit_card', 'secret']
         post_data = {}

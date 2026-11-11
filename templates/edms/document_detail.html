@@ -311,7 +311,23 @@
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
     <!-- Left Column: Document Preview -->
-    {% if document.source_type == 'commercial' and document.commercial_doc_id %}
+    {% if document.is_deleted %}
+    <div class="lg:col-span-8">
+        <div class="glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
+            <div class="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center text-3xl mb-4">
+                🗑️
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">Document is in Trash</h3>
+            <p class="text-sm text-slate-500 max-w-sm mb-6">This document was moved to trash. Restore it to view or preview its contents.</p>
+            <form method="POST" action="{% url 'edms:document_restore' doc_id=document.id %}">
+                {% csrf_token %}
+                <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition shadow-sm">
+                    ♻ Restore Document
+                </button>
+            </form>
+        </div>
+    </div>
+    {% elif document.source_type == 'commercial' and document.commercial_doc_id %}
     <div class="lg:col-span-8">
         <div class="glass rounded-2xl p-4 h-full flex flex-col">
             <div class="flex items-center justify-between mb-3">

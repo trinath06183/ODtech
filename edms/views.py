@@ -414,7 +414,15 @@ class DocumentDownloadView(EDMSLoginRequiredMixin, View):
     """
 
     def get(self, request, doc_id, version_number=None):
-        doc = get_object_or_404(EDMSDocument, id=doc_id, is_deleted=False)
+        try:
+            doc = EDMSDocument.objects.get(id=doc_id)
+        except EDMSDocument.DoesNotExist:
+            messages.error(request, 'The requested document does not exist or has been removed.')
+            return redirect('edms:document_list')
+
+        if doc.is_deleted:
+            messages.error(request, f"Document '{doc.title}' is in trash and cannot be downloaded until restored.")
+            return redirect('edms:document_detail', doc_id=doc.id)
 
         # Permission check
         allowed, reason = PermissionService.has_document_access(request.user, doc, 'download')
@@ -508,7 +516,30 @@ class DocumentPreviewView(EDMSLoginRequiredMixin, View):
     """Serve file inline for browser preview (PDF, images, text)."""
 
     def get(self, request, doc_id, version_number=None):
-        doc = get_object_or_404(EDMSDocument, id=doc_id, is_deleted=False)
+        try:
+            doc = EDMSDocument.objects.get(id=doc_id)
+        except EDMSDocument.DoesNotExist:
+            return HttpResponse(
+                '<div style="font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f172a; color: #94a3b8; text-align: center; padding: 20px;">'
+                '<div style="font-size: 40px; margin-bottom: 12px;">📄</div>'
+                '<h2 style="color: #f1f5f9; font-size: 18px; margin-bottom: 8px;">Document Not Found</h2>'
+                '<p style="font-size: 13px; max-width: 320px; line-height: 1.5; margin: 0;">This document does not exist or has been permanently removed.</p>'
+                '</div>',
+                status=404,
+                content_type='text/html',
+            )
+
+        if doc.is_deleted:
+            return HttpResponse(
+                '<div style="font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f172a; color: #94a3b8; text-align: center; padding: 20px;">'
+                '<div style="font-size: 40px; margin-bottom: 12px;">🗑️</div>'
+                '<h2 style="color: #f87171; font-size: 18px; margin-bottom: 8px;">Document in Trash</h2>'
+                '<p style="font-size: 13px; max-width: 320px; line-height: 1.5; margin: 0;">This document was moved to trash. Please restore it to preview its contents.</p>'
+                '</div>',
+                status=200,
+                content_type='text/html',
+            )
+
         allowed, reason = PermissionService.has_document_access(request.user, doc, 'preview')
         if not allowed:
             return HttpResponse(f"Access denied: {reason}", status=403)
