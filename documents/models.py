@@ -441,6 +441,16 @@ class Document(TimeStampedModel):
         return Decimal(str(val)) if val is not None else Decimal('0.00')
 
     @property
+    def adjustments_as_invoice(self):
+        """Convenience property for adjustments applied to this document as an invoice."""
+        return self.note_adjustments_as_invoice
+
+    @property
+    def adjustments_as_note(self):
+        """Convenience property for adjustments made using this document as a credit/debit note."""
+        return self.note_adjustments_as_note
+
+    @property
     def net_grand_total(self):
         """Net invoice amount after applying credit notes and debit notes."""
         gt = self.grand_total if self.grand_total is not None else Decimal('0.00')
