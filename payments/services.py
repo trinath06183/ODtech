@@ -57,18 +57,8 @@ class ExpenseNotificationService:
 
     @classmethod
     def get_base_url(cls, request=None):
-        try:
-            from config.models import CompanyProfile
-            profile = CompanyProfile.objects.first()
-            if profile and getattr(profile, 'public_portal_url', None):
-                return profile.public_portal_url.strip().rstrip('/')
-        except Exception:
-            pass
-        if request:
-            origin = request.build_absolute_uri('/')[:-1]
-            if 'ngrok' in origin or not getattr(settings, 'SITE_URL', None):
-                return origin.rstrip('/')
-        return getattr(settings, 'SITE_URL', 'https://collar-mammal-strike.ngrok-free.dev').rstrip('/')
+        from core.utils import get_public_base_url
+        return get_public_base_url(request)
 
     @classmethod
     def notify_clarification_raised(cls, expense, admin_user, request=None):

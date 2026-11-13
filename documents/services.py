@@ -206,6 +206,8 @@ class PDFService:
         "PO": "documents/purchase_order.html",
         "INV": "documents/invoice.html",
         "PRO": "documents/invoice.html",
+        "CRN": "documents/invoice.html",
+        "DBN": "documents/invoice.html",
     }
 
     @classmethod
@@ -396,6 +398,9 @@ class DocumentService:
             billing_gstin=kwargs.get("billing_gstin") or None,
             repeat_header=kwargs.get("repeat_header", False),
             source_document=kwargs.get("source_document"),
+            original_invoice_number=kwargs.get("original_invoice_number") or (kwargs.get("source_document").number if kwargs.get("source_document") else None),
+            original_invoice_date=kwargs.get("original_invoice_date") or (kwargs.get("source_document").date if kwargs.get("source_document") else None),
+            note_reason=kwargs.get("note_reason") or None,
             created_by=kwargs.get("created_by"),
         )
         DocumentService.replace_items(document, items)
@@ -405,13 +410,35 @@ class DocumentService:
             from core.models import DocumentLink
             from django.contrib.contenttypes.models import ContentType
             doc_ct = ContentType.objects.get_for_model(Document)
+            link_kind = 'credit_note' if document_type == 'CRN' else ('debit_note' if document_type == 'DBN' else 'converted')
             DocumentLink.objects.get_or_create(
                 source_type=doc_ct,
                 source_id=source_doc.id,
                 target_type=doc_ct,
                 target_id=document.id,
-                defaults={'link_type': 'converted'}
+                defaults={'link_type': link_kind}
             )
+
+        applied_notes = kwargs.get("applied_credit_notes") or []
+        if applied_notes and document.type == 'INV':
+            from documents.models import NoteAdjustment
+            for item in applied_notes:
+                try:
+                    note_id = item.get('note_id')
+                    adj_amount = Decimal(str(item.get('amount', 0)))
+                    if note_id and adj_amount > 0:
+                        crn_note = Document.objects.filter(id=note_id, type__in=['CRN', 'DBN']).first()
+                        if crn_note and crn_note.unadjusted_amount > 0:
+                            actual_adj = min(adj_amount, crn_note.unadjusted_amount)
+                            NoteAdjustment.objects.create(
+                                note=crn_note,
+                                invoice=document,
+                                amount=actual_adj,
+                                created_by=kwargs.get("created_by"),
+                                notes=f"Adjusted during invoice {document.number} creation"
+                            )
+                except Exception:
+                    pass
 
         if source_order:
             from core.models import DocumentLink
@@ -467,6 +494,14 @@ class DocumentService:
             document.transport_reason = kwargs.get("transport_reason") or "Refilling only, No Commercial involvement."
         document.po_reference_number = kwargs.get("po_reference_number") or None
         document.po_date = kwargs.get("po_date") or None
+        if "original_invoice_number" in kwargs:
+            document.original_invoice_number = kwargs.get("original_invoice_number") or None
+        if "original_invoice_date" in kwargs:
+            document.original_invoice_date = kwargs.get("original_invoice_date") or None
+        if "note_reason" in kwargs:
+            document.note_reason = kwargs.get("note_reason") or None
+        if "source_document" in kwargs:
+            document.source_document = kwargs.get("source_document")
         if "invoice_date" in kwargs and kwargs["invoice_date"]:
             document.date = kwargs["invoice_date"]
         if "place_of_supply" in kwargs:

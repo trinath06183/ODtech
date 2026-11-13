@@ -157,6 +157,9 @@ EMAIL_HOST_USER   = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "ODtech ERP <noreply@odtech.com>")
 
+# ─── Public Domain / Canonical URL ───────────────────────────────────────────
+SITE_URL = os.environ.get("SITE_URL", "https://collar-mammal-strike.ngrok-free.dev")
+
 # ─── OTP Password Reset ────────────────────────────────────────────────────────
 OTP_EXPIRY_MINUTES = int(os.environ.get("OTP_EXPIRY_MINUTES", 10))
 

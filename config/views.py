@@ -251,15 +251,20 @@ def send_test_expense_report(request):
     else:
         chosen_date = str(today)
 
+    from core.utils import get_public_base_url
     current_origin = request.build_absolute_uri('/')[:-1]
+    
     # Auto-save public_portal_url if visiting via ngrok
-    if company and 'ngrok' in current_origin and (not company.public_portal_url or '192.168' in company.public_portal_url):
-        company.public_portal_url = current_origin
-        company.save(update_fields=['public_portal_url'])
+    if company and 'ngrok' in current_origin:
+        if company.public_portal_url != current_origin:
+            company.public_portal_url = current_origin
+            company.save(update_fields=['public_portal_url'])
 
-    portal_base = (company.public_portal_url if company and company.public_portal_url else current_origin).strip()
-    if '192.168' in portal_base and 'ngrok' in current_origin:
-        portal_base = current_origin
+    # Determine canonical public URL (MUST NEVER be a local LAN IP like 192.168.x.x)
+    portal_base = get_public_base_url(request)
+    if company and (not company.public_portal_url or any(h in company.public_portal_url for h in ['192.168.', '127.0.0.1', 'localhost', '10.'])):
+        company.public_portal_url = portal_base
+        company.save(update_fields=['public_portal_url'])
     
     try:
         kwargs = {

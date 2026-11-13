@@ -86,6 +86,14 @@ class Document(TimeStampedModel):
     place_of_supply = models.CharField(max_length=100, default='21-Odisha', blank=True, null=True, verbose_name="Place of Supply")
     quotation_asked_by = models.CharField(max_length=255, blank=True, null=True, verbose_name="Quotation Asked By")
     source_document = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='converted_documents')
+    
+    # Credit Note (CRN) & Debit Note (DBN) Reference Fields
+    original_invoice_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Original Invoice Number", help_text="Reference Invoice Number for Credit Note or Debit Note")
+    original_invoice_date = models.DateField(blank=True, null=True, verbose_name="Original Invoice Date", help_text="Reference Invoice Date for Credit Note or Debit Note")
+    note_reason = models.CharField(max_length=150, blank=True, null=True, verbose_name="Note Reason", help_text="Reason for Credit Note / Debit Note")
+    is_adjusted = models.BooleanField(default=False, verbose_name="Is Fully Adjusted", help_text="True if this Credit/Debit note has been fully applied/adjusted")
+    adjusted_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), verbose_name="Adjusted Amount")
+    
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='created_documents',
@@ -403,9 +411,51 @@ class Document(TimeStampedModel):
         return Payment.objects.filter(document_ref__in=doc_numbers).order_by('-date')
 
     @property
-    def balance_due(self):
+    def unadjusted_amount(self):
         gt = self.grand_total if self.grand_total is not None else Decimal('0.00')
-        bal = Decimal(str(gt)) - Decimal(str(self.amount_paid or 0))
+        adj = self.adjusted_amount if self.adjusted_amount is not None else Decimal('0.00')
+        return max(Decimal('0.00'), gt - adj)
+
+    @property
+    def ref_invoice_display(self):
+        if self.source_document:
+            return self.source_document.number
+        return self.original_invoice_number or self.po_reference_number or ''
+
+    @property
+    def ref_invoice_date_display(self):
+        if self.source_document and self.source_document.date:
+            return self.source_document.date
+        return self.original_invoice_date or self.po_date or None
+
+    @property
+    def credit_notes_adjusted(self):
+        """Total credit note amount adjusted against this invoice."""
+        if hasattr(self, '_cached_crn_adj'):
+            return self._cached_crn_adj
+        val = self.note_adjustments_as_invoice.filter(note__type='CRN').aggregate(t=models.Sum('amount'))['t']
+        self._cached_crn_adj = Decimal(str(val)) if val is not None else Decimal('0.00')
+        return self._cached_crn_adj
+
+    @property
+    def debit_notes_adjusted(self):
+        """Total debit note amount adjusted against this invoice."""
+        if hasattr(self, '_cached_dbn_adj'):
+            return self._cached_dbn_adj
+        val = self.note_adjustments_as_invoice.filter(note__type='DBN').aggregate(t=models.Sum('amount'))['t']
+        self._cached_dbn_adj = Decimal(str(val)) if val is not None else Decimal('0.00')
+        return self._cached_dbn_adj
+
+    @property
+    def net_grand_total(self):
+        """Net invoice amount after applying credit notes and debit notes."""
+        gt = self.grand_total if self.grand_total is not None else Decimal('0.00')
+        return max(Decimal('0.00'), gt - self.credit_notes_adjusted + self.debit_notes_adjusted)
+
+    @property
+    def balance_due(self):
+        net_total = self.net_grand_total
+        bal = Decimal(str(net_total)) - Decimal(str(self.amount_paid or 0))
         return max(Decimal('0.00'), bal)
 
     @property
@@ -683,3 +733,49 @@ class InstallationCertificate(models.Model):
 
     def __str__(self):
         return f"Cert – {self.document.number} ({self.date_of_installation})"
+
+
+class NoteAdjustment(TimeStampedModel):
+    """
+    Tracks the adjustment/allocation of a Credit Note (CRN) or Debit Note (DBN)
+    against a Tax Invoice (INV).
+    """
+    note = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='note_adjustments_as_note')
+    invoice = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='note_adjustments_as_invoice')
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    adjustment_date = models.DateField(default=timezone.now)
+    notes = models.CharField(max_length=255, blank=True, null=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_note_adjustments'
+    )
+
+    class Meta:
+        ordering = ['-adjustment_date', '-id']
+        indexes = [
+            models.Index(fields=['note', 'invoice']),
+            models.Index(fields=['adjustment_date']),
+        ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_note_status()
+
+    def delete(self, *args, **kwargs):
+        note = self.note
+        super().delete(*args, **kwargs)
+        if note:
+            total_adj = NoteAdjustment.objects.filter(note=note).aggregate(t=models.Sum('amount'))['t'] or Decimal('0.00')
+            note.adjusted_amount = total_adj
+            note.is_adjusted = (total_adj >= (note.grand_total or Decimal('0.00')) > 0)
+            note.save(update_fields=['adjusted_amount', 'is_adjusted'])
+
+    def update_note_status(self):
+        if self.note:
+            total_adj = NoteAdjustment.objects.filter(note=self.note).aggregate(t=models.Sum('amount'))['t'] or Decimal('0.00')
+            self.note.adjusted_amount = total_adj
+            self.note.is_adjusted = (total_adj >= (self.note.grand_total or Decimal('0.00')) > 0)
+            self.note.save(update_fields=['adjusted_amount', 'is_adjusted'])
+
+    def __str__(self):
+        return f"{self.note.number} adjusted ₹{self.amount} against {self.invoice.number}"
+

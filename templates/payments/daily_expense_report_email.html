@@ -357,10 +357,20 @@
             {% endif %}
 
             <!-- View in Portal CTA -->
-            <div class="cta-row">
-                <a href="{{ portal_url|default:'#' }}" class="btn-portal">
-                    View All Expenses in Portal &rarr;
-                </a>
+            <div class="cta-row" style="text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; display: inline-table;">
+                    <tr>
+                        <td align="center" style="border-radius: 8px; background-color: #00A450;">
+                            <a href="{{ portal_url|default:'https://collar-mammal-strike.ngrok-free.dev/payments/expenses/' }}" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               class="btn-portal"
+                               style="display: inline-block; background-color: #00A450; color: #ffffff !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; line-height: 20px; padding: 12px 28px; border-radius: 8px; text-decoration: none; border: 1px solid #00A450;">
+                                View All Expenses in Portal &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                </table>
             </div>
 
         </div>

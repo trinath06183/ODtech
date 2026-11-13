@@ -164,15 +164,15 @@ class Command(BaseCommand):
         report_date_str = target_date.strftime('%d %B %Y')
         report_date_slug = target_date.strftime('%Y-%m-%d')
 
-        # Determine portal base URL (prefer --base-url, then company.public_portal_url, then settings.SITE_URL, then ngrok default)
+        # Determine portal base URL: MUST ALWAYS be a valid public URL (ngrok / custom domain)
+        # Under NO circumstance should private local LAN IPs (192.168.x.x, 127.0.0.1, localhost) be sent in emails!
+        from core.utils import get_public_base_url
         base_url = options.get('base_url')
-        if not base_url and profile:
-            base_url = getattr(profile, 'public_portal_url', None)
+        if base_url and any(h in str(base_url) for h in ['192.168.', '127.0.0.1', 'localhost', '10.', '172.16.', '::1']):
+            base_url = None
+
         if not base_url:
-            from django.conf import settings
-            base_url = getattr(settings, 'SITE_URL', None) or os.environ.get('SITE_URL')
-        if not base_url:
-            base_url = "https://collar-mammal-strike.ngrok-free.dev"
+            base_url = get_public_base_url()
 
         base_url = str(base_url).strip().rstrip('/')
         portal_expenses_url = f"{base_url}/payments/expenses/"

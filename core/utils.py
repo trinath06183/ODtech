@@ -42,3 +42,37 @@ def format_inr(value):
         integer = ",".join(groups + [last_three])
     return f"{sign}Rs. {integer}.{decimal}"
 
+
+def get_public_base_url(request=None):
+    """
+    Returns the canonical public base URL (e.g. ngrok tunnel or production domain).
+    Ensures that automated emails and external links NEVER use internal LAN IPs
+    (like 192.168.x.x, 10.x.x.x, 127.0.0.1, or localhost) which fail when users
+    access links on mobile data or outside the local network.
+    """
+    from django.conf import settings
+    default_url = getattr(settings, 'SITE_URL', 'https://collar-mammal-strike.ngrok-free.dev')
+
+    # 1. Check CompanyProfile.public_portal_url
+    try:
+        from config.models import CompanyProfile
+        company = CompanyProfile.objects.first()
+        if company and getattr(company, 'public_portal_url', None):
+            val = company.public_portal_url.strip().rstrip('/')
+            if val and not any(h in val for h in ['192.168.', '127.0.0.1', 'localhost', '10.', '172.16.', '::1']):
+                return val
+    except Exception:
+        pass
+
+    # 2. Check current request origin if it's already an external / ngrok domain
+    if request:
+        origin = request.build_absolute_uri('/')[:-1]
+        if 'ngrok' in origin or (not any(h in origin for h in ['192.168.', '127.0.0.1', 'localhost', '10.', '172.16.', '::1']) and getattr(settings, 'SITE_URL', None)):
+            return origin.rstrip('/')
+
+    # 3. Fallback to settings.SITE_URL or default ngrok public domain
+    if any(h in str(default_url) for h in ['192.168.', '127.0.0.1', 'localhost', '10.', '172.16.', '::1']):
+        return 'https://collar-mammal-strike.ngrok-free.dev'
+    return str(default_url).rstrip('/')
+
+
