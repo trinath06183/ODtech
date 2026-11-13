@@ -339,13 +339,13 @@ def document_list(request):
     type_counts = dict(Document.objects.values('type').annotate(c=Count('id')).values_list('type', 'c'))
 
     stats = [
-        {'type': 'QTN', 'label': 'Quotations',        'icon': '📋', 'count': type_counts.get('QTN', 0)},
-        {'type': 'PRO', 'label': 'Proforma Invoices', 'icon': '📄', 'count': type_counts.get('PRO', 0)},
-        {'type': 'INV', 'label': 'Invoices',          'icon': '🧾', 'count': type_counts.get('INV', 0)},
-        {'type': 'PO',  'label': 'Purchase Orders',   'icon': '🛒', 'count': type_counts.get('PO', 0)},
-        {'type': 'CHL', 'label': 'Challans',          'icon': '🚚', 'count': type_counts.get('CHL', 0)},
-        {'type': 'DBN', 'label': 'Debit Notes',       'icon': '➖', 'count': type_counts.get('DBN', 0)},
-        {'type': 'CRN', 'label': 'Credit Notes',      'icon': '➕', 'count': type_counts.get('CRN', 0)},
+        {'type': 'QTN', 'label': 'Quotations',        'count': type_counts.get('QTN', 0)},
+        {'type': 'PRO', 'label': 'Proforma Invoices', 'count': type_counts.get('PRO', 0)},
+        {'type': 'INV', 'label': 'Invoices',          'count': type_counts.get('INV', 0)},
+        {'type': 'PO',  'label': 'Purchase Orders',   'count': type_counts.get('PO', 0)},
+        {'type': 'CHL', 'label': 'Challans',          'count': type_counts.get('CHL', 0)},
+        {'type': 'DBN', 'label': 'Debit Notes',       'count': type_counts.get('DBN', 0)},
+        {'type': 'CRN', 'label': 'Credit Notes',      'count': type_counts.get('CRN', 0)},
     ]
     filters = [
         {'type': 'QTN', 'label': 'Quotations'},
