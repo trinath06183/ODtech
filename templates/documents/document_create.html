@@ -194,10 +194,15 @@
         white-space: nowrap;
     }
     .tab-btn .tab-icon {
-        font-size: 16px;
-        line-height: 1;
-        display: block;
-        margin-bottom: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 3px;
+    }
+    .tab-btn .tab-icon svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
     }
     .tab-btn:hover {
         background: rgba(0,0,0,0.04);
@@ -346,7 +351,9 @@
         class="fixed top-20 right-4 sm:right-6 z-[9999] max-w-sm sm:max-w-md w-auto bg-white/95 backdrop-blur-md border border-amber-300 rounded-2xl px-3.5 py-2 shadow-xl shadow-amber-900/10 flex items-center justify-between gap-3.5 ring-4 ring-amber-500/10 pointer-events-auto"
         style="position: fixed; z-index: 9999;">
         <div class="flex items-center gap-2.5 min-w-0">
-            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">⚡</span>
+            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </span>
             <div class="min-w-0">
                 <div class="font-bold text-slate-800 text-xs truncate">Unsaved Draft Detected</div>
                 <div class="text-[11px] text-slate-500 hidden sm:block truncate">Restore earlier unfinished document?</div>
@@ -355,12 +362,14 @@
         <div class="flex items-center gap-1.5 shrink-0">
             <button type="button" @click="restoreDraft()"
                 class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer">
-                ↺ Restore
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>Restore</span>
             </button>
             <button type="button" @click="discardDraft()"
-                class="px-2 py-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                class="px-2 py-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
                 title="Discard earlier draft">
-                ✕ Discard
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span>Discard</span>
             </button>
         </div>
     </div>
@@ -368,7 +377,10 @@
     {# ── Keyboard Shortcuts Legend Pill ────────────────────────────────────── #}
     <div class="hidden sm:flex items-center justify-between text-xs text-gray-500 bg-white/70 border border-slate-200 px-4 py-2 rounded-xl shadow-xs">
         <div class="flex items-center gap-4">
-            <span class="font-bold text-slate-700 uppercase tracking-wider text-xs">⌨️ Keyboard Shortcuts:</span>
+            <span class="font-bold text-slate-700 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M5 10v4m4-4v4m4-4v4m4-4v4M3 6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/></svg>
+                Keyboard Shortcuts:
+            </span>
             <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono font-bold text-slate-700">Ctrl + S</kbd> Save Document</span>
             <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono font-bold text-slate-700">Alt + N</kbd> Add Custom Item</span>
             <span><kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono font-bold text-slate-700">Esc</kbd> Close Modals</span>
@@ -424,27 +436,39 @@
                 <nav class="tab-nav">
                     <button type="button" class="tab-btn" :class="activeTab==='settings'?'active':''"
                         @click="activeTab='settings'">
-                        <span class="tab-icon">⚙️</span>Settings
+                        <span class="tab-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </span>Settings
                     </button>
                     <button type="button" class="tab-btn" :class="activeTab==='sections'?'active':''"
                         @click="activeTab='sections'">
-                        <span class="tab-icon">🛠️</span>Sections
+                        <span class="tab-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                        </span>Sections
                     </button>
                     <button type="button" class="tab-btn" :class="activeTab==='columns'?'active':''"
                         @click="activeTab='columns'">
-                        <span class="tab-icon">📊</span>Columns
+                        <span class="tab-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                        </span>Columns
                     </button>
                     <button type="button" class="tab-btn" :class="activeTab==='discount'?'active':''"
                         @click="activeTab='discount'">
-                        <span class="tab-icon">🏷️</span>Discount
+                        <span class="tab-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        </span>Discount
                     </button>
                     <button type="button" class="tab-btn" :class="activeTab==='milestones'?'active':''"
                         @click="activeTab='milestones'" x-show="docType==='PRO'">
-                        <span class="tab-icon">💰</span>Stages
+                        <span class="tab-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </span>Stages
                     </button>
                     <button type="button" class="tab-btn" :class="activeTab==='terms'?'active':''"
                         @click="activeTab='terms'">
-                        <span class="tab-icon">📜</span>Terms
+                        <span class="tab-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </span>Terms
                     </button>
                 </nav>
 
@@ -487,49 +511,55 @@
                         </div>
 
                         <!-- Customer Unadjusted Notes Banner (Credit Notes & Debit Notes) -->
-                        <div x-show="customerNotesLoading" class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-300 flex items-center gap-2" x-cloak>
-                            <svg class="animate-spin w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <div x-show="customerNotesLoading" class="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 flex items-center gap-2" x-cloak>
+                            <svg class="animate-spin w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             <span>Checking customer credit/debit balances...</span>
                         </div>
 
-                        <!-- Available Credit Notes (Green Banner) -->
+                        <!-- Available Credit Notes (Clean Emerald Light Card) -->
                         <div x-show="!customerNotesLoading && unadjustedCreditNotes.length > 0" 
-                             class="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs space-y-2 shadow-lg shadow-emerald-950/30" x-cloak>
+                             class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-2.5 shadow-xs" x-cloak>
                             <div class="flex items-center justify-between font-bold">
-                                <span class="flex items-center gap-1.5 text-emerald-400">
-                                    <span>🎁</span> Unadjusted Credit Available:
+                                <span class="flex items-center gap-1.5 text-emerald-800">
+                                    <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                    Unadjusted Credit Available:
                                 </span>
-                                <span class="text-sm font-extrabold text-emerald-300" x-text="'₹' + Number(totalCreditAvailable).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                                <span class="text-sm font-extrabold text-emerald-700" x-text="'₹' + Number(totalCreditAvailable).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </div>
-                            <div class="flex flex-wrap gap-1.5 pt-1">
+                            <div class="flex flex-wrap gap-1.5 pt-0.5">
                                 <template x-for="crn in unadjustedCreditNotes" :key="crn.id">
-                                    <div class="px-2.5 py-1 rounded-lg bg-emerald-900/70 border border-emerald-500/50 text-white flex items-center gap-1.5">
-                                        <span class="font-bold text-emerald-300" x-text="crn.number"></span>
-                                        <span class="text-emerald-100" x-text="'(₹' + Number(crn.unadjusted_amount).toFixed(2) + ')'"></span>
-                                        <span x-show="crn.ref_invoice_number" class="text-[10px] text-emerald-400/80" x-text="'• Ref: ' + crn.ref_invoice_number"></span>
+                                    <div class="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-slate-800 shadow-xs flex items-center gap-1.5 font-medium">
+                                        <span class="font-bold text-emerald-700" x-text="crn.number"></span>
+                                        <span class="text-slate-600 text-[11px]" x-text="'(₹' + Number(crn.unadjusted_amount).toFixed(2) + ')'"></span>
+                                        <span x-show="crn.ref_invoice_number" class="text-[10px] text-slate-400" x-text="'• Ref: ' + crn.ref_invoice_number"></span>
                                     </div>
                                 </template>
                             </div>
-                            <div x-show="docType === 'INV'" class="pt-1 text-[11px] text-emerald-300/90 flex items-center justify-between border-t border-emerald-800/60">
+                            <div x-show="docType === 'INV'" class="pt-1.5 text-[11px] text-emerald-700 flex items-center justify-between border-t border-emerald-200/70">
                                 <span>Tip: You can apply these credit notes to reduce this invoice below in the summary.</span>
                             </div>
                         </div>
 
-                        <!-- Outstanding Debit Notes (Amber Banner) -->
+                        <!-- Outstanding Debit Notes (Clean Amber Light Card) -->
                         <div x-show="!customerNotesLoading && unadjustedDebitNotes.length > 0" 
-                             class="p-3.5 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs space-y-2 shadow-lg shadow-amber-950/30" x-cloak>
+                             class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2.5 shadow-xs" x-cloak>
                             <div class="flex items-center justify-between font-bold">
-                                <span class="flex items-center gap-1.5 text-amber-400">
-                                    <span>⚠️</span> Outstanding Debit Notes:
+                                <span class="flex items-center gap-1.5 text-amber-800">
+                                    <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    Outstanding Debit Notes:
                                 </span>
-                                <span class="text-sm font-extrabold text-amber-300" x-text="'₹' + Number(totalDebitOutstanding).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                                <span class="text-sm font-extrabold text-amber-700" x-text="'₹' + Number(totalDebitOutstanding).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </div>
-                            <div class="flex flex-wrap gap-1.5 pt-1">
+                            <div class="flex flex-wrap gap-1.5 pt-0.5">
                                 <template x-for="dbn in unadjustedDebitNotes" :key="dbn.id">
-                                    <div class="px-2.5 py-1 rounded-lg bg-amber-900/70 border border-amber-500/50 text-white flex items-center gap-1.5">
-                                        <span class="font-bold text-amber-300" x-text="dbn.number"></span>
-                                        <span class="text-amber-100" x-text="'(₹' + Number(dbn.unadjusted_amount).toFixed(2) + ')'"></span>
-                                        <span x-show="dbn.ref_invoice_number" class="text-[10px] text-amber-400/80" x-text="'• Ref: ' + dbn.ref_invoice_number"></span>
+                                    <div class="px-2.5 py-1 rounded-lg bg-white border border-amber-200 text-slate-800 shadow-xs flex items-center gap-1.5 font-medium">
+                                        <span class="font-bold text-amber-700" x-text="dbn.number"></span>
+                                        <span class="text-slate-600 text-[11px]" x-text="'(₹' + Number(dbn.unadjusted_amount).toFixed(2) + ')'"></span>
+                                        <span x-show="dbn.ref_invoice_number" class="text-[10px] text-slate-400" x-text="'• Ref: ' + dbn.ref_invoice_number"></span>
                                     </div>
                                 </template>
                             </div>
@@ -570,21 +600,22 @@
                         </div>
 
                         <!-- Original Reference Invoice & Reason (for Credit Notes & Debit Notes) -->
-                        <div x-show="docType === 'CRN' || docType === 'DBN'" class="p-3.5 rounded-xl bg-slate-900/95 border border-cyan-500/50 space-y-3 shadow-lg" x-cloak>
-                            <div class="flex items-center justify-between border-b border-slate-700/80 pb-1.5">
-                                <span class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                                    <span>🔗</span> Original Reference Invoice (GST)
+                        <div x-show="docType === 'CRN' || docType === 'DBN'" class="p-3.5 rounded-xl bg-cyan-50/70 border border-cyan-200/90 space-y-3 shadow-xs" x-cloak>
+                            <div class="flex items-center justify-between border-b border-cyan-200/80 pb-1.5">
+                                <span class="text-xs font-bold uppercase tracking-wider text-cyan-800 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                    Original Reference Invoice (GST)
                                 </span>
-                                <span class="text-[11px] text-cyan-300 font-semibold" x-text="docType === 'CRN' ? 'Credit Note' : 'Debit Note'"></span>
+                                <span class="text-[11px] text-cyan-700 font-semibold" x-text="docType === 'CRN' ? 'Credit Note' : 'Debit Note'"></span>
                             </div>
 
                             <input type="hidden" name="source_document_id" form="document-main-form" :value="selectedSourceDocId">
 
                             <!-- Dropdown of Customer's Invoices -->
                             <div>
-                                <label class="block text-xs font-semibold text-gray-300 mb-1">Select Customer's Original Invoice</label>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Select Customer's Original Invoice</label>
                                 <select @change="onSelectCustomerInvoice($event.target.value)"
-                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500">
+                                    class="w-full bg-white border border-cyan-200 rounded-xl p-2.5 text-slate-800 text-xs focus:ring-cyan-500 focus:border-cyan-500 shadow-xs">
                                     <option value="">-- Choose Past Invoice or Enter Below --</option>
                                     <template x-for="inv in customerInvoices" :key="inv.id">
                                         <option :value="inv.id" :selected="String(inv.id) === String(selectedSourceDocId)"
@@ -597,24 +628,24 @@
                             <!-- Manual / Auto-filled Invoice Number & Date -->
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label class="block text-[11px] font-semibold text-gray-300 mb-1">Original Invoice No. *</label>
+                                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Original Invoice No. *</label>
                                     <input type="text" name="original_invoice_number" form="document-main-form" x-model="refInvoiceNumber"
-                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500"
+                                        class="w-full bg-white border border-cyan-200 rounded-xl p-2 text-slate-800 text-xs focus:ring-cyan-500 focus:border-cyan-500 shadow-xs"
                                         placeholder="e.g. INV-2026-0042">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-semibold text-gray-300 mb-1">Original Invoice Date *</label>
+                                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Original Invoice Date *</label>
                                     <input type="date" name="original_invoice_date" form="document-main-form" x-model="refInvoiceDate"
-                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500">
+                                        class="w-full bg-white border border-cyan-200 rounded-xl p-2 text-slate-800 text-xs focus:ring-cyan-500 focus:border-cyan-500 shadow-xs">
                                 </div>
                             </div>
 
                             <!-- Reason for Note -->
                             <div>
-                                <label class="block text-[11px] font-semibold text-gray-300 mb-1">Reason for Note *</label>
+                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Reason for Note *</label>
                                 <div class="space-y-1.5">
                                     <select @change="if ($event.target.value !== 'Other') noteReason = $event.target.value"
-                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500">
+                                        class="w-full bg-white border border-cyan-200 rounded-xl p-2 text-slate-800 text-xs focus:ring-cyan-500 focus:border-cyan-500 shadow-xs">
                                         <option value="">-- Select Standard Reason --</option>
                                         <option value="01 - Sales Return / Goods Rejected">01 - Sales Return / Goods Rejected</option>
                                         <option value="02 - Post Sale Discount / Rate Difference">02 - Post Sale Discount / Rate Difference</option>
@@ -625,7 +656,7 @@
                                         <option value="Other">Other Reason (Type Below)</option>
                                     </select>
                                     <input type="text" name="note_reason" form="document-main-form" x-model="noteReason"
-                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500"
+                                        class="w-full bg-white border border-cyan-200 rounded-xl p-2 text-slate-800 text-xs focus:ring-cyan-500 focus:border-cyan-500 shadow-xs"
                                         placeholder="e.g. Goods returned due to defect">
                                 </div>
                             </div>
@@ -649,7 +680,8 @@
                                 <button type="button" @click="detectPlaceOfSupply()"
                                     class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition"
                                     title="Auto-detect from selected customer GSTIN or address">
-                                    <span>⚡ Auto-detect</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Auto-detect</span>
                                 </button>
                             </div>
                             <div class="relative">
@@ -724,7 +756,8 @@
                                 class="p-3 bg-slate-800/80 border border-amber-500/30 rounded-xl space-y-2 transition-all">
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-                                        <span>🌐</span> Exchange Rate (1 <span x-text="currency"></span> = ₹ INR)
+                                        <svg class="w-4 h-4 text-amber-400 inline-block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                                        <span>Exchange Rate (1 <span x-text="currency"></span> = ₹ INR)</span>
                                     </span>
                                     <button type="button" @click="fetchLiveExchangeRate(true)"
                                         :disabled="isFetchingForex"
@@ -1027,8 +1060,10 @@
                         <template x-for="(m, idx) in milestones" :key="idx">
                             <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 relative hover:border-slate-600/80 transition">
                                 <button type="button" @click="removeMilestone(idx)"
-                                    class="absolute top-2 right-2 text-gray-500 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/10"
-                                    title="Remove Stage">✕</button>
+                                    class="absolute top-2 right-2 text-gray-500 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/10 cursor-pointer"
+                                    title="Remove Stage">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
                                 <label class="block text-[10px] text-gray-400 mb-0.5">Stage Label</label>
                                 <input type="text" x-model="m.label" @input="autoUpdateTerms()" placeholder="e.g. Advance with PO"
                                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white text-xs mb-2 focus:border-blue-500 focus:outline-none">
@@ -1092,7 +1127,8 @@
 
                                 <button type="button" @click="autoBalanceMilestones()" x-show="!isMilestonesBalanced() && milestones.length > 0"
                                     class="text-[11px] text-blue-400 hover:text-blue-300 font-semibold px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg border border-blue-500/30 transition flex items-center gap-1">
-                                    <span>⚡</span> Auto-Balance Last Stage
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Auto-Balance Last Stage</span>
                                 </button>
                             </div>
                         </div>
@@ -1118,17 +1154,18 @@
                                     </select>
                                     <template x-if="selectedTermsTemplate !== 'custom' && selectedTermsTemplate >= 0 && (termsTemplates[docType] || [])[selectedTermsTemplate] && (termsTemplates[docType] || [])[selectedTermsTemplate].custom">
                                         <button type="button" @click="deleteCurrentPreset()"
-                                            class="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs transition"
+                                            class="p-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs transition flex items-center justify-center cursor-pointer"
                                             title="Delete this custom preset">
-                                            🗑️
+                                            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </template>
                                 </div>
                             </div>
                             <div class="flex justify-end pt-1">
                                 <button type="button" @click="promptSaveNewPreset()"
-                                    class="text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition flex items-center gap-1">
-                                    <span>💾 Save As New Preset</span>
+                                    class="text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 transition flex items-center gap-1.5 cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                    <span>Save As New Preset</span>
                                 </button>
                             </div>
                         </div>
@@ -1170,25 +1207,29 @@
             {# ── Top Right Action Buttons ── #}
             <div class="flex justify-end items-center gap-3 sticky top-0 z-50 w-full mb-1 py-2" style="background: rgba(238, 242, 246, 0.85); backdrop-filter: blur(8px); padding-right: 4px;">
                 <button type="button" onclick="window.history.back()"
-                    class="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-bold rounded-xl transition-all text-sm border border-slate-700 shadow-sm">
+                    class="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-bold rounded-xl transition-all text-sm shadow-sm cursor-pointer">
                     Cancel
                 </button>
                 {% if doc %}
                 <button type="button" @click="submitForm('update')"
-                    class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-sm">
-                    💾 Save Changes
+                    class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all text-sm flex items-center gap-2 shadow-sm cursor-pointer">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span>Save Changes</span>
                 </button>
                 {% endif %}
                 <button type="button" @click="submitForm('save_as_new')"
-                    class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-900/30 hover:shadow-blue-800/40 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
-                    🚀 {% if doc %}Duplicate &amp; New{% else %}Generate Document{% endif %}
+                    class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-900/30 hover:shadow-blue-800/40 transform hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    <span>{% if doc %}Duplicate &amp; New{% else %}Generate Document{% endif %}</span>
                 </button>
             </div>
 
             {# Search / Add toolbar #}
             <div class="glass p-4 rounded-2xl flex flex-wrap gap-3 items-center relative z-10">
                 <div class="flex-1 min-w-[220px] relative">
-                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">🔍</span>
+                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
                     <input type="text" x-model="globalSearch" @input.debounce.300ms="searchGlobalProduct()"
                         class="w-full bg-slate-900/60 border border-slate-700 rounded-xl py-2.5 pl-9 pr-4 text-white text-sm focus:ring-red-500 focus:border-red-500"
                         placeholder="Search product by name or SKU…">
@@ -1209,17 +1250,20 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" @click="addCustomRow()"
-                        class="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                        class="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                         style="color: #ffffff !important;">
-                        ➕ Custom Item
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        <span>Custom Item</span>
                     </button>
                     <button type="button" @click="openBrowseModal()"
-                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-800 text-gray-300 hover:text-white border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
-                        📂 Browse
+                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                        <span>Browse</span>
                     </button>
                     <button type="button" @click="showProductModal = true"
-                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-800 text-gray-300 hover:text-white border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
-                        📦 New Product
+                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white border border-blue-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <span>New Product</span>
                     </button>
                 </div>
             </div>
@@ -1227,7 +1271,8 @@
             {# Items Table #}
             <div class="glass p-5 rounded-2xl space-y-3">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <span>📋</span> Line Items
+                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                    <span>Line Items</span>
                     <span class="ml-auto text-xs text-gray-400 font-normal" x-text="items.length + ' item(s)'"></span>
                 </h3>
 
@@ -1319,18 +1364,23 @@
                                     </td>
                                     <td class="text-center" style="white-space:nowrap;">
                                         <button type="button" @click="duplicateItem(index)"
-                                            class="text-gray-500 hover:text-blue-400 transition-colors text-base leading-none px-1"
-                                            title="Duplicate item (without S.No.)">📋</button>
+                                            class="text-gray-400 hover:text-blue-500 transition-colors p-1 rounded-md hover:bg-slate-800 cursor-pointer inline-flex items-center justify-center"
+                                            title="Duplicate item (without S.No.)">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        </button>
                                         <button type="button" @click="removeItem(index)"
-                                            class="text-gray-600 hover:text-red-400 transition-colors text-lg leading-none px-1"
-                                            title="Remove">×</button>
+                                            class="text-gray-400 hover:text-rose-500 transition-colors p-1 rounded-md hover:bg-slate-800 cursor-pointer inline-flex items-center justify-center"
+                                            title="Remove">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
                                     </td>
                                   </tr>
                                   <tr x-show="enableWarranty && item.has_warranty" style="background: rgba(15, 23, 42, 0.2); border-bottom: 1px solid rgba(71,85,105,0.3);">
                                     <td colspan="13" style="padding: 8px 12px 12px 50px;">
                                         <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 12px 16px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); text-align: left;">
                                             <div style="font-size: 10px; font-weight: 700; color: #e31837; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                                                <span>🛡️</span> Warranty Details
+                                                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                                <span>Warranty Details</span>
                                             </div>
                                             <div style="display: flex; flex-wrap: wrap; gap: 16px;">
                                                 <div style="flex: 1; min-width: 120px;">
@@ -1349,16 +1399,16 @@
                                                         <div style="display: flex; align-items: center; gap: 6px;">
                                                             <button type="button"
                                                                     @click.stop="openBarcodeScanner(item, index)"
-                                                                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 hover:border-emerald-400 transition-all cursor-pointer shadow-xs active:scale-95"
+                                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 hover:border-emerald-400 transition-all cursor-pointer shadow-xs active:scale-95"
                                                                     title="Scan Barcode / QR Code with Mobile Camera">
-                                                                <span>📷</span>
+                                                                <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                                                 <span>Scan S/No</span>
                                                             </button>
                                                             <button type="button"
                                                                     @click.stop="openSerialModal(item, index)"
-                                                                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/20 hover:bg-blue-500/35 text-blue-300 hover:text-blue-200 border border-blue-500/40 hover:border-blue-400 transition-all cursor-pointer shadow-xs active:scale-95"
+                                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-500/20 hover:bg-blue-500/35 text-blue-300 hover:text-blue-200 border border-blue-500/40 hover:border-blue-400 transition-all cursor-pointer shadow-xs active:scale-95"
                                                                     title="Batch / Multiple Serial Numbers Generator">
-                                                                <span>🔢</span>
+                                                                <svg class="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
                                                                 <span>Multiple S/Nos</span>
                                                             </button>
                                                         </div>
@@ -1384,8 +1434,8 @@
                         </template>
                         <tbody x-show="items.length === 0">
                             <tr>
-                                <td colspan="12" class="text-center py-10 text-gray-600 italic text-sm">
-                                    No items yet — search above or click <strong class="text-gray-500">➕ Custom Item</strong>
+                                <td colspan="12" class="text-center py-10 text-gray-400 italic text-sm">
+                                    No items yet — search above or click <strong class="text-slate-300 font-semibold inline-flex items-center gap-1"><svg class="w-3.5 h-3.5 text-red-500 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> Custom Item</strong>
                                 </td>
                             </tr>
                         </tbody>
@@ -1454,27 +1504,31 @@
                         <!-- Applied Notes Hidden Form Input -->
                         <input type="hidden" name="applied_notes_json" form="document-main-form" :value="JSON.stringify(appliedCreditNotes)">
 
-                        <!-- Apply Available Credit Notes Card (INV only) -->
-                        <div x-show="docType === 'INV' && unadjustedCreditNotes.length > 0" class="p-3 bg-slate-900/95 border border-emerald-500/50 rounded-xl mt-2 text-xs space-y-2.5 shadow-lg" x-cloak>
-                            <div class="flex items-center justify-between font-bold text-emerald-400">
-                                <span class="flex items-center gap-1.5">
-                                    <span>🎁</span> Apply Available Credit Notes
+                        <!-- Apply Available Credit Notes Card (Clean Emerald Light Card) -->
+                        <div x-show="docType === 'INV' && unadjustedCreditNotes.length > 0" 
+                             class="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-xl mt-3 text-xs space-y-2.5 shadow-xs" x-cloak>
+                            <div class="flex items-center justify-between font-bold text-emerald-900">
+                                <span class="flex items-center gap-1.5 text-emerald-800 font-bold">
+                                    <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                    </svg>
+                                    Apply Available Credit Notes
                                 </span>
-                                <span class="font-mono text-emerald-300" x-text="'Avail: ₹' + fmtNum(totalCreditAvailable)"></span>
+                                <span class="font-mono font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200" x-text="'Avail: ₹' + fmtNum(totalCreditAvailable)"></span>
                             </div>
                             <div class="space-y-1.5 pt-1">
                                 <template x-for="crn in unadjustedCreditNotes" :key="crn.id">
-                                    <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-800/90 border border-slate-700/80">
-                                        <label class="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                                            <input type="checkbox" :checked="isCreditNoteApplied(crn.id)" @change="toggleApplyCreditNote(crn)" class="rounded text-emerald-500 focus:ring-emerald-400">
-                                            <span class="font-bold text-white truncate" x-text="crn.number"></span>
-                                            <span class="text-slate-400 text-[11px]" x-text="'(₹' + fmtNum(crn.unadjusted_amount) + ')'"></span>
+                                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-emerald-200 hover:border-emerald-300 shadow-xs transition">
+                                        <label class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                                            <input type="checkbox" :checked="isCreditNoteApplied(crn.id)" @change="toggleApplyCreditNote(crn)" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                                            <span class="font-bold text-slate-800 truncate" x-text="crn.number"></span>
+                                            <span class="text-emerald-700 font-semibold text-[11px]" x-text="'(₹' + fmtNum(crn.unadjusted_amount) + ')'"></span>
                                         </label>
-                                        <div x-show="isCreditNoteApplied(crn.id)" class="w-24">
+                                        <div x-show="isCreditNoteApplied(crn.id)" class="w-28">
                                             <input type="number" step="0.01" min="0.01" :max="crn.unadjusted_amount" 
                                                    :value="getCreditNoteAppliedAmount(crn.id)"
                                                    @input="updateAppliedCreditNoteAmount(crn.id, $el.value, crn.unadjusted_amount)"
-                                                   class="w-full bg-slate-900 border border-emerald-500/50 rounded p-1 text-right text-emerald-300 font-mono text-xs">
+                                                   class="w-full bg-white border border-emerald-300 rounded-lg py-1 px-2 text-right text-emerald-800 font-mono font-bold text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-xs">
                                         </div>
                                     </div>
                                 </template>
@@ -1490,7 +1544,8 @@
                     
                     <div class="flex items-center justify-between mb-4">
                         <h4 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                            <span>💸</span> Record Payment / Advance
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Record Payment / Advance</span>
                         </h4>
                         <span class="text-[10px] uppercase tracking-wider font-bold text-gray-500 bg-slate-800 px-2 py-1 rounded">Optional</span>
                     </div>
@@ -1573,7 +1628,9 @@
                 onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">&times;</button>
 
             <div style="font-size:1.15rem; font-weight:800; color:#0f172a; margin-bottom:1.25rem; padding-right:2rem; display:flex; align-items:center; gap:0.5rem;">
-                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:#fee2e2; color:#dc2626; font-size:1rem;">👤</span>
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:#fee2e2; color:#dc2626; font-size:1rem;">
+                    <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                </span>
                 Add New Customer
             </div>
 
@@ -1608,7 +1665,10 @@
                             style="font-size:0.72rem; font-weight:700; color:#ffffff; background:linear-gradient(135deg, #9333ea, #7e22ce); border:none; padding:4px 10px; border-radius:0.5rem; cursor:pointer; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(147,51,234,0.35); transition:all 0.15s;"
                             :style="(fetchingGstin || !newCustomer.gstin || newCustomer.gstin.trim().length !== 15) ? 'opacity:0.45; cursor:not-allowed; box-shadow:none;' : ''"
                             onmouseover="if(!this.disabled) this.style.opacity='0.9'" onmouseout="if(!this.disabled) this.style.opacity='1'">
-                            <span x-show="!fetchingGstin">⚡ Auto-Fetch</span>
+                            <span x-show="!fetchingGstin" class="inline-flex items-center gap-1">
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Auto-Fetch
+                            </span>
                             <span x-show="fetchingGstin">Fetching...</span>
                         </button>
                     </div>
@@ -1654,7 +1714,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; flex-shrink:0;">
                 <div style="display:flex; align-items:center; gap:0.75rem;">
                     <div style="width:2.5rem; height:2.5rem; border-radius:0.75rem; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:1.25rem; font-weight:bold;">
-                        🏛️
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
                     </div>
                     <div>
                         <div style="display:flex; align-items:center; gap:0.5rem;">
@@ -1907,7 +1967,9 @@
                 onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.color='#94a3b8'; this.style.backgroundColor='transparent'">&times;</button>
 
             <div style="font-size:1.15rem; font-weight:800; color:#0f172a; margin-bottom:1.1rem; padding-right:2rem; flex-shrink:0; display:flex; align-items:center; gap:0.5rem;">
-                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:#dcfce7; color:#15803d; font-size:1rem;">📦</span>
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:#dcfce7; color:#15803d; font-size:1rem;">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </span>
                 Add New Product
             </div>
 
@@ -2017,7 +2079,9 @@
 
             <!-- Header -->
             <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.5rem;">
-                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:rgba(59,130,246,0.15); color:#60a5fa; font-size:1rem;">🔢</span>
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:rgba(59,130,246,0.15); color:#60a5fa; font-size:1rem;">
+                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+                </span>
                 Multiple Serial Numbers
             </div>
             <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:1.25rem;">
@@ -2029,18 +2093,21 @@
             <div style="display:flex; background:#0f172a; border-radius:0.5rem; padding:3px; margin-bottom:1rem; border:1px solid #334155; gap:2px;">
                 <button type="button" @click="serialMode = 'list'"
                     :style="serialMode === 'list' ? 'background:#3b82f6; color:#ffffff;' : 'background:transparent; color:#94a3b8;'"
-                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s;">
-                    📝 Paste / List
+                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    Paste / List
                 </button>
                 <button type="button" @click="serialMode = 'sequence'"
                     :style="serialMode === 'sequence' ? 'background:#3b82f6; color:#ffffff;' : 'background:transparent; color:#94a3b8;'"
-                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s;">
-                    ⚡ Auto-Sequence
+                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Auto-Sequence
                 </button>
                 <button type="button" @click="startScannerFromModal()"
-                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s; background:rgba(16,185,129,0.15); color:#34d399;"
+                    style="flex:1; padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:0.375rem; border:none; cursor:pointer; transition:all 0.15s; background:rgba(16,185,129,0.15); color:#34d399; display:flex; align-items:center; justify-content:center; gap:4px;"
                     title="Open Camera to scan barcodes">
-                    📷 Camera Scan
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Camera Scan
                 </button>
             </div>
 
@@ -2111,8 +2178,9 @@
                     </div>
                 </div>
                 <button type="button" @click="generateSerialSequence()"
-                    style="padding:0.6rem 1rem; background:linear-gradient(135deg, #3b82f6, #2563eb); color:#ffffff; font-weight:700; font-size:0.8rem; border:none; border-radius:0.5rem; cursor:pointer; margin-top:0.25rem;">
-                    ⚡ Generate Serial Numbers Now
+                    style="padding:0.6rem 1rem; background:linear-gradient(135deg, #3b82f6, #2563eb); color:#ffffff; font-weight:700; font-size:0.8rem; border:none; border-radius:0.5rem; cursor:pointer; margin-top:0.25rem; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Generate Serial Numbers Now</span>
                 </button>
             </div>
 
@@ -2142,7 +2210,9 @@
             <!-- Header -->
             <div style="padding:1rem 1.25rem; border-bottom:1px solid #334155; display:flex; align-items:center; justify-content:space-between; background:#1e293b;">
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:rgba(16,185,129,0.2); color:#34d399; font-size:1.1rem;">📷</span>
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:0.5rem; background:rgba(16,185,129,0.2); color:#34d399; font-size:1.1rem;">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </span>
                     <div>
                         <div style="font-size:0.95rem; font-weight:800; color:#ffffff; line-height:1.2;">Barcode &amp; QR Scanner</div>
                         <div style="font-size:0.7rem; color:#94a3b8;" x-text="activeScannerItem ? activeScannerItem.name + ' (Qty: ' + Math.round(activeScannerItem.qty) + ')' : ''"></div>
@@ -2181,12 +2251,13 @@
                         style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;"
                         :style="torchEnabled ? 'background:#f59e0b; color:#000;' : ''"
                         title="Toggle Flashlight / Torch">
-                        🔦
+                        <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                     </button>
                     <button type="button" @click="switchCamera()" x-show="availableCameras.length > 1"
-                        style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;"
+                        style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px;"
                         title="Switch Front/Rear Camera">
-                        🔄 Switch Cam
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Switch Cam
                     </button>
                 </div>
             </div>
@@ -2268,9 +2339,14 @@
             style="max-height:85vh;">
             <button type="button" @click="showBrowseModal = false"
                 class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
-            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">📂 Browse Products</h3>
+            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span>Browse Products</span>
+            </h3>
             <div class="relative mb-4">
-                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">🔍</span>
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
                 <input type="text" x-model="browseSearch" @input="filterBrowseProducts()"
                     class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2.5 pl-9 pr-4 text-white text-sm focus:ring-red-500 focus:border-red-500"
                     placeholder="Search by name, SKU, or category…">
@@ -2990,7 +3066,7 @@ function documentForm() {
                 if (draft.columns) this.columns = { ...this.columns, ...draft.columns };
 
                 this.hasSavedDraft = false;
-                alert('✅ Unfinished draft restored successfully!');
+                alert('Unfinished draft restored successfully!');
             } catch (e) {
                 alert('Could not restore draft.');
             }
@@ -3165,7 +3241,7 @@ function documentForm() {
             this.termsTemplates[this.docType].push(newPreset);
             this.saveCustomTermsPresets();
             this.selectedTermsTemplate = String(this.termsTemplates[this.docType].length - 1);
-            alert(`✅ Preset "${presetName.trim()}" saved successfully!`);
+            alert(`Preset "${presetName.trim()}" saved successfully!`);
         },
 
         deleteCurrentPreset() {

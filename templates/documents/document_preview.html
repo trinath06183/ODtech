@@ -249,13 +249,16 @@
                         <div x-show="openEwayMenu" @click.away="openEwayMenu = false" x-cloak
                              class="absolute left-0 top-full mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 text-xs">
                             <a href="{{ doc.eway_bill_file.url }}" target="_blank" class="flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 font-semibold">
-                                <span>📄</span> View Uploaded File
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span>View Uploaded File</span>
                             </a>
                             <button type="button" onclick="openEWayUploadModalDirect({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}')" class="w-full text-left flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-800 font-semibold cursor-pointer">
-                                <span>🔄</span> Replace / Re-upload File
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span>Replace / Re-upload File</span>
                             </button>
                             <button type="button" onclick="openEWayBillModal()" class="w-full text-left flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50 hover:text-slate-800 font-semibold cursor-pointer border-t border-slate-100">
-                                <span>⚙️</span> Export NIC JSON (Govt Portal)
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Export NIC JSON (Govt Portal)</span>
                             </button>
                         </div>
                     </div>
@@ -264,7 +267,7 @@
                        onclick="openEWayUploadModalDirect({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}')"
                        class="h-10 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl inline-flex items-center gap-2 transition-all border border-slate-300 text-xs cursor-pointer shadow-sm"
                        title="E-Way Bill marked Not Required (Click to Upload)">
-                        <span class="text-slate-500">⏭️</span>
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
                         <span>E-Way Bill: Not Required</span>
                     </button>
                     {% else %}
@@ -286,10 +289,12 @@
                         <div x-show="openEwayMenu" @click.away="openEwayMenu = false" x-cloak
                              class="absolute left-0 top-full mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 text-xs">
                             <button type="button" onclick="openEWayUploadModalDirect({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}')" class="w-full text-left flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-800 font-semibold cursor-pointer">
-                                <span>📤</span> Upload E-Way Bill File
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                <span>Upload E-Way Bill File</span>
                             </button>
                             <button type="button" onclick="openEWayBillModal()" class="w-full text-left flex items-center gap-2 px-3.5 py-2 text-slate-700 hover:bg-slate-50 hover:text-slate-800 font-semibold cursor-pointer border-t border-slate-100">
-                                <span>⚙️</span> Export NIC JSON (Govt Portal)
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Export NIC JSON (Govt Portal)</span>
                             </button>
                         </div>
                     </div>
@@ -383,9 +388,11 @@
                 {% csrf_token %}
                 <button type="submit" class="w-full h-11 px-4 rounded-xl transition text-xs flex items-center justify-center gap-2 border font-semibold shadow-sm {% if doc.has_payment_reminder %}bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300{% else %}bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200{% endif %}" title="{% if doc.has_payment_reminder %}Click to remove from payment reminders{% else %}Click to add this document to payment reminders{% endif %}">
                     {% if doc.has_payment_reminder %}
-                    <span>🔔 In Reminders: <strong>Active</strong> (Click to Remove)</span>
+                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span>In Reminders: <strong>Active</strong> (Click to Remove)</span>
                     {% else %}
-                    <span>➕ Add to Payment Reminders</span>
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Add to Payment Reminders</span>
                     {% endif %}
                 </button>
             </form>
@@ -393,15 +400,16 @@
 
             {% if doc.type == 'PO' %}
             <button type="button" onclick="openReceiveGoodsModal('{{ doc.id }}', '{{ doc.number|escapejs }}')"
-               class="w-full h-11 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 text-xs"
+               class="w-full h-11 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 text-xs cursor-pointer"
                style="color: #ffffff !important;">
-                <span>📦</span> Mark Goods Received
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span>Mark Goods Received</span>
             </button>
             {% endif %}
             
             <div class="relative" x-data="{ openConvert: false }">
-                <button @click="openConvert = !openConvert" class="w-full h-11 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm text-xs">
-                    Convert To...
+                <button @click="openConvert = !openConvert" class="w-full h-11 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm text-xs cursor-pointer">
+                    <span>Convert To...</span>
                     <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': openConvert}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 
@@ -424,12 +432,14 @@
                 <a href="{% url 'create_document' %}?type=CRN&source_id={{ doc.id }}"
                    class="h-10 px-3 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-xs shadow-sm cursor-pointer"
                    title="Issue a GST Credit Note linked to this Tax Invoice">
-                    <span>➕ Credit Note</span>
+                    <svg class="w-3.5 h-3.5 text-teal-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Credit Note</span>
                 </a>
                 <a href="{% url 'create_document' %}?type=DBN&source_id={{ doc.id }}"
                    class="h-10 px-3 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-xs shadow-sm cursor-pointer"
                    title="Issue a GST Debit Note linked to this Tax Invoice">
-                    <span>➕ Debit Note</span>
+                    <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Debit Note</span>
                 </a>
             </div>
             {% endif %}
@@ -471,7 +481,8 @@
                 <button type="button"
                         onclick="openAdjustAgainstInvoiceModal({{ doc.id }}, '{{ doc.number|escapejs }}', '{{ doc.get_type_display|escapejs }}', {{ doc.unadjusted_amount }}, {{ doc.contact.id }})"
                         class="w-full mt-2 py-2 px-3 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer">
-                    <span>⚡ Adjust Against Invoice</span>
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>Adjust Against Invoice</span>
                 </button>
                 {% endif %}
             </div>
@@ -496,7 +507,9 @@
                     <!-- Phone / Contact Number -->
                     <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-50/80 border border-slate-200/70">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-slate-400 text-sm flex-shrink-0">📞</span>
+                            <span class="text-slate-400 flex-shrink-0">
+                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                            </span>
                             <span id="preview-customer-phone" class="font-medium text-slate-700 truncate">
                                 {% if doc.contact.phone %}
                                     <a href="tel:{{ doc.contact.phone }}" class="hover:text-purple-600 hover:underline">{{ doc.contact.phone }}</a>
@@ -517,7 +530,9 @@
                     <!-- Email ID -->
                     <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-50/80 border border-slate-200/70">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-slate-400 text-sm flex-shrink-0">✉️</span>
+                            <span class="text-slate-400 flex-shrink-0">
+                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            </span>
                             <span id="preview-customer-email" class="font-medium text-slate-700 truncate">
                                 {% if doc.contact.email %}
                                     <a href="mailto:{{ doc.contact.email }}" class="hover:text-purple-600 hover:underline">{{ doc.contact.email }}</a>
@@ -606,15 +621,17 @@
                         {% if doc.type == 'INV' and doc.contact %}
                         <button type="button"
                                 onclick="openApplyCreditNoteModal({{ doc.id }}, '{{ doc.number|escapejs }}', {{ balance_due }}, {{ doc.contact.id }})"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
                                 title="Apply unadjusted Credit Note to reduce balance due">
-                            <span>🎁 Apply Note</span>
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            <span>Apply Note</span>
                         </button>
                         {% endif %}
                         <a href="{% url 'payment_create' %}?document={{ doc.id }}&contact={{ doc.contact.id }}"
-                           class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm"
                            title="Record payment against outstanding balance">
-                           💳 Record Pay
+                           <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                           <span>Record Pay</span>
                         </a>
                     </div>
                     {% else %}
@@ -635,7 +652,8 @@
         <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-teal-500/30" style="position: relative; z-index: 10;">
             <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                 <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
-                    <span>🎁</span> Credit Note Adjustments
+                    <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    <span>Credit Note Adjustments</span>
                 </h2>
                 <span class="text-xs font-extrabold text-teal-700">-{{ doc.currency_symbol }} {{ doc.credit_notes_adjusted|floatformat:2 }}</span>
             </div>
@@ -643,8 +661,9 @@
                 {% for adj in doc.adjustments_as_invoice.all %}
                 <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <div>
-                        <a href="{% url 'document_preview' adj.note.id %}" class="font-bold text-teal-700 hover:underline flex items-center gap-1">
-                            <span>📄</span> {{ adj.note.number }}
+                        <a href="{% url 'document_preview' adj.note.id %}" class="font-bold text-teal-700 hover:underline flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>{{ adj.note.number }}</span>
                         </a>
                         <div class="text-[11px] text-slate-500 mt-0.5">
                             {{ adj.adjustment_date|date:"d M Y" }}{% if adj.notes %} • {{ adj.notes }}{% endif %}
@@ -663,7 +682,8 @@
         <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-teal-500/30" style="position: relative; z-index: 10;">
             <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                 <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
-                    <span>📑</span> Adjusted Against Invoices
+                    <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Adjusted Against Invoices</span>
                 </h2>
                 <span class="text-xs font-extrabold text-teal-700">{{ doc.currency_symbol }} {{ doc.adjusted_amount|floatformat:2 }}</span>
             </div>
@@ -671,8 +691,10 @@
                 {% for adj in doc.adjustments_as_note.all %}
                 <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <div>
-                        <a href="{% url 'document_preview' adj.invoice.id %}" class="font-bold text-blue-700 hover:underline flex items-center gap-1">
-                            <span>🧾</span> {{ adj.invoice.number }}
+                        <a href="{% url 'document_preview' adj.invoice.id %}" class="font-bold text-blue-700 hover:underline flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>{{ adj.invoice.number }}</span>
+                        </a>
                         </a>
                         <div class="text-[11px] text-slate-500 mt-0.5">
                             {{ adj.adjustment_date|date:"d M Y" }}{% if adj.notes %} • {{ adj.notes }}{% endif %}
@@ -709,8 +731,9 @@
                         <span class="text-slate-500 block text-xs uppercase font-semibold">E-Way Bill</span>
                         {% if doc.eway_bill_file %}
                         <a href="{{ doc.eway_bill_file.url }}" target="_blank"
-                           class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-bold hover:underline text-xs" title="View uploaded E-Way Bill file">
-                            <span class="truncate max-w-[120px]">📄 {{ doc.eway_bill|default:"View File" }}</span>
+                           class="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-bold hover:underline text-xs" title="View uploaded E-Way Bill file">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span class="truncate max-w-[120px]">{{ doc.eway_bill|default:"View File" }}</span>
                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
                         {% elif doc.eway_bill %}
@@ -746,7 +769,8 @@
         <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-red-500/20" style="position: relative; z-index: 10;">
             {# Issue 8: fix heading level skip — H1 → H2 (was H3) #}
             <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
-                🏢 Dispatch &amp; Billing Location
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>Dispatch &amp; Billing Location</span>
             </h2>
             <div class="text-xs space-y-2.5">
                 {% if doc.billing_name or doc.billing_address or doc.billing_gstin %}
@@ -939,7 +963,7 @@
                                 class="py-2 px-2.5 rounded-xl transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm hover:bg-emerald-500 cursor-pointer"
                                 style="background-color: #059669 !important; color: #ffffff !important; display: {% if doc.transport_doc_no or doc.custom_tracking_url %}flex{% else %}none{% endif %} !important;"
                                 title="Send shipment tracking link to customer on WhatsApp">
-                                <span>📲</span>
+                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                 <span style="color: #ffffff !important; font-weight: 700 !important; font-size: 11px !important;">Send Tracking Link</span>
                             </button>
                         </div>
@@ -1083,8 +1107,8 @@
                                         <svg class="w-3 h-3 opacity-60 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                     </a>
                                     {% elif other.order_number %}
-                                    <a href="{% url 'tracker:order_detail' other.id %}" class="font-semibold text-emerald-700 hover:text-emerald-900 flex flex-wrap items-center gap-1 text-xs transition-colors hover:underline" title="Open Tracker Order: {{ other.order_number }} — {{ other.customer_name }}">
-                                        <span class="flex-shrink-0">📦</span>
+                                    <a href="{% url 'tracker:order_detail' other.id %}" class="font-semibold text-emerald-700 hover:text-emerald-900 flex flex-wrap items-center gap-1.5 text-xs transition-colors hover:underline" title="Open Tracker Order: {{ other.order_number }} — {{ other.customer_name }}">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                         <span class="font-mono break-all">{{ other.order_number }}</span>
                                         <span class="text-slate-500 font-normal break-words">({{ other.customer_name }})</span>
                                         <svg class="w-3 h-3 opacity-60 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -1140,8 +1164,8 @@
         <!-- Modal Header -->
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-200">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xl border border-amber-200 flex-shrink-0">
-                    📄
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center border border-amber-200 flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-slate-900">Government E-Way Bill JSON Export</h3>
@@ -1227,7 +1251,7 @@
 
             <!-- Information Tip -->
             <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-                <span class="text-base flex-shrink-0">💡</span>
+                <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                 <div class="leading-relaxed">
                     <strong>Auto GST Compilation:</strong> Seller GSTIN, Buyer GSTIN, State Codes, Item HSN codes, Taxable values, CGST, SGST, IGST totals are automatically validated and formatted according to official NIC rules.
                 </div>
@@ -1605,7 +1629,7 @@ async function linkPaymentToDoc(paymentId, btn) {
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
-                    💳
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-white">Link Payment to Document</h3>
@@ -1645,7 +1669,7 @@ async function linkPaymentToDoc(paymentId, btn) {
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
-                    📦
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-white">Receive Goods for PO <span id="receivePoNumber" class="font-mono text-purple-400"></span></h3>
@@ -1688,7 +1712,8 @@ async function linkPaymentToDoc(paymentId, btn) {
                 Cancel
             </button>
             <button type="button" onclick="submitReceiveGoods()" id="receiveGoodsSubmitBtn" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-purple-950 flex items-center gap-2">
-                Confirm Receipt & Increase Stock 📥
+                <span>Confirm Receipt & Increase Stock</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             </button>
         </div>
     </div>
@@ -1744,7 +1769,7 @@ function renderPoItemsTable(items) {
             <td class="p-3">
                 <div class="font-semibold text-white flex items-center gap-2">
                     <span>${item.name}</span>
-                    ${isFullyReceived ? '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30">Fully Received ✅</span>' : ''}
+                    ${isFullyReceived ? '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30">Fully Received</span>' : ''}
                 </div>
                 <div class="text-xs text-slate-400 font-mono">${item.sku ? 'SKU: ' + item.sku : ''} ${item.unit ? ' (' + item.unit + ')' : ''}</div>
             </td>
@@ -1829,195 +1854,7 @@ async function submitReceiveGoods() {
 }
 </script>
 
-<!-- PO Goods Receiving Modal -->
-<div id="receiveGoodsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl text-white">
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
-                    📦
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-white">Receive Goods for PO <span id="receivePoNumber" class="font-mono text-purple-400"></span></h3>
-                    <p class="text-xs text-slate-400">Select items & adjust receiving quantities to increase inventory stock</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeReceiveGoodsModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
-        </div>
 
-        <div id="receiveLoading" class="py-12 text-center text-slate-400">
-            Loading PO items...
-        </div>
-
-        <div id="receiveFormContent" class="hidden space-y-4">
-            <div class="max-h-[350px] overflow-y-auto rounded-xl border border-slate-800">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
-                        <tr>
-                            <th class="p-3 text-center"><input type="checkbox" id="selectAllPoItems" onclick="toggleAllPoItems(this)" checked class="rounded border-slate-700"></th>
-                            <th class="p-3">Item / Product</th>
-                            <th class="p-3 text-center">Ordered Qty</th>
-                            <th class="p-3 text-center">Prev. Received</th>
-                            <th class="p-3 text-center">Receiving Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody id="poItemsTbody" class="divide-y divide-slate-800 bg-slate-900/50">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase">Receipt Remarks (Optional)</label>
-                <input type="text" id="receiveRemarks" placeholder="e.g. Received batch #1 from vendor" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-purple-500 focus:border-purple-500">
-            </div>
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
-            <button type="button" onclick="closeReceiveGoodsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition">
-                Cancel
-            </button>
-            <button type="button" onclick="submitReceiveGoods()" id="receiveGoodsSubmitBtn" class="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-purple-950 flex items-center gap-2">
-                Confirm Receipt & Increase Stock 📥
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-let currentPoDocId = null;
-let currentPoItems = [];
-
-async function openReceiveGoodsModal(docId, docNumber) {
-    currentPoDocId = docId;
-    document.getElementById('receivePoNumber').innerText = docNumber || '';
-    document.getElementById('receiveGoodsModal').classList.remove('hidden');
-    document.getElementById('receiveLoading').classList.remove('hidden');
-    document.getElementById('receiveFormContent').classList.add('hidden');
-
-    try {
-        const res = await fetch(`/documents/api/${docId}/po-items/`);
-        const data = await res.json();
-        if (data.success) {
-            currentPoItems = data.items;
-            renderPoItemsTable(data.items);
-            document.getElementById('receiveLoading').classList.add('hidden');
-            document.getElementById('receiveFormContent').classList.remove('hidden');
-        } else {
-            alert(data.error || "Failed to load PO items.");
-            closeReceiveGoodsModal();
-        }
-    } catch(err) {
-        alert("Error fetching PO items: " + err.message);
-        closeReceiveGoodsModal();
-    }
-}
-
-function closeReceiveGoodsModal() {
-    document.getElementById('receiveGoodsModal').classList.add('hidden');
-}
-
-function renderPoItemsTable(items) {
-    const tbody = document.getElementById('poItemsTbody');
-    if (!items || items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 italic">No items found in this PO.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = items.map((item, idx) => {
-        const isFullyReceived = item.remaining_qty <= 0;
-        return `
-        <tr class="hover:bg-slate-800/50 transition ${isFullyReceived ? 'opacity-60 bg-slate-950/40' : ''}">
-            <td class="p-3 text-center">
-                <input type="checkbox" class="po-item-checkbox rounded border-slate-700" data-idx="${idx}" ${isFullyReceived ? '' : 'checked'}>
-            </td>
-            <td class="p-3">
-                <div class="font-semibold text-white flex items-center gap-2">
-                    <span>${item.name}</span>
-                    ${isFullyReceived ? '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30">Fully Received ✅</span>' : ''}
-                </div>
-                <div class="text-xs text-slate-400 font-mono">${item.sku ? 'SKU: ' + item.sku : ''} ${item.unit ? ' (' + item.unit + ')' : ''}</div>
-            </td>
-            <td class="p-3 text-center font-bold text-slate-300">
-                ${item.ordered_qty}
-            </td>
-            <td class="p-3 text-center font-semibold text-purple-400">
-                ${item.already_received_qty}
-            </td>
-            <td class="p-3 text-center w-36">
-                <input type="number" step="0.01" min="0" value="${item.remaining_qty}" class="po-item-qty w-24 bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-center text-white text-sm font-bold focus:ring-purple-500 focus:border-purple-500" data-idx="${idx}">
-            </td>
-        </tr>
-    `}).join('');
-}
-
-function toggleAllPoItems(mainCb) {
-    document.querySelectorAll('.po-item-checkbox').forEach(cb => cb.checked = mainCb.checked);
-}
-
-async function submitReceiveGoods() {
-    if (!currentPoDocId) return;
-
-    const checkboxes = document.querySelectorAll('.po-item-checkbox');
-    const qtyInputs = document.querySelectorAll('.po-item-qty');
-    const selectedItems = [];
-
-    checkboxes.forEach((cb, i) => {
-        if (cb.checked) {
-            const idx = parseInt(cb.getAttribute('data-idx'));
-            const item = currentPoItems[idx];
-            const qtyVal = parseFloat(qtyInputs[i].value) || 0;
-            if (item && qtyVal > 0) {
-                selectedItems.push({
-                    item_id: item.item_id,
-                    product_id: item.product_id,
-                    received_qty: qtyVal
-                });
-            }
-        }
-    });
-
-    if (selectedItems.length === 0) {
-        alert("Please select at least one item and specify a received quantity greater than 0.");
-        return;
-    }
-
-    const btn = document.getElementById('receiveGoodsSubmitBtn');
-    const origText = btn.innerHTML;
-    btn.innerHTML = "Processing Stock Receipt...";
-    btn.disabled = true;
-
-    try {
-        const remarks = document.getElementById('receiveRemarks').value.trim();
-        const res = await fetch(`/documents/api/${currentPoDocId}/receive-po-items/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                received_items: selectedItems,
-                remarks: remarks
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message);
-            closeReceiveGoodsModal();
-            window.location.reload();
-        } else {
-            alert(data.error || "Failed to record stock receipt.");
-            btn.innerHTML = origText;
-            btn.disabled = false;
-        }
-    } catch(err) {
-        alert("Error processing request: " + err.message);
-        btn.innerHTML = origText;
-        btn.disabled = false;
-    }
-}
-</script>
 
 <!-- Document Link Modal -->
 <div id="linkDocumentModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
@@ -2268,12 +2105,12 @@ async function sendDocumentEmail(defaultEmail) {
         });
         const data = await res.json();
         if (data.success) {
-            alert("✅ " + data.message);
+            alert(data.message);
         } else {
-            alert("❌ " + (data.error || "Failed to send email."));
+            alert(data.error || "Failed to send email.");
         }
     } catch (err) {
-        alert("❌ Network error: " + err.message);
+        alert("Network error: " + err.message);
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalHtml;
@@ -2349,10 +2186,10 @@ function onPosCodeInput(val) {
         const fullState = STATE_CODES_MAP[code];
         select.value = fullState;
         customWrapper.classList.add('hidden');
-        badge.textContent = '✅ ' + fullState;
+        badge.textContent = fullState;
         badge.className = 'text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg block mt-1.5';
     } else if (v.length >= 2) {
-        badge.textContent = '⚠️ Unknown code: ' + v;
+        badge.textContent = 'Unknown code: ' + v;
         badge.className = 'text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg block mt-1.5';
     }
 }
@@ -2373,7 +2210,7 @@ function onPosSelectChange(val) {
         if (val.length >= 2 && /^\d{2}/.test(val)) {
             codeInput.value = val.substring(0, 2);
         }
-        badge.textContent = '✅ ' + val;
+        badge.textContent = val;
         badge.className = 'text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg block mt-1.5';
     }
 }
@@ -2497,7 +2334,7 @@ async function saveQuotationAskedBy() {
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
             <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                <span>📍</span> Change Place of Supply
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Change Place of Supply
             </h3>
             <button type="button" onclick="closePlaceOfSupplyModal()" class="text-slate-400 hover:text-red-500 text-lg">✕</button>
         </div>
@@ -2507,7 +2344,9 @@ async function saveQuotationAskedBy() {
         <div class="space-y-3.5">
             <!-- 2-Digit State Code Quick Input -->
             <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5">
-                <label class="block text-xs font-bold text-blue-900 uppercase tracking-wide mb-1">⚡ Quick Enter: 2-Digit State Code</label>
+                <label class="block text-xs font-bold text-blue-900 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Quick Enter: 2-Digit State Code
+                </label>
                 <div class="flex items-center gap-2">
                     <input type="text" id="modal-pos-code-input" maxlength="2"
                         oninput="onPosCodeInput(this.value)"
@@ -2589,7 +2428,7 @@ async function saveQuotationAskedBy() {
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
             <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                <span>👤</span> Quotation Asked By
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg> Quotation Asked By
             </h3>
             <button type="button" onclick="closeQuotationAskedByModal()" class="text-slate-400 hover:text-red-500 text-lg">✕</button>
         </div>
@@ -2791,7 +2630,7 @@ function submitPaymentAction(actionType) {
                         <label class="block text-xs font-semibold text-slate-700 uppercase">GSTIN</label>
                         <button type="button" onclick="fetchModalGstinDetails()" id="btn-fetch-gstin"
                             class="text-[11px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-lg border border-purple-200 transition-all flex items-center gap-1">
-                            ⚡ Fetch Details
+                            <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Fetch Details
                         </button>
                     </div>
                     <input type="text" id="modal-contact-gstin" value="{{ doc.contact.gstin|default:'' }}" maxlength="15"
@@ -3192,7 +3031,7 @@ async function saveContactChanges() {
                     <div class="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 space-y-2.5">
                         <div class="font-bold text-gray-800 dark:text-gray-200 text-xs flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-1.5">
                             <span class="flex items-center gap-1.5">
-                                <span>🏢</span> Header Company Contact Info
+                                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg> Header Company Contact Info
                             </span>
                             <span class="text-[10px] text-gray-400 font-normal">Shown in top-right header</span>
                         </div>
@@ -3697,7 +3536,7 @@ function submitNoteAdjustment() {
         <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0 text-lg">
-                    🎁
+                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V4a2 2 0 112 2h-2zm0 0V4a2 2 0 10-2 2h2zm-7 4h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2a1 1 0 011-1zm1 4v5a2 2 0 002 2h8a2 2 0 002-2v-5"/></svg>
                 </div>
                 <div>
                     <h3 id="adjust-modal-title" class="text-lg font-bold text-slate-800 leading-tight">Adjust Note</h3>

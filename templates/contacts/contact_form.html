@@ -80,7 +80,10 @@
                             :disabled="fetchingGstin || !form.gstin || form.gstin.trim().length !== 15"
                             class="text-xs font-bold text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-lg border border-purple-500/30 transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
                             <template x-if="!fetchingGstin">
-                                <span>⚡ Fetch Details</span>
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>Fetch Details</span>
+                                </span>
                             </template>
                             <template x-if="fetchingGstin">
                                 <span class="flex items-center gap-1">
@@ -130,8 +133,8 @@
             <!-- Modal Header -->
             <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:1rem; flex-shrink:0;">
                 <div style="display:flex; align-items:center; gap:0.75rem;">
-                    <div style="width:2.75rem; height:2.75rem; border-radius:0.875rem; background:#f3e8ff; border:1px solid #e9d5ff; display:flex; align-items:center; justify-content:center; font-size:1.35rem; color:#7c3aed; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                        🏛️
+                    <div style="width:2.75rem; height:2.75rem; border-radius:0.875rem; background:#f3e8ff; border:1px solid #e9d5ff; display:flex; align-items:center; justify-content:center; color:#7c3aed; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     </div>
                     <div>
                         <div style="display:flex; align-items:center; gap:0.5rem;">

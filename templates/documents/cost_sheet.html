@@ -23,8 +23,9 @@
             <p class="text-gray-400 text-xs">Step 1: Calculate landing cost and margins before generating the quotation.</p>
         </div>
     </div>
-    <a href="{% url 'create_quotation' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 text-xs font-semibold rounded-xl transition-colors border border-white/5">
-        ⏩ Skip to Direct Quotation
+    <a href="{% url 'create_quotation' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 text-xs font-semibold rounded-xl transition-colors border border-white/5 inline-flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+        <span>Skip to Direct Quotation</span>
     </a>
 </div>
 
@@ -36,8 +37,9 @@
     <div class="glass rounded-2xl overflow-hidden border border-white/5">
         <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <h3 class="text-white font-semibold text-sm">Cost Calculations</h3>
-            <button type="button" @click="addRow()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1">
-                ➕ Add Item Row
+            <button type="button" @click="addRow()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Add Item Row</span>
             </button>
         </div>
 
@@ -150,7 +152,7 @@
             </div>
             
             <button type="submit" :disabled="items.length === 0" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:pointer-events-none text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2">
-                🚀 Proceed to Quotation
+                <span>Proceed to Quotation</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
             </button>
         </div>

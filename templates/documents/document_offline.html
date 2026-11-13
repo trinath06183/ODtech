@@ -20,8 +20,8 @@
     <!-- Header Banner -->
     <div class="max-w-7xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 border border-cyan-500/30 shadow-xl">
         <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-2xl border border-cyan-500/30">
-                ⚡
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <div>
                 <h1 class="text-xl font-extrabold text-white flex items-center gap-2">
@@ -34,7 +34,8 @@
         <div class="flex items-center gap-2">
             <button type="button" @click="saveAndDownloadOffline()"
                 class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold rounded-xl shadow-lg shadow-cyan-500/30 transition transform hover:-translate-y-0.5 text-sm flex items-center gap-2">
-                💾 Generate &amp; Download Bundle
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                <span>Generate &amp; Download Bundle</span>
             </button>
         </div>
     </div>
@@ -157,7 +158,8 @@
                     </div>
                     <button type="button" @click="addItem()"
                         class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition">
-                        ➕ Add Item Row
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Add Item Row</span>
                     </button>
                 </div>
 
@@ -234,8 +236,8 @@
             <!-- Sync Instruction Notice -->
             <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
                 <div class="flex items-center gap-3">
-                    <span class="text-xl">💡</span>
-                    <span>When your server comes back online, open <strong>Commercial Docs</strong> &rarr; click <strong>📥 Import Document</strong> &rarr; upload the generated <code>.oddoc</code> file to sync directly to the database!</span>
+                    <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                    <span>When your server comes back online, open <strong>Commercial Docs</strong> &rarr; click <strong>Import Document</strong> &rarr; upload the generated <code>.oddoc</code> file to sync directly to the database!</span>
                 </div>
             </div>
 
@@ -495,7 +497,7 @@
                     document.body.removeChild(docA);
                 }, 300);
 
-                alert(`✅ Successfully Generated!\n\n1. Downloaded: ${this.docNumber}.oddoc (Upload to server when online)\n2. Downloaded: ${this.docNumber}.doc (Printable document file)`);
+                alert(`Successfully Generated!\n\n1. Downloaded: ${this.docNumber}.oddoc (Upload to server when online)\n2. Downloaded: ${this.docNumber}.doc (Printable document file)`);
             }
         };
     }
