@@ -2,6 +2,8 @@ from decimal import Decimal
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
+from django.urls import reverse
+from django.utils import timezone
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
@@ -1218,6 +1220,15 @@ def document_form(request, doc=None, default_type='QTN'):
         place_of_supply = normalize_place_of_supply(request.POST.get('place_of_supply', '21-Odisha'))
         quotation_asked_by = request.POST.get('quotation_asked_by', '').strip() or None
         enable_warranty = request.POST.get('enable_warranty') in ('on', 'true', True)
+        original_invoice_number = request.POST.get('original_invoice_number', '').strip() or None
+        original_invoice_date = request.POST.get('original_invoice_date', '').strip() or None
+        note_reason = request.POST.get('note_reason', '').strip() or None
+        source_document_id = request.POST.get('source_document_id', '').strip() or None
+        applied_notes_json = request.POST.get('applied_notes_json', '[]')
+        try:
+            applied_credit_notes = json.loads(applied_notes_json) if applied_notes_json else []
+        except Exception:
+            applied_credit_notes = []
         shipping_address = request.POST.get('shipping_address', '').strip()
         shipping_name = request.POST.get('shipping_name', '').strip()
         bill_from_name = request.POST.get('bill_from_name', '').strip()
@@ -1326,6 +1337,10 @@ def document_form(request, doc=None, default_type='QTN'):
                     self.eway_bill = eway_bill
                     self.eway_bill_date = parse_date(eway_bill_date)
                     self.transport_reason = transport_reason
+                    self.original_invoice_number = original_invoice_number
+                    self.original_invoice_date = parse_date(original_invoice_date)
+                    self.note_reason = note_reason
+                    self.source_document = None
                 def get_type_display(self):
                     return dict(Document.DOCUMENT_TYPES).get(self.type, self.type)
                 def __bool__(self):
@@ -1349,6 +1364,9 @@ def document_form(request, doc=None, default_type='QTN'):
             })
 
         if action == 'update' and doc:
+            source_doc = None
+            if source_document_id:
+                source_doc = Document.objects.filter(id=source_document_id).first()
             target_doc = DocumentService.update_document(
                 doc,
                 doc_type,
@@ -1368,6 +1386,10 @@ def document_form(request, doc=None, default_type='QTN'):
                 po_reference_number=po_reference_number,
                 po_date=po_date,
                 invoice_date=invoice_date,
+                original_invoice_number=original_invoice_number,
+                original_invoice_date=original_invoice_date,
+                note_reason=note_reason,
+                source_document=source_doc or doc.source_document,
                 place_of_supply=place_of_supply,
                 quotation_asked_by=quotation_asked_by,
                 enable_warranty=enable_warranty,
@@ -1396,9 +1418,21 @@ def document_form(request, doc=None, default_type='QTN'):
             )
         else:
             source_doc = None
-            convert_from_id = request.GET.get('convert_from')
-            if convert_from_id:
-                source_doc = Document.objects.filter(id=convert_from_id).first()
+            if source_document_id:
+                source_doc = Document.objects.filter(id=source_document_id).first()
+            if not source_doc:
+                convert_from_id = request.GET.get('convert_from')
+                if convert_from_id:
+                    source_doc = Document.objects.filter(id=convert_from_id).first()
+            if not source_doc:
+                src_param = request.GET.get('source_id') or request.GET.get('source_doc')
+                if src_param:
+                    source_doc = Document.objects.filter(id=src_param).first()
+
+            if source_doc and not original_invoice_number and source_doc.type == 'INV':
+                original_invoice_number = source_doc.number
+            if source_doc and not original_invoice_date and source_doc.type == 'INV':
+                original_invoice_date = source_doc.date
 
             source_order_id = request.POST.get('source_order_id') or request.GET.get('source_order')
             source_order = None
@@ -1427,7 +1461,11 @@ def document_form(request, doc=None, default_type='QTN'):
                 po_reference_number=po_reference_number,
                 po_date=po_date,
                 invoice_date=invoice_date,
+                original_invoice_number=original_invoice_number,
+                original_invoice_date=original_invoice_date,
+                note_reason=note_reason,
                 source_document=source_doc,
+                applied_credit_notes=applied_credit_notes,
                 source_order=source_order,
                 place_of_supply=place_of_supply,
                 quotation_asked_by=quotation_asked_by,
@@ -1491,6 +1529,7 @@ def document_form(request, doc=None, default_type='QTN'):
 
     contacts = Contact.objects.filter(contact_type__in=['Customer', 'Both'])
     recent_docs = Document.objects.all().order_by('-id')[:5]
+    source_document = None
     
     # Pre-populate items if editing or converting
     existing_items = []
@@ -1520,6 +1559,38 @@ def document_form(request, doc=None, default_type='QTN'):
                 'warranty_start_date': di.warranty_start_date.strftime('%Y-%m-%d') if di.warranty_start_date else '',
             })
     else:
+        source_doc_param = request.GET.get('source_id') or request.GET.get('source_doc')
+        if source_doc_param and not request.method == 'POST':
+            try:
+                source_document = Document.objects.filter(id=source_doc_param).first()
+                if source_document:
+                    matched_contact = source_document.contact
+                    if default_type in ['CRN', 'DBN']:
+                        for di in source_document.items.all().order_by('id'):
+                            gross = float(di.quantity) * float(di.unit_price)
+                            pct = round((float(di.discount) / gross * 100), 2) if gross > 0 else 0
+                            existing_items.append({
+                                'product_id': '' if (di.product and getattr(di.product, 'sku', '') == 'CUSTOM') else (di.product_id or ''),
+                                'name': di.name or (di.product.name if di.product else 'Line Item'),
+                                'description': di.description or '',
+                                'part_number': di.part_number or '',
+                                'qty': float(di.quantity),
+                                'unit': di.unit or (di.product.unit if di.product else 'EA'),
+                                'rate': float(di.unit_price),
+                                'discount': float(di.discount),
+                                'discount_pct': pct,
+                                'tax': float(di.tax_rate),
+                                'total': float(di.total),
+                                'hsn_code': di.hsn_code or (di.product.hsn_code if di.product else ''),
+                                'serial_number': di.serial_number or '',
+                                'has_warranty': di.has_warranty,
+                                'model': di.model or '',
+                                'warranty_period': di.warranty_period or '',
+                                'warranty_start_date': di.warranty_start_date.strftime('%Y-%m-%d') if di.warranty_start_date else '',
+                            })
+            except Exception:
+                pass
+
         source_order_id = request.GET.get('source_order')
         seeded = request.session.pop('seeded_quotation_items', None)
         if seeded:
@@ -1661,12 +1732,24 @@ def document_form(request, doc=None, default_type='QTN'):
 
     company = CompanyProfile.objects.first()
 
+    effective_source_doc = source_document or (doc.source_document if doc else None)
+    ref_inv_no = (effective_source_doc.number if effective_source_doc else '') or (doc.original_invoice_number if doc else '')
+    ref_inv_dt = ''
+    if effective_source_doc and effective_source_doc.date:
+        ref_inv_dt = effective_source_doc.date.strftime('%Y-%m-%d')
+    elif doc and doc.original_invoice_date:
+        ref_inv_dt = doc.original_invoice_date.strftime('%Y-%m-%d')
+
     return render(request, 'documents/document_create.html', {
         'contacts': contacts,
         'recent_docs': recent_docs,
         'doc': doc,
         'source_order': source_order,
         'matched_contact': matched_contact,
+        'source_document': effective_source_doc,
+        'source_invoice_number': ref_inv_no,
+        'source_invoice_date': ref_inv_dt,
+        'note_reason': doc.note_reason if doc else '',
         'is_conversion': is_conversion,
         'default_type': default_type,
         'existing_items_json': json.dumps(existing_items),
@@ -2491,4 +2574,213 @@ def form_installation_certificate(request, document_id):
         'doc': doc,
         'cert': cert,
     })
+
+
+# ─── Credit Note & Debit Note APIs ──────────────────────────────────────────────
+
+@require_permission('DOCUMENTS', 'read')
+def api_customer_unadjusted_notes(request, contact_id):
+    """
+    Returns all unadjusted Credit Notes and Debit Notes for the specified customer.
+    Called when a customer is selected on any document to display pending unadjusted notes.
+    """
+    try:
+        contact = get_object_or_404(Contact, id=contact_id)
+        exclude_id = request.GET.get('exclude_id')
+
+        qs = Document.objects.filter(
+            contact=contact,
+            type__in=['CRN', 'DBN'],
+            is_adjusted=False,
+        ).exclude(status='Cancelled').order_by('-date', '-id')
+
+        if exclude_id and str(exclude_id).isdigit():
+            qs = qs.exclude(id=int(exclude_id))
+
+        credit_notes = []
+        debit_notes = []
+        total_credit = Decimal('0.00')
+        total_debit = Decimal('0.00')
+
+        for doc in qs:
+            unadj = doc.unadjusted_amount
+            if unadj <= 0:
+                continue
+
+            ref_no = doc.ref_invoice_display or ''
+            ref_dt = doc.ref_invoice_date_display.strftime('%d %b %Y') if doc.ref_invoice_date_display else ''
+
+            item_data = {
+                'id': doc.id,
+                'number': doc.number,
+                'type': doc.type,
+                'type_display': 'Credit Note' if doc.type == 'CRN' else 'Debit Note',
+                'date': doc.date.strftime('%Y-%m-%d') if doc.date else '',
+                'date_formatted': doc.date.strftime('%d %b %Y') if doc.date else '',
+                'grand_total': float(doc.grand_total),
+                'adjusted_amount': float(doc.adjusted_amount),
+                'unadjusted_amount': float(unadj),
+                'ref_invoice_number': ref_no,
+                'ref_invoice_date': ref_dt,
+                'note_reason': doc.note_reason or '',
+                'preview_url': reverse('document_preview', args=[doc.id]),
+            }
+
+            if doc.type == 'CRN':
+                credit_notes.append(item_data)
+                total_credit += unadj
+            else:
+                debit_notes.append(item_data)
+                total_debit += unadj
+
+        return JsonResponse({
+            'success': True,
+            'contact_id': contact.id,
+            'contact_name': contact.name,
+            'total_credit_available': float(total_credit),
+            'total_debit_outstanding': float(total_debit),
+            'credit_notes_count': len(credit_notes),
+            'debit_notes_count': len(debit_notes),
+            'credit_notes': credit_notes,
+            'debit_notes': debit_notes,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('DOCUMENTS', 'read')
+def api_customer_invoices(request, contact_id):
+    """
+    Returns recent Invoices for the specified customer.
+    Used when creating a Credit Note or Debit Note to pick the original invoice.
+    """
+    try:
+        contact = get_object_or_404(Contact, id=contact_id)
+        invoices_qs = Document.objects.filter(
+            contact=contact,
+            type='INV',
+        ).exclude(status='Cancelled').prefetch_related('items').order_by('-date', '-id')[:60]
+
+        invoices = []
+        for inv in invoices_qs:
+            items_summary = []
+            for itm in inv.items.all():
+                gross = float(itm.quantity) * float(itm.unit_price)
+                pct = round((float(itm.discount) / gross * 100), 2) if gross > 0 else 0
+                items_summary.append({
+                    'product_id': itm.product_id or '',
+                    'name': itm.name or '',
+                    'description': itm.description or '',
+                    'part_number': itm.part_number or '',
+                    'qty': float(itm.quantity),
+                    'unit': itm.unit or 'EA',
+                    'rate': float(itm.unit_price),
+                    'discount': float(itm.discount),
+                    'discount_pct': pct,
+                    'tax': float(itm.tax_rate),
+                    'total': float(itm.total),
+                    'hsn_code': itm.hsn_code or '',
+                })
+
+            invoices.append({
+                'id': inv.id,
+                'number': inv.number,
+                'date': inv.date.strftime('%Y-%m-%d') if inv.date else '',
+                'date_formatted': inv.date.strftime('%d %b %Y') if inv.date else '',
+                'grand_total': float(inv.grand_total),
+                'net_grand_total': float(inv.net_grand_total),
+                'amount_paid': float(inv.amount_paid),
+                'balance_due': float(inv.balance_due),
+                'status': inv.status,
+                'items': items_summary,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'contact_id': contact.id,
+            'invoices': invoices,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_permission('DOCUMENTS', 'write')
+def api_adjust_note(request):
+    """
+    Adjust an unadjusted Credit Note or Debit Note against an Invoice.
+    POST params: note_id, invoice_id, amount (optional), notes (optional)
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        from documents.models import NoteAdjustment
+        note_id = request.POST.get('note_id')
+        invoice_id = request.POST.get('invoice_id')
+        notes = request.POST.get('notes', '').strip()
+
+        if not note_id or not invoice_id:
+            return JsonResponse({'success': False, 'error': 'note_id and invoice_id are required'}, status=400)
+
+        note = get_object_or_404(Document, id=note_id, type__in=['CRN', 'DBN'])
+        invoice = get_object_or_404(Document, id=invoice_id, type='INV')
+
+        if note.contact_id != invoice.contact_id:
+            return JsonResponse({'success': False, 'error': 'Both documents must belong to the same customer.'}, status=400)
+
+        unadj = note.unadjusted_amount
+        if unadj <= 0:
+            return JsonResponse({'success': False, 'error': f'{note.get_type_display()} {note.number} has no unadjusted balance remaining.'}, status=400)
+
+        amt_str = request.POST.get('amount', '').strip()
+        if amt_str:
+            try:
+                adj_amt = Decimal(amt_str)
+            except Exception:
+                return JsonResponse({'success': False, 'error': 'Invalid amount value.'}, status=400)
+        else:
+            adj_amt = min(unadj, invoice.balance_due) if invoice.balance_due > 0 else unadj
+
+        if adj_amt <= 0:
+            return JsonResponse({'success': False, 'error': 'Adjustment amount must be greater than zero.'}, status=400)
+
+        if adj_amt > unadj:
+            return JsonResponse({'success': False, 'error': f'Adjustment amount (₹{adj_amt:,.2f}) cannot exceed note unadjusted balance (₹{unadj:,.2f}).'}, status=400)
+
+        adjustment = NoteAdjustment.objects.create(
+            note=note,
+            invoice=invoice,
+            amount=adj_amt,
+            adjustment_date=timezone.now().date(),
+            notes=notes or f"Adjusted against {invoice.number}",
+            created_by=request.user,
+        )
+
+        # Link documents in DocumentLink
+        from core.models import DocumentLink
+        from django.contrib.contenttypes.models import ContentType
+        doc_ct = ContentType.objects.get_for_model(Document)
+        DocumentLink.objects.get_or_create(
+            source_type=doc_ct,
+            source_id=note.id,
+            target_type=doc_ct,
+            target_id=invoice.id,
+            defaults={'link_type': 'credit_note' if note.type == 'CRN' else 'debit_note'}
+        )
+
+        note.refresh_from_db()
+        invoice.refresh_from_db()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully adjusted ₹{adj_amt:,.2f} from {note.number} to {invoice.number}.',
+            'adjustment_id': adjustment.id,
+            'note_unadjusted_amount': float(note.unadjusted_amount),
+            'note_is_adjusted': note.is_adjusted,
+            'invoice_balance_due': float(invoice.balance_due),
+            'invoice_net_grand_total': float(invoice.net_grand_total),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 

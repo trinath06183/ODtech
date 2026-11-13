@@ -486,6 +486,55 @@
                             </div>
                         </div>
 
+                        <!-- Customer Unadjusted Notes Banner (Credit Notes & Debit Notes) -->
+                        <div x-show="customerNotesLoading" class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-300 flex items-center gap-2" x-cloak>
+                            <svg class="animate-spin w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span>Checking customer credit/debit balances...</span>
+                        </div>
+
+                        <!-- Available Credit Notes (Green Banner) -->
+                        <div x-show="!customerNotesLoading && unadjustedCreditNotes.length > 0" 
+                             class="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs space-y-2 shadow-lg shadow-emerald-950/30" x-cloak>
+                            <div class="flex items-center justify-between font-bold">
+                                <span class="flex items-center gap-1.5 text-emerald-400">
+                                    <span>🎁</span> Unadjusted Credit Available:
+                                </span>
+                                <span class="text-sm font-extrabold text-emerald-300" x-text="'₹' + Number(totalCreditAvailable).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                <template x-for="crn in unadjustedCreditNotes" :key="crn.id">
+                                    <div class="px-2.5 py-1 rounded-lg bg-emerald-900/70 border border-emerald-500/50 text-white flex items-center gap-1.5">
+                                        <span class="font-bold text-emerald-300" x-text="crn.number"></span>
+                                        <span class="text-emerald-100" x-text="'(₹' + Number(crn.unadjusted_amount).toFixed(2) + ')'"></span>
+                                        <span x-show="crn.ref_invoice_number" class="text-[10px] text-emerald-400/80" x-text="'• Ref: ' + crn.ref_invoice_number"></span>
+                                    </div>
+                                </template>
+                            </div>
+                            <div x-show="docType === 'INV'" class="pt-1 text-[11px] text-emerald-300/90 flex items-center justify-between border-t border-emerald-800/60">
+                                <span>Tip: You can apply these credit notes to reduce this invoice below in the summary.</span>
+                            </div>
+                        </div>
+
+                        <!-- Outstanding Debit Notes (Amber Banner) -->
+                        <div x-show="!customerNotesLoading && unadjustedDebitNotes.length > 0" 
+                             class="p-3.5 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs space-y-2 shadow-lg shadow-amber-950/30" x-cloak>
+                            <div class="flex items-center justify-between font-bold">
+                                <span class="flex items-center gap-1.5 text-amber-400">
+                                    <span>⚠️</span> Outstanding Debit Notes:
+                                </span>
+                                <span class="text-sm font-extrabold text-amber-300" x-text="'₹' + Number(totalDebitOutstanding).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                <template x-for="dbn in unadjustedDebitNotes" :key="dbn.id">
+                                    <div class="px-2.5 py-1 rounded-lg bg-amber-900/70 border border-amber-500/50 text-white flex items-center gap-1.5">
+                                        <span class="font-bold text-amber-300" x-text="dbn.number"></span>
+                                        <span class="text-amber-100" x-text="'(₹' + Number(dbn.unadjusted_amount).toFixed(2) + ')'"></span>
+                                        <span x-show="dbn.ref_invoice_number" class="text-[10px] text-amber-400/80" x-text="'• Ref: ' + dbn.ref_invoice_number"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Document Type</label>
                             <select name="type" form="document-main-form" x-model="docType"
@@ -518,6 +567,68 @@
                             <label class="block text-sm font-medium text-gray-300 mb-1">Invoice / Document Date</label>
                             <input type="date" name="invoice_date" form="document-main-form" x-model="invoiceDate"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-sm focus:ring-red-500 focus:border-red-500">
+                        </div>
+
+                        <!-- Original Reference Invoice & Reason (for Credit Notes & Debit Notes) -->
+                        <div x-show="docType === 'CRN' || docType === 'DBN'" class="p-3.5 rounded-xl bg-slate-900/95 border border-cyan-500/50 space-y-3 shadow-lg" x-cloak>
+                            <div class="flex items-center justify-between border-b border-slate-700/80 pb-1.5">
+                                <span class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                                    <span>🔗</span> Original Reference Invoice (GST)
+                                </span>
+                                <span class="text-[11px] text-cyan-300 font-semibold" x-text="docType === 'CRN' ? 'Credit Note' : 'Debit Note'"></span>
+                            </div>
+
+                            <input type="hidden" name="source_document_id" form="document-main-form" :value="selectedSourceDocId">
+
+                            <!-- Dropdown of Customer's Invoices -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-300 mb-1">Select Customer's Original Invoice</label>
+                                <select @change="onSelectCustomerInvoice($event.target.value)"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500">
+                                    <option value="">-- Choose Past Invoice or Enter Below --</option>
+                                    <template x-for="inv in customerInvoices" :key="inv.id">
+                                        <option :value="inv.id" :selected="String(inv.id) === String(selectedSourceDocId)"
+                                                x-text="inv.number + ' (' + inv.date_formatted + ') — ₹' + Number(inv.grand_total).toFixed(2)">
+                                        </option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <!-- Manual / Auto-filled Invoice Number & Date -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-300 mb-1">Original Invoice No. *</label>
+                                    <input type="text" name="original_invoice_number" form="document-main-form" x-model="refInvoiceNumber"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500"
+                                        placeholder="e.g. INV-2026-0042">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-300 mb-1">Original Invoice Date *</label>
+                                    <input type="date" name="original_invoice_date" form="document-main-form" x-model="refInvoiceDate"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500">
+                                </div>
+                            </div>
+
+                            <!-- Reason for Note -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-300 mb-1">Reason for Note *</label>
+                                <div class="space-y-1.5">
+                                    <select @change="if ($event.target.value !== 'Other') noteReason = $event.target.value"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500">
+                                        <option value="">-- Select Standard Reason --</option>
+                                        <option value="01 - Sales Return / Goods Rejected">01 - Sales Return / Goods Rejected</option>
+                                        <option value="02 - Post Sale Discount / Rate Difference">02 - Post Sale Discount / Rate Difference</option>
+                                        <option value="03 - Deficiency in Services">03 - Deficiency in Services</option>
+                                        <option value="04 - Correction in Invoice">04 - Correction in Invoice</option>
+                                        <option value="05 - Change in POS / GSTIN">05 - Change in POS / GSTIN</option>
+                                        <option value="06 - Final Settlement">06 - Final Settlement</option>
+                                        <option value="Other">Other Reason (Type Below)</option>
+                                    </select>
+                                    <input type="text" name="note_reason" form="document-main-form" x-model="noteReason"
+                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white text-xs focus:ring-cyan-500 focus:border-cyan-500"
+                                        placeholder="e.g. Goods returned due to defect">
+                                </div>
+                            </div>
                         </div>
 
                         <div x-show="docType === 'INV' || docType === 'PRO'">
@@ -1313,6 +1424,16 @@
                                 <span>TOTAL</span>
                                 <span class="font-mono"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(sections.tax_details ? grandTotal : subtotal)"></span></span>
                             </div>
+                            <template x-for="adj in appliedCreditNotes" :key="adj.note_id">
+                                <div class="tot-row text-xs text-emerald-400">
+                                    <span class="tot-label">Less: Credit Note (<span x-text="adj.number"></span>)</span>
+                                    <span class="tot-val font-mono">- <span x-text="currencySymbol()"></span> <span x-text="fmtNum(adj.amount)"></span></span>
+                                </div>
+                            </template>
+                            <div class="tot-row tot-grand text-emerald-300" x-show="appliedCreditNotes.length > 0">
+                                <span>NET PAYABLE</span>
+                                <span class="font-mono"><span x-text="currencySymbol()"></span> <span x-text="fmtNum(netPayable)"></span></span>
+                            </div>
                             <div class="tot-row" x-show="currency !== 'INR' && exchangeRate && exchangeRate > 0" x-cloak>
                                 <span class="tot-label text-amber-300 font-semibold">≈ Value in INR</span>
                                 <span class="tot-val text-amber-300 font-mono font-bold">₹ <span x-text="fmtNum((sections.tax_details ? grandTotal : subtotal) * (parseFloat(exchangeRate) || 1))"></span></span>
@@ -1329,6 +1450,36 @@
                                 </template>
                             </div>
                         </template>
+
+                        <!-- Applied Notes Hidden Form Input -->
+                        <input type="hidden" name="applied_notes_json" form="document-main-form" :value="JSON.stringify(appliedCreditNotes)">
+
+                        <!-- Apply Available Credit Notes Card (INV only) -->
+                        <div x-show="docType === 'INV' && unadjustedCreditNotes.length > 0" class="p-3 bg-slate-900/95 border border-emerald-500/50 rounded-xl mt-2 text-xs space-y-2.5 shadow-lg" x-cloak>
+                            <div class="flex items-center justify-between font-bold text-emerald-400">
+                                <span class="flex items-center gap-1.5">
+                                    <span>🎁</span> Apply Available Credit Notes
+                                </span>
+                                <span class="font-mono text-emerald-300" x-text="'Avail: ₹' + fmtNum(totalCreditAvailable)"></span>
+                            </div>
+                            <div class="space-y-1.5 pt-1">
+                                <template x-for="crn in unadjustedCreditNotes" :key="crn.id">
+                                    <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-800/90 border border-slate-700/80">
+                                        <label class="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                            <input type="checkbox" :checked="isCreditNoteApplied(crn.id)" @change="toggleApplyCreditNote(crn)" class="rounded text-emerald-500 focus:ring-emerald-400">
+                                            <span class="font-bold text-white truncate" x-text="crn.number"></span>
+                                            <span class="text-slate-400 text-[11px]" x-text="'(₹' + fmtNum(crn.unadjusted_amount) + ')'"></span>
+                                        </label>
+                                        <div x-show="isCreditNoteApplied(crn.id)" class="w-24">
+                                            <input type="number" step="0.01" min="0.01" :max="crn.unadjusted_amount" 
+                                                   :value="getCreditNoteAppliedAmount(crn.id)"
+                                                   @input="updateAppliedCreditNoteAmount(crn.id, $el.value, crn.unadjusted_amount)"
+                                                   class="w-full bg-slate-900 border border-emerald-500/50 rounded p-1 text-right text-emerald-300 font-mono text-xs">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2386,6 +2537,24 @@ function documentForm() {
                 { id: 'terms', label: 'Terms & Conditions' },
                 { id: 'received_by', label: 'Received By Block' },
                 { id: 'signature', label: 'Authorized Signatory' },
+            ],
+            CRN: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Company Info' },
+                { id: 'client_info', label: 'Bill To (Client)' },
+                { id: 'tax_details', label: 'GST Breakdown' },
+                { id: 'payment_summary', label: 'Adjustment Summary' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'signature', label: 'Signature Block' },
+            ],
+            DBN: [
+                { id: 'logo', label: 'Company Logo' },
+                { id: 'company_info', label: 'Company Info' },
+                { id: 'client_info', label: 'Bill To (Client)' },
+                { id: 'tax_details', label: 'GST Breakdown' },
+                { id: 'payment_summary', label: 'Adjustment Summary' },
+                { id: 'terms', label: 'Terms & Conditions' },
+                { id: 'signature', label: 'Signature Block' },
             ]
         },
 
@@ -2407,8 +2576,27 @@ function documentForm() {
             ],
             CHL: [
                 { label: 'Delivery Challan Terms', value: "Other: Received all goods enumerated in this challan in pristine and working condition. Discrepancies if any must be marked on receipt immediately." },
+            ],
+            CRN: [
+                { label: 'Credit Note Terms', value: "1. Credit Note issued in accordance with Section 34 of CGST Act, 2017.\n2. Amount will be adjusted against subsequent invoices or refunded as mutually agreed.\n3. Original invoice details and GST tax breakups cited herein." }
+            ],
+            DBN: [
+                { label: 'Debit Note Terms', value: "1. Debit Note issued in accordance with Section 34 of CGST Act, 2017.\n2. Payable upon presentation / adjusted against credit balance.\n3. Original invoice details and GST tax breakups cited herein." }
             ]
         },
+
+        // ── Credit Note & Debit Note State ──────────────────────────
+        customerNotesLoading: false,
+        unadjustedCreditNotes: [],
+        unadjustedDebitNotes: [],
+        totalCreditAvailable: 0,
+        totalDebitOutstanding: 0,
+        customerInvoices: [],
+        selectedSourceDocId: '{% if source_document %}{{ source_document.id }}{% elif doc and doc.source_document %}{{ doc.source_document.id }}{% endif %}',
+        refInvoiceNumber: '{{ source_invoice_number|escapejs }}',
+        refInvoiceDate: '{{ source_invoice_date|escapejs }}',
+        noteReason: '{{ note_reason|escapejs }}',
+        appliedCreditNotes: [], // [{note_id, number, amount}]
 
         customers: [
             {% for contact in contacts %}
@@ -2512,6 +2700,8 @@ function documentForm() {
             if (this.selectedCustomer) {
                 let c = this.customers.find(x => String(x.id) === String(this.selectedCustomer));
                 if (c) this.customerSearch = c.name;
+                this.fetchCustomerUnadjustedNotes(this.selectedCustomer);
+                this.fetchCustomerInvoices(this.selectedCustomer);
             }
             this.filteredCustomers = this.customers;
 
@@ -2616,6 +2806,9 @@ function documentForm() {
                 // 3. Only auto-load default terms when changing doc type on a new document
                 if (!isEditMode && !isConversion) {
                     this.loadDefaultTerms();
+                }
+                if ((newVal === 'CRN' || newVal === 'DBN') && this.selectedCustomer) {
+                    this.fetchCustomerInvoices(this.selectedCustomer);
                 }
                 this.calculateTotals();
                 if (newVal === 'PRO' && this.milestones.length === 0) this.loadDefaultMilestones();
@@ -2911,6 +3104,9 @@ function documentForm() {
             this.fetchRecentBills();
             // Automatically detect Place of Supply from customer GSTIN or address
             this.detectPlaceOfSupply(c);
+            // Fetch unadjusted notes & customer invoices for CRN/DBN/INV
+            this.fetchCustomerUnadjustedNotes(c.id);
+            this.fetchCustomerInvoices(c.id);
         },
 
         toggleDiscount() {
@@ -4026,6 +4222,141 @@ function documentForm() {
                 this.activeScannerItem.serial_number = this.scannedSerials.join(', ');
             }
             this.closeBarcodeScanner();
+        },
+
+        // ── Credit Note & Debit Note helper methods ─────────────────
+        async fetchCustomerUnadjustedNotes(customerId) {
+            if (!customerId) {
+                this.unadjustedCreditNotes = [];
+                this.unadjustedDebitNotes = [];
+                this.totalCreditAvailable = 0;
+                this.totalDebitOutstanding = 0;
+                return;
+            }
+            this.customerNotesLoading = true;
+            try {
+                const excludeParam = this.isEditMode && '{{ doc.id|default:"" }}' ? `?exclude_id={{ doc.id }}` : '';
+                const res = await fetch(`/documents/api/customer/${customerId}/unadjusted-notes/${excludeParam}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        this.unadjustedCreditNotes = data.credit_notes || [];
+                        this.unadjustedDebitNotes = data.debit_notes || [];
+                        this.totalCreditAvailable = data.total_credit_available || 0;
+                        this.totalDebitOutstanding = data.total_debit_outstanding || 0;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed fetching unadjusted notes:', err);
+            } finally {
+                this.customerNotesLoading = false;
+            }
+        },
+
+        async fetchCustomerInvoices(customerId) {
+            if (!customerId) {
+                this.customerInvoices = [];
+                return;
+            }
+            try {
+                const res = await fetch(`/documents/api/customer/${customerId}/invoices/`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        this.customerInvoices = data.invoices || [];
+                        if (this.selectedSourceDocId) {
+                            const found = this.customerInvoices.find(inv => String(inv.id) === String(this.selectedSourceDocId));
+                            if (found && !this.refInvoiceNumber) {
+                                this.refInvoiceNumber = found.number;
+                                this.refInvoiceDate = found.date;
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Failed fetching customer invoices:', err);
+            }
+        },
+
+        onSelectCustomerInvoice(invoiceId) {
+            if (!invoiceId) {
+                this.selectedSourceDocId = '';
+                return;
+            }
+            this.selectedSourceDocId = invoiceId;
+            const inv = this.customerInvoices.find(i => String(i.id) === String(invoiceId));
+            if (inv) {
+                this.refInvoiceNumber = inv.number;
+                this.refInvoiceDate = inv.date;
+                if (inv.items && inv.items.length > 0) {
+                    const isItemsEmpty = this.items.length === 0 || (this.items.length === 1 && !this.items[0].name && !this.items[0].rate);
+                    if (isItemsEmpty) {
+                        this.items = inv.items.map((it, idx) => ({
+                            _uid: 'inv_itm_' + idx + '_' + Date.now(),
+                            product_id: it.product_id || '',
+                            name: it.name || '',
+                            description: it.description || '',
+                            part_number: it.part_number || '',
+                            qty: Number(it.qty) || 1,
+                            unit: it.unit || 'EA',
+                            rate: Number(it.rate) || 0,
+                            discount: Number(it.discount) || 0,
+                            discount_pct: Number(it.discount_pct) || 0,
+                            tax: Number(it.tax) || 18,
+                            total: Number(it.total) || 0,
+                            hsn_code: it.hsn_code || '',
+                            serial_number: '',
+                            has_warranty: false,
+                            model: '',
+                            warranty_period: '',
+                            warranty_start_date: '',
+                        }));
+                        this.calculateTotals();
+                    }
+                }
+            }
+        },
+
+        isCreditNoteApplied(noteId) {
+            return this.appliedCreditNotes.some(a => String(a.note_id) === String(noteId));
+        },
+
+        getCreditNoteAppliedAmount(noteId) {
+            const entry = this.appliedCreditNotes.find(a => String(a.note_id) === String(noteId));
+            return entry ? entry.amount : 0;
+        },
+
+        toggleApplyCreditNote(crn) {
+            const idx = this.appliedCreditNotes.findIndex(a => String(a.note_id) === String(crn.id));
+            if (idx >= 0) {
+                this.appliedCreditNotes.splice(idx, 1);
+            } else {
+                const currentApplied = this.appliedCreditNotes.reduce((acc, a) => acc + Number(a.amount || 0), 0);
+                const currentGrand = this.sections.tax_details ? this.grandTotal : this.subtotal;
+                const remainingPayable = Math.max(0, currentGrand - currentApplied);
+                const amtToApply = Math.min(Number(crn.unadjusted_amount), remainingPayable > 0 ? remainingPayable : Number(crn.unadjusted_amount));
+                this.appliedCreditNotes.push({
+                    note_id: crn.id,
+                    number: crn.number,
+                    amount: amtToApply > 0 ? parseFloat(amtToApply.toFixed(2)) : parseFloat(Number(crn.unadjusted_amount).toFixed(2)),
+                });
+            }
+        },
+
+        updateAppliedCreditNoteAmount(noteId, val, maxVal) {
+            const entry = this.appliedCreditNotes.find(a => String(a.note_id) === String(noteId));
+            if (entry) {
+                let num = parseFloat(val) || 0;
+                if (num > maxVal) num = maxVal;
+                if (num < 0) num = 0;
+                entry.amount = num;
+            }
+        },
+
+        get netPayable() {
+            const currentGrand = this.sections.tax_details ? this.grandTotal : this.subtotal;
+            const totalApplied = this.appliedCreditNotes.reduce((acc, a) => acc + Number(a.amount || 0), 0);
+            return Math.max(0, currentGrand - totalApplied);
         },
 
         // ── form submit ──────────────────────────────────────────────

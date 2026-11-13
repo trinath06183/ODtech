@@ -417,6 +417,58 @@
                     {% endfor %}
                 </div>
             </div>
+
+            {% if doc.type == 'INV' %}
+            <!-- Issue Credit Note & Debit Note Buttons -->
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
+                <a href="{% url 'create_document' %}?type=CRN&source_id={{ doc.id }}"
+                   class="h-10 px-3 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-xs shadow-sm cursor-pointer"
+                   title="Issue a GST Credit Note linked to this Tax Invoice">
+                    <span>➕ Credit Note</span>
+                </a>
+                <a href="{% url 'create_document' %}?type=DBN&source_id={{ doc.id }}"
+                   class="h-10 px-3 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-xs shadow-sm cursor-pointer"
+                   title="Issue a GST Debit Note linked to this Tax Invoice">
+                    <span>➕ Debit Note</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if doc.type == 'CRN' or doc.type == 'DBN' %}
+            <!-- Reference Invoice Details for Credit / Debit Note -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                <div class="font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                    <span>Original Tax Invoice</span>
+                    {% if doc.is_adjusted %}
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">Fully Adjusted</span>
+                    {% elif doc.adjusted_amount > 0 %}
+                        <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[10px]">Partially Adjusted</span>
+                    {% else %}
+                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-extrabold text-[10px]">Unadjusted</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Invoice No:</span>
+                    <span class="font-bold text-slate-800">{{ doc.ref_invoice_display|default:"N/A" }}</span>
+                </div>
+                {% if doc.ref_invoice_date_display %}
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Invoice Date:</span>
+                    <span class="font-medium text-slate-700">{{ doc.ref_invoice_date_display|date:"d M Y" }}</span>
+                </div>
+                {% endif %}
+                {% if doc.note_reason %}
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Reason:</span>
+                    <span class="font-medium text-slate-700 text-right">{{ doc.note_reason }}</span>
+                </div>
+                {% endif %}
+                <div class="pt-1.5 border-t border-slate-200 flex items-center justify-between">
+                    <span class="text-slate-600 font-semibold">Remaining Unadjusted:</span>
+                    <span class="font-bold text-emerald-700">₹{{ doc.unadjusted_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Document Info -->
@@ -518,6 +570,15 @@
                 </div>
                 {% endif %}
             </div>
+            {% if doc.credit_notes_adjusted > 0 %}
+            <div class="bg-teal-50 border border-teal-200 p-3 rounded-xl">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-xs text-teal-700 uppercase tracking-wider font-semibold">Credit Note Adjusted</div>
+                    <span class="text-xs font-bold text-teal-800 bg-teal-100 px-1.5 py-0.5 rounded">Applied</span>
+                </div>
+                <div class="text-teal-700 font-bold text-xl">-{{ doc.currency_symbol }} {{ doc.credit_notes_adjusted|floatformat:2 }}</div>
+            </div>
+            {% endif %}
             <div class="bg-white/60 border border-slate-200 p-3 rounded-xl">
                 <div class="flex justify-between items-center mb-1">
                     <div class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Paid Amount</div>
@@ -551,6 +612,63 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Linked Credit / Debit Note Adjustments -->
+        {% if doc.adjustments_as_invoice.exists %}
+        <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-teal-500/30" style="position: relative; z-index: 10;">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
+                    <span>🎁</span> Credit Note Adjustments
+                </h2>
+                <span class="text-xs font-extrabold text-teal-700">-{{ doc.currency_symbol }} {{ doc.credit_notes_adjusted|floatformat:2 }}</span>
+            </div>
+            <div class="space-y-2 text-xs">
+                {% for adj in doc.adjustments_as_invoice.all %}
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <a href="{% url 'document_preview' adj.note.id %}" class="font-bold text-teal-700 hover:underline flex items-center gap-1">
+                            <span>📄</span> {{ adj.note.number }}
+                        </a>
+                        <div class="text-[11px] text-slate-500 mt-0.5">
+                            {{ adj.adjustment_date|date:"d M Y" }}{% if adj.notes %} • {{ adj.notes }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-slate-800">-{{ doc.currency_symbol }} {{ adj.amount|floatformat:2 }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if doc.adjustments_as_note.exists %}
+        <div class="glass p-5 rounded-2xl flex flex-col gap-3 shadow-lg border border-teal-500/30" style="position: relative; z-index: 10;">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h2 class="text-slate-800 font-bold text-sm flex items-center gap-2">
+                    <span>📑</span> Adjusted Against Invoices
+                </h2>
+                <span class="text-xs font-extrabold text-teal-700">{{ doc.currency_symbol }} {{ doc.adjusted_amount|floatformat:2 }}</span>
+            </div>
+            <div class="space-y-2 text-xs">
+                {% for adj in doc.adjustments_as_note.all %}
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <a href="{% url 'document_preview' adj.invoice.id %}" class="font-bold text-blue-700 hover:underline flex items-center gap-1">
+                            <span>🧾</span> {{ adj.invoice.number }}
+                        </a>
+                        <div class="text-[11px] text-slate-500 mt-0.5">
+                            {{ adj.adjustment_date|date:"d M Y" }}{% if adj.notes %} • {{ adj.notes }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-slate-800">{{ doc.currency_symbol }} {{ adj.amount|floatformat:2 }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Transporter Details (For Delivery Challans) -->
         {% if doc.type == 'CHL' %}

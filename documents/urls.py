@@ -90,4 +90,9 @@ urlpatterns = [
     path('<int:document_id>/installation-certificate/', views.print_installation_certificate, name='print_installation_certificate'),
     path('<int:document_id>/installation-certificate/pdf/', views.download_installation_certificate, name='download_installation_certificate'),
     path('<int:document_id>/installation-certificate/form/', views.form_installation_certificate, name='form_installation_certificate'),
+
+    # Credit Note & Debit Note APIs
+    path('api/customer/<int:contact_id>/unadjusted-notes/', views.api_customer_unadjusted_notes, name='api_customer_unadjusted_notes'),
+    path('api/customer/<int:contact_id>/invoices/', views.api_customer_invoices, name='api_customer_invoices'),
+    path('api/adjust-note/', views.api_adjust_note, name='api_adjust_note'),
 ]

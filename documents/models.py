@@ -431,20 +431,14 @@ class Document(TimeStampedModel):
     @property
     def credit_notes_adjusted(self):
         """Total credit note amount adjusted against this invoice."""
-        if hasattr(self, '_cached_crn_adj'):
-            return self._cached_crn_adj
         val = self.note_adjustments_as_invoice.filter(note__type='CRN').aggregate(t=models.Sum('amount'))['t']
-        self._cached_crn_adj = Decimal(str(val)) if val is not None else Decimal('0.00')
-        return self._cached_crn_adj
+        return Decimal(str(val)) if val is not None else Decimal('0.00')
 
     @property
     def debit_notes_adjusted(self):
         """Total debit note amount adjusted against this invoice."""
-        if hasattr(self, '_cached_dbn_adj'):
-            return self._cached_dbn_adj
         val = self.note_adjustments_as_invoice.filter(note__type='DBN').aggregate(t=models.Sum('amount'))['t']
-        self._cached_dbn_adj = Decimal(str(val)) if val is not None else Decimal('0.00')
-        return self._cached_dbn_adj
+        return Decimal(str(val)) if val is not None else Decimal('0.00')
 
     @property
     def net_grand_total(self):
