@@ -1356,6 +1356,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 'doc': DummyDoc(),
                 'default_type': default_type,
                 'existing_items_json': items_json,
+                'existing_applied_notes_json': applied_notes_json,
                 'table_columns_json': table_columns_json,
                 'milestones_json': payment_milestones or "[]",
                 'document_types': Document.DOCUMENT_TYPES,
@@ -1390,6 +1391,7 @@ def document_form(request, doc=None, default_type='QTN'):
                 original_invoice_date=original_invoice_date,
                 note_reason=note_reason,
                 source_document=source_doc or doc.source_document,
+                applied_credit_notes=applied_credit_notes,
                 place_of_supply=place_of_supply,
                 quotation_asked_by=quotation_asked_by,
                 enable_warranty=enable_warranty,
@@ -1740,6 +1742,18 @@ def document_form(request, doc=None, default_type='QTN'):
     elif doc and doc.original_invoice_date:
         ref_inv_dt = doc.original_invoice_date.strftime('%Y-%m-%d')
 
+    existing_applied_notes = []
+    if doc and doc.type == 'INV':
+        for adj in doc.note_adjustments_as_invoice.select_related('note').all():
+            existing_applied_notes.append({
+                'note_id': adj.note.id,
+                'number': adj.note.number,
+                'amount': float(adj.amount),
+                'max_amount': float(adj.amount + adj.note.unadjusted_amount),
+                'unadjusted_amount': float(adj.amount + adj.note.unadjusted_amount),
+            })
+    existing_applied_notes_json = json.dumps(existing_applied_notes)
+
     return render(request, 'documents/document_create.html', {
         'contacts': contacts,
         'recent_docs': recent_docs,
@@ -1753,6 +1767,7 @@ def document_form(request, doc=None, default_type='QTN'):
         'is_conversion': is_conversion,
         'default_type': default_type,
         'existing_items_json': json.dumps(existing_items),
+        'existing_applied_notes_json': existing_applied_notes_json,
         'table_columns_json': table_columns_json,
         'last_doc_settings_json': last_doc_settings_json,
         'milestones_json': milestones_json,
@@ -2582,20 +2597,24 @@ def form_installation_certificate(request, document_id):
 def api_customer_unadjusted_notes(request, contact_id):
     """
     Returns all unadjusted Credit Notes and Debit Notes for the specified customer.
-    Called when a customer is selected on any document to display pending unadjusted notes.
+    When editing an existing invoice (invoice_id passed), any note amounts
+    already allocated/adjusted against that invoice are included as available/applied.
     """
     try:
         contact = get_object_or_404(Contact, id=contact_id)
-        exclude_id = request.GET.get('exclude_id')
+        invoice_param = request.GET.get('invoice_id') or request.GET.get('exclude_id')
+        current_invoice_id = int(invoice_param) if (invoice_param and str(invoice_param).isdigit()) else None
 
-        qs = Document.objects.filter(
-            contact=contact,
-            type__in=['CRN', 'DBN'],
-            is_adjusted=False,
-        ).exclude(status='Cancelled').order_by('-date', '-id')
-
-        if exclude_id and str(exclude_id).isdigit():
-            qs = qs.exclude(id=int(exclude_id))
+        from django.db.models import Q
+        base_filter = Q(contact=contact, type__in=['CRN', 'DBN']) & ~Q(status='Cancelled')
+        if current_invoice_id:
+            qs = Document.objects.filter(
+                base_filter & (Q(is_adjusted=False) | Q(note_adjustments_as_note__invoice_id=current_invoice_id))
+            ).distinct().order_by('-date', '-id')
+        else:
+            qs = Document.objects.filter(
+                base_filter & Q(is_adjusted=False)
+            ).order_by('-date', '-id')
 
         credit_notes = []
         debit_notes = []
@@ -2603,7 +2622,13 @@ def api_customer_unadjusted_notes(request, contact_id):
         total_debit = Decimal('0.00')
 
         for doc in qs:
-            unadj = doc.unadjusted_amount
+            current_inv_adj = Decimal('0.00')
+            if current_invoice_id:
+                inv_adj = doc.note_adjustments_as_note.filter(invoice_id=current_invoice_id).first()
+                if inv_adj:
+                    current_inv_adj = inv_adj.amount
+
+            unadj = doc.unadjusted_amount + current_inv_adj
             if unadj <= 0:
                 continue
 
@@ -2620,6 +2645,8 @@ def api_customer_unadjusted_notes(request, contact_id):
                 'grand_total': float(doc.grand_total),
                 'adjusted_amount': float(doc.adjusted_amount),
                 'unadjusted_amount': float(unadj),
+                'already_applied': float(current_inv_adj),
+                'is_applied': current_inv_adj > 0,
                 'ref_invoice_number': ref_no,
                 'ref_invoice_date': ref_dt,
                 'note_reason': doc.note_reason or '',

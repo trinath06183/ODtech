@@ -517,28 +517,29 @@
                         </div>
 
                         <!-- Available Credit Notes (Clean Emerald Light Card) -->
-                        <div x-show="!customerNotesLoading && unadjustedCreditNotes.length > 0" 
+                        <div x-show="!customerNotesLoading && (unadjustedCreditNotes.length > 0 || appliedCreditNotes.length > 0)" 
                              class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-2.5 shadow-xs" x-cloak>
                             <div class="flex items-center justify-between font-bold">
                                 <span class="flex items-center gap-1.5 text-emerald-800">
                                     <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                                     </svg>
-                                    Unadjusted Credit Available:
+                                    <span x-text="appliedCreditNotes.length > 0 ? 'Applied / Available Credit Notes:' : 'Unadjusted Credit Available:'"></span>
                                 </span>
-                                <span class="text-sm font-extrabold text-emerald-700" x-text="'₹' + Number(totalCreditAvailable).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                                <span class="text-sm font-extrabold text-emerald-700" x-text="'₹' + Number(totalCreditAvailable || appliedCreditNotes.reduce((acc, a) => acc + Number(a.amount || 0), 0)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </div>
                             <div class="flex flex-wrap gap-1.5 pt-0.5">
                                 <template x-for="crn in unadjustedCreditNotes" :key="crn.id">
                                     <div class="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-slate-800 shadow-xs flex items-center gap-1.5 font-medium">
                                         <span class="font-bold text-emerald-700" x-text="crn.number"></span>
                                         <span class="text-slate-600 text-[11px]" x-text="'(₹' + Number(crn.unadjusted_amount).toFixed(2) + ')'"></span>
+                                        <span x-show="isCreditNoteApplied(crn.id)" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Applied</span>
                                         <span x-show="crn.ref_invoice_number" class="text-[10px] text-slate-400" x-text="'• Ref: ' + crn.ref_invoice_number"></span>
                                     </div>
                                 </template>
                             </div>
                             <div x-show="docType === 'INV'" class="pt-1.5 text-[11px] text-emerald-700 flex items-center justify-between border-t border-emerald-200/70">
-                                <span>Tip: You can apply these credit notes to reduce this invoice below in the summary.</span>
+                                <span>Tip: You can manage or apply these credit notes to reduce this invoice below in the summary.</span>
                             </div>
                         </div>
 
@@ -2663,16 +2664,31 @@ function documentForm() {
 
         // ── Credit Note & Debit Note State ──────────────────────────
         customerNotesLoading: false,
-        unadjustedCreditNotes: [],
+        unadjustedCreditNotes: [
+            {% if doc and doc.type == 'INV' %}
+                {% for adj in doc.note_adjustments_as_invoice.all %}
+                {
+                    id: {{ adj.note.id }},
+                    number: '{{ adj.note.number|escapejs }}',
+                    type: '{{ adj.note.type }}',
+                    unadjusted_amount: Number(({{ adj.amount }} + {{ adj.note.unadjusted_amount }}).toFixed(2)),
+                    ref_invoice_number: '{{ adj.note.ref_invoice_display|default:""|escapejs }}',
+                    already_applied: Number(({{ adj.amount }}).toFixed(2)),
+                    is_applied: true
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            {% endif %}
+        ],
         unadjustedDebitNotes: [],
-        totalCreditAvailable: 0,
+        totalCreditAvailable: {% if doc and doc.type == 'INV' %}{{ doc.credit_notes_adjusted|default:0 }}{% else %}0{% endif %},
         totalDebitOutstanding: 0,
         customerInvoices: [],
         selectedSourceDocId: '{% if source_document %}{{ source_document.id }}{% elif doc and doc.source_document %}{{ doc.source_document.id }}{% endif %}',
         refInvoiceNumber: '{{ source_invoice_number|escapejs }}',
         refInvoiceDate: '{{ source_invoice_date|escapejs }}',
         noteReason: '{{ note_reason|escapejs }}',
-        appliedCreditNotes: [], // [{note_id, number, amount}]
+        appliedCreditNotes: {{ existing_applied_notes_json|safe|default:'[]' }}, // [{note_id, number, amount, max_amount}]
+        initialCustomerId: '{% if doc and doc.contact %}{{ doc.contact.id }}{% endif %}',
 
         customers: [
             {% for contact in contacts %}
@@ -3173,6 +3189,9 @@ function documentForm() {
         },
 
         selectCustomer(c) {
+            if (this.initialCustomerId && String(c.id) !== String(this.initialCustomerId)) {
+                this.appliedCreditNotes = [];
+            }
             this.selectedCustomer = c.id;
             this.customer_id = c.id;
             this.customerSearch = c.name;
@@ -4311,8 +4330,8 @@ function documentForm() {
             }
             this.customerNotesLoading = true;
             try {
-                const excludeParam = this.isEditMode && '{{ doc.id|default:"" }}' ? `?exclude_id={{ doc.id }}` : '';
-                const res = await fetch(`/documents/api/customer/${customerId}/unadjusted-notes/${excludeParam}`);
+                const invoiceParam = this.isEditMode && '{{ doc.id|default:"" }}' ? `?invoice_id={{ doc.id }}` : '';
+                const res = await fetch(`/documents/api/customer/${customerId}/unadjusted-notes/${invoiceParam}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success) {

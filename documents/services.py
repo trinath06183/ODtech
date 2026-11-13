@@ -566,6 +566,42 @@ class DocumentService:
         document.save()
         document.items.all().delete()
         DocumentService.replace_items(document, items)
+
+        applied_notes = kwargs.get("applied_credit_notes")
+        if applied_notes is not None and document.type == 'INV':
+            from documents.models import NoteAdjustment
+            existing_adjs = {adj.note_id: adj for adj in document.note_adjustments_as_invoice.all()}
+            new_note_ids = set()
+            for item in applied_notes:
+                try:
+                    note_id = int(item.get('note_id'))
+                    adj_amount = Decimal(str(item.get('amount', 0)))
+                    if note_id and adj_amount > 0:
+                        new_note_ids.add(note_id)
+                        crn_note = Document.objects.filter(id=note_id, type__in=['CRN', 'DBN']).first()
+                        if crn_note:
+                            curr_adj = existing_adjs.get(note_id)
+                            prev_alloc = curr_adj.amount if curr_adj else Decimal('0.00')
+                            max_avail = crn_note.unadjusted_amount + prev_alloc
+                            actual_adj = min(adj_amount, max_avail)
+                            if curr_adj:
+                                if curr_adj.amount != actual_adj:
+                                    curr_adj.amount = actual_adj
+                                    curr_adj.save()
+                            else:
+                                NoteAdjustment.objects.create(
+                                    note=crn_note,
+                                    invoice=document,
+                                    amount=actual_adj,
+                                    created_by=kwargs.get("created_by"),
+                                    notes=f"Adjusted during invoice {document.number} update"
+                                )
+                except Exception:
+                    pass
+            for note_id, adj in existing_adjs.items():
+                if note_id not in new_note_ids:
+                    adj.delete()
+
         return document
 
     @staticmethod
