@@ -4,7 +4,7 @@
     <td class="px-6 py-4 whitespace-normal min-w-[250px] w-1/3">
         <a href="javascript:void(0)" onclick="openLinkedBillsModal('{{ product.id }}')" class="font-semibold text-slate-900 hover:text-cyan-600 text-sm transition-colors cursor-pointer flex items-center gap-1.5 group" title="Click to view linked bills">
             <span>{{ product.name }}</span>
-            <span class="text-xs text-cyan-500 opacity-60 group-hover:opacity-100 transition-opacity">🧾</span>
+            <svg class="w-3.5 h-3.5 text-cyan-500 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </a>
         {% if product.brand or product.category %}
         <div class="text-slate-500 text-xs mt-0.5">
@@ -45,8 +45,14 @@
                     {% if product.reorder_level > 0 and stock < product.reorder_level %}bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100
                     {% elif stock > 0 %}bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100
                     {% else %}bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100{% endif %}">
-            <span class="stock-icon">
-                {% if product.reorder_level > 0 and stock < product.reorder_level %}⚠️{% elif stock > 0 %}✓{% else %}⭕{% endif %}
+            <span class="stock-icon flex items-center">
+                {% if product.reorder_level > 0 and stock < product.reorder_level %}
+                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                {% elif stock > 0 %}
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                {% else %}
+                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                {% endif %}
             </span>
             <span class="stock-qty-text font-mono font-bold">{{ stock|floatformat:0 }}</span>
             <span class="stock-unit-text font-medium opacity-90">{{ product.unit }}</span>
@@ -61,10 +67,11 @@
             <!-- Quick Adjust Stock Primary Button (Solid Cyan, High Contrast) -->
             <button type="button"
                     onclick="openQuickAdjustModal('{{ product.id }}', '{{ product.name|escapejs }}', '{{ product.sku|escapejs }}', '{{ product.unit|escapejs }}', '{{ product.annotated_stock|floatformat:0 }}', '{{ product.reorder_level|floatformat:0 }}')"
-                    class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-cyan-600/20 flex items-center gap-1 cursor-pointer hover:scale-105 active:scale-95"
+                    class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-cyan-600/20 flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
                     style="background-color: #0891b2 !important; color: #ffffff !important;"
                     title="Quick Stock Adjustment">
-                <span style="color: #ffffff !important;">⚡ Adjust</span>
+                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                <span style="color: #ffffff !important;">Adjust</span>
             </button>
 
             <!-- More Actions Dropdown Menu (Clean Light Theme) -->
@@ -82,15 +89,18 @@
                     <button type="button"
                             onclick="openLinkedBillsModal('{{ product.id }}'); closeAllActionMenus();"
                             class="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-cyan-700 flex items-center gap-2 transition cursor-pointer">
-                        <span>🧾</span> View Linked Bills
+                        <svg class="w-3.5 h-3.5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>View Linked Bills</span>
                     </button>
                     <a href="{% url 'product_edit' product.id %}"
                        class="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center gap-2 transition cursor-pointer">
-                        <span>✏️</span> Edit Product
+                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>Edit Product</span>
                     </a>
                     <a href="{% url 'adjust_stock' product.id %}"
                        class="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-cyan-700 flex items-center gap-2 transition cursor-pointer">
-                        <span>📊</span> Stock History
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <span>Stock History</span>
                     </a>
                     <div class="my-1 border-t border-slate-100"></div>
                     <form method="post" action="{% url 'product_delete' product.id %}"
@@ -98,7 +108,8 @@
                         {% csrf_token %}
                         <button type="submit"
                                 class="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition cursor-pointer">
-                            <span>🗑️</span> Delete Product
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Delete Product</span>
                         </button>
                     </form>
                 </div>
@@ -106,9 +117,10 @@
             {% else %}
             <!-- Non-Admin: Linked Bills Only -->
             <button type="button" onclick="openLinkedBillsModal('{{ product.id }}')"
-                    class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-200 hover:border-emerald-600 flex items-center gap-1 shadow-sm cursor-pointer"
+                    class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-xl text-xs font-bold transition-all border border-emerald-200 hover:border-emerald-600 flex items-center gap-1.5 shadow-sm cursor-pointer"
                     title="View Linked Bills">
-                <span>🧾 Bills</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Bills</span>
             </button>
             {% endif %}
         </div>

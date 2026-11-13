@@ -84,15 +84,18 @@
         <div class="flex items-center gap-2">
           <button type="button" onclick="quickCheckIn({{ request.user.id }})" id="self-checkin-btn"
                   class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 {% if my_record.check_in %}hidden{% endif %}">
-            <span>🟢</span> Punch In Now
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            <span>Punch In Now</span>
           </button>
           <button type="button" onclick="quickCheckOut({{ request.user.id }})" id="self-checkout-btn"
                   class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-xs transition active:scale-95 flex items-center gap-1.5 {% if not my_record.check_in or my_record.check_out %}hidden{% endif %}">
-            <span>🔴</span> Punch Out
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            <span>Punch Out</span>
           </button>
           <button type="button" onclick="quickMarkStatus({{ request.user.id }}, 'WFH')" id="self-wfh-btn"
-                  class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold border border-blue-200 transition active:scale-95 {% if my_record %}hidden{% endif %}">
-            🏠 WFH
+                  class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold border border-blue-200 transition active:scale-95 flex items-center gap-1.5 {% if my_record %}hidden{% endif %}">
+            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>WFH</span>
           </button>
         </div>
         {% endif %}
@@ -135,15 +138,15 @@
                             id="status-select-{{ user.id }}"
                             class="rounded-lg border-slate-200 text-xs px-2 py-1 focus:ring-2 focus:ring-violet-500 bg-white font-medium text-slate-700 shadow-xs">
                       <option value="" {% if not user.today_rec %}selected{% endif %}>-- Change Status --</option>
-                      <option value="PRESENT" {% if user.today_rec.status == 'PRESENT' %}selected{% endif %}>🟢 Present</option>
-                      <option value="ABSENT" {% if user.today_rec.status == 'ABSENT' %}selected{% endif %}>🔴 Absent</option>
-                      <option value="HALF_DAY" {% if user.today_rec.status == 'HALF_DAY' %}selected{% endif %}>🟡 Half Day</option>
-                      <option value="WFH" {% if user.today_rec.status == 'WFH' %}selected{% endif %}>🏠 Work From Home</option>
-                      <option value="ON_LEAVE" {% if user.today_rec.status == 'ON_LEAVE' %}selected{% endif %}>✈️ On Leave</option>
-                      <option value="WEEKLY_OFF" {% if user.today_rec.status == 'WEEKLY_OFF' %}selected{% endif %}>📅 Weekly Off</option>
-                      <option value="HOLIDAY" {% if user.today_rec.status == 'HOLIDAY' %}selected{% endif %}>🏖️ Holiday</option>
+                      <option value="PRESENT" {% if user.today_rec.status == 'PRESENT' %}selected{% endif %}>Present</option>
+                      <option value="ABSENT" {% if user.today_rec.status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                      <option value="HALF_DAY" {% if user.today_rec.status == 'HALF_DAY' %}selected{% endif %}>Half Day</option>
+                      <option value="WFH" {% if user.today_rec.status == 'WFH' %}selected{% endif %}>Work From Home</option>
+                      <option value="ON_LEAVE" {% if user.today_rec.status == 'ON_LEAVE' %}selected{% endif %}>On Leave</option>
+                      <option value="WEEKLY_OFF" {% if user.today_rec.status == 'WEEKLY_OFF' %}selected{% endif %}>Weekly Off</option>
+                      <option value="HOLIDAY" {% if user.today_rec.status == 'HOLIDAY' %}selected{% endif %}>Holiday</option>
                       {% if user.today_rec %}
-                      <option value="CLEAR" class="text-red-500">✖ Clear (Not Marked)</option>
+                      <option value="CLEAR" class="text-red-500">Clear (Not Marked)</option>
                       {% endif %}
                     </select>
                   </div>
@@ -162,7 +165,7 @@
                   </button>
                   <button type="button" onclick="openTimePrompt({{ user.id }}, 'check_in', '{{ user.today_rec.check_in|time:'H:i'|default:'' }}')"
                           title="Edit Check In Time" class="text-slate-400 hover:text-slate-700 text-xs px-1 py-0.5 transition">
-                    ✎
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                   </button>
                   {% endif %}
                 </div>
@@ -179,7 +182,7 @@
                   </button>
                   <button type="button" onclick="openTimePrompt({{ user.id }}, 'check_out', '{{ user.today_rec.check_out|time:'H:i'|default:'' }}')"
                           title="Edit Check Out Time" class="text-slate-400 hover:text-slate-700 text-xs px-1 py-0.5 transition">
-                    ✎
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                   </button>
                   {% endif %}
                 </div>
@@ -200,8 +203,9 @@
                   </button>
                   <button type="button" onclick="quickMarkStatus({{ user.id }}, 'WFH')"
                           title="Work From Home"
-                          class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition active:scale-95">
-                    🏠 WFH
+                          class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition active:scale-95 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>WFH</span>
                   </button>
                 </div>
                 {% else %}
@@ -244,7 +248,7 @@
             </div>
           </div>
           {% empty %}
-          <div class="px-5 py-6 text-center text-slate-400 text-sm">No pending requests 🎉</div>
+          <div class="px-5 py-6 text-center text-slate-400 text-sm">No pending requests</div>
           {% endfor %}
         </div>
       </div>
@@ -273,10 +277,22 @@
       {% if is_hr_admin %}
       <div class="glass rounded-2xl p-5 space-y-2">
         <h3 class="font-bold text-slate-800 mb-3">Quick Links</h3>
-        <a href="{% url 'hr:attendance_report' %}" class="flex items-center gap-2 text-sm text-slate-700 hover:text-violet-700 py-1">📊 Monthly Report</a>
-        <a href="{% url 'hr:leave_balance' %}" class="flex items-center gap-2 text-sm text-slate-700 hover:text-violet-700 py-1">💰 Leave Balances</a>
-        <a href="{% url 'hr:manage_allocations' %}" class="flex items-center gap-2 text-sm text-slate-700 hover:text-violet-700 py-1">📋 Manage Allocations</a>
-        <a href="{% url 'hr:manage_holidays' %}" class="flex items-center gap-2 text-sm text-slate-700 hover:text-violet-700 py-1">🗓️ Manage Holidays</a>
+        <a href="{% url 'hr:attendance_report' %}" class="flex items-center gap-2.5 text-sm text-slate-700 hover:text-violet-700 py-1 font-medium transition-colors">
+          <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Monthly Report</span>
+        </a>
+        <a href="{% url 'hr:leave_balance' %}" class="flex items-center gap-2.5 text-sm text-slate-700 hover:text-violet-700 py-1 font-medium transition-colors">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+          <span>Leave Balances</span>
+        </a>
+        <a href="{% url 'hr:manage_allocations' %}" class="flex items-center gap-2.5 text-sm text-slate-700 hover:text-violet-700 py-1 font-medium transition-colors">
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span>Manage Allocations</span>
+        </a>
+        <a href="{% url 'hr:manage_holidays' %}" class="flex items-center gap-2.5 text-sm text-slate-700 hover:text-violet-700 py-1 font-medium transition-colors">
+          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Manage Holidays</span>
+        </a>
       </div>
       {% endif %}
     </div>

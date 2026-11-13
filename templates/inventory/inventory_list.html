@@ -18,11 +18,13 @@
     <div class="flex items-center gap-2 flex-wrap">
         <a href="{% url 'create_document' %}"
            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
-            📄 New Document
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>New Document</span>
         </a>
         <a href="{% url 'inventory_export_csv' %}?{{ request.GET.urlencode }}"
            class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 transition-all shadow-lg shadow-slate-900/20">
-            ⬇ Export CSV
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Export CSV</span>
         </a>
         {% if request.user.role == 'Admin' %}
         <a href="{% url 'product_create' %}"
@@ -84,28 +86,40 @@
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=all"
        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'all' %}bg-cyan-600 text-white shadow-cyan-600/20 border border-cyan-600{% else %}bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300{% endif %}"
        {% if stock_status == 'all' %}style="background-color: #0891b2 !important; color: #ffffff !important;"{% endif %}>
-       <span {% if stock_status == 'all' %}style="color: #ffffff !important;"{% endif %}>📦 All Products</span>
+       <span class="flex items-center gap-1.5" {% if stock_status == 'all' %}style="color: #ffffff !important;"{% endif %}>
+           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+           <span>All Products</span>
+       </span>
        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'all' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}"
              {% if stock_status == 'all' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ total_all_count }}</span>
     </a>
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=in_stock"
        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'in_stock' %}bg-emerald-600 text-white shadow-emerald-600/20 border border-emerald-600{% else %}bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300{% endif %}"
        {% if stock_status == 'in_stock' %}style="background-color: #059669 !important; color: #ffffff !important;"{% endif %}>
-       <span {% if stock_status == 'in_stock' %}style="color: #ffffff !important;"{% endif %}>✅ In Stock</span>
+       <span class="flex items-center gap-1.5" {% if stock_status == 'in_stock' %}style="color: #ffffff !important;"{% endif %}>
+           <svg class="w-3.5 h-3.5 {% if stock_status == 'in_stock' %}text-white{% else %}text-emerald-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+           <span>In Stock</span>
+       </span>
        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'in_stock' %}bg-white/20 text-white{% else %}bg-emerald-100 text-emerald-800 border border-emerald-200{% endif %}"
              {% if stock_status == 'in_stock' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ in_stock_count }}</span>
     </a>
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=low_stock"
        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'low_stock' %}bg-amber-500 text-white shadow-amber-500/20 border border-amber-500{% else %}bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-700 border border-slate-200 hover:border-amber-300{% endif %}"
        {% if stock_status == 'low_stock' %}style="background-color: #d97706 !important; color: #ffffff !important;"{% endif %}>
-       <span {% if stock_status == 'low_stock' %}style="color: #ffffff !important;"{% endif %}>⚠️ Low Stock</span>
+       <span class="flex items-center gap-1.5" {% if stock_status == 'low_stock' %}style="color: #ffffff !important;"{% endif %}>
+           <svg class="w-3.5 h-3.5 {% if stock_status == 'low_stock' %}text-white{% else %}text-amber-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+           <span>Low Stock</span>
+       </span>
        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'low_stock' %}bg-white/20 text-white{% else %}bg-amber-100 text-amber-900 border border-amber-200{% endif %}"
              {% if stock_status == 'low_stock' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ low_stock_count }}</span>
     </a>
     <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}stock_status=out_of_stock"
        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shadow-sm {% if stock_status == 'out_of_stock' %}bg-rose-600 text-white shadow-rose-600/20 border border-rose-600{% else %}bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 hover:border-rose-300{% endif %}"
        {% if stock_status == 'out_of_stock' %}style="background-color: #e11d48 !important; color: #ffffff !important;"{% endif %}>
-       <span {% if stock_status == 'out_of_stock' %}style="color: #ffffff !important;"{% endif %}>⭕ Out of Stock</span>
+       <span class="flex items-center gap-1.5" {% if stock_status == 'out_of_stock' %}style="color: #ffffff !important;"{% endif %}>
+           <svg class="w-3.5 h-3.5 {% if stock_status == 'out_of_stock' %}text-white{% else %}text-rose-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+           <span>Out of Stock</span>
+       </span>
        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold {% if stock_status == 'out_of_stock' %}bg-white/20 text-white{% else %}bg-rose-100 text-rose-800 border border-rose-200{% endif %}"
              {% if stock_status == 'out_of_stock' %}style="background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important;"{% endif %}>{{ out_of_stock_count }}</span>
     </a>
@@ -149,8 +163,8 @@
         <!-- Header -->
         <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-400 flex items-center justify-center text-xl shadow-inner">
-                    🧾
+                <div class="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-400 flex items-center justify-center shadow-inner">
+                    <svg class="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
                 <div>
                     <h3 class="text-base font-black !text-white tracking-wide">
@@ -276,8 +290,8 @@ function renderLinkedBillsTable(bills) {
         <!-- Header -->
         <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-cyan-100 text-cyan-700 border border-cyan-200 flex items-center justify-center text-xl shadow-sm">
-                    ⚡
+                <div class="w-10 h-10 rounded-2xl bg-cyan-100 text-cyan-700 border border-cyan-200 flex items-center justify-center shadow-sm">
+                    <svg class="w-5 h-5 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                 </div>
                 <div>
                     <h3 class="text-base font-black text-slate-900 tracking-wide">
@@ -317,19 +331,19 @@ function renderLinkedBillsTable(bills) {
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Adjustment Action</label>
                     <div class="grid grid-cols-3 gap-2">
                         <button type="button" onclick="setAdjustType('IN')" id="typeBtn-IN"
-                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 cursor-pointer"
+                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1.5 bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30 cursor-pointer"
                                 style="background-color: #059669 !important; color: #ffffff !important;">
-                            <span class="text-base">📥</span>
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                             <span style="color: #ffffff !important;">Stock IN (+)</span>
                         </button>
                         <button type="button" onclick="setAdjustType('OUT')" id="typeBtn-OUT"
-                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer">
-                            <span class="text-base">📤</span>
+                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1.5 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                             <span>Stock OUT (-)</span>
                         </button>
                         <button type="button" onclick="setAdjustType('SET')" id="typeBtn-SET"
-                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer">
-                            <span class="text-base">🎯</span>
+                                class="adjust-type-btn py-2.5 px-2 rounded-xl text-xs font-bold border transition flex flex-col items-center gap-1.5 bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Set Exact Count</span>
                         </button>
                     </div>
@@ -397,7 +411,8 @@ function renderLinkedBillsTable(bills) {
                     <button type="submit" id="quickAdjustSubmitBtn"
                             class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
                             style="background-color: #0891b2 !important; color: #ffffff !important;">
-                        <span style="color: #ffffff !important;">⚡ Save Adjustment</span>
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span style="color: #ffffff !important;">Save Adjustment</span>
                     </button>
                 </div>
             </form>
@@ -644,7 +659,7 @@ async function submitQuickStockAdjustment(event) {
         errBox.classList.remove('hidden');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>⚡ Save Adjustment</span>';
+        btn.innerHTML = '<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span style=\"color: #ffffff !important;\">Save Adjustment</span>';
     }
 }
 
@@ -664,13 +679,13 @@ function updateTableRowStock(productId, newStock, unit, isLowStock) {
 
     if (isLowStock) {
         badge.className += 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100';
-        if (iconSpan) iconSpan.textContent = '⚠️';
+        if (iconSpan) iconSpan.innerHTML = '<svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
     } else if (newStock > 0) {
         badge.className += 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100';
-        if (iconSpan) iconSpan.textContent = '✓';
+        if (iconSpan) iconSpan.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>';
     } else {
         badge.className += 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100';
-        if (iconSpan) iconSpan.textContent = '⭕';
+        if (iconSpan) iconSpan.innerHTML = '<svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>';
     }
 }
 
