@@ -263,24 +263,34 @@
         </div>
 
         <!-- Documents Table -->
-        <div class="glass rounded-2xl overflow-hidden border border-white/5">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left whitespace-nowrap">
-                    <thead class="bg-slate-800 border-b border-white/10 sticky top-0 z-10">
-                        <tr class="text-gray-400 text-xs uppercase tracking-wider select-none">
-                            <th class="px-6 py-4 font-medium">Doc Number</th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('type')"><div class="flex items-center gap-1">Type <span class="{% if sort_by != 'type' and sort_by != '-type' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-type' %}↓{% else %}↑{% endif %}</span></div></th>
-                            <th class="px-5 py-4 font-medium">Linked Docs</th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('contact__name')"><div class="flex items-center gap-1">Customer <span class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div></th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('date')"><div class="flex items-center gap-1">Date <span class="{% if sort_by == 'date' or sort_by == '-date' %}text-blue-400{% else %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == 'date' %}↑{% else %}↓{% endif %}</span></div></th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group" onclick="applySort('status')"><div class="flex items-center gap-1">Status <span class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div></th>
-                            <th class="px-6 py-4 font-medium cursor-pointer hover:text-blue-400 transition-colors group text-right" onclick="applySort('grand_total')"><div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div></th>
-                            <th class="px-6 py-4 font-medium text-right">Paid Amount</th>
-                            <th class="px-6 py-4 font-medium text-right">Remaining Amount</th>
-                            <th class="px-6 py-4 font-medium text-center">Actions</th>
+        <div class="glass rounded-2xl overflow-hidden border border-slate-200">
+            <div class="overflow-x-auto relative">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-[#FAFBFF] border-b border-slate-200 sticky top-0 z-10">
+                        <tr class="text-slate-600 text-xs uppercase tracking-wider select-none font-semibold">
+                            <th class="px-3.5 py-3 font-semibold text-slate-700 whitespace-nowrap">Doc Number</th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onclick="applySort('type')">
+                                <div class="flex items-center gap-1">Type <span class="{% if sort_by != 'type' and sort_by != '-type' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-type' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap">Linked Docs</th>
+                            <th class="px-3 py-3 font-semibold text-slate-700 cursor-pointer hover:text-blue-600 transition-colors group" onclick="applySort('contact__name')">
+                                <div class="flex items-center gap-1">Customer <span class="{% if sort_by != 'contact__name' and sort_by != '-contact__name' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-contact__name' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onclick="applySort('date')">
+                                <div class="flex items-center gap-1">Date <span class="{% if sort_by == 'date' or sort_by == '-date' %}text-blue-600{% else %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == 'date' %}↑{% else %}↓{% endif %}</span></div>
+                            </th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onclick="applySort('status')">
+                                <div class="flex items-center gap-1">Status <span class="{% if sort_by != 'status' and sort_by != '-status' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-status' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group text-right" onclick="applySort('grand_total')">
+                                <div class="flex items-center justify-end gap-1">Amount <span class="{% if sort_by != 'grand_total' and sort_by != '-grand_total' %}opacity-0 group-hover:opacity-50{% endif %}">{% if sort_by == '-grand_total' %}↓{% else %}↑{% endif %}</span></div>
+                            </th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap text-right">Paid Amount</th>
+                            <th class="px-2.5 py-3 font-semibold text-slate-700 whitespace-nowrap text-right">Remaining Amount</th>
+                            <th class="px-3 py-3 font-semibold text-slate-700 text-center sticky right-0 bg-[#FAFBFF] z-20 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)] border-l border-slate-200">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5" id="doc-tbody">
+                    <tbody class="divide-y divide-slate-100" id="doc-tbody">
                         {% include 'documents/partials/document_rows.html' %}
                     </tbody>
                 </table>

@@ -22,3 +22,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(cleanup_non_note_original_invoices, reverse_cleanup),
     ]
+
