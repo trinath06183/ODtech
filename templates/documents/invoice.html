@@ -60,6 +60,7 @@
                 <td class="bold" style="padding-bottom: 3px; border:none;">Date:</td>
                 <td style="padding-bottom: 3px; border:none;">{{ doc.date|date:"d/m/Y" }}</td>
             </tr>
+            {% if doc.type == 'CRN' or doc.type == 'DBN' %}
             {% if doc.ref_invoice_display %}
             <tr>
                 <td class="bold" style="padding-bottom: 3px; border:none;">Orig. Invoice No.:</td>
@@ -78,13 +79,14 @@
             </tr>
             {% endif %}
             {% endif %}
-            {% if doc.po_reference_number and not doc.ref_invoice_display %}
+            {% endif %}
+            {% if doc.po_reference_number %}
             <tr>
                 <td class="bold" style="padding-bottom: 3px; border:none;">PO Ref. Number:</td>
                 <td style="padding-bottom: 3px; border:none;">{{ doc.po_reference_number }}</td>
             </tr>
             {% endif %}
-            {% if doc.po_date and not doc.ref_invoice_display %}
+            {% if doc.po_date %}
             <tr>
                 <td class="bold" style="padding-bottom: 3px; border:none;">PO Ref. Date:</td>
                 <td style="padding-bottom: 3px; border:none;">{{ doc.po_date|date:"d/m/Y" }}</td>
@@ -143,6 +145,7 @@
                 <td class="bold" style="padding-bottom: 4px; border:none;">Date:</td>
                 <td style="padding-bottom: 4px; border:none;">{{ doc.date|date:"d/m/Y" }}</td>
             </tr>
+            {% if doc.type == 'CRN' or doc.type == 'DBN' %}
             {% if doc.ref_invoice_display %}
             <tr>
                 <td class="bold" style="padding-bottom: 4px; border:none;">Orig. Invoice No.:</td>
@@ -161,13 +164,14 @@
             </tr>
             {% endif %}
             {% endif %}
-            {% if doc.po_reference_number and not doc.ref_invoice_display %}
+            {% endif %}
+            {% if doc.po_reference_number %}
             <tr>
                 <td class="bold" style="padding-bottom: 4px; border:none;">PO Ref. Number:</td>
                 <td style="padding-bottom: 4px; border:none;">{{ doc.po_reference_number }}</td>
             </tr>
             {% endif %}
-            {% if doc.po_date and not doc.ref_invoice_display %}
+            {% if doc.po_date %}
             <tr>
                 <td class="bold" style="padding-bottom: 4px; border:none;">PO Ref. Date:</td>
                 <td style="padding-bottom: 4px; border:none;">{{ doc.po_date|date:"d/m/Y" }}</td>

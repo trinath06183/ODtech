@@ -1223,6 +1223,10 @@ def document_form(request, doc=None, default_type='QTN'):
         original_invoice_number = request.POST.get('original_invoice_number', '').strip() or None
         original_invoice_date = request.POST.get('original_invoice_date', '').strip() or None
         note_reason = request.POST.get('note_reason', '').strip() or None
+        if doc_type not in ['CRN', 'DBN']:
+            original_invoice_number = None
+            original_invoice_date = None
+            note_reason = None
         source_document_id = request.POST.get('source_document_id', '').strip() or None
         applied_notes_json = request.POST.get('applied_notes_json', '[]')
         try:
@@ -1431,10 +1435,11 @@ def document_form(request, doc=None, default_type='QTN'):
                 if src_param:
                     source_doc = Document.objects.filter(id=src_param).first()
 
-            if source_doc and not original_invoice_number and source_doc.type == 'INV':
-                original_invoice_number = source_doc.number
-            if source_doc and not original_invoice_date and source_doc.type == 'INV':
-                original_invoice_date = source_doc.date
+            if doc_type in ['CRN', 'DBN']:
+                if source_doc and not original_invoice_number and source_doc.type == 'INV':
+                    original_invoice_number = source_doc.number
+                if source_doc and not original_invoice_date and source_doc.type == 'INV':
+                    original_invoice_date = source_doc.date
 
             source_order_id = request.POST.get('source_order_id') or request.GET.get('source_order')
             source_order = None
@@ -1735,12 +1740,15 @@ def document_form(request, doc=None, default_type='QTN'):
     company = CompanyProfile.objects.first()
 
     effective_source_doc = source_document or (doc.source_document if doc else None)
-    ref_inv_no = (effective_source_doc.number if effective_source_doc else '') or (doc.original_invoice_number if doc else '')
+    ref_inv_no = ''
     ref_inv_dt = ''
-    if effective_source_doc and effective_source_doc.date:
-        ref_inv_dt = effective_source_doc.date.strftime('%Y-%m-%d')
-    elif doc and doc.original_invoice_date:
-        ref_inv_dt = doc.original_invoice_date.strftime('%Y-%m-%d')
+    if default_type in ['CRN', 'DBN']:
+        if effective_source_doc and effective_source_doc.type == 'INV':
+            ref_inv_no = effective_source_doc.number
+            ref_inv_dt = effective_source_doc.date.strftime('%Y-%m-%d') if effective_source_doc.date else ''
+        elif doc and doc.original_invoice_number:
+            ref_inv_no = doc.original_invoice_number
+            ref_inv_dt = doc.original_invoice_date.strftime('%Y-%m-%d') if doc.original_invoice_date else ''
 
     existing_applied_notes = []
     if doc and doc.type == 'INV':

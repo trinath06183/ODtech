@@ -418,15 +418,23 @@ class Document(TimeStampedModel):
 
     @property
     def ref_invoice_display(self):
-        if self.source_document:
+        if self.type not in ['CRN', 'DBN']:
+            return ''
+        if self.original_invoice_number:
+            return self.original_invoice_number
+        if self.source_document and self.source_document.type == 'INV':
             return self.source_document.number
-        return self.original_invoice_number or self.po_reference_number or ''
+        return ''
 
     @property
     def ref_invoice_date_display(self):
-        if self.source_document and self.source_document.date:
+        if self.type not in ['CRN', 'DBN']:
+            return None
+        if self.original_invoice_date:
+            return self.original_invoice_date
+        if self.source_document and self.source_document.type == 'INV' and self.source_document.date:
             return self.source_document.date
-        return self.original_invoice_date or self.po_date or None
+        return None
 
     @property
     def credit_notes_adjusted(self):

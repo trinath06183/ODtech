@@ -398,9 +398,15 @@ class DocumentService:
             billing_gstin=kwargs.get("billing_gstin") or None,
             repeat_header=kwargs.get("repeat_header", False),
             source_document=kwargs.get("source_document"),
-            original_invoice_number=kwargs.get("original_invoice_number") or (kwargs.get("source_document").number if kwargs.get("source_document") else None),
-            original_invoice_date=kwargs.get("original_invoice_date") or (kwargs.get("source_document").date if kwargs.get("source_document") else None),
-            note_reason=kwargs.get("note_reason") or None,
+            original_invoice_number=(
+                kwargs.get("original_invoice_number")
+                or (kwargs.get("source_document").number if kwargs.get("source_document") and kwargs.get("source_document").type == 'INV' else None)
+            ) if document_type in ['CRN', 'DBN'] else None,
+            original_invoice_date=(
+                kwargs.get("original_invoice_date")
+                or (kwargs.get("source_document").date if kwargs.get("source_document") and kwargs.get("source_document").type == 'INV' else None)
+            ) if document_type in ['CRN', 'DBN'] else None,
+            note_reason=kwargs.get("note_reason") if document_type in ['CRN', 'DBN'] else None,
             created_by=kwargs.get("created_by"),
         )
         DocumentService.replace_items(document, items)
@@ -494,12 +500,17 @@ class DocumentService:
             document.transport_reason = kwargs.get("transport_reason") or "Refilling only, No Commercial involvement."
         document.po_reference_number = kwargs.get("po_reference_number") or None
         document.po_date = kwargs.get("po_date") or None
-        if "original_invoice_number" in kwargs:
-            document.original_invoice_number = kwargs.get("original_invoice_number") or None
-        if "original_invoice_date" in kwargs:
-            document.original_invoice_date = kwargs.get("original_invoice_date") or None
-        if "note_reason" in kwargs:
-            document.note_reason = kwargs.get("note_reason") or None
+        if document_type in ['CRN', 'DBN']:
+            if "original_invoice_number" in kwargs:
+                document.original_invoice_number = kwargs.get("original_invoice_number") or None
+            if "original_invoice_date" in kwargs:
+                document.original_invoice_date = kwargs.get("original_invoice_date") or None
+            if "note_reason" in kwargs:
+                document.note_reason = kwargs.get("note_reason") or None
+        else:
+            document.original_invoice_number = None
+            document.original_invoice_date = None
+            document.note_reason = None
         if "source_document" in kwargs:
             document.source_document = kwargs.get("source_document")
         if "invoice_date" in kwargs and kwargs["invoice_date"]:
