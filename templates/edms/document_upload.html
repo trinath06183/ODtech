@@ -1,6 +1,8 @@
 {% extends 'edms/base_edms.html' %}
 {% load edms_tags %}
 
+{% block header %}Upload Document{% endblock %}
+
 {% block edms_content %}
 <style>
     /* ── Two-column upload layout ───────────────────────────── */
@@ -144,9 +146,14 @@
 
     <!-- Header -->
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-800">⬆ Upload Document</h1>
-            <p class="text-sm text-slate-500">Upload a new document to EDMS</p>
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-violet-200 flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Upload Document</h1>
+                <p class="text-xs text-slate-500">Upload a new document to EDMS</p>
+            </div>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
             {% include 'edms/partials/edms_nav.html' %}

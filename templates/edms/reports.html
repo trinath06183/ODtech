@@ -1,11 +1,18 @@
 {% extends 'edms/base_edms.html' %}
 {% load edms_tags %}
 
+{% block header %}Reports{% endblock %}
+
 {% block edms_content %}
 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-800">📊 EDMS Reports</h1>
-        <p class="text-sm text-slate-500">Analytics and data extraction</p>
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-violet-200 flex-shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">EDMS Reports</h1>
+            <p class="text-xs text-slate-500">Analytics and data extraction</p>
+        </div>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
         {% include 'edms/partials/edms_nav.html' %}
@@ -16,24 +23,29 @@
     <!-- Sidebar / Report Selector -->
     <div class="w-full md:w-64 flex-shrink-0 space-y-2">
         <a href="?type=upload{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}"
-           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'upload' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
-            ⬆️ Upload Activity
+           class="flex items-center gap-2.5 px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'upload' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <span>Upload Activity</span>
         </a>
         <a href="?type=download{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}"
-           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'download' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
-            ⬇️ Download Activity
+           class="flex items-center gap-2.5 px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'download' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Download Activity</span>
         </a>
         <a href="?type=expiry"
-           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'expiry' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
-            ⚠️ Expiring Documents
+           class="flex items-center gap-2.5 px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'expiry' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span>Expiring Documents</span>
         </a>
         <a href="?type=vendor"
-           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'vendor' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
-            🏭 Documents by Vendor
+           class="flex items-center gap-2.5 px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'vendor' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <span>Documents by Vendor</span>
         </a>
         <a href="?type=storage"
-           class="block px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'storage' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
-            💾 Storage Usage
+           class="flex items-center gap-2.5 px-4 py-3 rounded-xl font-medium text-sm transition-colors {% if report_type == 'storage' %}bg-violet-600 text-white shadow{% else %}glass text-slate-600 hover:bg-slate-50{% endif %}">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+            <span>Storage Usage</span>
         </a>
     </div>
 

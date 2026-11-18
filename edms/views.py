@@ -820,11 +820,29 @@ class VendorListView(EDMSLoginRequiredMixin, EDMSContextMixin, ListView):
     page_title          = 'Vendors'
 
     def get_queryset(self):
+        # Auto-sync vendors from Contact if missing
+        try:
+            from contacts.models import Contact
+            for c in Contact.objects.filter(contact_type__in=['Vendor', 'Both']):
+                if not EDMSVendor.objects.filter(name__iexact=c.name).exists():
+                    EDMSVendor.objects.create(
+                        name=c.name,
+                        contact_person='',
+                        phone=c.phone or '',
+                        email=c.email or '',
+                        gst_number=c.gstin or '',
+                        pan_number=c.pan or '',
+                        address=c.address or '',
+                        is_active=True,
+                    )
+        except Exception:
+            pass
+
         qs = EDMSVendor.objects.all().order_by('name')
-        q  = self.request.GET.get('q', '')
+        q  = self.request.GET.get('q', '').strip()
         if q:
             from django.db.models import Q
-            qs = qs.filter(Q(name__icontains=q) | Q(gst_number__icontains=q))
+            qs = qs.filter(Q(name__icontains=q) | Q(gst_number__icontains=q) | Q(pan_number__icontains=q))
         return qs
 
 
@@ -837,8 +855,24 @@ class VendorCreateView(EDMSPermissionMixin, EDMSContextMixin, CreateView):
     page_title      = 'Add Vendor'
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        try:
+            from contacts.models import Contact
+            vendor_obj = self.object
+            if not Contact.objects.filter(name__iexact=vendor_obj.name).exists():
+                Contact.objects.create(
+                    name=vendor_obj.name,
+                    contact_type='Vendor',
+                    email=vendor_obj.email or '',
+                    phone=vendor_obj.phone or '',
+                    address=vendor_obj.address or '',
+                    gstin=vendor_obj.gst_number or None,
+                    pan=vendor_obj.pan_number or None,
+                )
+        except Exception:
+            pass
         messages.success(self.request, f"Vendor '{form.cleaned_data['name']}' created.")
-        return super().form_valid(form)
+        return response
 
 
 class VendorEditView(EDMSPermissionMixin, EDMSContextMixin, UpdateView):
@@ -851,8 +885,22 @@ class VendorEditView(EDMSPermissionMixin, EDMSContextMixin, UpdateView):
     page_title      = 'Edit Vendor'
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        try:
+            from contacts.models import Contact
+            vendor_obj = self.object
+            contact = Contact.objects.filter(name__iexact=vendor_obj.name).first()
+            if contact:
+                if vendor_obj.email: contact.email = vendor_obj.email
+                if vendor_obj.phone: contact.phone = vendor_obj.phone
+                if vendor_obj.address: contact.address = vendor_obj.address
+                if vendor_obj.gst_number: contact.gstin = vendor_obj.gst_number
+                if vendor_obj.pan_number: contact.pan = vendor_obj.pan_number
+                contact.save()
+        except Exception:
+            pass
         messages.success(self.request, 'Vendor updated.')
-        return super().form_valid(form)
+        return response
 
 
 # ─── Category CRUD ───────────────────────────────────────────────────────────
@@ -1083,6 +1131,22 @@ class ContactQuickCreateAPIView(EDMSLoginRequiredMixin, View):
             pan=(body.get('pan') or '').strip() or None,
             address=(body.get('address') or '').strip(),
         )
+
+        if contact_type in ('Vendor', 'Both'):
+            try:
+                if not EDMSVendor.objects.filter(name__iexact=contact.name).exists():
+                    EDMSVendor.objects.create(
+                        name=contact.name,
+                        contact_person='',
+                        phone=contact.phone or '',
+                        email=contact.email or '',
+                        gst_number=contact.gstin or '',
+                        pan_number=contact.pan or '',
+                        address=contact.address or '',
+                        is_active=True,
+                    )
+            except Exception:
+                pass
 
         return JsonResponse({
             'success': True,
