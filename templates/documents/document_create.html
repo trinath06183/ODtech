@@ -340,15 +340,15 @@
     </div>
     {% endif %}
 
-    {# ── Floating Overlay Toast: Unsaved Draft (Appears without affecting page layout) ── #}
+    {# ── Floating Overlay Toast: Unsaved Draft (Appears at bottom-right as marked) ── #}
     <div x-show="hasSavedDraft && !isEditMode" x-cloak
         x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 translate-x-4 scale-95"
-        x-transition:enter-end="opacity-100 translate-x-0 scale-100"
+        x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
         x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100 translate-x-0 scale-100"
-        x-transition:leave-end="opacity-0 translate-x-4 scale-95"
-        class="fixed top-20 right-4 sm:right-6 z-[9999] max-w-sm sm:max-w-md w-auto bg-white/95 backdrop-blur-md border border-amber-300 rounded-2xl px-3.5 py-2 shadow-xl shadow-amber-900/10 flex items-center justify-between gap-3.5 ring-4 ring-amber-500/10 pointer-events-auto"
+        x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+        x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+        class="fixed bottom-6 right-6 z-[9999] max-w-sm sm:max-w-md w-auto bg-white/95 backdrop-blur-md border border-amber-300 rounded-2xl px-3.5 py-2.5 shadow-2xl shadow-amber-900/15 flex items-center justify-between gap-3.5 ring-4 ring-amber-500/10 pointer-events-auto"
         style="position: fixed; z-index: 9999;">
         <div class="flex items-center gap-2.5 min-w-0">
             <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
@@ -507,6 +507,20 @@
                                         No matching customers found.
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- View Party Docs & Transactions Button -->
+                            <div x-show="selectedCustomer" class="pt-1.5" x-cloak>
+                                <button type="button" @click="openVendorHistoryDrawer()"
+                                    class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-xs font-semibold transition-all shadow-2xs group cursor-pointer">
+                                    <span class="flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-violet-600 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>View Party Docs & Transactions</span>
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full bg-violet-200 text-violet-800 text-[10px] font-bold"
+                                          x-text="(vendorHistory.summary ? vendorHistory.summary.total_documents : 0) + ' docs • ' + (vendorHistory.summary ? vendorHistory.summary.total_payments : 0) + ' txns'">
+                                    </span>
+                                </button>
                             </div>
                         </div>
 
@@ -2418,6 +2432,235 @@
         </template>
     </div>
 
+    <!-- ── Slide-over Drawer: Party Documents & Transactions ── -->
+    <div x-show="showVendorHistoryDrawer" x-cloak
+         class="fixed inset-0 z-[99999] overflow-hidden"
+         @keydown.escape.window="showVendorHistoryDrawer = false"
+         aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        
+        <!-- Backdrop -->
+        <div x-show="showVendorHistoryDrawer"
+             x-transition:enter="ease-in-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in-out duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+             @click="showVendorHistoryDrawer = false"></div>
+
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div x-show="showVendorHistoryDrawer"
+                 x-transition:enter="transform transition ease-in-out duration-300 sm:duration-400"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transform transition ease-in-out duration-200 sm:duration-300"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="w-screen max-w-2xl bg-white shadow-2xl flex flex-col border-l border-slate-200">
+                 
+                <!-- Drawer Header -->
+                <div class="p-6 bg-slate-50 border-b border-slate-200">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-violet-200 shrink-0">
+                                <span x-text="(vendorHistory.contact ? vendorHistory.contact.name : '').slice(0, 2).toUpperCase()"></span>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-lg font-bold text-slate-900 leading-tight" x-text="vendorHistory.contact ? vendorHistory.contact.name : 'Party Records'"></h2>
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold"
+                                          :class="vendorHistory.contact && vendorHistory.contact.contact_type === 'Customer' ? 'bg-blue-100 text-blue-700' : (vendorHistory.contact && vendorHistory.contact.contact_type === 'Vendor' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700')"
+                                          x-text="vendorHistory.contact ? vendorHistory.contact.contact_type : ''"></span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
+                                    <span x-show="vendorHistory.contact && vendorHistory.contact.phone" class="flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                        <span x-text="vendorHistory.contact ? vendorHistory.contact.phone : ''"></span>
+                                    </span>
+                                    <span x-show="vendorHistory.contact && vendorHistory.contact.gstin" class="font-mono text-slate-600 font-medium">
+                                        GSTIN: <span x-text="vendorHistory.contact ? vendorHistory.contact.gstin : ''"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" @click="showVendorHistoryDrawer = false"
+                                class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Financial KPI Cards -->
+                    <div class="grid grid-cols-3 gap-3 mt-5">
+                        <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
+                            <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Total Billed</div>
+                            <div class="text-base font-extrabold text-slate-800 mt-0.5" x-text="'₹' + Number(vendorHistory.summary ? vendorHistory.summary.total_invoiced : 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Approved Invoices/PIs</div>
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
+                            <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Total Paid</div>
+                            <div class="text-base font-extrabold text-emerald-600 mt-0.5" x-text="'₹' + Number(vendorHistory.summary ? vendorHistory.summary.total_paid : 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Recorded Payments</div>
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
+                            <div class="text-[11px] font-semibold uppercase tracking-wide" :class="(vendorHistory.summary && vendorHistory.summary.outstanding > 0) ? 'text-rose-600' : 'text-slate-500'">Outstanding</div>
+                            <div class="text-base font-extrabold mt-0.5" :class="(vendorHistory.summary && vendorHistory.summary.outstanding > 0) ? 'text-rose-600' : 'text-emerald-600'" x-text="'₹' + Number(vendorHistory.summary ? vendorHistory.summary.outstanding : 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5" x-text="(vendorHistory.summary && vendorHistory.summary.outstanding > 0) ? 'Balance due' : 'Settled'"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs: Documents / Transactions / EDMS -->
+                    <div class="flex items-center gap-2 mt-5 border-b border-slate-200 pb-px">
+                        <button type="button" @click="vendorHistoryTab = 'documents'"
+                                class="px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="vendorHistoryTab === 'documents' ? 'bg-violet-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Commercial Documents</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="vendorHistoryTab === 'documents' ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-700'" x-text="vendorHistory.documents ? vendorHistory.documents.length : 0"></span>
+                        </button>
+                        <button type="button" @click="vendorHistoryTab = 'payments'"
+                                class="px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="vendorHistoryTab === 'payments' ? 'bg-violet-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            <span>Transactions & Payments</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="vendorHistoryTab === 'payments' ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-700'" x-text="vendorHistory.payments ? vendorHistory.payments.length : 0"></span>
+                        </button>
+                        <button type="button" @click="vendorHistoryTab = 'edms'" x-show="vendorHistory.edms_documents && vendorHistory.edms_documents.length > 0"
+                                class="px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="vendorHistoryTab === 'edms' ? 'bg-violet-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            <span>EDMS Files</span>
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="vendorHistoryTab === 'edms' ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-700'" x-text="vendorHistory.edms_documents ? vendorHistory.edms_documents.length : 0"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Drawer Body -->
+                <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                    <!-- Loading State -->
+                    <div x-show="vendorHistoryLoading" class="flex flex-col items-center justify-center py-16 text-slate-400">
+                        <svg class="animate-spin w-8 h-8 text-violet-600 mb-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <p class="text-sm font-semibold text-slate-600">Loading party documents & transactions...</p>
+                    </div>
+
+                    <!-- Tab 1: Documents -->
+                    <div x-show="!vendorHistoryLoading && vendorHistoryTab === 'documents'" class="space-y-3">
+                        <template x-for="doc in vendorHistory.documents" :key="doc.id">
+                            <div class="p-3.5 bg-white rounded-xl border border-slate-200 hover:border-violet-300 transition-all shadow-2xs hover:shadow-xs flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0"
+                                          :class="doc.type === 'INV' ? 'bg-emerald-100 text-emerald-800' : (doc.type === 'PRO' ? 'bg-blue-100 text-blue-800' : (doc.type === 'QTN' ? 'bg-purple-100 text-purple-800' : (doc.type === 'PO' ? 'bg-amber-100 text-amber-800' : (doc.type === 'CRN' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'))))"
+                                          x-text="doc.type_display || doc.type"></span>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <a :href="doc.preview_url" target="_blank"
+                                               class="font-mono font-bold text-slate-800 hover:text-violet-600 text-xs truncate"
+                                               x-text="doc.number"></a>
+                                            <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold"
+                                                  :class="doc.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'"
+                                                  x-text="doc.status"></span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-400 mt-0.5" x-text="doc.date"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0 text-right">
+                                    <div>
+                                        <div class="font-extrabold text-slate-900 text-xs" x-text="'₹' + Number(doc.grand_total).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></div>
+                                        <div x-show="doc.balance_due > 0" class="text-[10px] text-rose-500 font-medium" x-text="'Due: ₹' + Number(doc.balance_due).toFixed(2)"></div>
+                                        <div x-show="doc.balance_due <= 0 && doc.amount_paid > 0" class="text-[10px] text-emerald-600 font-medium">Fully Paid</div>
+                                    </div>
+                                    <a :href="doc.preview_url" target="_blank"
+                                       class="p-1.5 rounded-lg bg-slate-100 hover:bg-violet-100 text-slate-500 hover:text-violet-700 transition-colors"
+                                       title="Open Preview in New Tab">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="!vendorHistory.documents || vendorHistory.documents.length === 0" class="py-12 text-center text-slate-400">
+                            <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <p class="text-xs">No commercial documents found for this party.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Payments / Transactions -->
+                    <div x-show="!vendorHistoryLoading && vendorHistoryTab === 'payments'" class="space-y-3">
+                        <template x-for="p in vendorHistory.payments" :key="p.id">
+                            <div class="p-3.5 bg-white rounded-xl border border-slate-200 hover:border-emerald-300 transition-all shadow-2xs flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-xs text-slate-800" x-text="p.payment_mode || 'Payment'"></span>
+                                            <span x-show="p.document_ref" class="font-mono text-[11px] text-slate-500 font-semibold" x-text="'for ' + p.document_ref"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                                            <span x-text="p.date"></span>
+                                            <span x-show="p.reference_number" x-text="'• Ref: ' + p.reference_number"></span>
+                                            <span x-show="p.notes" class="truncate max-w-xs" x-text="'• ' + p.notes"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <div class="font-extrabold text-emerald-600 text-sm" x-text="'₹' + Number(p.amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></div>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="!vendorHistory.payments || vendorHistory.payments.length === 0" class="py-12 text-center text-slate-400">
+                            <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            <p class="text-xs">No payment transactions recorded for this party.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: EDMS Documents -->
+                    <div x-show="!vendorHistoryLoading && vendorHistoryTab === 'edms'" class="space-y-3">
+                        <template x-for="ed in vendorHistory.edms_documents" :key="ed.id">
+                            <div class="p-3.5 bg-white rounded-xl border border-slate-200 hover:border-violet-300 transition-all shadow-2xs flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <a :href="ed.detail_url" target="_blank"
+                                           class="font-bold text-slate-800 hover:text-violet-600 text-xs truncate block"
+                                           x-text="ed.title"></a>
+                                        <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                                            <span x-text="ed.category || 'General'"></span>
+                                            <span>•</span>
+                                            <span x-text="ed.date"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="shrink-0">
+                                    <a :href="ed.detail_url" target="_blank"
+                                       class="p-1.5 rounded-lg bg-slate-100 hover:bg-violet-100 text-slate-500 hover:text-violet-700 transition-colors flex items-center gap-1 text-xs font-semibold px-2.5 py-1">
+                                        <span>View</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Drawer Footer -->
+                <div class="p-4 bg-white border-t border-slate-200 flex items-center justify-between">
+                    <a :href="'/contacts/' + (vendorHistory.contact ? vendorHistory.contact.id : '') + '/'" target="_blank"
+                       class="text-xs font-semibold text-violet-600 hover:text-violet-800 hover:underline flex items-center gap-1">
+                        <span>Open Full Party Profile</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <button type="button" @click="showVendorHistoryDrawer = false"
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl text-xs transition-colors shadow-xs">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>{# end x-data wrapper #}
 
 <script src="{% static 'vendor/js/jsQR.min.js' %}"></script>
@@ -2425,6 +2668,10 @@
 function documentForm() {
     const lastSettings = {{ last_doc_settings_json|safe }};
     return {
+        showVendorHistoryDrawer: false,
+        vendorHistoryLoading: false,
+        vendorHistoryTab: 'documents',
+        vendorHistory: { contact: null, summary: null, documents: [], payments: [], edms_documents: [] },
         recentBills: [],
         enablePayment: false,
         customer_id: '',
@@ -2794,6 +3041,7 @@ function documentForm() {
                 if (c) this.customerSearch = c.name;
                 this.fetchCustomerUnadjustedNotes(this.selectedCustomer);
                 this.fetchCustomerInvoices(this.selectedCustomer);
+                this.fetchVendorHistory(this.selectedCustomer, false);
             }
             this.filteredCustomers = this.customers;
 
@@ -3202,6 +3450,8 @@ function documentForm() {
             // Fetch unadjusted notes & customer invoices for CRN/DBN/INV
             this.fetchCustomerUnadjustedNotes(c.id);
             this.fetchCustomerInvoices(c.id);
+            // Open all related documents and transactions for this vendor/party
+            this.fetchVendorHistory(c.id, true);
         },
 
         toggleDiscount() {
@@ -4370,6 +4620,40 @@ function documentForm() {
                 }
             } catch (err) {
                 console.error('Failed fetching customer invoices:', err);
+            }
+        },
+
+        async fetchVendorHistory(customerId, autoOpen = true) {
+            if (!customerId) {
+                this.vendorHistory = { contact: null, summary: null, documents: [], payments: [], edms_documents: [] };
+                return;
+            }
+            this.vendorHistoryLoading = true;
+            if (autoOpen) {
+                this.showVendorHistoryDrawer = true;
+            }
+            try {
+                const res = await fetch(`/documents/api/contact/${customerId}/history/`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        this.vendorHistory = data;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed fetching vendor history:', err);
+            } finally {
+                this.vendorHistoryLoading = false;
+            }
+        },
+
+        openVendorHistoryDrawer() {
+            if (this.selectedCustomer) {
+                if (!this.vendorHistory.contact || String(this.vendorHistory.contact.id) !== String(this.selectedCustomer)) {
+                    this.fetchVendorHistory(this.selectedCustomer, true);
+                } else {
+                    this.showVendorHistoryDrawer = true;
+                }
             }
         },
 

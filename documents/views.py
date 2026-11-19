@@ -2819,3 +2819,109 @@ def api_adjust_note(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
+@require_permission('DOCUMENTS', 'read')
+def api_contact_history(request, contact_id):
+    """
+    Returns full history for a selected customer or vendor:
+    - Commercial Documents (Quotations, Invoices, PIs, POs, Challans, Credit/Debit Notes)
+    - Payment Transactions
+    - EDMS Documents
+    - Financial KPI Totals (Invoiced, Paid, Outstanding)
+    """
+    try:
+        from contacts.models import Contact
+        from edms.models import EDMSDocument
+        from payments.models import Payment
+        from django.urls import reverse
+        from django.db.models import Sum
+        from decimal import Decimal
+
+        contact = get_object_or_404(Contact, id=contact_id)
+
+        # Commercial documents
+        docs_qs = Document.objects.filter(contact=contact).order_by('-date', '-id')
+        documents = []
+        for doc in docs_qs:
+            documents.append({
+                'id': doc.id,
+                'number': doc.number or f"#{doc.id}",
+                'type': doc.type,
+                'type_display': doc.get_type_display(),
+                'date': doc.date.strftime('%d %b %Y') if doc.date else '',
+                'date_iso': doc.date.strftime('%Y-%m-%d') if doc.date else '',
+                'status': doc.status,
+                'grand_total': float(doc.grand_total or 0),
+                'amount_paid': float(doc.amount_paid or 0),
+                'balance_due': float(doc.balance_due or 0),
+                'preview_url': reverse('document_preview', args=[doc.id]),
+            })
+
+        # Payment transactions
+        payments_qs = Payment.objects.filter(contact=contact).order_by('-date', '-id')
+        payments = []
+        for p in payments_qs:
+            payments.append({
+                'id': p.id,
+                'date': p.date.strftime('%d %b %Y') if p.date else '',
+                'amount': float(p.amount or 0),
+                'payment_mode': str(p.payment_mode or ''),
+                'reference_number': p.reference_number or '',
+                'document_ref': p.document_ref or '',
+                'notes': p.notes or '',
+            })
+
+        # EDMS documents
+        edms_docs = []
+        try:
+            edms_qs = EDMSDocument.objects.filter(contact_vendor=contact).order_by('-created_at')[:30]
+            for ed in edms_qs:
+                edms_docs.append({
+                    'id': ed.id,
+                    'title': ed.title or 'Untitled',
+                    'category': ed.category.name if ed.category else '',
+                    'date': ed.issue_date.strftime('%d %b %Y') if ed.issue_date else ed.created_at.strftime('%d %b %Y'),
+                    'status': ed.approval_status or '',
+                    'detail_url': reverse('edms:document_detail', args=[ed.id]),
+                })
+        except Exception:
+            pass
+
+        # Financial totals
+        inv_total = docs_qs.filter(type='INV', status='Approved').aggregate(t=Sum('grand_total'))['t'] or Decimal('0.00')
+        unlinked_pi_total = sum(
+            Decimal(str(pi.grand_total or 0)) for pi in docs_qs.filter(type='PRO', status='Approved')
+            if not pi.has_linked_invoice
+        )
+        total_invoiced = float(inv_total + unlinked_pi_total)
+        total_paid = float(payments_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0.00'))
+        outstanding = float(Decimal(str(total_invoiced)) - Decimal(str(total_paid)))
+
+        return JsonResponse({
+            'success': True,
+            'contact': {
+                'id': contact.id,
+                'name': contact.name,
+                'contact_type': contact.contact_type,
+                'phone': contact.phone or '',
+                'email': contact.email or '',
+                'gstin': contact.gstin or '',
+                'pan': contact.pan or '',
+                'address': contact.address or '',
+            },
+            'summary': {
+                'total_documents': len(documents),
+                'total_payments': len(payments),
+                'total_edms': len(edms_docs),
+                'total_invoiced': total_invoiced,
+                'total_paid': total_paid,
+                'outstanding': outstanding,
+            },
+            'documents': documents,
+            'payments': payments,
+            'edms_documents': edms_docs,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+

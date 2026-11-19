@@ -95,4 +95,9 @@ urlpatterns = [
     path('api/customer/<int:contact_id>/unadjusted-notes/', views.api_customer_unadjusted_notes, name='api_customer_unadjusted_notes'),
     path('api/customer/<int:contact_id>/invoices/', views.api_customer_invoices, name='api_customer_invoices'),
     path('api/adjust-note/', views.api_adjust_note, name='api_adjust_note'),
+
+    # Party/Vendor/Customer History & Related Documents API
+    path('api/contact/<int:contact_id>/history/', views.api_contact_history, name='api_contact_history'),
+    path('api/customer/<int:contact_id>/history/', views.api_contact_history, name='api_customer_history'),
+    path('api/customer/<int:contact_id>/recent-bills/', views.api_contact_history, name='api_customer_recent_bills'),
 ]
