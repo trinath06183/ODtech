@@ -1469,6 +1469,7 @@
                                 <span class="tot-label">
                                     Less: Discount
                                     <span x-show="discountType==='percentage'" x-text="'('+discountValue+'%)'"></span>
+                                    <span x-show="discountType==='individual_pct' && effectiveDiscountPercent()" x-text="'('+effectiveDiscountPercent()+'%)'"></span>
                                 </span>
                                 <span class="tot-val text-red-400">- <span x-text="currencySymbol()"></span> <span x-text="fmtNum(totalDiscount)"></span></span>
                             </div>
@@ -3732,6 +3733,15 @@ function documentForm() {
             this.grandTotal = Math.round((sub + (useGST ? tax : 0)) * 100) / 100;
             this.updateMilestoneAmounts();
             this.autoUpdateTerms();
+        },
+
+        effectiveDiscountPercent() {
+            if (this.grossSubtotal > 0 && this.totalDiscount > 0) {
+                let p = (this.totalDiscount / this.grossSubtotal) * 100;
+                let v = Math.round(p * 100) / 100;
+                return v % 1 === 0 ? parseInt(v) : v;
+            }
+            return 0;
         },
 
         // ── product search ───────────────────────────────────────────

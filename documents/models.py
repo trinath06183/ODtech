@@ -164,6 +164,17 @@ class Document(TimeStampedModel):
         return sum(item.discount for item in self.items.all())
 
     @property
+    def effective_discount_percent(self):
+        if self.discount_type == 'percentage':
+            val = float(self.discount_value or 0)
+            return int(val) if val == int(val) else round(val, 2)
+        if self.total_discount and self.total_discount > 0 and self.gross_subtotal and self.gross_subtotal > 0:
+            pct = float((self.total_discount / self.gross_subtotal) * 100)
+            val = round(pct, 2)
+            return int(val) if val == int(val) else val
+        return None
+
+    @property
     def display_billing_name(self):
         return (self.billing_name or '').strip() or (self.contact.name if self.contact else '')
 
@@ -642,6 +653,19 @@ class DocumentItem(models.Model):
     @property
     def base_amount(self):
         return (self.quantity * self.unit_price) - self.discount
+
+    @property
+    def gross_amount(self):
+        return (self.quantity or Decimal('0.00')) * (self.unit_price or Decimal('0.00'))
+
+    @property
+    def discount_percent(self):
+        gross = self.gross_amount
+        if gross and gross > 0 and self.discount and self.discount > 0:
+            pct = (self.discount / gross) * 100
+            val = round(float(pct), 2)
+            return int(val) if val == int(val) else val
+        return None
 
     class Meta:
         ordering = ['id']

@@ -175,7 +175,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-top: none; font-weight: bold;">
-                        Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% endif %}
+                        Less: Discount{% if doc.discount_type == 'percentage' %} ({{ doc.discount_value }}%){% elif doc.discount_type == 'individual_pct' and doc.effective_discount_percent %} ({{ doc.effective_discount_percent }}%){% endif %}
                     </td>
                     <td style="padding: 3px 6px; border: 1px solid #ddd; border-left: none; border-top: none; text-align: right; color: #dc2626; font-weight: bold;">-{{ doc.currency_symbol }} {{ doc.total_discount|indian_currency }}</td>
                 </tr>

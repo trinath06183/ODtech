@@ -25,7 +25,7 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.discount_type == 'individual' or doc.discount_type == 'individual_pct' %}
-            <th class="text-right" style="width: 8%;">Discount</th>
+            <th class="text-right" style="width: {% if doc.discount_type == 'individual_pct' %}11%{% else %}8%{% endif %};">Discount</th>
             {% endif %}
             {% endif %}
             {% if doc.type != 'CHL' %}
@@ -78,7 +78,19 @@
             {% endif %}
             {% if doc.type != 'CHL' %}
             {% if doc.discount_type == 'individual' or doc.discount_type == 'individual_pct' %}
-            <td class="text-right" style="vertical-align: top; text-align: right;">{{ doc.currency_symbol }} {{ item.discount|indian_currency }}</td>
+            <td class="text-right" style="vertical-align: top; text-align: right; white-space: nowrap;">
+                {% if item.discount and item.discount > 0 %}
+                    {% if doc.discount_type == 'individual_pct' and item.discount_percent %}
+                        {{ item.discount_percent }}% ({{ doc.currency_symbol }} {{ item.discount|indian_currency }})
+                    {% elif item.discount_percent and doc.discount_type != 'individual' %}
+                        {{ item.discount_percent }}% ({{ doc.currency_symbol }} {{ item.discount|indian_currency }})
+                    {% else %}
+                        {{ doc.currency_symbol }} {{ item.discount|indian_currency }}
+                    {% endif %}
+                {% else %}
+                    {{ doc.currency_symbol }} 0.00
+                {% endif %}
+            </td>
             {% endif %}
             {% endif %}
             {% if doc.type != 'CHL' %}
